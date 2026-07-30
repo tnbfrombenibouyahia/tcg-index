@@ -4,6 +4,10 @@ Document de cadrage pour démarrer le build dans l'IDE. Objectif : construire un
 « indice de marché » type finance pour les TCG (Pokémon, One Piece, puis autres),
 couvrant **cartes ET scellé**, avec méthodologie publique.
 
+> **Mise à jour 2026-07-30** : les sections ci-dessous sont le document de
+> cadrage d'origine (gardé tel quel pour la trace du raisonnement). L'état
+> réel du build est documenté en section 11, en fin de doc.
+
 ---
 
 ## 1. Le projet en une phrase
@@ -72,9 +76,29 @@ la source du prix brut.
 - **eBay API** : usage hors licence (destinée à faire du business SUR eBay, pas à bâtir
   un indice) + accès Buy APIs réservé aux partenaires.
 
+### Mise à jour — troisième source ajoutée en cours de build : PriceCharting (scraping)
+
+JustTCG s'est révélé peu fiable en usage réel : quota gratuit trop bas pour
+suivre tout le catalogue (100 req/jour, 20 items/requête — voir §11), et un
+incident où l'API a renvoyé `401 INVALID_API_KEY` en pleine session malgré une
+clé valide et un quota loin d'être atteint (bug côté leur infra, jamais
+totalement élucidé).
+
+**PriceCharting.com** (pas d'API officielle, scraping HTML — `robots.txt`
+autorise `/game/` et `/console/`) s'est avéré supérieur sur plusieurs points :
+pas de quota, une seule requête récupère tout un set (scellé + singles), et
+les pages carte individuelles exposent les **valeurs gradées PSA** (7 à 10),
+une donnée qu'aucune des deux API n'offre. C'est devenu la source de prix
+principale ; JustTCG reste en place mais en pause (cf. §11).
+
 ---
 
 ## 4. TEST À FAIRE AVANT DE CODER L'ARCHI (bloquant)
+
+> **Fait.** Réserve 1 et 2 validées pour Pokémon (échantillon élargi à 6 sets
+> réels) : scellé 87% avec historique exploitable, singles 80%, `tcgplayer.id`
+> présent sur 100% des produits API TCG. One Piece non testé via ce combo —
+> le pivot vers PriceCharting (§3) l'a rendu obsolète pour ce TCG.
 
 Deux réserves à lever avec les tiers gratuits, sur un échantillon de **2-3 sets récents
 Pokémon + One Piece** :
@@ -101,6 +125,9 @@ Pour relier une entrée référentiel (API TCG) à son prix (JustTCG), il faut u
 
 Trois tables suffisent pour le MVP.
 
+> **Schéma réel au 2026-07-30** (a évolué depuis la version d'origine
+> ci-dessous — colonnes ajoutées en gras dans les commentaires) :
+
 ```sql
 -- Référentiel : ce qu'on suit
 CREATE TABLE items (
@@ -109,10 +136,13 @@ CREATE TABLE items (
   source        TEXT NOT NULL,        -- 'apitcg'
   cardmarket_id TEXT,                 -- clé de jointure vers les prix si dispo
   tcgplayer_id  TEXT,                 -- idem
-  tcg           TEXT NOT NULL,        -- 'pokemon', 'onepiece'
-  category      TEXT NOT NULL,        -- 'sealed_display', 'sealed_etb', 'single'
+  tcg           TEXT NOT NULL,        -- 'pokemon', 'one-piece'
+  category      TEXT NOT NULL,        -- 'sealed', 'single' (granularité display/etb pas dispo côté source)
   set_code      TEXT,                 -- set / série
-  language      TEXT NOT NULL,        -- 'EN', 'JP', 'FR'
+  release_date  DATE,                 -- AJOUTÉ : date de sortie du set (NULL si bucket non-standard)
+  code          TEXT,                 -- AJOUTÉ : numéro de carte (format varie par TCG, cf. §11)
+  image_url     TEXT,                 -- AJOUTÉ : image produit, référence le CDN externe (pas de ré-hébergement)
+  language      TEXT NOT NULL,        -- 'EN' ou 'JP' uniquement (FR écarté, cf. §11)
   name          TEXT NOT NULL,
   created_at    TIMESTAMPTZ DEFAULT now(),
   UNIQUE (source, external_id)
@@ -124,14 +154,15 @@ CREATE TABLE price_snapshots (
   item_id       BIGINT NOT NULL REFERENCES items(id),
   captured_at   DATE NOT NULL,        -- jour du snapshot
   price         NUMERIC(12,2) NOT NULL,
-  currency      TEXT NOT NULL,        -- 'EUR', 'USD'
-  volume        INTEGER,             -- nb de ventes si dispo, sinon NULL
-  source        TEXT NOT NULL,        -- 'justtcg', 'pokemon-api'
+  currency      TEXT NOT NULL,        -- 'USD' en pratique (sources = TCGPlayer/PriceCharting)
+  volume        INTEGER,             -- nb de ventes si dispo, sinon NULL (jamais rempli pour l'instant)
+  source        TEXT NOT NULL,        -- 'justtcg', 'pricecharting'
+  grade         TEXT NOT NULL DEFAULT 'ungraded',  -- AJOUTÉ : 'ungraded'/'psa7'..'psa10', toujours 'ungraded' pour le scellé
   created_at    TIMESTAMPTZ DEFAULT now(),
-  UNIQUE (item_id, captured_at, source)   -- un prix par item/jour/source
+  UNIQUE (item_id, captured_at, source, grade)   -- un prix par item/jour/source/grade
 );
 
--- Indice calculé : l'output, ce que le front lit
+-- Indice calculé : l'output, ce que le front lit (PAS ENCORE CONSTRUIT, cf. §11)
 CREATE TABLE index_values (
   id            BIGSERIAL PRIMARY KEY,
   index_code    TEXT NOT NULL,        -- 'PKM_DISPLAYS', 'PKM_SINGLES', 'OP_DISPLAYS'...
@@ -162,12 +193,13 @@ snapshote aussi (sinon on ne peut pas rejouer l'historique). Prévoir une petite
 | Brique | Choix | Note |
 |---|---|---|
 | Ingestion | **Python** | Un module par source, interface commune `fetch() -> list[PriceRow]` |
-| Calcul indice | **Python** | Script séparé, lit `price_snapshots`, écrit `index_values` |
-| Base | **Postgres** | TimescaleDB en option plus tard pour le confort temporel |
-| API + Front | **Next.js** | Routes API lisent `index_values` + pages |
+| Scraping | **requests + BeautifulSoup4** | Ajouté pour PriceCharting (§3) — pas de blocage observé, Selenium jamais nécessaire |
+| Calcul indice | **Python** | Script séparé, lit `price_snapshots`, écrit `index_values` — **pas encore codé** |
+| Base | **Postgres (Supabase)** | Connexion via le *connection pooler* Supavisor, pas la connexion directe (IPv6-only, cf. §11) |
+| API + Front | **Next.js** | Routes API lisent `index_values` + pages — **pas encore codé** |
 | Charts | **Lightweight Charts** (TradingView, OSS) | Look « finance » gratuit ; Recharts si plus simple |
-| Hébergement | **VPS** (Hetzner ~5€/mois) ou Postgres managé + Vercel | |
-| Cron | **GitHub Actions** planifié (gratuit, versionné) | ou cron VPS |
+| Hébergement | **VPS** (Hetzner ~5€/mois) ou Postgres managé + Vercel | Postgres déjà sur Supabase |
+| Cron | **GitHub Actions** planifié (gratuit, versionné) | ou cron VPS — **pas encore mis en place**, ingestion lancée manuellement pour l'instant |
 
 Pas d'Airflow, pas de Kafka : quelques milliers d'items une fois par jour = un script
 de ~200 lignes.
@@ -176,25 +208,35 @@ de ~200 lignes.
 
 ## 7. Structure du repo
 
+> **Réel au 2026-07-30** (✅ = existe, ⬜ = pas encore codé) :
+
 ```
 /ingestion
   /sources
-    apitcg.py         # référentiel : peuple/maj la table items
-    justtcg.py        # prix : écrit dans price_snapshots
-    pokemon_api.py    # (plan B) prix scellé
-  orchestrator.py     # appelle les sources, INSERT ... ON CONFLICT DO NOTHING
+    apitcg.py         ✅ référentiel : peuple/maj items (sync_items), + client brut (list_sets/list_products)
+    justtcg.py         ✅ prix scellé récent, en pause (incident 401, cf. §11)
+    pricecharting.py   ✅ AJOUTÉ — scraping : prix set + singles + gradation PSA, pas dans le plan d'origine
+    base.py            ✅ interface PriceRow (déclarative, pas strictement suivie — cf. note ci-dessous)
+  probe_combo.py       ✅ sonde de validation Réserve 1/2 (§4), réutilisable via CLI
+  orchestrator.py      ⬜ pas encore codé — chaque module a son propre `main()`/CLI pour l'instant
 /index
-  calculate.py        # lit price_snapshots, écrit index_values
-  methodology.py      # les formules (À DÉFINIR ENSEMBLE — cf. section 8)
-/web                  # next.js
-  /app/api            # routes qui lisent index_values -> JSON
-  /app                # pages + charts
+  calculate.py         ⬜ pas encore codé
+  methodology.py        ⬜ pas encore codé — méthodologie toujours à définir (§8, session dédiée à venir)
+/web                    ⬜ pas encore codé (next.js)
 /db
-  schema.sql          # les 3 tables ci-dessus
-  migrations/
+  schema.sql           ✅ à jour (§5)
+  apply_schema.py      ✅ AJOUTÉ — applique schema.sql via DATABASE_URL
+  migrations/           ⬜ pas de dossier séparé — évolutions faites en ALTER TABLE ad hoc pour l'instant
 /shared
-  db.py               # connexion partagée ingestion/index
+  db.py                ✅ connexion partagée (psycopg2 + pooler Supabase)
 ```
+
+Note sur `base.py` : l'idée d'origine (un `fetch()` générique consommé par un
+orchestrateur central) n'a pas survécu telle quelle — `apitcg.py` et
+`pricecharting.py` écrivent directement en base depuis leur propre
+`sync_*()`/`main()`, chacun avec sa logique de matching/dédup spécifique à sa
+source. Pas de perte de découplage réelle (le schéma reste la seule interface
+partagée), juste pas d'orchestrateur unique pour l'instant.
 
 ### Interface commune des sources (à respecter)
 Chaque source de prix expose la même signature, pour que l'orchestrateur soit agnostique
@@ -242,17 +284,18 @@ Décisions à trancher avant de coder `methodology.py` :
 
 ## 9. Ordre de construction recommandé
 
-1. **[TEST]** Valider le combo API TCG + JustTCG (section 4) — bloquant.
-2. `db/schema.sql` — créer les 3 tables.
-3. `ingestion/sources/apitcg.py` — peupler `items` (référentiel).
-4. `ingestion/sources/justtcg.py` — premier snapshot de prix dans `price_snapshots`.
-5. `orchestrator.py` + cron quotidien — **commencer à accumuler l'historique dès que possible.**
-6. `index/methodology.py` + `calculate.py` — méthodo simple (équipondéré, base 100, chaînage).
-7. `web/` — API + un premier chart Lightweight Charts sur l'indice global.
-8. Itérer : corrélations, sous-indices par série/langue, volume.
+1. ✅ **[TEST]** Valider le combo API TCG + JustTCG (section 4) — Pokémon validé, One Piece court-circuité par le pivot PriceCharting.
+2. ✅ `db/schema.sql` — créer les tables (schéma étendu depuis, cf. §5).
+3. ✅ `ingestion/sources/apitcg.py` — peupler `items` (référentiel) — **Pokémon et One Piece**, anglais uniquement (cf. §11).
+4. 🟡 `ingestion/sources/justtcg.py` — fait puis **mis en pause** (incident 401, §11) ; `pricecharting.py` a pris le relais comme source de prix principale (pas prévu dans le plan d'origine).
+5. ⬜ `orchestrator.py` + cron quotidien — **pas encore fait**. Historique déjà accumulé manuellement (25k+ snapshots), mais pas encore de rafraîchissement automatique quotidien — prochain vrai point bloquant pour la valeur du projet (cf. rappel ci-dessous, toujours vrai).
+6. ⬜ `index/methodology.py` + `calculate.py` — **pas commencé**, discussion dédiée prévue en prochaine session.
+7. ⬜ `web/` — pas commencé.
+8. ⬜ Itérer : corrélations, sous-indices par série/langue, volume.
 
 > Le point 5 est prioritaire dans le temps : chaque jour sans snapshot est un jour
-> d'historique perdu à jamais.
+> d'historique perdu à jamais. **Toujours vrai et pas encore résolu** — c'est le
+> trou le plus urgent à combler après la méthodologie.
 
 ---
 
@@ -263,3 +306,58 @@ Décisions à trancher avant de coder `methodology.py` :
 - On stocke la devise d'origine, on convertit au calcul.
 - Ajouter une source = un module derrière l'interface commune, rien d'autre à toucher.
 - L'historique est l'actif. Le front est cosmétique.
+
+---
+
+## 11. État actuel (2026-07-30)
+
+### Infra
+- Postgres hébergé sur **Supabase**. `DATABASE_URL` doit pointer sur le
+  *connection pooler* (`aws-0-*.pooler.supabase.com:6543`), pas la connexion
+  directe (`db.*.supabase.co:5432`) — cette dernière est IPv6-only et ne
+  fonctionne pas sur un réseau sans route IPv6.
+- Repo Git initialisé et poussé : **https://github.com/tnbfrombenibouyahia/tcg-index** (privé).
+  `.env` exclu via `.gitignore` (clés API + mot de passe DB jamais commités).
+
+### Référentiel (`items`)
+| TCG | Items | Sealed | Singles | Avec image |
+|---|---|---|---|---|
+| Pokémon | 32 529 | 4 722 | 27 764 (~) | 32 502 (99,9%) |
+| One Piece | 7 200 | 627 | 6 573 | 7 200 (100%) |
+
+Anglais uniquement pour l'instant (API TCG, via TCGPlayer, ne couvre pas le
+japonais). **Décision de scope langues** : anglais + japonais visés à terme
+(marchés distincts, sous-indices séparés — pas de tentative de relier une
+carte EN à son équivalent JP), **français écarté** (marché Cardmarket, mal
+couvert par TCGPlayer/PriceCharting, source fiable pas identifiée).
+
+### Prix (`price_snapshots`)
+| Source | État | Couverture |
+|---|---|---|
+| JustTCG | **En pause** — `401 INVALID_API_KEY` en pleine session le 2026-07-29 malgré clé valide et quota loin d'être atteint ; cause jamais confirmée (probable incident côté leur infra). 435 items Pokémon scellé déjà en base (historique 7j chacun), rien perdu, reprise possible à tout moment (upsert idempotent). | Pokémon scellé récent uniquement |
+| PriceCharting | Actif, source principale | Pokémon : 17 962 items avec prix (2 496 avec ≥1 palier gradé) ; One Piece : 4 203 items (583 gradés). 150/217 sets Pokémon mappés, 76/84 One Piece (mapping manuel set_code ↔ slug PriceCharting, pas de découverte automatique). |
+
+Gradation PSA (`grade` sur `price_snapshots`, ajouté le 2026-07-30, sur
+demande explicite) : 10 128 lignes gradées (psa7: 456, psa8: 899, psa9:
+2 841, psa9.5: 2 894, psa10: 3 038), scope volontairement limité aux sets
+sortis dans les 18 derniers mois (1 requête HTTP par carte côté
+PriceCharting — tout le catalogue prendrait ~12h).
+
+### Décisions prises pendant le build (pas dans le cadrage d'origine)
+- **Prix scellé PriceCharting** : la colonne `used_price` ("Ungraded") sert de
+  référence pour le scellé aussi, pas `new_price` ("factory sealed") —
+  contre-intuitif mais confirmé sur données réelles (`new_price` souvent vide
+  ou incohérent, la majorité du volume de vente scellé semble catégorisé
+  "Used" côté source).
+- **Images** : `items.image_url` référence directement le CDN externe
+  (TCGPlayer via API TCG, PriceCharting en fallback documenté) — pas de
+  ré-hébergement, donc pas de sujet de droits d'image ni de stockage.
+
+### Connu, pas résolu
+- Pas d'`orchestrator.py` ni de cron — chaque sync est lancée manuellement.
+  C'est le trou le plus urgent maintenant que la méthodologie et le web sont
+  aussi non commencés : sans rafraîchissement quotidien automatique,
+  l'historique ne s'accumule pas tout seul (cf. §9, rappel toujours valable).
+- Méthodologie d'indice (§8) : toujours à définir, session dédiée à venir.
+- JustTCG : blocage non résolu, à retenter/contacter le support si besoin.
+- `web/` et `index/` : dossiers vides, rien de commencé.
