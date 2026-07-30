@@ -123,7 +123,7 @@ Pour relier une entrée référentiel (API TCG) à son prix (JustTCG), il faut u
 
 ## 5. Schéma de base (Postgres) — MVP
 
-Trois tables suffisent pour le MVP.
+Trois tables suffisent pour le MVP (+ `sales`, ajoutée le 2026-07-30, cf. plus bas).
 
 > **Schéma réel au 2026-07-30** (a évolué depuis la version d'origine
 > ci-dessous — colonnes ajoutées en gras dans les commentaires) :
@@ -160,6 +160,27 @@ CREATE TABLE price_snapshots (
   grade         TEXT NOT NULL DEFAULT 'ungraded',  -- AJOUTÉ : 'ungraded'/'psa7'..'psa10', toujours 'ungraded' pour le scellé
   created_at    TIMESTAMPTZ DEFAULT now(),
   UNIQUE (item_id, captured_at, source, grade)   -- un prix par item/jour/source/grade
+);
+
+-- AJOUTÉ 2026-07-30 : ventes individuelles (PriceCharting, table "Sold
+-- Listings" des pages carte -- eBay/TCGPlayer/Goldin/Heritage/PWCC...).
+-- Grain différent de price_snapshots : une ligne par transaction réelle, pas
+-- par jour. Sert à calculer du volume par TCG/set/carte/année/personnage
+-- (via jointure sur items) -- pas encore utilisé par un calcul, juste
+-- archivé pour l'instant.
+CREATE TABLE sales (
+  id                BIGSERIAL PRIMARY KEY,
+  item_id           BIGINT NOT NULL REFERENCES items(id),
+  sale_date         DATE NOT NULL,
+  price             NUMERIC(12,2) NOT NULL,
+  currency          TEXT NOT NULL DEFAULT 'USD',
+  grade             TEXT NOT NULL DEFAULT 'ungraded',  -- même vocabulaire que price_snapshots.grade (PSA7-10 uniquement, cf. §11)
+  marketplace       TEXT NOT NULL,        -- 'ebay', 'tcgplayer', 'goldin', 'heritage', 'pwcc'...
+  external_sale_id  TEXT NOT NULL,        -- id de l'annonce chez le marketplace -- clé naturelle de dédup
+  title             TEXT,
+  source            TEXT NOT NULL DEFAULT 'pricecharting',
+  created_at        TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (marketplace, external_sale_id)
 );
 
 -- Indice calculé : l'output, ce que le front lit (PAS ENCORE CONSTRUIT, cf. §11)
@@ -199,7 +220,7 @@ snapshote aussi (sinon on ne peut pas rejouer l'historique). Prévoir une petite
 | API + Front | **Next.js** | Routes API lisent `index_values` + pages — **pas encore codé** |
 | Charts | **Lightweight Charts** (TradingView, OSS) | Look « finance » gratuit ; Recharts si plus simple |
 | Hébergement | **VPS** (Hetzner ~5€/mois) ou Postgres managé + Vercel | Postgres déjà sur Supabase |
-| Cron | **GitHub Actions** planifié (gratuit, versionné) | ou cron VPS — **pas encore mis en place**, ingestion lancée manuellement pour l'instant |
+| Cron | **GitHub Actions** planifié (gratuit, versionné) | ✅ en place depuis le 2026-07-30 (`.github/workflows/`, cf. §11) |
 
 Pas d'Airflow, pas de Kafka : quelques milliers d'items une fois par jour = un script
 de ~200 lignes.
@@ -218,7 +239,10 @@ de ~200 lignes.
     pricecharting.py   ✅ AJOUTÉ — scraping : prix set + singles + gradation PSA, pas dans le plan d'origine
     base.py            ✅ interface PriceRow (déclarative, pas strictement suivie — cf. note ci-dessous)
   probe_combo.py       ✅ sonde de validation Réserve 1/2 (§4), réutilisable via CLI
-  orchestrator.py      ⬜ pas encore codé — chaque module a son propre `main()`/CLI pour l'instant
+  orchestrator.py      ✅ AJOUTÉ 2026-07-30 — enchaîne référentiel + prix, appelé par le cron GitHub Actions
+/.github/workflows
+  daily-sync.yml         ✅ référentiel + prix ungraded, quotidien (06:00 UTC)
+  grades-and-sales.yml   ✅ gradation PSA + historique de ventes, sets récents, 3x/semaine (lun/mer/ven 03:00 UTC)
 /index
   calculate.py         ⬜ pas encore codé
   methodology.py        ⬜ pas encore codé — méthodologie toujours à définir (§8, session dédiée à venir)
@@ -288,14 +312,14 @@ Décisions à trancher avant de coder `methodology.py` :
 2. ✅ `db/schema.sql` — créer les tables (schéma étendu depuis, cf. §5).
 3. ✅ `ingestion/sources/apitcg.py` — peupler `items` (référentiel) — **Pokémon et One Piece**, anglais uniquement (cf. §11).
 4. 🟡 `ingestion/sources/justtcg.py` — fait puis **mis en pause** (incident 401, §11) ; `pricecharting.py` a pris le relais comme source de prix principale (pas prévu dans le plan d'origine).
-5. ⬜ `orchestrator.py` + cron quotidien — **pas encore fait**. Historique déjà accumulé manuellement (25k+ snapshots), mais pas encore de rafraîchissement automatique quotidien — prochain vrai point bloquant pour la valeur du projet (cf. rappel ci-dessous, toujours vrai).
+5. ✅ `orchestrator.py` + cron — **fait le 2026-07-30**. `ingestion/orchestrator.py` enchaîne référentiel + prix ; deux workflows GitHub Actions planifiés (`.github/workflows/`) : quotidien (référentiel + prix ungraded, tous les sets mappés) et hebdomadaire (gradation PSA, sets récents uniquement — trop coûteux en requêtes pour du quotidien). Nécessite les secrets repo `APITCG_API_KEY` et `DATABASE_URL` (pooler !) pour tourner.
 6. ⬜ `index/methodology.py` + `calculate.py` — **pas commencé**, discussion dédiée prévue en prochaine session.
 7. ⬜ `web/` — pas commencé.
 8. ⬜ Itérer : corrélations, sous-indices par série/langue, volume.
 
-> Le point 5 est prioritaire dans le temps : chaque jour sans snapshot est un jour
-> d'historique perdu à jamais. **Toujours vrai et pas encore résolu** — c'est le
-> trou le plus urgent à combler après la méthodologie.
+> Le point 5 était prioritaire dans le temps : chaque jour sans snapshot est un jour
+> d'historique perdu à jamais. **Résolu le 2026-07-30** (cf. point 5 et §11) — reste
+> à activer les secrets GitHub et vérifier le premier run réel.
 
 ---
 
@@ -353,11 +377,74 @@ PriceCharting — tout le catalogue prendrait ~12h).
   (TCGPlayer via API TCG, PriceCharting en fallback documenté) — pas de
   ré-hébergement, donc pas de sujet de droits d'image ni de stockage.
 
+### Ventes individuelles (`sales`, ajouté le 2026-07-30)
+Chaque page carte individuelle PriceCharting a aussi une table "Sold
+Listings" (date / titre / prix) par palier de gradation, en plus des prix
+déjà scrapés — vérifié en conditions réelles sur Charizard #4 Base Set (373
+ventes, 2023-12-09 → aujourd'hui, marketplaces au-delà d'eBay/TCGPlayer :
+Goldin, Heritage, PWCC). Comme c'est la même page que celle déjà visitée
+pour la gradation PSA, `fetch_card_details()` remplace l'ancien
+`fetch_card_grades()` et extrait les deux en une seule requête HTTP —
+aucun coût réseau supplémentaire.
+
+- Scope identique à la gradation : sets des 18 derniers mois, singles
+  uniquement (pas le scellé, pas vérifié si les pages scellé ont cette table).
+- Vocabulaire de grade limité à PSA7-10 + ungraded (mêmes 6 onglets que
+  `price_snapshots.grade`) — les onglets CGC/BGS/SGC/TAG/ACE et les grades
+  bruts 1-6 existent sur la page mais sont ignorés (hors scope PSA décidé
+  précédemment, pas de raison de l'élargir ici).
+- Dédup sur `(marketplace, external_sale_id)` (id natif de l'annonce, ex.
+  `ebay-157845176074`) — rejouable sans doublons, testé en conditions réelles
+  (rerun identique → même nombre de lignes en base).
+- **Limite découverte en marge** : chaque onglet de gradation semble plafonné
+  à ~30 ventes visibles (pas de pagination trouvée). Sur une carte à ~1
+  vente/semaine, ce plafond correspond à peu près à 7 mois d'historique — au
+  delà, les ventes plus anciennes ne sont juste plus récupérables. C'est
+  pour ça que le cron tourne 3x/semaine plutôt qu'1x : espacer davantage
+  risque de perdre des ventes sur les cartes à volume plus élevé.
+- Devise : USD figé en dur pour l'ingestion (comme `price_snapshots`) —
+  décision explicite de ne traiter la conversion/l'affichage multi-devise que
+  côté `web/` plus tard, pas à l'ingestion.
+- Objectif : permettre un calcul de volume par TCG / set / carte / année /
+  personnage via jointure sur `items`, sans scraping supplémentaire par
+  dimension — pas encore branché sur `index/calculate.py` (toujours pas codé).
+
+### Orchestration & cron (ajouté le 2026-07-30, mis à jour le même jour)
+- `ingestion/orchestrator.py` : enchaîne référentiel (API TCG, pokemon +
+  one-piece) puis prix (PriceCharting, tous les sets mappés). `--grades`
+  ajoute, sur les sets récents, la gradation PSA **et** l'historique de
+  ventes (même requête HTTP, cf. ci-dessus) ; `--skip-items` saute le
+  référentiel (utilisé par le run grades/ventes, déjà fait par le quotidien).
+- Deux workflows GitHub Actions (`.github/workflows/`) :
+  - `daily-sync.yml` : tous les jours à 06:00 UTC — référentiel + prix ungraded.
+  - `grades-and-sales.yml` : lundi/mercredi/vendredi à 03:00 UTC — gradation
+    PSA + ventes, sets récents (1 requête/carte, trop coûteux en quotidien ;
+    3x/semaine plutôt qu'1x à cause du plafond ~30 ventes/onglet, cf.
+    ci-dessus).
+  - Les deux ont aussi `workflow_dispatch` pour un déclenchement manuel.
+- **À faire côté GitHub avant que ça tourne** : ajouter les secrets du repo
+  (Settings > Secrets and variables > Actions) `APITCG_API_KEY` et
+  `DATABASE_URL` (le pooler Supabase, pas la connexion directe — cf. §11
+  infra). JustTCG n'est pas appelé par le cron (toujours en pause, reprise
+  manuelle uniquement).
+- Chaque sync est déjà idempotente (upsert / `ON CONFLICT DO NOTHING`) : un
+  run manqué ou rejoué ne crée pas de doublons — vérifié en conditions
+  réelles pour `sales` aussi.
+- Storage Supabase : plan **Free (500 MB)** utilisé délibérément pendant la
+  phase d'évaluation (upgrade Pro seulement si l'app montre de la valeur).
+  À ~140 MB/mois de croissance mesurée (31 MB au 2026-07-30), le quota se
+  remplit en ~3-4 mois — `orchestrator.py` affiche la taille de la base à
+  chaque run (`print_storage_usage()`) pour le voir venir dans les logs
+  Actions plutôt que d'être surpris par un run qui échoue faute de place.
+- Pas encore vérifié : le tout premier run réel en conditions Actions (temps
+  d'exécution, quota de minutes GitHub sur le repo privé — 2000 min/mois côté
+  gratuit, à surveiller si les runs traînent).
+
 ### Connu, pas résolu
-- Pas d'`orchestrator.py` ni de cron — chaque sync est lancée manuellement.
-  C'est le trou le plus urgent maintenant que la méthodologie et le web sont
-  aussi non commencés : sans rafraîchissement quotidien automatique,
-  l'historique ne s'accumule pas tout seul (cf. §9, rappel toujours valable).
-- Méthodologie d'indice (§8) : toujours à définir, session dédiée à venir.
+- Méthodologie d'indice (§8) : toujours à définir, session dédiée à venir —
+  `sales` donne maintenant la matière pour une pondération par volume, mais
+  rien n'est branché.
 - JustTCG : blocage non résolu, à retenter/contacter le support si besoin.
 - `web/` et `index/` : dossiers vides, rien de commencé.
+- `sales` : scope singles/sets récents uniquement pour l'instant, pas testé
+  sur le scellé.

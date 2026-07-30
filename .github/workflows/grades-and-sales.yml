@@ -1,0 +1,37 @@
+name: Grades and sales sync
+
+# Gradation PSA7-10 + historique de ventes individuelles (eBay/TCGPlayer/...)
+# via PriceCharting, sur les sets sortis dans les 18 derniers mois -- 1
+# requête HTTP par carte (les deux infos viennent de la même page, cf.
+# ingestion/sources/pricecharting.py:fetch_card_details), trop coûteux pour
+# un cron quotidien.
+#
+# 3x/semaine plutôt qu'1x : la table de ventes de PriceCharting plafonne à
+# ~30 lignes visibles par palier de gradation, qui se remplissent à peu près
+# au rythme réel des ventes -- un scraping trop espacé perd des ventes,
+# irrécupérables une fois hors du plafond (cf. mémoire projet
+# "sales_volume_tracking").
+#
+# Le référentiel est déjà à jour via le run quotidien, donc --skip-items.
+on:
+  schedule:
+    - cron: "0 3 * * 1,3,5"  # 03:00 UTC lundi/mercredi/vendredi
+  workflow_dispatch: {}
+
+jobs:
+  grades-and-sales:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - run: python -m ingestion.orchestrator --grades --skip-items
+        env:
+          APITCG_API_KEY: ${{ secrets.APITCG_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

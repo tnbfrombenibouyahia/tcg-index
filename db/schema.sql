@@ -31,6 +31,25 @@ CREATE TABLE price_snapshots (
   UNIQUE (item_id, captured_at, source, grade)   -- un prix par item/jour/source/grade
 );
 
+-- Ventes individuelles (PriceCharting -- table "Sold Listings" des pages carte) :
+-- append-only, grain différent de price_snapshots (une ligne par transaction
+-- réelle, pas par jour). Sert au calcul de volume (par TCG/set/carte/année/
+-- personnage via jointure sur items), pas encore utilisé par un calcul.
+CREATE TABLE sales (
+  id                BIGSERIAL PRIMARY KEY,
+  item_id           BIGINT NOT NULL REFERENCES items(id),
+  sale_date         DATE NOT NULL,
+  price             NUMERIC(12,2) NOT NULL,
+  currency          TEXT NOT NULL DEFAULT 'USD',
+  grade             TEXT NOT NULL DEFAULT 'ungraded',  -- même vocabulaire que price_snapshots.grade
+  marketplace       TEXT NOT NULL,        -- 'ebay', 'tcgplayer' (marché d'origine de la vente)
+  external_sale_id  TEXT NOT NULL,        -- id de l'annonce chez le marketplace, clé naturelle de dédup
+  title             TEXT,                 -- titre de l'annonce (QA du matching)
+  source            TEXT NOT NULL DEFAULT 'pricecharting',
+  created_at        TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (marketplace, external_sale_id)
+);
+
 -- Indice calculé : l'output, ce que le front lit
 CREATE TABLE index_values (
   id            BIGSERIAL PRIMARY KEY,

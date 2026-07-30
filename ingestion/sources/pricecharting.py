@@ -33,7 +33,7 @@ recouper un jour, hors scope de ce premier passage).
 import re
 import time
 import unicodedata
-from datetime import date
+from datetime import date, datetime
 
 import requests
 from bs4 import BeautifulSoup
@@ -401,13 +401,7 @@ GRADE_FIELD_TO_LABEL = {
 }
 
 
-def fetch_card_grades(url: str) -> dict:
-    """Récupère les prix par palier de gradation sur la page carte individuelle.
-    Retourne {grade: price}, n'inclut que les paliers avec un prix disponible."""
-    resp = requests.get(url, headers=HEADERS, timeout=30)
-    resp.raise_for_status()
-    soup = BeautifulSoup(resp.text, "html.parser")
-
+def _parse_card_grades(soup: BeautifulSoup) -> dict:
     table = soup.find("table", id="price_data")
     if table is None:
         return {}
@@ -422,6 +416,90 @@ def fetch_card_grades(url: str) -> dict:
         if price is not None:
             grades[grade] = price
     return grades
+
+
+# Onglets de la table "Sold Listings" (ventes eBay/TCGPlayer individuelles,
+# section id="js-usability-game-historicSales") -- mêmes 6 paliers que
+# GRADE_FIELD_TO_LABEL, la page réutilise les mêmes noms de section. Les
+# ~13 autres onglets (CGC/BGS/SGC/TAG/ACE, grades bruts 1-6) sont ignorés :
+# hors du scope PSA7-10 déjà en place pour price_snapshots (cf. mémoire
+# projet "grading_tiers"), pas la peine d'élargir le vocabulaire de `grade`.
+#
+# Chaque onglet semble plafonné à ~30 lignes visibles (constaté le
+# 2026-07-30 : l'onglet "box-only" d'une carte à ~1 vente/semaine montre
+# exactement ~30 lignes sur les 7 derniers mois) -- pas un historique
+# illimité, les ventes plus anciennes que ce plafond ne sont pas
+# récupérables. D'où la cadence 2-3x/semaine plutôt qu'hebdo (cf. mémoire
+# projet "sales_volume_tracking") : réduit le risque de rater des ventes
+# sur les cartes à volume plus élevé.
+SALES_TAB_TO_GRADE = {
+    "used": "ungraded",
+    "cib": "psa7",
+    "new": "psa8",
+    "graded": "psa9",
+    "box-only": "psa9.5",
+    "manual-only": "psa10",
+}
+
+
+def _parse_sales_from_div(div, grade: str) -> list[dict]:
+    rows = []
+    for tr in div.select("tr[id]"):
+        marketplace, sep, external_id = tr.get("id", "").partition("-")
+        if not sep:
+            continue
+        date_td = tr.select_one("td.date")
+        price_span = tr.select_one("td.numeric span.js-price")
+        if date_td is None or price_span is None:
+            continue
+        price = _parse_price(price_span.get_text())
+        if price is None:
+            continue
+        try:
+            sale_date = datetime.strptime(date_td.get_text(strip=True), "%Y-%m-%d").date()
+        except ValueError:
+            continue
+        title_link = tr.select_one("td.title a")
+        rows.append({
+            "marketplace": marketplace,
+            "external_sale_id": external_id,
+            "sale_date": sale_date,
+            "price": price,
+            "grade": grade,
+            "title": title_link.get_text(strip=True) if title_link else None,
+        })
+    return rows
+
+
+def _parse_card_sales(soup: BeautifulSoup) -> list[dict]:
+    """Ventes individuelles (date/titre/prix) par palier de gradation. Plusieurs
+    <div> peuvent partager la même classe `completed-auctions-{tab}` (le bouton
+    d'onglet dans la nav en a une, le conteneur de table une autre) -- on ne
+    garde que celui qui contient effectivement une <table>."""
+    all_sales = []
+    for tab, grade in SALES_TAB_TO_GRADE.items():
+        div = next(
+            (d for d in soup.find_all("div", class_=f"completed-auctions-{tab}") if d.find("table")),
+            None,
+        )
+        if div is None:
+            continue
+        all_sales.extend(_parse_sales_from_div(div, grade))
+    return all_sales
+
+
+def fetch_card_details(url: str) -> dict:
+    """Une seule requête HTTP par carte, deux usages : prix par palier de
+    gradation (table `price_data`) ET historique de ventes individuelles
+    (onglets `completed-auctions-*`) -- les deux vivent sur la même page,
+    pas la peine de la requêter deux fois."""
+    resp = requests.get(url, headers=HEADERS, timeout=30)
+    resp.raise_for_status()
+    soup = BeautifulSoup(resp.text, "html.parser")
+    return {
+        "grades": _parse_card_grades(soup),
+        "sales": _parse_card_sales(soup),
+    }
 
 
 # Pokémon: "Charizard ex #199" -> 199. One Piece: "... OP06-118" -> 118 (pas
@@ -571,16 +649,26 @@ _UPSERT_PRICE_SNAPSHOTS_WITH_GRADE_SQL = """
     ON CONFLICT (item_id, captured_at, source, grade) DO NOTHING
 """
 
+_UPSERT_SALES_SQL = """
+    INSERT INTO sales (item_id, sale_date, price, currency, grade, marketplace, external_sale_id, title, source)
+    VALUES %s
+    ON CONFLICT (marketplace, external_sale_id) DO NOTHING
+"""
+
 
 def sync_price_snapshots_for_set(
     set_code: str, tcg: str, fetch_grades: bool = False, max_cards: int | None = None,
 ) -> dict:
     """Scrape la page de set PriceCharting mappée à `set_code` et archive les prix matchés.
 
-    `fetch_grades=True` : pour chaque single matché, va aussi chercher les prix
-    PSA7-10 sur sa page carte individuelle (1 requête HTTP de plus par carte —
-    coûteux à grande échelle, cf. mémoire projet sur le scope "sets récents").
-    `max_cards` plafonne le nombre de cartes gradées par set (utile pour tester
+    `fetch_grades=True` : pour chaque single matché, va aussi chercher, sur sa
+    page carte individuelle (1 requête HTTP de plus par carte — coûteux à
+    grande échelle, cf. mémoire projet sur le scope "sets récents") :
+    - les prix PSA7-10 (-> `price_snapshots`)
+    - l'historique de ventes individuelles eBay/TCGPlayer (-> `sales`)
+    Les deux viennent de la même page, donc de la même requête HTTP
+    (cf. `fetch_card_details`).
+    `max_cards` plafonne le nombre de cartes traitées par set (utile pour tester
     ou pour un run à budget limité).
     """
     slug = PRICECHARTING_SET_SLUGS.get(set_code)
@@ -646,6 +734,7 @@ def sync_price_snapshots_for_set(
 
         cards_graded = 0
         grade_rows_written = 0
+        sale_rows_written = 0
         if fetch_grades:
             category_by_item_id = {it["id"]: it["category"] for it in items}
             single_rows = [
@@ -659,20 +748,31 @@ def sync_price_snapshots_for_set(
                     if i > 0:
                         time.sleep(MIN_SECONDS_BETWEEN_REQUESTS)
                     try:
-                        grades = fetch_card_grades(row["url"])
+                        details = fetch_card_details(row["url"])
                     except Exception as exc:
-                        print(f"    ! erreur gradation {row['title']}: {exc}")
+                        print(f"    ! erreur gradation/ventes {row['title']}: {exc}")
                         continue
                     cards_graded += 1
+
                     # 'ungraded' déjà écrit ci-dessus depuis la page de set, pas la peine de le redemander
                     grade_price_rows = [
                         (item_id, today, price, "USD", None, "pricecharting", grade)
-                        for grade, price in grades.items() if grade != "ungraded"
+                        for grade, price in details["grades"].items() if grade != "ungraded"
                     ]
                     if grade_price_rows:
                         execute_values(cur, _UPSERT_PRICE_SNAPSHOTS_WITH_GRADE_SQL, grade_price_rows)
                         conn.commit()
                         grade_rows_written += len(grade_price_rows)
+
+                    sale_rows = [
+                        (item_id, s["sale_date"], s["price"], "USD", s["grade"],
+                         s["marketplace"], s["external_sale_id"], s["title"], "pricecharting")
+                        for s in details["sales"]
+                    ]
+                    if sale_rows:
+                        execute_values(cur, _UPSERT_SALES_SQL, sale_rows)
+                        conn.commit()
+                        sale_rows_written += len(sale_rows)
     finally:
         conn.close()
 
@@ -685,6 +785,7 @@ def sync_price_snapshots_for_set(
         "unmatched_titles": unmatched,
         "cards_graded": cards_graded,
         "grade_rows_written": grade_rows_written,
+        "sale_rows_written": sale_rows_written,
     }
 
 
@@ -742,7 +843,8 @@ def sync_all_mapped_sets(
             )
             ratio = stats["rows_matched"] / stats["rows_scraped"] if stats["rows_scraped"] else 0.0
             extra = (
-                f", {stats['cards_graded']} cartes gradées ({stats['grade_rows_written']} lignes)"
+                f", {stats['cards_graded']} cartes gradées ({stats['grade_rows_written']} lignes), "
+                f"{stats['sale_rows_written']} ventes"
                 if fetch_grades else ""
             )
             print(
@@ -767,7 +869,10 @@ def main():
     parser.add_argument("--tcg", default=None, help="Filtre optionnel (pokemon/one-piece) pour le mode bulk.")
     parser.add_argument(
         "--fetch-grades", action="store_true",
-        help="Récupère aussi les prix PSA7-10 par carte individuelle (1 requête/carte en plus, coûteux).",
+        help=(
+            "Récupère aussi, par carte individuelle (1 requête/carte en plus, coûteux) : "
+            "les prix PSA7-10 et l'historique de ventes eBay/TCGPlayer."
+        ),
     )
     parser.add_argument(
         "--since-months", type=int, default=None,
@@ -781,7 +886,10 @@ def main():
         stats = sync_price_snapshots_for_set(args.set_code, tcg, fetch_grades=args.fetch_grades)
         print(f"Scrapé: {stats['rows_scraped']}, matché: {stats['rows_matched']}, non-matché: {stats['rows_unmatched']}")
         if args.fetch_grades:
-            print(f"Cartes gradées: {stats['cards_graded']}, lignes de prix gradés: {stats['grade_rows_written']}")
+            print(
+                f"Cartes traitées: {stats['cards_graded']}, lignes de prix gradés: {stats['grade_rows_written']}, "
+                f"ventes archivées: {stats['sale_rows_written']}"
+            )
         if stats["unmatched_titles"]:
             print("Non matchés:", stats["unmatched_titles"])
         return

@@ -1,0 +1,26 @@
+name: Daily sync
+
+# Référentiel (API TCG) + prix ungraded (PriceCharting) sur tous les sets
+# mappés. Voir ingestion/orchestrator.py pour le détail des étapes.
+on:
+  schedule:
+    - cron: "0 6 * * *"  # 06:00 UTC tous les jours
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - run: python -m ingestion.orchestrator
+        env:
+          APITCG_API_KEY: ${{ secrets.APITCG_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
