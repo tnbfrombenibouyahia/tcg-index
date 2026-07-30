@@ -422,11 +422,16 @@ aucun coût réseau supplémentaire.
     3x/semaine plutôt qu'1x à cause du plafond ~30 ventes/onglet, cf.
     ci-dessus).
   - Les deux ont aussi `workflow_dispatch` pour un déclenchement manuel.
-- **À faire côté GitHub avant que ça tourne** : ajouter les secrets du repo
-  (Settings > Secrets and variables > Actions) `APITCG_API_KEY` et
-  `DATABASE_URL` (le pooler Supabase, pas la connexion directe — cf. §11
-  infra). JustTCG n'est pas appelé par le cron (toujours en pause, reprise
-  manuelle uniquement).
+- **Committé et poussé sur `main`** (commit `0cdc1a9`, 2026-07-30) :
+  `orchestrator.py`, les deux workflows, la table `sales`, `fetch_card_details`.
+  Les deux crons sont donc actifs côté GitHub (planning pris en compte dès
+  le push), mais vont échouer tant que l'étape suivante n'est pas faite.
+- **Reste à faire côté GitHub avant que ça tourne pour de vrai** : ajouter les
+  secrets du repo (Settings > Secrets and variables > Actions)
+  `APITCG_API_KEY` et `DATABASE_URL` (le pooler Supabase, pas la connexion
+  directe — cf. §11 infra). Sans ça, le premier run planifié (ou lancé à la
+  main via `workflow_dispatch`) échoue faute de credentials. JustTCG n'est
+  pas appelé par le cron (toujours en pause, reprise manuelle uniquement).
 - Chaque sync est déjà idempotente (upsert / `ON CONFLICT DO NOTHING`) : un
   run manqué ou rejoué ne crée pas de doublons — vérifié en conditions
   réelles pour `sales` aussi.
