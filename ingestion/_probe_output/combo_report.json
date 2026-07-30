@@ -1,0 +1,146 @@
+[
+  {
+    "tcg": "one-piece",
+    "set": "Set Sail Deck Set",
+    "product_type": "sealed",
+    "total_products": 2,
+    "with_tcgplayer_id": 2,
+    "matched_in_justtcg": 2,
+    "matched_with_history": 1
+  },
+  {
+    "tcg": "one-piece",
+    "set": "Set Sail Deck Set",
+    "product_type": "card",
+    "total_products": 0,
+    "with_tcgplayer_id": 0,
+    "matched_in_justtcg": 0,
+    "matched_with_history": 0
+  },
+  {
+    "tcg": "one-piece",
+    "set": "The World's Strongest Warriors",
+    "product_type": "sealed",
+    "total_products": 7,
+    "with_tcgplayer_id": 7,
+    "matched_in_justtcg": 5,
+    "matched_with_history": 5
+  },
+  {
+    "tcg": "one-piece",
+    "set": "The World's Strongest Warriors",
+    "product_type": "card",
+    "total_products": 10,
+    "with_tcgplayer_id": 10,
+    "matched_in_justtcg": 0,
+    "matched_with_history": 0
+  },
+  {
+    "tcg": "pokemon",
+    "set": "ME: 30th Celebration",
+    "product_type": "sealed",
+    "total_products": 35,
+    "with_tcgplayer_id": 35,
+    "matched_in_justtcg": 29,
+    "matched_with_history": 29
+  },
+  {
+    "tcg": "pokemon",
+    "set": "ME: 30th Celebration",
+    "product_type": "card",
+    "total_products": 15,
+    "with_tcgplayer_id": 15,
+    "matched_in_justtcg": 15,
+    "matched_with_history": 0
+  },
+  {
+    "tcg": "pokemon",
+    "set": "Alternate Art Promos",
+    "product_type": "sealed",
+    "total_products": 1,
+    "with_tcgplayer_id": 1,
+    "matched_in_justtcg": 1,
+    "matched_with_history": 1
+  },
+  {
+    "tcg": "pokemon",
+    "set": "Alternate Art Promos",
+    "product_type": "card",
+    "total_products": 15,
+    "with_tcgplayer_id": 15,
+    "matched_in_justtcg": 15,
+    "matched_with_history": 15
+  },
+  {
+    "tcg": "pokemon",
+    "set": "Blister Exclusives",
+    "product_type": "sealed",
+    "total_products": 0,
+    "with_tcgplayer_id": 0,
+    "matched_in_justtcg": 0,
+    "matched_with_history": 0
+  },
+  {
+    "tcg": "pokemon",
+    "set": "Blister Exclusives",
+    "product_type": "card",
+    "total_products": 15,
+    "with_tcgplayer_id": 15,
+    "matched_in_justtcg": 15,
+    "matched_with_history": 15
+  },
+  {
+    "tcg": "pokemon",
+    "set": "Burger King Promos",
+    "product_type": "sealed",
+    "total_products": 0,
+    "with_tcgplayer_id": 0,
+    "matched_in_justtcg": 0,
+    "matched_with_history": 0
+  },
+  {
+    "tcg": "pokemon",
+    "set": "Burger King Promos",
+    "product_type": "card",
+    "total_products": 15,
+    "with_tcgplayer_id": 15,
+    "matched_in_justtcg": 15,
+    "matched_with_history": 15
+  },
+  {
+    "tcg": "pokemon",
+    "set": "First Partner Pack",
+    "product_type": "sealed",
+    "total_products": 9,
+    "with_tcgplayer_id": 9,
+    "matched_in_justtcg": 9,
+    "matched_with_history": 9
+  },
+  {
+    "tcg": "pokemon",
+    "set": "First Partner Pack",
+    "product_type": "card",
+    "total_products": 15,
+    "with_tcgplayer_id": 15,
+    "matched_in_justtcg": 15,
+    "matched_with_history": 15
+  },
+  {
+    "tcg": "pokemon",
+    "set": "Miscellaneous Cards & Products",
+    "product_type": "sealed",
+    "total_products": 896,
+    "with_tcgplayer_id": 896,
+    "matched_in_justtcg": 896,
+    "matched_with_history": 688
+  },
+  {
+    "tcg": "pokemon",
+    "set": "Miscellaneous Cards & Products",
+    "product_type": "card",
+    "total_products": 15,
+    "with_tcgplayer_id": 15,
+    "matched_in_justtcg": 15,
+    "matched_with_history": 14
+  }
+]
