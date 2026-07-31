@@ -50,6 +50,21 @@ CREATE TABLE sales (
   UNIQUE (marketplace, external_sale_id)
 );
 
+-- Volume d'échange quotidien : agrégat de `sales` (nb de ventes + $ total),
+-- même grain (index_code, captured_at) que index_values mais pas de
+-- chaînage -- chaque jour est indépendant. Alimente une future pondération
+-- par volume de l'indice de prix (cf. handoff §8) ; couverture limitée aux
+-- singles des sets récents pour l'instant (même scope que `sales`).
+CREATE TABLE IF NOT EXISTS index_volume (
+  id            BIGSERIAL PRIMARY KEY,
+  index_code    TEXT NOT NULL,
+  captured_at   DATE NOT NULL,
+  sales_count   INTEGER NOT NULL,
+  sales_value   NUMERIC(14,2) NOT NULL,
+  created_at    TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (index_code, captured_at)
+);
+
 -- Indice calculé : l'output, ce que le front lit
 CREATE TABLE index_values (
   id            BIGSERIAL PRIMARY KEY,

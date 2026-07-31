@@ -22,6 +22,13 @@ deux opérations PriceCharting (cf. pricecharting.py) :
 JustTCG n'est volontairement pas appelé ici : en pause depuis l'incident 401
 du 2026-07-29 (cf. mémoire projet), reprise à la main quand voulu via
 `python -m ingestion.sources.justtcg`.
+
+Après la sync, enchaîne aussi le calcul des indices (`index/calculate.py`)
+et, sur le run --grades seulement, du volume (`index/volume.py`) -- pour que
+l'historique de `index_values`/`index_volume` s'accumule tout seul, comme
+`price_snapshots`. Le calcul de volume est sauté sur le run quotidien : il
+lit `sales`, qui n'est mise à jour que par le run --grades (3x/semaine),
+recalculer sur des données inchangées serait juste du travail perdu.
 """
 import argparse
 import sys
@@ -29,6 +36,9 @@ import time
 
 from dotenv import load_dotenv
 
+from index import calculate as index_calculate
+from index import volume as index_volume
+from index.methodology import INDEX_DEFINITIONS
 from ingestion.sources import apitcg, pricecharting
 from shared.db import get_connection
 
@@ -58,6 +68,35 @@ def run_price_sync(fetch_grades: bool) -> list[dict]:
         for r in errors:
             print(f"  {r['set_code']}: {r['error']}")
     return errors
+
+
+def run_index_calculation() -> None:
+    """Recalcule tous les indices de prix (cf. index/methodology.py) à partir
+    des prix qu'on vient de synchroniser. Tourne à chaque run (quotidien et
+    --grades) puisque `price_snapshots` est mise à jour par les deux."""
+    print("\n=== Calcul des indices de prix ===")
+    conn = get_connection()
+    try:
+        for code in sorted(INDEX_DEFINITIONS):
+            definition = INDEX_DEFINITIONS[code]
+            n = index_calculate.calculate_index(conn, code, definition["tcg"], definition["category"])
+            print(f"  {code}: {n} jour(s) calculé(s)." if n else f"  {code}: aucune donnée.")
+    finally:
+        conn.close()
+
+
+def run_volume_calculation() -> None:
+    """Recalcule le volume de ventes (cf. index/volume.py) à partir de
+    `sales`. Seulement appelé sur le run --grades, cf. docstring du module."""
+    print("\n=== Calcul du volume de ventes ===")
+    conn = get_connection()
+    try:
+        for code in sorted(INDEX_DEFINITIONS):
+            definition = INDEX_DEFINITIONS[code]
+            n = index_volume.calculate_volume(conn, code, definition["tcg"], definition["category"])
+            print(f"  {code}: {n} jour(s) de volume calculé(s)." if n else f"  {code}: aucune vente.")
+    finally:
+        conn.close()
 
 
 def print_storage_usage() -> None:
@@ -110,6 +149,19 @@ def main() -> int:
     except Exception as exc:
         had_errors = True
         print(f"\n!! Erreur pendant la sync prix : {exc}")
+
+    try:
+        run_index_calculation()
+    except Exception as exc:
+        had_errors = True
+        print(f"\n!! Erreur pendant le calcul des indices : {exc}")
+
+    if args.grades:
+        try:
+            run_volume_calculation()
+        except Exception as exc:
+            had_errors = True
+            print(f"\n!! Erreur pendant le calcul du volume : {exc}")
 
     print_storage_usage()
 
