@@ -33,6 +33,7 @@ recouper un jour, hors scope de ce premier passage).
 import re
 import time
 import unicodedata
+import zlib
 from datetime import date, datetime
 
 import requests
@@ -802,36 +803,66 @@ def _tcg_from_set_code(set_code: str) -> str:
     raise ValueError(f"Impossible de déduire le tcg pour set_code={set_code!r}")
 
 
-def _recent_set_codes(tcg: str | None, since_months: int) -> set:
+def _set_codes_by_age(tcg: str | None, min_age_months: int | None, max_age_months: int | None) -> set:
+    """set_code dont au moins un item a une `release_date` dans la tranche d'âge
+    [min_age_months, max_age_months] (bornes en mois, `None` = pas de limite de
+    ce côté). Généralise l'ancien `_recent_set_codes` (qui ne posait qu'une
+    borne haute) pour porter le système de paliers par âge de set (cf.
+    orchestrator.py TIERS)."""
     conn = get_connection()
     try:
         with conn.cursor() as cur:
-            where = ["release_date >= (CURRENT_DATE - %s * INTERVAL '1 month')"]
-            params = [since_months]
+            where = []
+            params = []
+            if max_age_months is not None:
+                where.append("release_date >= (CURRENT_DATE - %s * INTERVAL '1 month')")
+                params.append(max_age_months)
+            if min_age_months is not None:
+                where.append("release_date < (CURRENT_DATE - %s * INTERVAL '1 month')")
+                params.append(min_age_months)
             if tcg:
                 where.append("tcg = %s")
                 params.append(tcg)
-            cur.execute(f"SELECT DISTINCT set_code FROM items WHERE {' AND '.join(where)}", params)
+            where_sql = " AND ".join(where) if where else "TRUE"
+            cur.execute(f"SELECT DISTINCT set_code FROM items WHERE {where_sql}", params)
             return {r[0] for r in cur.fetchall()}
     finally:
         conn.close()
 
 
+def _slice_set_codes(set_codes, slice_index: int, num_slices: int) -> set:
+    """Découpe stable (pas aléatoire, pas dépendante de l'ordre) : un set_code
+    tombe toujours dans la même tranche d'une semaine à l'autre, via un hash
+    déterministe (`zlib.crc32`, contrairement au `hash()` builtin qui varie
+    d'un run Python à l'autre). Sert à étaler le palier vintage sur plusieurs
+    semaines plutôt que de le taper en un seul run impossible à faire tenir
+    en 6h (cf. mémoire/handoff sur le système de paliers)."""
+    return {sc for sc in set_codes if zlib.crc32(sc.encode()) % num_slices == slice_index}
+
+
 def sync_all_mapped_sets(
-    tcg: str | None = None, fetch_grades: bool = False, since_months: int | None = None,
+    tcg: str | None = None,
+    fetch_grades: bool = False,
+    min_age_months: int | None = None,
+    max_age_months: int | None = None,
+    vintage_slice: int | None = None,
+    vintage_slices: int | None = None,
 ) -> list[dict]:
-    """Boucle sur les set_code de PRICECHARTING_SET_SLUGS (filtrés sur `tcg` et,
-    si fourni, sur `since_months` — n'inclut que les sets dont au moins un item
-    est sorti dans les N derniers mois), avec pause polie entre deux pages.
-    Une erreur sur un set (404, slug faux...) est capturée et reportée plutôt
-    que d'interrompre le run."""
+    """Boucle sur les set_code de PRICECHARTING_SET_SLUGS, filtrés sur `tcg` et,
+    si fournies, sur une tranche d'âge [min_age_months, max_age_months] (cf.
+    `_set_codes_by_age`) puis sur une rotation `vintage_slice`/`vintage_slices`
+    (cf. `_slice_set_codes`), avec pause polie entre deux pages. Une erreur sur
+    un set (404, slug faux...) est capturée et reportée plutôt que d'interrompre
+    le run."""
     set_codes = [
         sc for sc in PRICECHARTING_SET_SLUGS
         if tcg is None or _tcg_from_set_code(sc) == tcg
     ]
-    if since_months is not None:
-        recent = _recent_set_codes(tcg, since_months)
-        set_codes = [sc for sc in set_codes if sc in recent]
+    if min_age_months is not None or max_age_months is not None:
+        in_range = _set_codes_by_age(tcg, min_age_months, max_age_months)
+        set_codes = [sc for sc in set_codes if sc in in_range]
+    if vintage_slice is not None:
+        set_codes = sorted(_slice_set_codes(set_codes, vintage_slice, vintage_slices))
 
     results = []
     for i, set_code in enumerate(set_codes):
@@ -875,8 +906,12 @@ def main():
         ),
     )
     parser.add_argument(
-        "--since-months", type=int, default=None,
+        "--max-age-months", type=int, default=None,
         help="Mode bulk uniquement : ne garder que les sets avec un item sorti il y a au plus N mois.",
+    )
+    parser.add_argument(
+        "--min-age-months", type=int, default=None,
+        help="Mode bulk uniquement : ne garder que les sets dont le dernier item est sorti il y a plus de N mois.",
     )
     args = parser.parse_args()
 
@@ -895,8 +930,14 @@ def main():
         return
 
     scope = args.tcg or "tous"
-    print(f"== Sync PriceCharting (tcg={scope}, fetch_grades={args.fetch_grades}, since_months={args.since_months}) ==")
-    results = sync_all_mapped_sets(args.tcg, fetch_grades=args.fetch_grades, since_months=args.since_months)
+    print(
+        f"== Sync PriceCharting (tcg={scope}, fetch_grades={args.fetch_grades}, "
+        f"min_age_months={args.min_age_months}, max_age_months={args.max_age_months}) =="
+    )
+    results = sync_all_mapped_sets(
+        args.tcg, fetch_grades=args.fetch_grades,
+        min_age_months=args.min_age_months, max_age_months=args.max_age_months,
+    )
     errors = [r for r in results if r["error"]]
     ok = [r for r in results if not r["error"]]
     total_scraped = sum(r["rows_scraped"] for r in ok)

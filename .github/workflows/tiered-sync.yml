@@ -1,0 +1,66 @@
+name: Tiered grades & sales sync
+
+# Gradation PSA7-10 + historique de ventes individuelles (eBay/TCGPlayer/...)
+# via PriceCharting -- système de paliers par âge de set (cf.
+# ingestion/orchestrator.py TIERS), pas une fenêtre fixe unique : plus un set
+# est récent, plus il est vérifié souvent (c'est là que se joue le pouls du
+# marché, et que le plafond ~30 ventes/palier PriceCharting risque de faire
+# perdre des ventes si on espace trop). Un seul workflow, 4 déclencheurs cron
+# -- chacun mappé à un palier via `github.event.schedule` (cf. étape
+# "Détermine le palier" ci-dessous), remplace l'ancien grades-and-sales.yml
+# (fenêtre fixe 18 mois, plus assez pour couvrir le catalogue complet).
+#
+# Palier vintage (36+ mois, ~77% du catalogue Pokémon à lui seul) trop gros
+# pour un seul run même à sa propre fréquence : découpé en 8 tranches
+# tournantes réparties sur les runs hebdomadaires -- couverture complète tous
+# les ~2 mois (cf. ingestion/orchestrator.py::_current_vintage_slice).
+#
+# Le référentiel est déjà à jour via daily-sync.yml (quotidien), donc
+# --skip-items partout ici.
+on:
+  schedule:
+    - cron: "0 4 * * *"      # hot : quotidien, 04:00 UTC
+    - cron: "0 3 * * 1,3,5"  # recent : lundi/mercredi/vendredi, 03:00 UTC
+    - cron: "0 3 * * 0"      # established : dimanche, 03:00 UTC
+    - cron: "0 3 * * 6"      # vintage : samedi, 03:00 UTC
+  workflow_dispatch:
+    inputs:
+      tier:
+        description: "Palier à synchroniser (déclenchement manuel uniquement)"
+        required: true
+        type: choice
+        options: [hot, recent, established, vintage]
+        default: hot
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Détermine le palier
+        id: tier
+        run: |
+          if [ -n "${{ github.event.inputs.tier }}" ]; then
+            echo "value=${{ github.event.inputs.tier }}" >> "$GITHUB_OUTPUT"
+          else
+            case "${{ github.event.schedule }}" in
+              "0 4 * * *") echo "value=hot" >> "$GITHUB_OUTPUT" ;;
+              "0 3 * * 1,3,5") echo "value=recent" >> "$GITHUB_OUTPUT" ;;
+              "0 3 * * 0") echo "value=established" >> "$GITHUB_OUTPUT" ;;
+              "0 3 * * 6") echo "value=vintage" >> "$GITHUB_OUTPUT" ;;
+              *) echo "Palier inconnu pour le cron '${{ github.event.schedule }}'" >&2; exit 1 ;;
+            esac
+          fi
+
+      - run: python -m ingestion.orchestrator --tier ${{ steps.tier.outputs.value }} --skip-items
+        env:
+          APITCG_API_KEY: ${{ secrets.APITCG_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

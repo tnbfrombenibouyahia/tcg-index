@@ -7,32 +7,42 @@ Chaque source garde son propre CLI (`python -m ingestion.sources.X`) pour un
 usage manuel/debug ; ce script est l'enchaînement pensé pour un cron
 (GitHub Actions, cf. .github/workflows/).
 
-Deux cadences distinctes, pas une seule, à cause du coût très différent des
-deux opérations PriceCharting (cf. pricecharting.py) :
-- quotidien : référentiel (API TCG) + prix ungraded sur tous les sets mappés
-  (1 requête HTTP par page de set).
-- 2-3x/semaine (`--grades`) : gradation PSA + historique de ventes
-  individuelles eBay/TCGPlayer/... sur les sets récents seulement (1 requête
-  HTTP PAR CARTE en plus -- tout le catalogue prendrait ~12h, cf. mémoire
-  projet). Les deux infos viennent de la même page carte, donc de la même
-  requête. Plus fréquent qu'un simple hebdo car la table de ventes
-  PriceCharting plafonne à ~30 lignes visibles par palier -- trop espacé,
-  on perd des ventes (cf. mémoire projet "sales_volume_tracking").
+Deux natures de sync, pas une seule, à cause du coût très différent des deux
+opérations PriceCharting (cf. pricecharting.py) :
+- quotidien, tous les sets mappés : référentiel (API TCG) + prix ungraded
+  (1 requête HTTP par page de set -- pas cher, ~226 sets en 30 min).
+- `--tier` : gradation PSA + historique de ventes individuelles eBay/
+  TCGPlayer/... (1 requête HTTP PAR CARTE en plus -- tout le catalogue
+  (~34k singles) prendrait ~35h, impossible à faire tenir dans un run,
+  même sans limite de coût -- cf. mémoire "grading_tiers"/"sales_volume_tracking").
+
+Système de paliers par âge de set (TIERS ci-dessous), pas une fenêtre fixe :
+plus un set est récent, plus il est vérifié souvent -- c'est là que se joue
+le pouls du marché (hype, nouveaux tirages) et que le plafond ~30 ventes/
+palier PriceCharting risque de faire perdre des ventes si on espace trop.
+Le palier "vintage" (36+ mois, ~77% du catalogue Pokémon à lui seul) est en
+plus trop gros pour un seul run même à sa propre fréquence : il est découpé
+en tranches tournantes (`rotation_slices`) réparties sur plusieurs semaines,
+cf. `_current_vintage_slice` et `pricecharting._slice_set_codes`. Les bornes
+d'âge se calculent depuis `items.release_date` (rempli à 100% pour les deux
+TCG par le sync référentiel quotidien) -- pas de liste de sets codée en dur,
+le système suit tout seul les nouvelles sorties.
 
 JustTCG n'est volontairement pas appelé ici : en pause depuis l'incident 401
 du 2026-07-29 (cf. mémoire projet), reprise à la main quand voulu via
 `python -m ingestion.sources.justtcg`.
 
 Après la sync, enchaîne aussi le calcul des indices (`index/calculate.py`)
-et, sur le run --grades seulement, du volume (`index/volume.py`) -- pour que
+et, sur un run `--tier` seulement, du volume (`index/volume.py`) -- pour que
 l'historique de `index_values`/`index_volume` s'accumule tout seul, comme
 `price_snapshots`. Le calcul de volume est sauté sur le run quotidien : il
-lit `sales`, qui n'est mise à jour que par le run --grades (3x/semaine),
-recalculer sur des données inchangées serait juste du travail perdu.
+lit `sales`, qui n'est mise à jour que par un run `--tier`, recalculer sur
+des données inchangées serait juste du travail perdu.
 """
 import argparse
 import sys
 import time
+from datetime import date
 
 from dotenv import load_dotenv
 
@@ -44,9 +54,25 @@ from shared.db import get_connection
 
 TCGS = ["pokemon", "one-piece"]
 
-# Fenêtre "sets récents" pour la gradation PSA hebdo -- même valeur que le
-# scope déjà en place (cf. mémoire projet "grading_tiers").
-GRADES_SINCE_MONTHS = 18
+# Paliers par âge de set (bornes en mois, `None` = pas de limite de ce côté).
+# Décidés avec la répartition réelle du catalogue (cf. mémoire projet) :
+# vintage (36+ mois) = ~77% du catalogue Pokémon à lui seul, d'où la rotation
+# sur 8 tranches (couverture complète tous les ~2 mois) plutôt qu'un run
+# direct qui prendrait ~22h.
+TIERS = {
+    "hot":         {"min_age_months": None, "max_age_months": 6},
+    "recent":      {"min_age_months": 6,    "max_age_months": 18},
+    "established": {"min_age_months": 18,   "max_age_months": 36},
+    "vintage":     {"min_age_months": 36,   "max_age_months": None, "rotation_slices": 8},
+}
+
+
+def _current_vintage_slice(num_slices: int) -> int:
+    """Rotation stable dans le temps (pas aléatoire) : `date.today().toordinal()
+    // 7` incrémente en continu d'une semaine sur l'autre (contrairement à un
+    numéro de semaine ISO qui repart à 1 chaque année), donc le cycle de
+    `num_slices` semaines ne saute jamais et n'a besoin d'aucun état stocké."""
+    return (date.today().toordinal() // 7) % num_slices
 
 
 def run_items_sync() -> None:
@@ -57,11 +83,23 @@ def run_items_sync() -> None:
         print(f"   {total} produits upsertés.")
 
 
-def run_price_sync(fetch_grades: bool) -> list[dict]:
-    label = "prix + gradation PSA + ventes (sets récents)" if fetch_grades else "prix (tous les sets mappés)"
-    print(f"\n=== PriceCharting : {label} ===")
-    since_months = GRADES_SINCE_MONTHS if fetch_grades else None
-    results = pricecharting.sync_all_mapped_sets(fetch_grades=fetch_grades, since_months=since_months)
+def run_price_sync(tier: str | None) -> list[dict]:
+    if tier is None:
+        print("\n=== PriceCharting : prix (tous les sets mappés) ===")
+        results = pricecharting.sync_all_mapped_sets(fetch_grades=False)
+    else:
+        bounds = TIERS[tier]
+        vintage_slices = bounds.get("rotation_slices")
+        vintage_slice = _current_vintage_slice(vintage_slices) if vintage_slices else None
+        slice_label = f", tranche {vintage_slice + 1}/{vintage_slices}" if vintage_slices else ""
+        print(f"\n=== PriceCharting : prix + gradation PSA + ventes (palier {tier}{slice_label}) ===")
+        results = pricecharting.sync_all_mapped_sets(
+            fetch_grades=True,
+            min_age_months=bounds["min_age_months"],
+            max_age_months=bounds["max_age_months"],
+            vintage_slice=vintage_slice,
+            vintage_slices=vintage_slices,
+        )
     errors = [r for r in results if r.get("error")]
     if errors:
         print(f"\n{len(errors)} set(s) en erreur :")
@@ -73,7 +111,7 @@ def run_price_sync(fetch_grades: bool) -> list[dict]:
 def run_index_calculation() -> None:
     """Recalcule tous les indices de prix (cf. index/methodology.py) à partir
     des prix qu'on vient de synchroniser. Tourne à chaque run (quotidien et
-    --grades) puisque `price_snapshots` est mise à jour par les deux."""
+    --tier) puisque `price_snapshots` est mise à jour par les deux."""
     print("\n=== Calcul des indices de prix ===")
     conn = get_connection()
     try:
@@ -87,7 +125,7 @@ def run_index_calculation() -> None:
 
 def run_volume_calculation() -> None:
     """Recalcule le volume de ventes (cf. index/volume.py) à partir de
-    `sales`. Seulement appelé sur le run --grades, cf. docstring du module."""
+    `sales`. Seulement appelé sur un run --tier, cf. docstring du module."""
     print("\n=== Calcul du volume de ventes ===")
     conn = get_connection()
     try:
@@ -120,16 +158,17 @@ def main() -> int:
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--grades", action="store_true",
+        "--tier", choices=sorted(TIERS), default=None,
         help=(
-            f"En plus des prix, récupère la gradation PSA et l'historique de ventes pour les "
-            f"sets sortis dans les {GRADES_SINCE_MONTHS} derniers mois. Coûteux (1 requête/carte) : "
-            f"pensé pour un cron 2-3x/semaine, pas quotidien."
+            "En plus des prix, récupère la gradation PSA et l'historique de ventes (coûteux, "
+            "1 requête/carte) pour les sets du palier choisi (cf. TIERS -- âge des sets, palier "
+            "vintage découpé en tranches tournantes). Omis => juste le prix ungraded sur tout le "
+            "catalogue mappé, comme le run quotidien."
         ),
     )
     parser.add_argument(
         "--skip-items", action="store_true",
-        help="Saute la sync référentiel API TCG (le run grades/ventes n'a pas besoin de la refaire, déjà faite par le run quotidien).",
+        help="Saute la sync référentiel API TCG (un run --tier n'a pas besoin de la refaire, déjà faite par le run quotidien).",
     )
     args = parser.parse_args()
 
@@ -144,7 +183,7 @@ def main() -> int:
             print(f"\n!! Erreur pendant la sync référentiel : {exc}")
 
     try:
-        errors = run_price_sync(fetch_grades=args.grades)
+        errors = run_price_sync(tier=args.tier)
         had_errors = had_errors or bool(errors)
     except Exception as exc:
         had_errors = True
@@ -156,7 +195,7 @@ def main() -> int:
         had_errors = True
         print(f"\n!! Erreur pendant le calcul des indices : {exc}")
 
-    if args.grades:
+    if args.tier is not None:
         try:
             run_volume_calculation()
         except Exception as exc:
