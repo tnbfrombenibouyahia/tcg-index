@@ -65,6 +65,42 @@ CREATE TABLE IF NOT EXISTS index_volume (
   UNIQUE (index_code, captured_at)
 );
 
+-- Ratio EV (Expected Value) d'un scellé "Booster Box" : compare son prix
+-- marché à la valeur de ses singles en loose (ungraded) du même set, pour
+-- repérer les scellés potentiellement sous-évalués (cf. discussion
+-- 2026-07-31, index/sealed_ev.py pour la méthodo complète). Un seul scellé
+-- retenu par set (le Booster Box standard, pas Case/Half/ETB/Tin). Deux
+-- modes plutôt qu'un vrai calcul d'EV par pack : pas de données de
+-- pull-rate disponibles, donc ce sont des signaux comparatifs entre sets,
+-- pas une espérance statistique.
+--
+-- box_price = médiane des 3 dernières ventes individuelles (`sales`), pas
+-- l'agrégat PriceCharting seul -- cf. incident Deoxys Booster Box (agrégat
+-- corrompu par une vente d'édition italienne mal classée sur un item peu
+-- liquide). box_reliability_score (0-100) quantifie la confiance dans ce
+-- prix : dispersion entre les 3 ventes, étalement temporel, nombre de
+-- ventes trouvées (cf. sealed_ev.py pour la formule). box_price_source
+-- indique quand on retombe sur l'agrégat faute de ventes individuelles
+-- ('pricecharting_aggregate' vs 'sales_median').
+CREATE TABLE IF NOT EXISTS sealed_ev (
+  id                    BIGSERIAL PRIMARY KEY,
+  item_id               BIGINT NOT NULL REFERENCES items(id),  -- le Booster Box
+  captured_at           DATE NOT NULL,
+  box_price             NUMERIC(12,2) NOT NULL,
+  box_price_source      TEXT NOT NULL DEFAULT 'pricecharting_aggregate',
+  box_sales_used        INTEGER NOT NULL DEFAULT 0,
+  box_dispersion        NUMERIC(10,4),
+  box_span_days         INTEGER,
+  box_reliability_score NUMERIC(5,1),
+  singles_count         INTEGER NOT NULL,        -- nb de singles du set trouvés (transparence/QA)
+  singles_total_value   NUMERIC(14,2) NOT NULL,  -- somme de tous les singles (loose)
+  singles_top10_value   NUMERIC(14,2) NOT NULL,  -- somme des 10 singles les plus chers
+  ev_ratio_total        NUMERIC(10,4) NOT NULL,  -- singles_total_value / box_price
+  ev_ratio_top10        NUMERIC(10,4) NOT NULL,  -- singles_top10_value / box_price
+  created_at            TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (item_id, captured_at)
+);
+
 -- Indice calculé : l'output, ce que le front lit
 CREATE TABLE index_values (
   id            BIGSERIAL PRIMARY KEY,

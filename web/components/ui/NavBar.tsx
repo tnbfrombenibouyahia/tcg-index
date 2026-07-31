@@ -7,6 +7,7 @@ import Link from "next/link";
 const PRIMARY_NAV = [
   { href: "/", label: "Accueil", icon: <HomeIcon /> },
   { href: "/transactions", label: "Transactions", icon: <TransactionsIcon /> },
+  { href: "/sealed-ev", label: "Scellés sous-évalués", icon: <BoxIcon /> },
 ];
 
 export function NavBar() {
@@ -139,6 +140,15 @@ function TransactionsIcon() {
       <polyline points="7 16 3 12 7 8" />
       <polyline points="17 8 21 12 17 16" />
       <line x1="3" y1="12" x2="21" y2="12" />
+    </svg>
+  );
+}
+function BoxIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 8 12 3 3 8v8l9 5 9-5V8z" />
+      <path d="M3 8l9 5 9-5" />
+      <path d="M12 13v8" />
     </svg>
   );
 }

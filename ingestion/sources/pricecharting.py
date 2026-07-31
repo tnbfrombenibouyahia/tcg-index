@@ -662,14 +662,18 @@ def sync_price_snapshots_for_set(
 ) -> dict:
     """Scrape la page de set PriceCharting mappée à `set_code` et archive les prix matchés.
 
-    `fetch_grades=True` : pour chaque single matché, va aussi chercher, sur sa
-    page carte individuelle (1 requête HTTP de plus par carte — coûteux à
-    grande échelle, cf. mémoire projet sur le scope "sets récents") :
-    - les prix PSA7-10 (-> `price_snapshots`)
-    - l'historique de ventes individuelles eBay/TCGPlayer (-> `sales`)
-    Les deux viennent de la même page, donc de la même requête HTTP
-    (cf. `fetch_card_details`).
-    `max_cards` plafonne le nombre de cartes traitées par set (utile pour tester
+    `fetch_grades=True` : pour chaque single ET chaque scellé matchés, va aussi
+    chercher, sur sa page produit individuelle (1 requête HTTP de plus par item
+    — coûteux à grande échelle, cf. mémoire projet sur le scope "sets récents") :
+    - pour les singles seulement : les prix PSA7-10 (-> `price_snapshots`)
+    - pour les deux : l'historique de ventes individuelles eBay/TCGPlayer
+      (-> `sales`, filtré à grade='ungraded' pour le scellé qui n'a pas de
+      gradation). Sert à calculer un prix de box par médiane des dernières
+      ventes plutôt que l'agrégat PriceCharting seul, cf. index/sealed_ev.py --
+      un agrégat basé sur une seule vente mal classée (mauvaise édition/langue)
+      peut être très éloigné du marché réel sur un produit à faible volume.
+    Tout vient de la même page, donc de la même requête HTTP (cf. `fetch_card_details`).
+    `max_cards` plafonne le nombre d'items traités par set (utile pour tester
     ou pour un run à budget limité).
     """
     slug = PRICECHARTING_SET_SLUGS.get(set_code)
@@ -738,14 +742,19 @@ def sync_price_snapshots_for_set(
         sale_rows_written = 0
         if fetch_grades:
             category_by_item_id = {it["id"]: it["category"] for it in items}
-            single_rows = [
+            # Scellé inclus depuis 2026-07-31 (cf. discussion ratio EV) : sert à
+            # calculer un prix de box par médiane des dernières ventes plutôt que
+            # de faire confiance à l'agrégat PriceCharting seul (cf. sealed_ev.py) --
+            # un scellé n'a jamais de gradation PSA, donc seul le tab "used"
+            # (grade='ungraded') a un sens pour lui, filtré plus bas.
+            detail_rows = [
                 (item_id, row) for item_id, row in canonical_rows.items()
-                if category_by_item_id.get(item_id) == "single" and row.get("url")
+                if category_by_item_id.get(item_id) in ("single", "sealed") and row.get("url")
             ]
             if max_cards is not None:
-                single_rows = single_rows[:max_cards]
+                detail_rows = detail_rows[:max_cards]
             with conn.cursor() as cur:
-                for i, (item_id, row) in enumerate(single_rows):
+                for i, (item_id, row) in enumerate(detail_rows):
                     if i > 0:
                         time.sleep(MIN_SECONDS_BETWEEN_REQUESTS)
                     try:
@@ -754,21 +763,25 @@ def sync_price_snapshots_for_set(
                         print(f"    ! erreur gradation/ventes {row['title']}: {exc}")
                         continue
                     cards_graded += 1
+                    is_sealed = category_by_item_id.get(item_id) == "sealed"
 
-                    # 'ungraded' déjà écrit ci-dessus depuis la page de set, pas la peine de le redemander
-                    grade_price_rows = [
-                        (item_id, today, price, "USD", None, "pricecharting", grade)
-                        for grade, price in details["grades"].items() if grade != "ungraded"
-                    ]
-                    if grade_price_rows:
-                        execute_values(cur, _UPSERT_PRICE_SNAPSHOTS_WITH_GRADE_SQL, grade_price_rows)
-                        conn.commit()
-                        grade_rows_written += len(grade_price_rows)
+                    # 'ungraded' déjà écrit ci-dessus depuis la page de set, pas la
+                    # peine de le redemander ; pas de gradation pour le scellé.
+                    if not is_sealed:
+                        grade_price_rows = [
+                            (item_id, today, price, "USD", None, "pricecharting", grade)
+                            for grade, price in details["grades"].items() if grade != "ungraded"
+                        ]
+                        if grade_price_rows:
+                            execute_values(cur, _UPSERT_PRICE_SNAPSHOTS_WITH_GRADE_SQL, grade_price_rows)
+                            conn.commit()
+                            grade_rows_written += len(grade_price_rows)
 
                     sale_rows = [
                         (item_id, s["sale_date"], s["price"], "USD", s["grade"],
                          s["marketplace"], s["external_sale_id"], s["title"], "pricecharting")
                         for s in details["sales"]
+                        if not is_sealed or s["grade"] == "ungraded"
                     ]
                     if sale_rows:
                         execute_values(cur, _UPSERT_SALES_SQL, sale_rows)

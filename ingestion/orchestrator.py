@@ -33,11 +33,12 @@ du 2026-07-29 (cf. mémoire projet), reprise à la main quand voulu via
 `python -m ingestion.sources.justtcg`.
 
 Après la sync, enchaîne aussi le calcul des indices (`index/calculate.py`)
-et, sur un run `--tier` seulement, du volume (`index/volume.py`) -- pour que
-l'historique de `index_values`/`index_volume` s'accumule tout seul, comme
-`price_snapshots`. Le calcul de volume est sauté sur le run quotidien : il
-lit `sales`, qui n'est mise à jour que par un run `--tier`, recalculer sur
-des données inchangées serait juste du travail perdu.
+et le ratio EV des scellés (`index/sealed_ev.py`) -- tous deux à chaque run,
+puisqu'ils ne dépendent que de `price_snapshots`, mise à jour par les deux
+natures de sync. Le volume (`index/volume.py`) est différent : il lit
+`sales`, qui n'est mise à jour que par un run `--tier`, donc n'est recalculé
+que sur ces runs-là (recalculer sur des données inchangées serait du travail
+perdu).
 """
 import argparse
 import sys
@@ -47,6 +48,7 @@ from datetime import date
 from dotenv import load_dotenv
 
 from index import calculate as index_calculate
+from index import sealed_ev as index_sealed_ev
 from index import volume as index_volume
 from index.methodology import INDEX_DEFINITIONS
 from ingestion.sources import apitcg, pricecharting
@@ -123,6 +125,19 @@ def run_index_calculation() -> None:
         conn.close()
 
 
+def run_sealed_ev_calculation() -> None:
+    """Recalcule le ratio EV des scellés Booster Box (cf. index/sealed_ev.py)
+    à partir de `price_snapshots`. Tourne à chaque run comme le calcul
+    d'indice -- ne dépend que du prix, pas de `sales`."""
+    print("\n=== Calcul du ratio EV des scellés ===")
+    conn = get_connection()
+    try:
+        n = index_sealed_ev.calculate_sealed_ev(conn)
+        print(f"  {n} Booster Box(es) mis à jour." if n else "  Aucun Booster Box avec prix + singles trouvé.")
+    finally:
+        conn.close()
+
+
 def run_volume_calculation() -> None:
     """Recalcule le volume de ventes (cf. index/volume.py) à partir de
     `sales`. Seulement appelé sur un run --tier, cf. docstring du module."""
@@ -194,6 +209,12 @@ def main() -> int:
     except Exception as exc:
         had_errors = True
         print(f"\n!! Erreur pendant le calcul des indices : {exc}")
+
+    try:
+        run_sealed_ev_calculation()
+    except Exception as exc:
+        had_errors = True
+        print(f"\n!! Erreur pendant le calcul du ratio EV des scellés : {exc}")
 
     if args.tier is not None:
         try:

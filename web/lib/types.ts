@@ -69,3 +69,23 @@ export interface SalesFiltersResponse {
   sets: SetOption[];
   grades: readonly Grade[];
 }
+
+export type SealedEvMode = "total" | "top10";
+
+export interface SealedEvRow {
+  itemId: number;
+  name: string;
+  imageUrl: string | null;
+  tcg: Tcg;
+  setCode: string | null;
+  capturedAt: string;
+  boxPrice: number;
+  boxPriceSource: "sales_median" | "pricecharting_aggregate";
+  boxSalesUsed: number;
+  boxReliabilityScore: number | null;
+  singlesCount: number;
+  singlesTotalValue: number;
+  singlesTop10Value: number;
+  evRatioTotal: number;
+  evRatioTop10: number;
+}
