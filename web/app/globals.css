@@ -1,0 +1,133 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TCG Index — "Warm Minimalist / Quiet Luxury" Design System
+   Philosophie : Soft UI, champagne chaud, frosted glass, monochrome strict.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Fond global ─────────────────────────────────────────────────────────── */
+  --bg-from: #FAF6F0;        /* blanc cassé chaud */
+  --bg-to:   #F2EBE0;        /* lin crème poudré  */
+
+  /* ── Surfaces / cartes ───────────────────────────────────────────────────── */
+  --surface:          rgba(255, 255, 255, 0.88);
+  --surface-solid:    #FFFFFF;
+  --glass-blur:       blur(20px) saturate(1.4);
+
+  /* ── Palette texte (monochrome chaud) ────────────────────────────────────── */
+  --foreground:          #1A1A1A;   /* quasi-noir chaud — titres, valeurs */
+  --foreground-muted:    #8A8480;   /* métadonnées, labels               */
+  --foreground-subtle:   #B8B2AC;   /* hints, placeholders               */
+
+  /* ── Bordures & ombres ───────────────────────────────────────────────────── */
+  --border:        rgba(26, 26, 26, 0.08);
+  /* Ambient shadow à deux couches : profondeur + halo très diffus */
+  --shadow-card:   0 1px 3px rgba(0,0,0,0.05), 0 8px 32px rgba(0,0,0,0.06);
+  --shadow-tile:   0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.05);
+  --shadow-lift:   0 2px 8px rgba(0,0,0,0.07), 0 16px 48px rgba(0,0,0,0.08);
+
+  /* ── Rayons (smooth rounded) ─────────────────────────────────────────────── */
+  --radius-card:  28px;
+  --radius-tile:  20px;
+  --radius-pill:  9999px;
+
+  /* ── Éléments interactifs (CTA, nav) ─────────────────────────────────────── */
+  --ink:           #121212;   /* noir mat profond — boutons, navbar pill */
+  --ink-text:      #FFFFFF;
+
+  /* ── Données financières ─────────────────────────────────────────────────── */
+  --positive:      #15803d;
+  --negative:      #dc2626;
+  --chart-line:    #1A1A1A;  /* monochrome principal */
+  --chart-fill:    rgba(26, 26, 26, 0.06);
+  --chart-grid:    #EDE7DC;  /* grille champagne très douce */
+  --chart-muted:   #8A8480;
+
+  /* ── Compatibilité variables legacy ─────────────────────────────────────── */
+  --background:         var(--bg-from);
+  --primary:            var(--foreground-muted);
+  --accent:             var(--ink);
+  --muted:              rgba(26,26,26,0.05);
+  --muted-foreground:   var(--foreground-muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Exposition vers Tailwind (v4 @theme inline)
+   ───────────────────────────────────────────────────────────────────────────── */
+@theme inline {
+  --color-background:       var(--bg-from);
+  --color-foreground:       var(--foreground);
+  --color-primary:          var(--foreground-muted);
+  --color-accent:           var(--ink);
+  --color-muted:            var(--muted);
+  --color-muted-foreground: var(--foreground-muted);
+  --color-border:           var(--border);
+  --color-positive:         var(--positive);
+  --color-negative:         var(--negative);
+  --color-surface:          var(--surface-solid);
+  --font-sans:              var(--font-plus-jakarta-sans);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Base
+   ───────────────────────────────────────────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg-from);
+  color: var(--foreground);
+  font-family: var(--font-plus-jakarta-sans), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100dvh;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Utilitaires design system
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Carte frosted-glass */
+.card-glass {
+  background: var(--surface);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+/* Tuile frosted-glass */
+.tile-glass {
+  background: var(--surface);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  border-radius: var(--radius-tile);
+  box-shadow: var(--shadow-tile);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.tile-glass:hover {
+  box-shadow: var(--shadow-lift);
+  transform: translateY(-2px);
+}
+
+/* Pill noire (CTA / nav) */
+.pill-ink {
+  background: var(--ink);
+  color: var(--ink-text);
+  border-radius: var(--radius-pill);
+}
+
+/* Sidebar link hover */
+.sidebar-link:hover {
+  background: rgba(26, 26, 26, 0.05);
+  color: var(--foreground) !important;
+}
+
+/* Button reset */
+button {
+  font-family: inherit;
+}
