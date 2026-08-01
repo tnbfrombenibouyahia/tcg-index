@@ -70,6 +70,38 @@ export interface SalesFiltersResponse {
   grades: readonly Grade[];
 }
 
+export type SyncStep = "items" | "prices" | "grades_sales" | "index" | "sealed_ev" | "volume";
+export type SyncRunStatus = "running" | "success" | "error";
+
+export interface SyncRun {
+  id: number;
+  runType: "daily" | "tier";
+  tier: string | null;
+  step: SyncStep;
+  tcg: Tcg | null;
+  status: SyncRunStatus;
+  startedAt: string;
+  finishedAt: string | null;
+  rowsWritten: number | null;
+  detail: string | null;
+}
+
+export type FreshnessSegment = "items" | "sealed" | "single" | "grading";
+
+export interface FreshnessCell {
+  tcg: Tcg;
+  segment: FreshnessSegment;
+  lastUpdated: string | null;
+  constituents: number | null;
+}
+
+export interface SyncStatusResponse {
+  runningNow: SyncRun[];
+  recentRuns: SyncRun[];
+  freshness: FreshnessCell[];
+  fetchedAt: string;
+}
+
 export type SealedEvMode = "total" | "top10";
 
 export interface SealedEvRow {

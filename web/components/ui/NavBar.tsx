@@ -8,6 +8,7 @@ const PRIMARY_NAV = [
   { href: "/", label: "Accueil", icon: <HomeIcon /> },
   { href: "/transactions", label: "Transactions", icon: <TransactionsIcon /> },
   { href: "/sealed-ev", label: "Scellés sous-évalués", icon: <BoxIcon /> },
+  { href: "/live", label: "Live Market Data", icon: <PulseIcon /> },
 ];
 
 export function NavBar() {
@@ -149,6 +150,13 @@ function BoxIcon() {
       <path d="M21 8 12 3 3 8v8l9 5 9-5V8z" />
       <path d="M3 8l9 5 9-5" />
       <path d="M12 13v8" />
+    </svg>
+  );
+}
+function PulseIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 12h4l2.5-7L14 19l2.5-7H21" />
     </svg>
   );
 }

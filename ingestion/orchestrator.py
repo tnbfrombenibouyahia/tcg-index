@@ -53,6 +53,7 @@ from index import volume as index_volume
 from index.methodology import INDEX_DEFINITIONS
 from ingestion.sources import apitcg, pricecharting
 from shared.db import get_connection
+from shared.sync_log import finish_run, start_run
 
 TCGS = ["pokemon", "one-piece"]
 
@@ -77,31 +78,68 @@ def _current_vintage_slice(num_slices: int) -> int:
     return (date.today().toordinal() // 7) % num_slices
 
 
-def run_items_sync() -> None:
+def run_items_sync(run_type: str) -> None:
     print("\n=== Référentiel (API TCG) ===")
     for tcg in TCGS:
         print(f"-- {tcg} --")
-        total = apitcg.sync_items(tcg)
+        run_id = start_run(run_type, "items", tcg=tcg)
+        try:
+            total = apitcg.sync_items(tcg)
+        except Exception as exc:
+            finish_run(run_id, status="error", detail=str(exc))
+            raise
         print(f"   {total} produits upsertés.")
+        finish_run(run_id, status="success", rows_written=total, detail=f"{total} produits upsertés")
 
 
-def run_price_sync(tier: str | None) -> list[dict]:
-    if tier is None:
-        print("\n=== PriceCharting : prix (tous les sets mappés) ===")
-        results = pricecharting.sync_all_mapped_sets(fetch_grades=False)
-    else:
-        bounds = TIERS[tier]
-        vintage_slices = bounds.get("rotation_slices")
-        vintage_slice = _current_vintage_slice(vintage_slices) if vintage_slices else None
-        slice_label = f", tranche {vintage_slice + 1}/{vintage_slices}" if vintage_slices else ""
-        print(f"\n=== PriceCharting : prix + gradation PSA + ventes (palier {tier}{slice_label}) ===")
-        results = pricecharting.sync_all_mapped_sets(
-            fetch_grades=True,
-            min_age_months=bounds["min_age_months"],
-            max_age_months=bounds["max_age_months"],
-            vintage_slice=vintage_slice,
-            vintage_slices=vintage_slices,
+def run_price_sync(tier: str | None, run_type: str) -> list[dict]:
+    """Un seul appel `sync_all_mapped_sets` couvre les deux TCG à la fois (cf.
+    docstring module) -- on ouvre donc une ligne sync_runs par tcg avant
+    l'appel (pour que le dashboard live voie les deux "en cours" pendant tout
+    l'appel, potentiellement long sur --tier vintage), puis on scinde
+    `results` par tcg après coup pour les refermer avec un décompte propre."""
+    step = "prices" if tier is None else "grades_sales"
+    run_ids = {tcg: start_run(run_type, step, tcg=tcg, tier=tier) for tcg in TCGS}
+
+    try:
+        if tier is None:
+            print("\n=== PriceCharting : prix (tous les sets mappés) ===")
+            results = pricecharting.sync_all_mapped_sets(fetch_grades=False)
+        else:
+            bounds = TIERS[tier]
+            vintage_slices = bounds.get("rotation_slices")
+            vintage_slice = _current_vintage_slice(vintage_slices) if vintage_slices else None
+            slice_label = f", tranche {vintage_slice + 1}/{vintage_slices}" if vintage_slices else ""
+            print(f"\n=== PriceCharting : prix + gradation PSA + ventes (palier {tier}{slice_label}) ===")
+            results = pricecharting.sync_all_mapped_sets(
+                fetch_grades=True,
+                min_age_months=bounds["min_age_months"],
+                max_age_months=bounds["max_age_months"],
+                vintage_slice=vintage_slice,
+                vintage_slices=vintage_slices,
+            )
+    except Exception as exc:
+        for run_id in run_ids.values():
+            finish_run(run_id, status="error", detail=str(exc))
+        raise
+
+    for tcg, run_id in run_ids.items():
+        tcg_results = [r for r in results if pricecharting._tcg_from_set_code(r["set_code"]) == tcg]
+        tcg_errors = [r for r in tcg_results if r.get("error")]
+        rows_written = sum(r.get("rows_matched", 0) for r in tcg_results if not r.get("error"))
+        detail = f"{len(tcg_results)} set(s), {rows_written} prix"
+        if tier is not None:
+            sales_written = sum(r.get("sale_rows_written", 0) for r in tcg_results if not r.get("error"))
+            detail += f", {sales_written} ventes"
+        if tcg_errors:
+            detail += f", {len(tcg_errors)} erreur(s)"
+        finish_run(
+            run_id,
+            status="error" if tcg_errors else "success",
+            rows_written=rows_written,
+            detail=detail,
         )
+
     errors = [r for r in results if r.get("error")]
     if errors:
         print(f"\n{len(errors)} set(s) en erreur :")
@@ -110,46 +148,65 @@ def run_price_sync(tier: str | None) -> list[dict]:
     return errors
 
 
-def run_index_calculation() -> None:
+def run_index_calculation(run_type: str) -> None:
     """Recalcule tous les indices de prix (cf. index/methodology.py) à partir
     des prix qu'on vient de synchroniser. Tourne à chaque run (quotidien et
     --tier) puisque `price_snapshots` est mise à jour par les deux."""
     print("\n=== Calcul des indices de prix ===")
+    run_id = start_run(run_type, "index")
+    total = 0
     conn = get_connection()
     try:
         for code in sorted(INDEX_DEFINITIONS):
             definition = INDEX_DEFINITIONS[code]
             n = index_calculate.calculate_index(conn, code, definition["tcg"], definition["category"])
+            total += n
             print(f"  {code}: {n} jour(s) calculé(s)." if n else f"  {code}: aucune donnée.")
+    except Exception as exc:
+        finish_run(run_id, status="error", detail=str(exc))
+        raise
     finally:
         conn.close()
+    finish_run(run_id, status="success", rows_written=total, detail=f"{total} jour(s)-indice recalculé(s)")
 
 
-def run_sealed_ev_calculation() -> None:
+def run_sealed_ev_calculation(run_type: str) -> None:
     """Recalcule le ratio EV des scellés Booster Box (cf. index/sealed_ev.py)
     à partir de `price_snapshots`. Tourne à chaque run comme le calcul
     d'indice -- ne dépend que du prix, pas de `sales`."""
     print("\n=== Calcul du ratio EV des scellés ===")
+    run_id = start_run(run_type, "sealed_ev")
     conn = get_connection()
     try:
         n = index_sealed_ev.calculate_sealed_ev(conn)
         print(f"  {n} Booster Box(es) mis à jour." if n else "  Aucun Booster Box avec prix + singles trouvé.")
+    except Exception as exc:
+        finish_run(run_id, status="error", detail=str(exc))
+        raise
     finally:
         conn.close()
+    finish_run(run_id, status="success", rows_written=n, detail=f"{n} Booster Box(es) mis à jour")
 
 
-def run_volume_calculation() -> None:
+def run_volume_calculation(run_type: str) -> None:
     """Recalcule le volume de ventes (cf. index/volume.py) à partir de
     `sales`. Seulement appelé sur un run --tier, cf. docstring du module."""
     print("\n=== Calcul du volume de ventes ===")
+    run_id = start_run(run_type, "volume")
+    total = 0
     conn = get_connection()
     try:
         for code in sorted(INDEX_DEFINITIONS):
             definition = INDEX_DEFINITIONS[code]
             n = index_volume.calculate_volume(conn, code, definition["tcg"], definition["category"])
+            total += n
             print(f"  {code}: {n} jour(s) de volume calculé(s)." if n else f"  {code}: aucune vente.")
+    except Exception as exc:
+        finish_run(run_id, status="error", detail=str(exc))
+        raise
     finally:
         conn.close()
+    finish_run(run_id, status="success", rows_written=total, detail=f"{total} jour(s)-volume recalculé(s)")
 
 
 def print_storage_usage() -> None:
@@ -186,39 +243,40 @@ def main() -> int:
         help="Saute la sync référentiel API TCG (un run --tier n'a pas besoin de la refaire, déjà faite par le run quotidien).",
     )
     args = parser.parse_args()
+    run_type = "daily" if args.tier is None else "tier"
 
     started = time.monotonic()
     had_errors = False
 
     if not args.skip_items:
         try:
-            run_items_sync()
+            run_items_sync(run_type)
         except Exception as exc:
             had_errors = True
             print(f"\n!! Erreur pendant la sync référentiel : {exc}")
 
     try:
-        errors = run_price_sync(tier=args.tier)
+        errors = run_price_sync(tier=args.tier, run_type=run_type)
         had_errors = had_errors or bool(errors)
     except Exception as exc:
         had_errors = True
         print(f"\n!! Erreur pendant la sync prix : {exc}")
 
     try:
-        run_index_calculation()
+        run_index_calculation(run_type)
     except Exception as exc:
         had_errors = True
         print(f"\n!! Erreur pendant le calcul des indices : {exc}")
 
     try:
-        run_sealed_ev_calculation()
+        run_sealed_ev_calculation(run_type)
     except Exception as exc:
         had_errors = True
         print(f"\n!! Erreur pendant le calcul du ratio EV des scellés : {exc}")
 
     if args.tier is not None:
         try:
-            run_volume_calculation()
+            run_volume_calculation(run_type)
         except Exception as exc:
             had_errors = True
             print(f"\n!! Erreur pendant le calcul du volume : {exc}")

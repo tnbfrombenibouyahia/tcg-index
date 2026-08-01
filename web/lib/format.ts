@@ -33,3 +33,34 @@ export function formatDate(iso: string): string {
     timeZone: "UTC",
   });
 }
+
+// Accepte une date pure ('YYYY-MM-DD', ex. price_snapshots.captured_at) ou un
+// timestamp complet ('...T...Z', ex. sync_runs.started_at) -- seule la
+// première a besoin du 'T00:00:00Z' pour ne pas être lue en fuseau local.
+function toDate(iso: string): Date {
+  return new Date(iso.length === 10 ? `${iso}T00:00:00Z` : iso);
+}
+
+export function formatDuration(startIso: string, endIso: string): string {
+  const ms = toDate(endIso).getTime() - toDate(startIso).getTime();
+  const totalSeconds = Math.max(0, Math.round(ms / 1000));
+  if (totalSeconds < 60) return `${totalSeconds} s`;
+  const totalMinutes = Math.round(totalSeconds / 60);
+  if (totalMinutes < 60) return `${totalMinutes} min`;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return minutes ? `${hours} h ${minutes} min` : `${hours} h`;
+}
+
+export function formatRelativeTime(iso: string): string {
+  const diffMs = Date.now() - toDate(iso).getTime();
+  const diffMin = Math.round(diffMs / 60000);
+
+  if (diffMin < 1) return "à l'instant";
+  if (diffMin < 60) return `il y a ${diffMin} min`;
+  const diffH = Math.round(diffMin / 60);
+  if (diffH < 24) return `il y a ${diffH} h`;
+  const diffJ = Math.round(diffH / 24);
+  if (diffJ < 14) return `il y a ${diffJ} j`;
+  return formatDate(iso.length === 10 ? iso : iso.slice(0, 10));
+}

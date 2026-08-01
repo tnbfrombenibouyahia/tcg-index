@@ -101,6 +101,32 @@ CREATE TABLE IF NOT EXISTS sealed_ev (
   UNIQUE (item_id, captured_at)
 );
 
+-- Journal des runs d'ingestion : une ligne par étape (pas par run entier),
+-- écrite par ingestion/orchestrator.py via shared/sync_log.py. Sert au
+-- dashboard "Live Market Data" côté web : status='running' + finished_at
+-- NULL = étape en cours (le seul moyen de savoir "ce qui charge en ce
+-- moment", vu que le cron GitHub Actions ne pousse aucun état ailleurs).
+-- `tcg` est NULL pour les étapes qui portent sur les deux TCG à la fois
+-- (calcul d'indice, EV scellé, volume) ; les étapes items/prices/grades_sales
+-- ont une ligne par tcg (le prix scrape les deux dans le même appel Python,
+-- mais on scinde `results` par tcg côté orchestrateur pour une fraîcheur
+-- affichable séparément par TCG).
+CREATE TABLE IF NOT EXISTS sync_runs (
+  id            BIGSERIAL PRIMARY KEY,
+  run_type      TEXT NOT NULL,        -- 'daily' | 'tier'
+  tier          TEXT,                 -- palier (cf. orchestrator.TIERS) si run_type='tier', sinon NULL
+  step          TEXT NOT NULL,        -- 'items' | 'prices' | 'grades_sales' | 'index' | 'sealed_ev' | 'volume'
+  tcg           TEXT,                 -- 'pokemon' | 'one-piece' | NULL (étape globale aux deux TCG)
+  status        TEXT NOT NULL DEFAULT 'running',  -- 'running' | 'success' | 'error'
+  started_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  finished_at   TIMESTAMPTZ,
+  rows_written  INTEGER,
+  detail        TEXT,                 -- résumé humain ("217 produits upsertés") ou message d'erreur
+  created_at    TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_sync_runs_started ON sync_runs (started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_sync_runs_running ON sync_runs (status) WHERE status = 'running';
+
 -- Indice calculé : l'output, ce que le front lit
 CREATE TABLE index_values (
   id            BIGSERIAL PRIMARY KEY,
