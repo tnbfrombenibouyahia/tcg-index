@@ -2,9 +2,20 @@ name: Daily sync
 
 # Référentiel (API TCG) + prix ungraded (PriceCharting) sur tous les sets
 # mappés. Voir ingestion/orchestrator.py pour le détail des étapes.
+#
+# 01:17 UTC (~03h17 heure d'été FR/SE, UTC+2) plutôt qu'une heure ronde comme
+# avant (06:00 UTC) -- décidé le 2026-08-01 (le run du jour n'avait toujours
+# pas démarré à 06:00+2h13, cf. incident). Deux effets recherchés : (1) tôt
+# dans la nuit pour que même avec le retard GitHub Actions observé sur ce
+# repo (~2h ce jour-là) tout soit fini avant un réveil ~10h ; (2) minute non
+# ronde (:17) pour éviter la file d'attente sur les cron à l'heure pile, que
+# GitHub recommande explicitement d'éviter (charge partagée entre tous les
+# repos programmés à :00). Pas littéralement minuit local : minuit CEST =
+# 22:00 UTC, ce qui aurait fait chevaucher le jour calendaire UTC précédent
+# -- sans incidence ici (pas de contrainte de jour de semaine), gardé simple.
 on:
   schedule:
-    - cron: "0 6 * * *"  # 06:00 UTC tous les jours
+    - cron: "17 1 * * *"  # ~03:17 heure locale FR/SE (été)
   workflow_dispatch: {}
 
 jobs:
