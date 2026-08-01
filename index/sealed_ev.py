@@ -54,18 +54,27 @@ from shared.db import get_connection
 TOP_N = 10
 SALES_SAMPLE_SIZE = 3
 
-# `language = 'EN'` : depuis l'ajout du scellé JP (cf. pricecharting.py
-# PRICECHARTING_JP_SEALED_SLUGS), _SINGLES_PRICES_SQL ci-dessous ne peut
-# comparer un Booster Box qu'aux singles EN du même set_code (aucun single JP
-# n'est tracké) -- sans ce filtre, un box JP récupérerait un ratio EV calculé
-# contre des singles d'une autre langue, un chiffre trompeur plutôt qu'une
-# absence de donnée.
+# Toutes langues depuis l'ajout des singles JP (cf. pricecharting.py
+# PRICECHARTING_JP_ALL_SLUGS, 2026-08-01) : un box JP a maintenant de vrais
+# singles JP à comparer. `language` est sélectionné ici pour être repassé à
+# _SINGLES_PRICES_SQL, qui filtre dessus explicitement (cf. son commentaire) --
+# indispensable pour One Piece où le scellé JP réutilise le set_code EN tel
+# quel (contrairement à Pokémon qui a un set_code JP-natif distinct) : sans
+# ce filtre, un box One Piece récupérerait un ratio EV calculé contre un
+# mélange de singles EN et JP.
+# `name ILIKE %s OR name ILIKE %s` : les items scellés JP portent un suffixe
+# " [JP]" (cf. pricecharting.py `_map_jp_sealed_row_to_item`), donc
+# "...Booster Box [JP]" ne matche jamais le seul motif "%Booster Box" utilisé
+# jusqu'ici pour l'EN -- constaté en conditions réelles le 2026-08-02 (0 box
+# JP retenu malgré des singles JP disponibles). Les deux motifs couvrent EN
+# et JP sans rien élargir d'autre (toujours "se termine par Booster Box",
+# juste avec ou sans le suffixe).
 _BOXES_SQL = """
-    SELECT id, tcg, set_code FROM items
+    SELECT id, tcg, set_code, language FROM items
     WHERE category = 'sealed'
-        AND name ILIKE %s AND name NOT ILIKE %s AND name NOT ILIKE %s
+        AND (name ILIKE %s OR name ILIKE %s)
+        AND name NOT ILIKE %s AND name NOT ILIKE %s
         AND set_code IS NOT NULL
-        AND language = 'EN'
 """
 
 _BOX_LAST_SALES_SQL = """
@@ -80,11 +89,14 @@ _BOX_AGGREGATE_PRICE_SQL = """
     ORDER BY captured_at DESC LIMIT 1
 """
 
+# `i.language = %s` : un box ne doit être comparé qu'aux singles de sa
+# propre langue (cf. commentaire de _BOXES_SQL) -- sans ce filtre, un set
+# One Piece où EN et JP partagent le même set_code mélangerait les deux.
 _SINGLES_PRICES_SQL = """
     SELECT DISTINCT ON (ps.item_id) ps.price
     FROM price_snapshots ps
     JOIN items i ON i.id = ps.item_id
-    WHERE i.tcg = %s AND i.set_code = %s AND i.category = 'single'
+    WHERE i.tcg = %s AND i.set_code = %s AND i.language = %s AND i.category = 'single'
         AND ps.grade = 'ungraded' AND ps.source = 'pricecharting'
     ORDER BY ps.item_id, ps.captured_at DESC
 """
@@ -160,7 +172,7 @@ def calculate_sealed_ev(conn, tcg: str | None = None) -> int:
     """Recalcule le ratio EV pour tous les Booster Box (ou ceux d'un seul
     tcg si précisé). Retourne le nombre de scellés mis à jour (0 si aucun
     Booster Box n'a de prix, ou aucun single correspondant en base)."""
-    query, params = _BOXES_SQL, ["%Booster Box", "%Case%", "%Half%"]
+    query, params = _BOXES_SQL, ["%Booster Box", "%Booster Box [JP]", "%Case%", "%Half%"]
     if tcg:
         query += " AND tcg = %s"
         params.append(tcg)
@@ -175,12 +187,12 @@ def calculate_sealed_ev(conn, tcg: str | None = None) -> int:
     rows = []
 
     with conn.cursor() as cur:
-        for box_id, box_tcg, set_code in boxes:
+        for box_id, box_tcg, set_code, box_language in boxes:
             box_price, price_source, sales_used, dispersion, span_days, score = _box_price(cur, box_id)
             if box_price is None:
                 continue
 
-            cur.execute(_SINGLES_PRICES_SQL, (box_tcg, set_code))
+            cur.execute(_SINGLES_PRICES_SQL, (box_tcg, set_code, box_language))
             prices = sorted((float(r[0]) for r in cur.fetchall()), reverse=True)
             if not prices:
                 continue
