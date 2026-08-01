@@ -108,14 +108,19 @@ def run_price_sync(tier: str | None, run_type: str) -> list[dict]:
             results = pricecharting.sync_all_mapped_sets(fetch_grades=False)
             # Scellé JAPONAIS : items créés directement depuis PriceCharting
             # (One Piece + Pokémon depuis le 2026-08-01, cf.
-            # PRICECHARTING_JP_SEALED_SLUGS) -- pas de notion de gradation/
-            # ventes pour ce cas, donc uniquement dans la branche quotidienne,
-            # pas --tier. Pas de nouvelle ligne sync_runs : ses stats sont
-            # fondues dans le détail du step 'prices' ci-dessous plutôt que
-            # d'ajouter un step dédié au dashboard Live Market Data pour une
-            # distinction non demandée.
-            print("\n=== PriceCharting : scellé JP ===")
-            jp_sealed_results = pricecharting.sync_all_jp_sealed_items()
+            # PRICECHARTING_JP_SEALED_SLUGS). fetch_sales=True (contrairement
+            # au reste de la branche quotidienne) : sans ça, ces items
+            # n'apparaissent jamais dans Transactions en parcours normal (qui
+            # lit `sales`, jamais peuplée sinon -- seule la recherche par nom
+            # les trouve, cf. discussion 2026-08-01). Pas soumis au système de
+            # paliers --tier comme le flux EN (cf. `sync_jp_sealed_items_for_set`) :
+            # catalogue JP encore petit (~400 items), une requête/item/jour
+            # reste largement soutenable. Pas de nouvelle ligne sync_runs : ses
+            # stats sont fondues dans le détail du step 'prices' ci-dessous
+            # plutôt que d'ajouter un step dédié au dashboard Live Market Data
+            # pour une distinction non demandée.
+            print("\n=== PriceCharting : scellé JP (+ ventes) ===")
+            jp_sealed_results = pricecharting.sync_all_jp_sealed_items(fetch_sales=True)
         else:
             bounds = TIERS[tier]
             vintage_slices = bounds.get("rotation_slices")
@@ -147,7 +152,8 @@ def run_price_sync(tier: str | None, run_type: str) -> list[dict]:
         if tcg_jp_results:
             tcg_jp_errors = [r for r in tcg_jp_results if r.get("error")]
             jp_prices_written = sum(r.get("prices_written", 0) for r in tcg_jp_results if not r.get("error"))
-            detail += f", {jp_prices_written} prix JP scellé"
+            jp_sales_written = sum(r.get("sale_rows_written", 0) for r in tcg_jp_results if not r.get("error"))
+            detail += f", {jp_prices_written} prix JP scellé, {jp_sales_written} ventes JP scellé"
             tcg_errors += tcg_jp_errors
 
         if tcg_errors:

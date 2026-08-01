@@ -21,7 +21,11 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # 90 min (était 60) depuis l'ajout du scellé JP + ventes individuelles
+    # (2026-08-01, cf. orchestrator.py run_price_sync) : ~380 items JP à 1
+    # requête chacun + pause polie ajoutent ~20-25 min au run quotidien,
+    # ce qui aurait rapproché dangereusement l'ancien plafond de 60 min.
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 

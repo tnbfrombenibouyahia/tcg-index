@@ -2,7 +2,7 @@ import Link from "next/link";
 import { GRADE_LABELS, type Grade } from "@/lib/constants";
 import { formatDate, formatUsd } from "@/lib/format";
 import type { SaleRow } from "@/lib/types";
-import { LanguageBadge } from "@/components/ui/LanguageBadge";
+import { LanguageFlag } from "@/components/ui/LanguageFlag";
 
 interface SortHeaderProps {
   label: string;
@@ -85,8 +85,8 @@ export function TransactionsTable({
                   )}
                   <div>
                     <p className="flex items-center gap-2 font-medium">
+                      <LanguageFlag language={sale.item.language} />
                       {sale.item.name}
-                      <LanguageBadge language={sale.item.language} />
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {sale.item.setCode}

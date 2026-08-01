@@ -1258,7 +1258,7 @@ _UPSERT_JP_SEALED_ITEMS_SQL = """
 """
 
 
-def sync_jp_sealed_items_for_set(set_code: str, tcg: str) -> dict:
+def sync_jp_sealed_items_for_set(set_code: str, tcg: str, fetch_sales: bool = False) -> dict:
     """Crée/maj les items scellés JP d'un set depuis PriceCharting, puis écrit
     leur prix du jour -- pendant unique référentiel + prix pour ce cas
     (contrairement au flux EN où le référentiel vient d'API TCG et
@@ -1266,7 +1266,19 @@ def sync_jp_sealed_items_for_set(set_code: str, tcg: str) -> dict:
     `sync_price_snapshots_for_set`). Un scellé se repère par l'absence de
     numéro de carte dans le titre (`_extract_number` + `_JP_SEALED_SINGLE_CARD_RE`,
     ce dernier élargissant la détection aux codes non numériques -- cf. son
-    commentaire), moins les faux positifs connus (cf. `_JP_SEALED_TITLE_EXCLUDE_RE`)."""
+    commentaire), moins les faux positifs connus (cf. `_JP_SEALED_TITLE_EXCLUDE_RE`).
+
+    `fetch_sales=True` : pour chaque item, va aussi chercher sur sa page
+    produit individuelle (1 requête HTTP de plus par item) son historique de
+    ventes eBay/TCGPlayer (-> `sales`, filtré à grade='ungraded' -- le scellé
+    n'a pas de gradation). Sans ça, la page Transactions (qui liste `sales`,
+    pas `price_snapshots`) ne montre jamais ces items en parcours normal --
+    seule la recherche par nom (`/api/items/search`, lit `items` directement)
+    les remonte. Contrairement au flux EN où ceci est réservé aux runs
+    `--tier` (catalogue EN trop gros pour du quotidien, cf. orchestrator.py),
+    le catalogue JP reste petit (quelques centaines d'items, croissance lente
+    au rythme des sorties de sets) : pas besoin d'un système de paliers, une
+    requête/item/jour reste largement soutenable."""
     slug = PRICECHARTING_JP_SEALED_SLUGS.get(set_code)
     if not slug:
         raise ValueError(
@@ -1309,6 +1321,32 @@ def sync_jp_sealed_items_for_set(set_code: str, tcg: str) -> dict:
             with conn.cursor() as cur:
                 execute_values(cur, _UPSERT_PRICE_SNAPSHOTS_SQL, price_rows)
                 conn.commit()
+
+        sale_rows_written = 0
+        if fetch_sales:
+            detail_rows = [
+                (id_by_external[r["pricecharting_id"]], r)
+                for r in sealed_rows
+                if r["pricecharting_id"] in id_by_external and r.get("url")
+            ]
+            with conn.cursor() as cur:
+                for i, (item_id, row) in enumerate(detail_rows):
+                    if i > 0:
+                        time.sleep(MIN_SECONDS_BETWEEN_REQUESTS)
+                    try:
+                        details = fetch_card_details(row["url"])
+                    except Exception as exc:
+                        print(f"    ! erreur ventes {row['title']}: {exc}")
+                        continue
+                    sale_rows = [
+                        (item_id, s["sale_date"], s["price"], "USD", s["grade"],
+                         s["marketplace"], s["external_sale_id"], s["title"], "pricecharting")
+                        for s in details["sales"] if s["grade"] == "ungraded"
+                    ]
+                    if sale_rows:
+                        execute_values(cur, _UPSERT_SALES_SQL, sale_rows)
+                        conn.commit()
+                        sale_rows_written += len(sale_rows)
     finally:
         conn.close()
 
@@ -1317,10 +1355,11 @@ def sync_jp_sealed_items_for_set(set_code: str, tcg: str) -> dict:
         "pricecharting_slug": slug,
         "items_seen": len(sealed_rows),
         "prices_written": len(price_rows),
+        "sale_rows_written": sale_rows_written,
     }
 
 
-def sync_all_jp_sealed_items(tcg: str | None = None) -> list[dict]:
+def sync_all_jp_sealed_items(tcg: str | None = None, fetch_sales: bool = False) -> list[dict]:
     """Boucle sur PRICECHARTING_JP_SEALED_SLUGS (One Piece + Pokémon, cf.
     commentaire du dict), même structure que `sync_all_mapped_sets` : pause
     polie entre sets, erreur capturée par set plutôt que d'interrompre le run."""
@@ -1333,10 +1372,11 @@ def sync_all_jp_sealed_items(tcg: str | None = None) -> list[dict]:
         if i > 0:
             time.sleep(MIN_SECONDS_BETWEEN_REQUESTS)
         try:
-            stats = sync_jp_sealed_items_for_set(set_code, _tcg_from_set_code(set_code))
+            stats = sync_jp_sealed_items_for_set(set_code, _tcg_from_set_code(set_code), fetch_sales=fetch_sales)
+            extra = f", {stats['sale_rows_written']} ventes" if fetch_sales else ""
             print(
                 f"[{i+1}/{len(set_codes)}] {set_code} -> {stats['pricecharting_slug']}: "
-                f"{stats['items_seen']} item(s) JP, {stats['prices_written']} prix"
+                f"{stats['items_seen']} item(s) JP, {stats['prices_written']} prix{extra}"
             )
             results.append({**stats, "error": None})
         except Exception as exc:
@@ -1358,7 +1398,9 @@ def main():
         "--fetch-grades", action="store_true",
         help=(
             "Récupère aussi, par carte individuelle (1 requête/carte en plus, coûteux) : "
-            "les prix PSA7-10 et l'historique de ventes eBay/TCGPlayer."
+            "les prix PSA7-10 et l'historique de ventes eBay/TCGPlayer. Combiné à "
+            "--jp-sealed, ne récupère que l'historique de ventes (pas de gradation "
+            "pour le scellé)."
         ),
     )
     parser.add_argument(
@@ -1381,18 +1423,22 @@ def main():
     if args.jp_sealed:
         if args.set_code:
             tcg = args.tcg or _tcg_from_set_code(args.set_code)
-            print(f"== Sync PriceCharting JP scellé pour set_code={args.set_code} ==")
-            stats = sync_jp_sealed_items_for_set(args.set_code, tcg)
-            print(f"Items JP: {stats['items_seen']}, prix écrits: {stats['prices_written']}")
+            print(f"== Sync PriceCharting JP scellé pour set_code={args.set_code} (fetch_sales={args.fetch_grades}) ==")
+            stats = sync_jp_sealed_items_for_set(args.set_code, tcg, fetch_sales=args.fetch_grades)
+            print(f"Items JP: {stats['items_seen']}, prix écrits: {stats['prices_written']}, ventes: {stats['sale_rows_written']}")
             return
 
         scope = args.tcg or "tous"
-        print(f"== Sync PriceCharting JP scellé (tcg={scope}) ==")
-        results = sync_all_jp_sealed_items(args.tcg)
+        print(f"== Sync PriceCharting JP scellé (tcg={scope}, fetch_sales={args.fetch_grades}) ==")
+        results = sync_all_jp_sealed_items(args.tcg, fetch_sales=args.fetch_grades)
         errors = [r for r in results if r["error"]]
         ok = [r for r in results if not r["error"]]
         print(f"\n=== Bilan : {len(ok)} sets OK, {len(errors)} erreurs ===")
-        print(f"Total : {sum(r['items_seen'] for r in ok)} item(s) JP, {sum(r['prices_written'] for r in ok)} prix écrits")
+        print(
+            f"Total : {sum(r['items_seen'] for r in ok)} item(s) JP, "
+            f"{sum(r['prices_written'] for r in ok)} prix écrits, "
+            f"{sum(r['sale_rows_written'] for r in ok)} ventes écrites"
+        )
         if errors:
             print("\nErreurs :")
             for r in errors:
