@@ -5,7 +5,7 @@ name: Tiered grades & sales sync
 # ingestion/orchestrator.py TIERS), pas une fenêtre fixe unique : plus un set
 # est récent, plus il est vérifié souvent (c'est là que se joue le pouls du
 # marché, et que le plafond ~30 ventes/palier PriceCharting risque de faire
-# perdre des ventes si on espace trop). Un seul workflow, 4 déclencheurs cron
+# perdre des ventes si on espace trop). Un seul workflow, 5 déclencheurs cron
 # -- chacun mappé à un palier via `github.event.schedule` (cf. étape
 # "Détermine le palier" ci-dessous), remplace l'ancien grades-and-sales.yml
 # (fenêtre fixe 18 mois, plus assez pour couvrir le catalogue complet).
@@ -14,6 +14,12 @@ name: Tiered grades & sales sync
 # pour un seul run même à sa propre fréquence : découpé en 8 tranches
 # tournantes réparties sur les runs hebdomadaires -- couverture complète tous
 # les ~2 mois (cf. ingestion/orchestrator.py::_current_vintage_slice).
+#
+# Palier "jp_singles" ajouté le 2026-08-01 : gradation + ventes des singles
+# JP (Pokémon + One Piece), même mécanisme de rotation que vintage mais sans
+# notion d'âge (pas de release_date côté JP) -- 12 tranches, couverture
+# complète tous les ~3 mois. Volume comparable à tout le catalogue EN
+# réparti sur un seul palier hebdomadaire, cf. ingestion/orchestrator.py TIERS.
 #
 # Le référentiel est déjà à jour via daily-sync.yml (quotidien), donc
 # --skip-items partout ici.
@@ -26,20 +32,21 @@ name: Tiered grades & sales sync
 # faire démarrer plusieurs jobs pile en même temps. Jours de semaine
 # inchangés (toujours en UTC, pas décalés au-delà de minuit local) : hot/
 # recent/established/vintage restent respectivement quotidien/lun-mer-ven/
-# dimanche/samedi.
+# dimanche/samedi ; jp_singles ajouté le mardi (seul jour encore libre).
 on:
   schedule:
     - cron: "43 1 * * *"      # hot : quotidien, ~03:43 heure locale
     - cron: "11 2 * * 1,3,5"  # recent : lundi/mercredi/vendredi, ~04:11 heure locale
     - cron: "23 2 * * 0"      # established : dimanche, ~04:23 heure locale
     - cron: "37 2 * * 6"      # vintage : samedi, ~04:37 heure locale
+    - cron: "51 2 * * 2"      # jp_singles : mardi, ~04:51 heure locale
   workflow_dispatch:
     inputs:
       tier:
         description: "Palier à synchroniser (déclenchement manuel uniquement)"
         required: true
         type: choice
-        options: [hot, recent, established, vintage]
+        options: [hot, recent, established, vintage, jp_singles]
         default: hot
 
 jobs:
@@ -66,6 +73,7 @@ jobs:
               "11 2 * * 1,3,5") echo "value=recent" >> "$GITHUB_OUTPUT" ;;
               "23 2 * * 0") echo "value=established" >> "$GITHUB_OUTPUT" ;;
               "37 2 * * 6") echo "value=vintage" >> "$GITHUB_OUTPUT" ;;
+              "51 2 * * 2") echo "value=jp_singles" >> "$GITHUB_OUTPUT" ;;
               *) echo "Palier inconnu pour le cron '${{ github.event.schedule }}'" >&2; exit 1 ;;
             esac
           fi

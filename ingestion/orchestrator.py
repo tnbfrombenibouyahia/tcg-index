@@ -67,6 +67,16 @@ TIERS = {
     "recent":      {"min_age_months": 6,    "max_age_months": 18},
     "established": {"min_age_months": 18,   "max_age_months": 36},
     "vintage":     {"min_age_months": 36,   "max_age_months": None, "rotation_slices": 8},
+    # Pas un palier d'âge comme les 4 ci-dessus : les items singles JP n'ont
+    # pas de release_date (aucun référentiel source ne le fournit côté JP,
+    # cf. pricecharting.py PRICECHARTING_JP_ALL_SLUGS) donc pas de notion de
+    # "hot"/"vintage" exploitable. Juste une rotation hash-based sur tout le
+    # catalogue JP singles, même mécanisme que la tranche "vintage"
+    # (`_slice_set_codes`) -- 12 tranches plutôt que 8 vu le volume comparable
+    # à TOUT le catalogue EN réparti sur un seul palier au lieu de 4 (~40k
+    # singles JP contre ~34k EN, cf. discussion 2026-08-01) : garde une taille
+    # de tranche du même ordre de grandeur que le palier vintage EN.
+    "jp_singles":  {"rotation_slices": 12},
 }
 
 
@@ -101,7 +111,9 @@ def run_price_sync(tier: str | None, run_type: str) -> list[dict]:
     step = "prices" if tier is None else "grades_sales"
     run_ids = {tcg: start_run(run_type, step, tcg=tcg, tier=tier) for tcg in TCGS}
 
+    results: list[dict] = []
     jp_sealed_results: list[dict] = []
+    jp_singles_results: list[dict] = []
     try:
         if tier is None:
             print("\n=== PriceCharting : prix (tous les sets mappés) ===")
@@ -114,13 +126,29 @@ def run_price_sync(tier: str | None, run_type: str) -> list[dict]:
             # lit `sales`, jamais peuplée sinon -- seule la recherche par nom
             # les trouve, cf. discussion 2026-08-01). Pas soumis au système de
             # paliers --tier comme le flux EN (cf. `sync_jp_sealed_items_for_set`) :
-            # catalogue JP encore petit (~400 items), une requête/item/jour
-            # reste largement soutenable. Pas de nouvelle ligne sync_runs : ses
-            # stats sont fondues dans le détail du step 'prices' ci-dessous
-            # plutôt que d'ajouter un step dédié au dashboard Live Market Data
-            # pour une distinction non demandée.
+            # catalogue JP scellé encore petit (~400 items), une requête/item/
+            # jour reste largement soutenable.
             print("\n=== PriceCharting : scellé JP (+ ventes) ===")
             jp_sealed_results = pricecharting.sync_all_jp_sealed_items(fetch_sales=True)
+            # Singles JP : référentiel + prix ungraded seulement ici (1
+            # requête/page de set, pas cher) -- la gradation PSA + ventes
+            # individuelles (1 requête/carte, ~40k cartes) est bien trop
+            # coûteuse pour du quotidien, cf. palier dédié "jp_singles"
+            # ci-dessous (même logique que hot/recent/.../vintage pour l'EN).
+            print("\n=== PriceCharting : singles JP ===")
+            jp_singles_results = pricecharting.sync_all_jp_singles_items(fetch_grades=False)
+        elif tier == "jp_singles":
+            bounds = TIERS[tier]
+            num_slices = bounds["rotation_slices"]
+            slice_index = _current_vintage_slice(num_slices)
+            sliced_set_codes = sorted(
+                pricecharting._slice_set_codes(list(pricecharting.PRICECHARTING_JP_ALL_SLUGS), slice_index, num_slices)
+            )
+            print(
+                f"\n=== PriceCharting : gradation + ventes singles JP "
+                f"(tranche {slice_index + 1}/{num_slices}, {len(sliced_set_codes)} set(s)) ==="
+            )
+            jp_singles_results = pricecharting.sync_all_jp_singles_items(fetch_grades=True, set_codes=sliced_set_codes)
         else:
             bounds = TIERS[tier]
             vintage_slices = bounds.get("rotation_slices")
@@ -143,8 +171,8 @@ def run_price_sync(tier: str | None, run_type: str) -> list[dict]:
         tcg_results = [r for r in results if pricecharting._tcg_from_set_code(r["set_code"]) == tcg]
         tcg_errors = [r for r in tcg_results if r.get("error")]
         rows_written = sum(r.get("rows_matched", 0) for r in tcg_results if not r.get("error"))
-        detail = f"{len(tcg_results)} set(s), {rows_written} prix"
-        if tier is not None:
+        detail = f"{len(tcg_results)} set(s), {rows_written} prix" if tcg_results or tier != "jp_singles" else ""
+        if tier is not None and tier != "jp_singles":
             sales_written = sum(r.get("sale_rows_written", 0) for r in tcg_results if not r.get("error"))
             detail += f", {sales_written} ventes"
 
@@ -156,16 +184,32 @@ def run_price_sync(tier: str | None, run_type: str) -> list[dict]:
             detail += f", {jp_prices_written} prix JP scellé, {jp_sales_written} ventes JP scellé"
             tcg_errors += tcg_jp_errors
 
+        tcg_jp_singles_results = [r for r in jp_singles_results if pricecharting._tcg_from_set_code(r["set_code"]) == tcg]
+        if tcg_jp_singles_results:
+            tcg_jp_singles_errors = [r for r in tcg_jp_singles_results if r.get("error")]
+            jp_singles_prices = sum(r.get("prices_written", 0) for r in tcg_jp_singles_results if not r.get("error"))
+            detail += f", {jp_singles_prices} prix JP singles"
+            if tier == "jp_singles":
+                rows_written = jp_singles_prices
+                jp_singles_grades = sum(r.get("grade_rows_written", 0) for r in tcg_jp_singles_results if not r.get("error"))
+                jp_singles_sales = sum(r.get("sale_rows_written", 0) for r in tcg_jp_singles_results if not r.get("error"))
+                detail += f", {jp_singles_grades} lignes gradées JP singles, {jp_singles_sales} ventes JP singles"
+            tcg_errors += tcg_jp_singles_errors
+
         if tcg_errors:
             detail += f", {len(tcg_errors)} erreur(s)"
         finish_run(
             run_id,
             status="error" if tcg_errors else "success",
             rows_written=rows_written,
-            detail=detail,
+            detail=detail.lstrip(", "),
         )
 
-    errors = [r for r in results if r.get("error")] + [r for r in jp_sealed_results if r.get("error")]
+    errors = (
+        [r for r in results if r.get("error")]
+        + [r for r in jp_sealed_results if r.get("error")]
+        + [r for r in jp_singles_results if r.get("error")]
+    )
     if errors:
         print(f"\n{len(errors)} set(s) en erreur :")
         for r in errors:
