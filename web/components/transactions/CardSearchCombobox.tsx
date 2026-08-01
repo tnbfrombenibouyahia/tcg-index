@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { ItemSummary } from "@/lib/types";
+import { LanguageBadge } from "@/components/ui/LanguageBadge";
 
 // Catalogue trop gros (~40k items) pour un <select> classique -- typeahead
 // débouncé contre /api/items/search plutôt qu'un menu statique.
@@ -115,6 +116,7 @@ export function CardSearchCombobox({ tcg }: { tcg?: string }) {
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
               >
                 <span className="font-medium">{item.name}</span>
+                <LanguageBadge language={item.language} />
                 {item.code ? <span className="text-muted-foreground">#{item.code}</span> : null}
               </button>
             </li>

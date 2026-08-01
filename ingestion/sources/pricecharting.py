@@ -303,6 +303,272 @@ PRICECHARTING_SET_SLUGS = {
 }
 
 
+# Slugs /console/{one-piece,pokemon}-japanese-... pour le scellé JAPONAIS --
+# distinct de PRICECHARTING_SET_SLUGS ci-dessus parce qu'aucune source
+# référentielle (API TCG ne référence que l'anglais, cf. apitcg.py) ne connaît
+# ce catalogue : ces items sont créés directement depuis PriceCharting (cf.
+# sync_jp_sealed_items_for_set), pas juste recoupés contre un item apitcg
+# existant. `language='JP'` sur l'item créé fait la distinction avec son
+# homonyme EN qui partage le même set_code.
+#
+# One Piece : généré le 2026-08-01 par matching automatique nom/slug contre le
+# sitemap PriceCharting (vérifié à la main), moins 4 slugs exclus faute
+# d'équivalent EN fiable -- décrit ci-dessous car ce TCG réutilise le set_code
+# EN comme clé (le Japon y publie ses sets en parallèle des sets EN avec la
+# même numérotation/nom, donc un mapping direct fiable existe : 56/60 slugs
+# JP trouvés). Deux buckets promo génériques (`-promo`,
+# `-carddass-hyper-battle-promo`, même nature que les "junk sets" API TCG, cf.
+# mémoire projet), `-extra-booster-egghead-crisis` (set récent absent de
+# PRICECHARTING_SET_SLUGS côté EN) et `-starter-deck-21-gear5` (numéro de
+# starter deck sans équivalent EN mappé).
+#
+# Pokémon : ajouté le 2026-08-01. Contrairement à One Piece, le catalogue JP
+# de Pokémon n'a PAS de correspondance fiable avec les set_code EN (391 slugs
+# JP sur le sitemap PriceCharting contre 217 set_code EN, moins de 30 avec un
+# nom qui matche -- l'historique de sorties diffère structurellement, cf.
+# mémoire projet). Le modèle "même set_code que l'EN" ne s'applique donc pas :
+# la clé est un set_code JP-natif synthétique (`pokemon-jp-<slug sans le
+# préfixe "pokemon-japanese-">`, cf. `_set_label_from_code` qui retire ce
+# préfixe "jp-" pour l'affichage), propre à ce dict, sans lien avec
+# PRICECHARTING_SET_SLUGS.
+#
+# La sélection des ~150 slugs retenus (sur 391 candidats) vient d'un crawl
+# complet des pages /console/pokemon-japanese-* (script ad hoc, pas commité),
+# filtré en deux temps :
+# 1. la page doit avoir au moins une ligne "Booster Box"/"Booster Pack" une
+#    fois les singles Energy et numérotés retirés (cf. `_JP_SEALED_SINGLE_CARD_RE`,
+#    `_JP_SEALED_ENERGY_RE`) -- élimine mécaniquement les buckets promo/
+#    deck/sticker/magazine qui n'ont jamais vendu de boosters ;
+# 2. le nombre de lignes "scellé" restantes après filtrage doit être <= 6 --
+#    élimine les sets d'ère vintage (Neo/e-Card/DP JP) dont les cartes
+#    Pokémon/Dresseur ne portent AUCUN numéro imprimé (contrairement aux sets
+#    récents) : sur ces pages, `_extract_number` ne matche jamais rien et la
+#    quasi-totalité du set (parfois 100+ cartes) se retrouve à tort classée
+#    "scellé" -- aucun filtre par mot-clé ne peut les distinguer de façon
+#    fiable d'un vrai produit scellé (ce sont de simples noms de Pokémon/
+#    Dresseur). 13 sets rejetés par ce filtre sur 166 qui passaient le
+#    critère 1, tous vérifiés à la main comme faux positifs (vintage sans
+#    numérotation, ou le bucket `-promo`).
+# Le filtrage laisse passer un bruit résiduel mineur et accepté (ex.
+# `pokemon-japanese-cd-promo` inclut 2 items promo CD non scellés à côté
+# d'un vrai Booster Box ; `pokemon-japanese-vs` inclut 1 carte Deoxys promo)
+# -- comme pour le matching EN (cf. ratio <30% flaggé plutôt que filtré),
+# pas la peine de viser 100% pour ~2 items sur les ~300 couverts.
+PRICECHARTING_JP_SEALED_SLUGS = {
+    'one-piece-500-years-in-the-future': 'one-piece-japanese-500-years-in-the-future',
+    'one-piece-a-fist-of-divine-speed': 'one-piece-japanese-fist-of-divine-speed',
+    'one-piece-adventure-on-kamis-island': "one-piece-japanese-adventure-on-kami's-island",
+    'one-piece-awakening-of-the-new-era': 'one-piece-japanese-awakening-of-the-new-era',
+    'one-piece-carrying-on-his-will': 'one-piece-japanese-carrying-on-his-will',
+    'one-piece-emperors-in-the-new-world': 'one-piece-japanese-emperors-in-the-new-world',
+    'one-piece-extra-booster-anime-25th-collection': 'one-piece-japanese-extra-booster-anime-25th-collection',
+    'one-piece-extra-booster-memorial-collection': 'one-piece-japanese-extra-booster-memorial-collection',
+    'one-piece-extra-booster-one-piece-heroines-edition': 'one-piece-japanese-extra-booster-heroines-edition',
+    'one-piece-kingdoms-of-intrigue': 'one-piece-japanese-kingdoms-of-intrigue',
+    'one-piece-legacy-of-the-master': 'one-piece-japanese-legacy-of-the-master',
+    'one-piece-paramount-war': 'one-piece-japanese-paramount-war',
+    'one-piece-pillars-of-strength': 'one-piece-japanese-pillars-of-strength',
+    'one-piece-premium-booster-the-best-': 'one-piece-japanese-premium-booster',
+    'one-piece-premium-booster-the-best-vol-2': 'one-piece-japanese-premium-booster-2',
+    'one-piece-romance-dawn': 'one-piece-japanese-romance-dawn',
+    'one-piece-royal-blood': 'one-piece-japanese-royal-blood',
+    'one-piece-starter-deck-1-straw-hat-crew': 'one-piece-japanese-starter-deck-1-straw-hat-crew',
+    'one-piece-starter-deck-11-uta': 'one-piece-japanese-starter-deck-11-uta',
+    'one-piece-starter-deck-12-zoro-and-sanji': 'one-piece-japanese-starter-deck-12',
+    'one-piece-starter-deck-14-3d2y': 'one-piece-japanese-starter-deck-14-3d2y',
+    'one-piece-starter-deck-15-red-edwardnewgate': 'one-piece-japanese-starter-deck-15-edward-newgate',
+    'one-piece-starter-deck-16-green-uta': 'one-piece-japanese-starter-deck-16-uta',
+    'one-piece-starter-deck-17-blue-donquixote-doflamingo': 'one-piece-japanese-starter-deck-17-donquixote-donflamingo',
+    'one-piece-starter-deck-18-purple-monkeydluffy': 'one-piece-japanese-starter-deck-18-monkeydluffy',
+    'one-piece-starter-deck-19-black-smoker': 'one-piece-japanese-starter-deck-19-smoker',
+    'one-piece-starter-deck-2-worst-generation': 'one-piece-japanese-starter-deck-2-worst-generation',
+    'one-piece-starter-deck-20-yellow-charlotte-katakuri': 'one-piece-japanese-starter-deck-20-charlotte-katakuri',
+    'one-piece-starter-deck-22-ace-newgate': 'one-piece-japanese-starter-deck-22-ace-&-newgate',
+    'one-piece-starter-deck-23-red-shanks': 'one-piece-japanese-starter-deck-23-red-shanks',
+    'one-piece-starter-deck-24-green-jewelry-bonney': 'one-piece-japanese-starter-deck-24-green-jewelry-bonney',
+    'one-piece-starter-deck-25-blue-buggy': 'one-piece-japanese-starter-deck-25-blue-buggy',
+    'one-piece-starter-deck-26-purpleblack-monkeydluffy': 'one-piece-japanese-starter-deck-26-purple-monkeydluffy',
+    'one-piece-starter-deck-27-black-marshalldteach': 'one-piece-japanese-starter-deck-27-black-marshalldteach',
+    'one-piece-starter-deck-28-greenyellow-yamato': 'one-piece-japanese-starter-deck-28-yellow-yamato',
+    'one-piece-starter-deck-29-egghead': 'one-piece-japanese-starter-deck-29-egghead-arc',
+    'one-piece-starter-deck-3-the-seven-warlords-of-the-sea': 'one-piece-japanese-starter-deck-3-the-seven-warlords-of-the-sea',
+    'one-piece-starter-deck-31-red-monkeydluffy': 'one-piece-japanese-starter-deck-31-red-monkeydluffy',
+    'one-piece-starter-deck-32-green-roronoa-zoro': 'one-piece-japanese-starter-deck-32-green-roronoa-zoro',
+    'one-piece-starter-deck-33-blue-kuzan': 'one-piece-japanese-starter-deck-33-blue-kuzan',
+    'one-piece-starter-deck-34-purple-charlotte-katakuri': 'one-piece-japanese-starter-deck-34-purple-charlotte-katakuri',
+    'one-piece-starter-deck-35-redblack-sabo': 'one-piece-japanese-starter-deck-35-red-black-sabo',
+    'one-piece-starter-deck-36-yellow-eustasscaptainkid': 'one-piece-japanese-starter-deck-36-yellow-eustass-captain-kid',
+    'one-piece-starter-deck-4-animal-kingdom-pirates': 'one-piece-japanese-starter-deck-4-animal-kingdom-pirates',
+    'one-piece-starter-deck-5-film-edition': 'one-piece-japanese-starter-deck-5-film-edition',
+    'one-piece-starter-deck-6-absolute-justice': 'one-piece-japanese-starter-deck-6-absolute-justice',
+    'one-piece-starter-deck-7-big-mom-pirates': 'one-piece-japanese-starter-deck-7-big-mom-pirates',
+    'one-piece-starter-deck-8-monkeydluffy': 'one-piece-japanese-starter-deck-8-monkeydluffy',
+    'one-piece-starter-deck-9-yamato': 'one-piece-japanese-starter-deck-9-yamato',
+    'one-piece-starter-deck-ex-luffy-ace': 'one-piece-japanese-starter-deck-30-luffy-&-ace',
+    'one-piece-the-azure-seas-seven': "one-piece-japanese-azure-sea's-seven",
+    'one-piece-the-time-of-battle': 'one-piece-japanese-the-time-of-battle',
+    'one-piece-two-legends': 'one-piece-japanese-two-legends',
+    'one-piece-ultra-deck-the-three-brothers': 'one-piece-japanese-ultra-deck-the-three-brothers',
+    'one-piece-ultra-deck-the-three-captains': 'one-piece-japanese-ultra-deck-the-three-captains',
+    'one-piece-wings-of-the-captain': 'one-piece-japanese-wings-of-the-captain',
+
+    # Pokémon -- cf. commentaire au-dessus du dict pour la méthode de
+    # sélection (152 slugs retenus sur 391 candidats).
+    'pokemon-jp-20th-anniversary': 'pokemon-japanese-20th-anniversary',
+    'pokemon-jp-25th-anniversary-collection': 'pokemon-japanese-25th-anniversary-collection',
+    'pokemon-jp-25th-anniversary-promo': 'pokemon-japanese-25th-anniversary-promo',
+    'pokemon-jp-abyss-eye': 'pokemon-japanese-abyss-eye',
+    'pokemon-jp-advent-of-arceus': 'pokemon-japanese-advent-of-arceus',
+    'pokemon-jp-alolan-moonlight': 'pokemon-japanese-alolan-moonlight',
+    'pokemon-jp-alter-genesis': 'pokemon-japanese-alter-genesis',
+    'pokemon-jp-amazing-volt-tackle': 'pokemon-japanese-amazing-volt-tackle',
+    'pokemon-jp-ancient-roar': 'pokemon-japanese-ancient-roar',
+    'pokemon-jp-awakened-heroes': 'pokemon-japanese-awakened-heroes',
+    'pokemon-jp-awakening-psychic-king': 'pokemon-japanese-awakening-psychic-king',
+    'pokemon-jp-bandit-ring': 'pokemon-japanese-bandit-ring',
+    'pokemon-jp-battle-partners': 'pokemon-japanese-battle-partners',
+    'pokemon-jp-battle-rainbow': 'pokemon-japanese-battle-rainbow',
+    'pokemon-jp-battle-region': 'pokemon-japanese-battle-region',
+    'pokemon-jp-beat-of-the-frontier': 'pokemon-japanese-beat-of-the-frontier',
+    'pokemon-jp-best-of-xy': 'pokemon-japanese-best-of-xy',
+    'pokemon-jp-black-bolt': 'pokemon-japanese-black-bolt',
+    'pokemon-jp-blue-shock': 'pokemon-japanese-blue-shock',
+    'pokemon-jp-blue-sky-stream': 'pokemon-japanese-blue-sky-stream',
+    'pokemon-jp-bonds-to-the-end-of-time': 'pokemon-japanese-bonds-to-the-end-of-time',
+    'pokemon-jp-cd-promo': 'pokemon-japanese-cd-promo',
+    'pokemon-jp-champion-road': 'pokemon-japanese-champion-road',
+    'pokemon-jp-clay-burst': 'pokemon-japanese-clay-burst',
+    'pokemon-jp-cold-flare': 'pokemon-japanese-cold-flare',
+    'pokemon-jp-collection-moon': 'pokemon-japanese-collection-moon',
+    'pokemon-jp-collection-x': 'pokemon-japanese-collection-x',
+    'pokemon-jp-collection-y': 'pokemon-japanese-collection-y',
+    'pokemon-jp-crimson-haze': 'pokemon-japanese-crimson-haze',
+    'pokemon-jp-crossing-the-ruins': 'pokemon-japanese-crossing-the-ruins',
+    'pokemon-jp-cruel-traitor': 'pokemon-japanese-cruel-traitor',
+    'pokemon-jp-cyber-judge': 'pokemon-japanese-cyber-judge',
+    'pokemon-jp-dark-order': 'pokemon-japanese-dark-order',
+    'pokemon-jp-dark-phantasma': 'pokemon-japanese-dark-phantasma',
+    'pokemon-jp-dark-rush': 'pokemon-japanese-dark-rush',
+    'pokemon-jp-darkness-that-consumes-light': 'pokemon-japanese-darkness-that-consumes-light',
+    'pokemon-jp-detective-pikachu': 'pokemon-japanese-detective-pikachu',
+    'pokemon-jp-double-blaze': 'pokemon-japanese-double-blaze',
+    'pokemon-jp-double-crisis': 'pokemon-japanese-double-crisis',
+    'pokemon-jp-dragon-selection': 'pokemon-japanese-dragon-selection',
+    'pokemon-jp-dragon-storm': 'pokemon-japanese-dragon-storm',
+    'pokemon-jp-dream-league': 'pokemon-japanese-dream-league',
+    'pokemon-jp-dream-shine-collection': 'pokemon-japanese-dream-shine-collection',
+    'pokemon-jp-e-starter-deck': 'pokemon-japanese-e-starter-deck',
+    'pokemon-jp-eevee-heroes': 'pokemon-japanese-eevee-heroes',
+    'pokemon-jp-emerald-break': 'pokemon-japanese-emerald-break',
+    'pokemon-jp-ex-battle-boost': 'pokemon-japanese-ex-battle-boost',
+    'pokemon-jp-explosive-walker': 'pokemon-japanese-explosive-walker',
+    'pokemon-jp-facing-a-new-trial': 'pokemon-japanese-facing-a-new-trial',
+    'pokemon-jp-fairy-rise': 'pokemon-japanese-fairy-rise',
+    'pokemon-jp-forbidden-light': 'pokemon-japanese-forbidden-light',
+    'pokemon-jp-freeze-bolt': 'pokemon-japanese-freeze-bolt',
+    'pokemon-jp-full-metal-wall': 'pokemon-japanese-full-metal-wall',
+    'pokemon-jp-fusion-arts': 'pokemon-japanese-fusion-arts',
+    'pokemon-jp-future-flash': 'pokemon-japanese-future-flash',
+    'pokemon-jp-gaia-volcano': 'pokemon-japanese-gaia-volcano',
+    'pokemon-jp-gg-end': 'pokemon-japanese-gg-end',
+    'pokemon-jp-glory-of-team-rocket': 'pokemon-japanese-glory-of-team-rocket',
+    'pokemon-jp-go': 'pokemon-japanese-go',
+    'pokemon-jp-gx-battle-boost': 'pokemon-japanese-gx-battle-boost',
+    'pokemon-jp-gx-ultra-shiny': 'pokemon-japanese-gx-ultra-shiny',
+    'pokemon-jp-hail-blizzard': 'pokemon-japanese-hail-blizzard',
+    'pokemon-jp-heartgold-collection': 'pokemon-japanese-heartgold-collection',
+    'pokemon-jp-heat-wave-arena': 'pokemon-japanese-heat-wave-arena',
+    'pokemon-jp-incandescent-arcana': 'pokemon-japanese-incandescent-arcana',
+    'pokemon-jp-inferno-x': 'pokemon-japanese-inferno-x',
+    'pokemon-jp-infinity-zone': 'pokemon-japanese-infinity-zone',
+    'pokemon-jp-intense-fight-in-the-destroyed-sky': 'pokemon-japanese-intense-fight-in-the-destroyed-sky',
+    'pokemon-jp-islands-await-you': 'pokemon-japanese-islands-await-you',
+    'pokemon-jp-jet-black-spirit': 'pokemon-japanese-jet-black-spirit',
+    'pokemon-jp-jungle': 'pokemon-japanese-jungle',
+    'pokemon-jp-legendary-heartbeat': 'pokemon-japanese-legendary-heartbeat',
+    'pokemon-jp-legendary-shine-collection': 'pokemon-japanese-legendary-shine-collection',
+    'pokemon-jp-lost-abyss': 'pokemon-japanese-lost-abyss',
+    'pokemon-jp-lost-link': 'pokemon-japanese-lost-link',
+    'pokemon-jp-magma-vs-aqua-two-ambitions': 'pokemon-japanese-magma-vs-aqua-two-ambitions',
+    'pokemon-jp-mask-of-change': 'pokemon-japanese-mask-of-change',
+    'pokemon-jp-matchless-fighter': 'pokemon-japanese-matchless-fighter',
+    'pokemon-jp-mega-brave': 'pokemon-japanese-mega-brave',
+    'pokemon-jp-mega-dream-ex': 'pokemon-japanese-mega-dream-ex',
+    'pokemon-jp-mega-symphonia': 'pokemon-japanese-mega-symphonia',
+    'pokemon-jp-megalo-cannon': 'pokemon-japanese-megalo-cannon',
+    'pokemon-jp-miracle-of-the-desert': 'pokemon-japanese-miracle-of-the-desert',
+    'pokemon-jp-miracle-twins': 'pokemon-japanese-miracle-twins',
+    'pokemon-jp-movie-commemoration-random': 'pokemon-japanese-movie-commemoration-random',
+    'pokemon-jp-mysterious-mountains': 'pokemon-japanese-mysterious-mountains',
+    'pokemon-jp-night-unison': 'pokemon-japanese-night-unison',
+    'pokemon-jp-night-wanderer': 'pokemon-japanese-night-wanderer',
+    'pokemon-jp-nihil-zero': 'pokemon-japanese-nihil-zero',
+    'pokemon-jp-ninja-spinner': 'pokemon-japanese-ninja-spinner',
+    'pokemon-jp-paradigm-trigger': 'pokemon-japanese-paradigm-trigger',
+    'pokemon-jp-paradise-dragona': 'pokemon-japanese-paradise-dragona',
+    'pokemon-jp-phantom-gate': 'pokemon-japanese-phantom-gate',
+    'pokemon-jp-plasma-gale': 'pokemon-japanese-plasma-gale',
+    'pokemon-jp-pokekyun-collection': 'pokemon-japanese-pokekyun-collection',
+    'pokemon-jp-premium-champion-pack': 'pokemon-japanese-premium-champion-pack',
+    'pokemon-jp-psycho-drive': 'pokemon-japanese-psycho-drive',
+    'pokemon-jp-rage-of-the-broken-heavens': 'pokemon-japanese-rage-of-the-broken-heavens',
+    'pokemon-jp-raging-surf': 'pokemon-japanese-raging-surf',
+    'pokemon-jp-rapid-strike-master': 'pokemon-japanese-rapid-strike-master',
+    'pokemon-jp-rebel-clash': 'pokemon-japanese-rebel-clash',
+    'pokemon-jp-red-collection': 'pokemon-japanese-red-collection',
+    'pokemon-jp-red-flash': 'pokemon-japanese-red-flash',
+    'pokemon-jp-remix-bout': 'pokemon-japanese-remix-bout',
+    'pokemon-jp-rising-fist': 'pokemon-japanese-rising-fist',
+    'pokemon-jp-rocket-gang-strikes-back': 'pokemon-japanese-rocket-gang-strikes-back',
+    'pokemon-jp-ruler-of-the-black-flame': 'pokemon-japanese-ruler-of-the-black-flame',
+    'pokemon-jp-rulers-of-the-heavens': 'pokemon-japanese-rulers-of-the-heavens',
+    'pokemon-jp-scarlet-ex': 'pokemon-japanese-scarlet-ex',
+    'pokemon-jp-shield': 'pokemon-japanese-shield',
+    'pokemon-jp-shining-legends': 'pokemon-japanese-shining-legends',
+    'pokemon-jp-shiny-collection': 'pokemon-japanese-shiny-collection',
+    'pokemon-jp-shiny-star-v': 'pokemon-japanese-shiny-star-v',
+    'pokemon-jp-shiny-treasure-ex': 'pokemon-japanese-shiny-treasure-ex',
+    'pokemon-jp-silver-lance': 'pokemon-japanese-silver-lance',
+    'pokemon-jp-single-strike-master': 'pokemon-japanese-single-strike-master',
+    'pokemon-jp-sky-legend': 'pokemon-japanese-sky-legend',
+    'pokemon-jp-sky-splitting-charisma': 'pokemon-japanese-sky-splitting-charisma',
+    'pokemon-jp-skyscraping-perfection': 'pokemon-japanese-skyscraping-perfection',
+    'pokemon-jp-snow-hazard': 'pokemon-japanese-snow-hazard',
+    'pokemon-jp-soulsilver-collection': 'pokemon-japanese-soulsilver-collection',
+    'pokemon-jp-space-juggler': 'pokemon-japanese-space-juggler',
+    'pokemon-jp-spiral-force': 'pokemon-japanese-spiral-force',
+    'pokemon-jp-split-earth': 'pokemon-japanese-split-earth',
+    'pokemon-jp-star-birth': 'pokemon-japanese-star-birth',
+    'pokemon-jp-stellar-miracle': 'pokemon-japanese-stellar-miracle',
+    'pokemon-jp-super-burst-impact': 'pokemon-japanese-super-burst-impact',
+    'pokemon-jp-super-electric-breaker': 'pokemon-japanese-super-electric-breaker',
+    'pokemon-jp-sword': 'pokemon-japanese-sword',
+    'pokemon-jp-tag-all-stars': 'pokemon-japanese-tag-all-stars',
+    'pokemon-jp-tag-bolt': 'pokemon-japanese-tag-bolt',
+    'pokemon-jp-terastal-festival': 'pokemon-japanese-terastal-festival',
+    'pokemon-jp-the-town-on-no-map': 'pokemon-japanese-the-town-on-no-map',
+    'pokemon-jp-thunder-knuckle': 'pokemon-japanese-thunder-knuckle',
+    'pokemon-jp-thunderclap-spark': 'pokemon-japanese-thunderclap-spark',
+    'pokemon-jp-time-gazer': 'pokemon-japanese-time-gazer',
+    'pokemon-jp-triplet-beat': 'pokemon-japanese-triplet-beat',
+    'pokemon-jp-ultra-force': 'pokemon-japanese-ultra-force',
+    'pokemon-jp-ultra-moon': 'pokemon-japanese-ultra-moon',
+    'pokemon-jp-ultra-sun': 'pokemon-japanese-ultra-sun',
+    'pokemon-jp-ultradimensional-beasts': 'pokemon-japanese-ultradimensional-beasts',
+    'pokemon-jp-violet-ex': 'pokemon-japanese-violet-ex',
+    'pokemon-jp-vmax-climax': 'pokemon-japanese-vmax-climax',
+    'pokemon-jp-vmax-rising': 'pokemon-japanese-vmax-rising',
+    'pokemon-jp-vs': 'pokemon-japanese-vs',
+    'pokemon-jp-vstar-universe': 'pokemon-japanese-vstar-universe',
+    'pokemon-jp-web': 'pokemon-japanese-web',
+    'pokemon-jp-white-collection': 'pokemon-japanese-white-collection',
+    'pokemon-jp-white-flare': 'pokemon-japanese-white-flare',
+    'pokemon-jp-wild-blaze': 'pokemon-japanese-wild-blaze',
+    'pokemon-jp-wild-force': 'pokemon-japanese-wild-force',
+    'pokemon-jp-wind-from-the-sea': 'pokemon-japanese-wind-from-the-sea',
+}
+
+
 def fetch_console_page(slug: str) -> str:
     resp = requests.get(f"{BASE_URL}/console/{slug}", headers=HEADERS, timeout=30)
     resp.raise_for_status()
@@ -332,11 +598,19 @@ def _parse_rows_from_soup(soup: BeautifulSoup) -> list[dict]:
         price_span = tr.select_one("td.used_price span.js-price")
         used_price = _parse_price(price_span.get_text() if price_span else "")
         href = title_link.get("href")
+        # Miniature (`<td class="image"><img class="photo" src="...">`) --
+        # jamais utilisée côté EN (déjà couvert par l'image API TCG, cf.
+        # mémoire projet "item_images"), mais c'est la seule source d'image
+        # disponible pour les items créés directement depuis PriceCharting
+        # (scellé JP, cf. sync_jp_sealed_items_for_set) : autant la capturer
+        # ici puisque la page est déjà récupérée, zéro requête en plus.
+        img = tr.select_one("td.image img.photo")
         rows.append({
             "pricecharting_id": tr.get("data-product"),
             "title": title_link.get_text(strip=True),
             "used_price": used_price,
             "url": f"{BASE_URL}{href}" if href and href.startswith("/") else href,
+            "image_url": img.get("src") if img else None,
         })
     return rows
 
@@ -902,6 +1176,175 @@ def sync_all_mapped_sets(
     return results
 
 
+# Cartes spéciales sans numéro qui passeraient à tort le filtre "pas de numéro
+# = scellé" ci-dessous (constaté en conditions réelles : "DON!! Card [Alternate
+# Art]" sur Fist of Divine Speed/Romance Dawn, "DON Card [Personnage]" --sans
+# les "!!" -- sur le set Premium Booster/Royal Blood) : le jeton DON!! est une
+# carte de jeu spéciale, pas un produit scellé, avec un habillage de titre pas
+# constant d'un set à l'autre. Pas un problème côté EN (le scellé y est
+# recoupé contre les items apitcg existants, cf. `_match_sealed_item`, qui
+# n'inclut jamais ce genre de token) -- mais ici on crée l'item directement
+# depuis PriceCharting, donc rien ne filtre ce faux positif sans ce regex.
+_JP_SEALED_TITLE_EXCLUDE_RE = re.compile(r"\bdon!{0,2}\s*card\b", re.IGNORECASE)
+
+# `_extract_number` (patterns `#(\d+)$` / `-(\d+)$`) rate les singles japonais
+# Pokémon dont le code n'est pas purement numérique -- constaté en conditions
+# réelles sur des sets qui passent par ailleurs le filtre "a un Booster Box"
+# (cf. PRICECHARTING_JP_SEALED_SLUGS) : cartes Energy ("Metal Energy #MET"),
+# codes promo ("Pikachu #20/M-P"). Sans ce filtre supplémentaire, ces singles
+# seraient créés à tort comme scellé (contrairement au flux EN où un raté de
+# ce genre est juste ignoré, cf. `_match_sealed_item` -- ici l'item est créé
+# directement, rien d'autre ne rattrape l'erreur). Volontairement plus large
+# que `_extract_number` (n'importe quel `#<token>` final, pas seulement les
+# chiffres) : aucun scellé observé sur PriceCharting (Pokémon comme One
+# Piece) ne porte de code `#...` en fin de titre, donc pas de risque de
+# faux négatif côté scellé.
+_JP_SEALED_SINGLE_CARD_RE = re.compile(r"#\S+\s*$")
+
+# Cartes Energy japonaises sans code du tout (ni chiffre, ni suffixe #...) --
+# constaté en conditions réelles sur des sets d'ère vintage (ex. "Rocket
+# Gang", "Premium Champion Pack") où les Energy de base ("Water Energy",
+# "Metal Energy", parfois "[Holo]") ni les Energy spéciales ("Full Heal
+# Energy", "Rainbow Energy") ne portent aucun identifiant sur PriceCharting --
+# les deux filtres ci-dessus (numéro, `#...`) ne peuvent donc rien y détecter.
+# Aucun produit scellé observé (Pokémon comme One Piece) n'a "Energy" dans
+# son nom, filtre sans risque de faux négatif côté scellé.
+_JP_SEALED_ENERGY_RE = re.compile(r"\benergy\b", re.IGNORECASE)
+
+
+def _set_label_from_code(set_code: str, tcg: str) -> str:
+    """Dérive un libellé humain du set_code (aucun nom de set lisible n'est
+    stocké ailleurs pour ces items -- ils ne viennent pas d'API TCG) : ex.
+    'one-piece-a-fist-of-divine-speed' -> 'A Fist Of Divine Speed'. Purement
+    cosmétique/recherche (ILIKE est insensible à la casse) : sert à préfixer
+    le titre brut PriceCharting ("Booster Box") pour que la recherche par nom
+    ("Fist of Divine Speed") retrouve aussi l'item JP, pas seulement son
+    homonyme EN nommé via API TCG -- constaté en conditions réelles (le
+    combobox de recherche ne remontait que l'EN, cf. discussion 2026-08-01).
+
+    Le préfixe "jp-" est retiré s'il est présent : convention du set_code
+    JP-natif Pokémon (`pokemon-jp-<slug>`, cf. PRICECHARTING_JP_SEALED_SLUGS)
+    -- sans ce retrait le nom serait "Jp Vmax Climax ... [JP]", redondant
+    avec le suffixe "[JP]" déjà ajouté par `_map_jp_sealed_row_to_item`. One
+    Piece n'a pas ce préfixe (son set_code JP est celui de l'EN, réutilisé
+    tel quel), donc rien à retirer pour ce TCG."""
+    prefix = tcg + "-"
+    bare = set_code[len(prefix):] if set_code.startswith(prefix) else set_code
+    if bare.startswith("jp-"):
+        bare = bare[len("jp-"):]
+    return bare.replace("-", " ").title()
+
+
+def _map_jp_sealed_row_to_item(tcg: str, set_code: str, row: dict) -> tuple:
+    name = f"{_set_label_from_code(set_code, tcg)} {row['title']} [JP]"
+    return (
+        row["pricecharting_id"],  # external_id
+        "pricecharting",          # source
+        tcg,
+        "sealed",                 # category
+        set_code,
+        name,
+        row["image_url"],
+        "JP",                     # language
+    )
+
+
+_UPSERT_JP_SEALED_ITEMS_SQL = """
+    INSERT INTO items (external_id, source, tcg, category, set_code, name, image_url, language)
+    VALUES %s
+    ON CONFLICT (source, external_id) DO UPDATE SET
+        name      = EXCLUDED.name,
+        image_url = EXCLUDED.image_url
+"""
+
+
+def sync_jp_sealed_items_for_set(set_code: str, tcg: str) -> dict:
+    """Crée/maj les items scellés JP d'un set depuis PriceCharting, puis écrit
+    leur prix du jour -- pendant unique référentiel + prix pour ce cas
+    (contrairement au flux EN où le référentiel vient d'API TCG et
+    PriceCharting ne fait que recouper des items déjà là, cf.
+    `sync_price_snapshots_for_set`). Un scellé se repère par l'absence de
+    numéro de carte dans le titre (`_extract_number` + `_JP_SEALED_SINGLE_CARD_RE`,
+    ce dernier élargissant la détection aux codes non numériques -- cf. son
+    commentaire), moins les faux positifs connus (cf. `_JP_SEALED_TITLE_EXCLUDE_RE`)."""
+    slug = PRICECHARTING_JP_SEALED_SLUGS.get(set_code)
+    if not slug:
+        raise ValueError(
+            f"Pas de mapping PriceCharting JP pour set_code={set_code!r}. "
+            f"Ajoute-le dans PRICECHARTING_JP_SEALED_SLUGS."
+        )
+
+    rows = fetch_all_console_rows(slug)
+    sealed_rows = [
+        r for r in rows
+        if r["used_price"] is not None
+        and _extract_number(r["title"]) is None
+        and not _JP_SEALED_SINGLE_CARD_RE.search(r["title"])
+        and not _JP_SEALED_ENERGY_RE.search(r["title"])
+        and not _JP_SEALED_TITLE_EXCLUDE_RE.search(r["title"])
+    ]
+
+    conn = get_connection()
+    try:
+        item_rows = [_map_jp_sealed_row_to_item(tcg, set_code, r) for r in sealed_rows]
+        if item_rows:
+            with conn.cursor() as cur:
+                execute_values(cur, _UPSERT_JP_SEALED_ITEMS_SQL, item_rows)
+                conn.commit()
+
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, external_id FROM items "
+                "WHERE source = 'pricecharting' AND tcg = %s AND set_code = %s AND language = 'JP'",
+                (tcg, set_code),
+            )
+            id_by_external = {ext: item_id for item_id, ext in cur.fetchall()}
+
+        today = date.today()
+        price_rows = [
+            (id_by_external[r["pricecharting_id"]], today, r["used_price"], "USD", None, "pricecharting")
+            for r in sealed_rows if r["pricecharting_id"] in id_by_external
+        ]
+        if price_rows:
+            with conn.cursor() as cur:
+                execute_values(cur, _UPSERT_PRICE_SNAPSHOTS_SQL, price_rows)
+                conn.commit()
+    finally:
+        conn.close()
+
+    return {
+        "set_code": set_code,
+        "pricecharting_slug": slug,
+        "items_seen": len(sealed_rows),
+        "prices_written": len(price_rows),
+    }
+
+
+def sync_all_jp_sealed_items(tcg: str | None = None) -> list[dict]:
+    """Boucle sur PRICECHARTING_JP_SEALED_SLUGS (One Piece + Pokémon, cf.
+    commentaire du dict), même structure que `sync_all_mapped_sets` : pause
+    polie entre sets, erreur capturée par set plutôt que d'interrompre le run."""
+    set_codes = [
+        sc for sc in PRICECHARTING_JP_SEALED_SLUGS
+        if tcg is None or _tcg_from_set_code(sc) == tcg
+    ]
+    results = []
+    for i, set_code in enumerate(set_codes):
+        if i > 0:
+            time.sleep(MIN_SECONDS_BETWEEN_REQUESTS)
+        try:
+            stats = sync_jp_sealed_items_for_set(set_code, _tcg_from_set_code(set_code))
+            print(
+                f"[{i+1}/{len(set_codes)}] {set_code} -> {stats['pricecharting_slug']}: "
+                f"{stats['items_seen']} item(s) JP, {stats['prices_written']} prix"
+            )
+            results.append({**stats, "error": None})
+        except Exception as exc:
+            print(f"[{i+1}/{len(set_codes)}] {set_code}: ERREUR {exc}")
+            results.append({"set_code": set_code, "error": str(exc)})
+    return results
+
+
 def main():
     import argparse
 
@@ -926,7 +1369,35 @@ def main():
         "--min-age-months", type=int, default=None,
         help="Mode bulk uniquement : ne garder que les sets dont le dernier item est sorti il y a plus de N mois.",
     )
+    parser.add_argument(
+        "--jp-sealed", action="store_true",
+        help=(
+            "Scellé JAPONAIS (PRICECHARTING_JP_SEALED_SLUGS) au lieu du flux EN habituel : "
+            "crée les items directement depuis PriceCharting (One Piece + Pokémon)."
+        ),
+    )
     args = parser.parse_args()
+
+    if args.jp_sealed:
+        if args.set_code:
+            tcg = args.tcg or _tcg_from_set_code(args.set_code)
+            print(f"== Sync PriceCharting JP scellé pour set_code={args.set_code} ==")
+            stats = sync_jp_sealed_items_for_set(args.set_code, tcg)
+            print(f"Items JP: {stats['items_seen']}, prix écrits: {stats['prices_written']}")
+            return
+
+        scope = args.tcg or "tous"
+        print(f"== Sync PriceCharting JP scellé (tcg={scope}) ==")
+        results = sync_all_jp_sealed_items(args.tcg)
+        errors = [r for r in results if r["error"]]
+        ok = [r for r in results if not r["error"]]
+        print(f"\n=== Bilan : {len(ok)} sets OK, {len(errors)} erreurs ===")
+        print(f"Total : {sum(r['items_seen'] for r in ok)} item(s) JP, {sum(r['prices_written'] for r in ok)} prix écrits")
+        if errors:
+            print("\nErreurs :")
+            for r in errors:
+                print(f"  {r['set_code']}: {r['error']}")
+        return
 
     if args.set_code:
         tcg = args.tcg or _tcg_from_set_code(args.set_code)

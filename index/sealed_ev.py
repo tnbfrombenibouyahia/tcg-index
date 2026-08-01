@@ -54,11 +54,18 @@ from shared.db import get_connection
 TOP_N = 10
 SALES_SAMPLE_SIZE = 3
 
+# `language = 'EN'` : depuis l'ajout du scellé JP (cf. pricecharting.py
+# PRICECHARTING_JP_SEALED_SLUGS), _SINGLES_PRICES_SQL ci-dessous ne peut
+# comparer un Booster Box qu'aux singles EN du même set_code (aucun single JP
+# n'est tracké) -- sans ce filtre, un box JP récupérerait un ratio EV calculé
+# contre des singles d'une autre langue, un chiffre trompeur plutôt qu'une
+# absence de donnée.
 _BOXES_SQL = """
     SELECT id, tcg, set_code FROM items
     WHERE category = 'sealed'
         AND name ILIKE %s AND name NOT ILIKE %s AND name NOT ILIKE %s
         AND set_code IS NOT NULL
+        AND language = 'EN'
 """
 
 _BOX_LAST_SALES_SQL = """

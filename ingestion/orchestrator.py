@@ -101,10 +101,21 @@ def run_price_sync(tier: str | None, run_type: str) -> list[dict]:
     step = "prices" if tier is None else "grades_sales"
     run_ids = {tcg: start_run(run_type, step, tcg=tcg, tier=tier) for tcg in TCGS}
 
+    jp_sealed_results: list[dict] = []
     try:
         if tier is None:
             print("\n=== PriceCharting : prix (tous les sets mappés) ===")
             results = pricecharting.sync_all_mapped_sets(fetch_grades=False)
+            # Scellé JAPONAIS : items créés directement depuis PriceCharting
+            # (One Piece + Pokémon depuis le 2026-08-01, cf.
+            # PRICECHARTING_JP_SEALED_SLUGS) -- pas de notion de gradation/
+            # ventes pour ce cas, donc uniquement dans la branche quotidienne,
+            # pas --tier. Pas de nouvelle ligne sync_runs : ses stats sont
+            # fondues dans le détail du step 'prices' ci-dessous plutôt que
+            # d'ajouter un step dédié au dashboard Live Market Data pour une
+            # distinction non demandée.
+            print("\n=== PriceCharting : scellé JP ===")
+            jp_sealed_results = pricecharting.sync_all_jp_sealed_items()
         else:
             bounds = TIERS[tier]
             vintage_slices = bounds.get("rotation_slices")
@@ -131,6 +142,14 @@ def run_price_sync(tier: str | None, run_type: str) -> list[dict]:
         if tier is not None:
             sales_written = sum(r.get("sale_rows_written", 0) for r in tcg_results if not r.get("error"))
             detail += f", {sales_written} ventes"
+
+        tcg_jp_results = [r for r in jp_sealed_results if pricecharting._tcg_from_set_code(r["set_code"]) == tcg]
+        if tcg_jp_results:
+            tcg_jp_errors = [r for r in tcg_jp_results if r.get("error")]
+            jp_prices_written = sum(r.get("prices_written", 0) for r in tcg_jp_results if not r.get("error"))
+            detail += f", {jp_prices_written} prix JP scellé"
+            tcg_errors += tcg_jp_errors
+
         if tcg_errors:
             detail += f", {len(tcg_errors)} erreur(s)"
         finish_run(
@@ -140,7 +159,7 @@ def run_price_sync(tier: str | None, run_type: str) -> list[dict]:
             detail=detail,
         )
 
-    errors = [r for r in results if r.get("error")]
+    errors = [r for r in results if r.get("error")] + [r for r in jp_sealed_results if r.get("error")]
     if errors:
         print(f"\n{len(errors)} set(s) en erreur :")
         for r in errors:

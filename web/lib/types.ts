@@ -109,6 +109,7 @@ export interface SealedEvRow {
   name: string;
   imageUrl: string | null;
   tcg: Tcg;
+  language: string;
   setCode: string | null;
   capturedAt: string;
   boxPrice: number;

@@ -1,5 +1,6 @@
 import { formatUsd } from "@/lib/format";
 import type { SealedEvMode, SealedEvRow } from "@/lib/types";
+import { LanguageBadge } from "@/components/ui/LanguageBadge";
 import { ReliabilityBars } from "./ReliabilityBars";
 
 export function SealedEvTable({ rows, mode }: { rows: SealedEvRow[]; mode: SealedEvMode }) {
@@ -37,7 +38,10 @@ export function SealedEvTable({ rows, mode }: { rows: SealedEvRow[]; mode: Seale
                       <div className="h-12 w-12 flex-shrink-0 rounded-md bg-muted" />
                     )}
                     <div>
-                      <p className="font-medium">{r.name}</p>
+                      <p className="flex items-center gap-2 font-medium">
+                        {r.name}
+                        <LanguageBadge language={r.language} />
+                      </p>
                       <p className="text-xs text-muted-foreground">{r.setCode}</p>
                     </div>
                   </div>

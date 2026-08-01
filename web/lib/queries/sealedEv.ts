@@ -6,6 +6,7 @@ interface SealedEvQueryRow {
   name: string;
   imageUrl: string | null;
   tcg: string;
+  language: string;
   setCode: string | null;
   capturedAt: string;
   boxPrice: number;
@@ -48,6 +49,7 @@ export async function getSealedEv({ mode, tcg, limit = 50 }: SealedEvParams): Pr
       i.name,
       i.image_url AS "imageUrl",
       i.tcg,
+      i.language,
       i.set_code AS "setCode",
       l.captured_at::text AS "capturedAt",
       l.box_price::float8 AS "boxPrice",
@@ -71,6 +73,7 @@ export async function getSealedEv({ mode, tcg, limit = 50 }: SealedEvParams): Pr
     name: r.name,
     imageUrl: r.imageUrl,
     tcg: r.tcg as SealedEvRow["tcg"],
+    language: r.language,
     setCode: r.setCode,
     capturedAt: r.capturedAt,
     boxPrice: r.boxPrice,
