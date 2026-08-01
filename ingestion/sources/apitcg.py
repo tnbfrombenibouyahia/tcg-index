@@ -16,8 +16,15 @@ Limitations connues du catalogue (constatées en conditions réelles) :
   ('sealed' vs 'card') est fiable, la granularité fine n'existe que dans le nom
   libre du produit. `TYPE_TO_CATEGORY` mappe donc 'sealed' -> 'sealed' tel quel,
   pas de sous-catégorie pour l'instant.
+- Pas de quota documenté, mais bien réel : incident du 2026-07-31, le run
+  quotidien s'est fait 429 par api.apitcg.com en page 38/66 de la pagination
+  Pokémon (32 532 produits/500 par page), aucune pause entre pages jusque-là.
+  `_request` ci-dessous absorbe les 429 par retry/backoff (respecte
+  `Retry-After` si présent), et `PAGE_PAUSE_SECONDS` espace les pages de
+  `sync_items` pour limiter le risque d'y retomber.
 """
 import os
+import time
 from datetime import datetime
 
 import requests
@@ -27,6 +34,7 @@ from shared.db import get_connection
 
 BASE_URL = "https://api.apitcg.com"
 PAGE_SIZE = 500
+PAGE_PAUSE_SECONDS = 0.5
 
 DEFAULT_LANGUAGE = "EN"
 
@@ -35,22 +43,54 @@ TYPE_TO_CATEGORY = {
     "card": "single",
 }
 
+MAX_429_RETRIES = 5
+DEFAULT_BACKOFF_SECONDS = 20.0
+
 
 def _headers() -> dict:
     api_key = os.environ["APITCG_API_KEY"]
     return {"x-api-key": api_key}
 
 
+class MonthlyQuotaExceeded(RuntimeError):
+    """Plafond mensuel API TCG atteint (cf. incident 2026-07-31/08-01) --
+    distinct du 429 rolling-window (RateLimit-Policy: 300;w=60, lui transitoire
+    et couvert par le retry ci-dessous). Aucun retry ne peut résoudre celui-ci :
+    le corps de réponse dit explicitement "Request limit reached for this
+    month.", ça ne se dégage pas en quelques secondes ni en quelques minutes."""
+
+
+def _request(url: str, params: dict | None = None) -> requests.Response:
+    """GET avec retry/backoff sur 429 rolling-window. Respecte `Retry-After`
+    quand le serveur le fournit, sinon backoff exponentiel (20s, 40s, 60s...).
+    Sur un 429 de type quota mensuel, échoue immédiatement (MonthlyQuotaExceeded)
+    plutôt que de gaspiller ~4 min de retry sur un mur qui ne bougera pas."""
+    for attempt in range(MAX_429_RETRIES + 1):
+        resp = requests.get(url, headers=_headers(), params=params)
+        if resp.status_code != 429:
+            resp.raise_for_status()
+            return resp
+        try:
+            message = resp.json().get("error", "")
+        except ValueError:
+            message = ""
+        if "month" in message.lower():
+            raise MonthlyQuotaExceeded(message or "Request limit reached for this month.")
+        if attempt == MAX_429_RETRIES:
+            resp.raise_for_status()
+        retry_after = resp.headers.get("Retry-After")
+        wait = float(retry_after) if retry_after and retry_after.isdigit() else min(60.0, DEFAULT_BACKOFF_SECONDS * (2 ** attempt))
+        print(f"  429 (rate limit API TCG), pause {wait:.0f}s avant retry ({attempt + 1}/{MAX_429_RETRIES})...")
+        time.sleep(wait)
+    raise AssertionError("unreachable")  # raise_for_status() ci-dessus lève toujours au dernier essai
+
+
 def list_tcgs() -> list[dict]:
-    resp = requests.get(f"{BASE_URL}/api/tcgs", headers=_headers())
-    resp.raise_for_status()
-    return resp.json()["data"]
+    return _request(f"{BASE_URL}/api/tcgs").json()["data"]
 
 
 def list_sets(tcg: str) -> list[dict]:
-    resp = requests.get(f"{BASE_URL}/api/{tcg}/sets", headers=_headers())
-    resp.raise_for_status()
-    return resp.json()["data"]
+    return _request(f"{BASE_URL}/api/{tcg}/sets").json()["data"]
 
 
 def list_products(
@@ -68,9 +108,7 @@ def list_products(
         params["set"] = set_id
     if product_type:
         params["type"] = product_type
-    resp = requests.get(f"{BASE_URL}/api/products", headers=_headers(), params=params)
-    resp.raise_for_status()
-    return resp.json()
+    return _request(f"{BASE_URL}/api/products", params=params).json()
 
 
 def list_all_products(
@@ -91,9 +129,7 @@ def list_all_products(
 
 
 def get_history_prices(product_id: str) -> dict:
-    resp = requests.get(f"{BASE_URL}/api/history-prices/{product_id}", headers=_headers())
-    resp.raise_for_status()
-    return resp.json()
+    return _request(f"{BASE_URL}/api/history-prices/{product_id}").json()
 
 
 def _parse_release_date(set_obj: dict):
@@ -160,6 +196,8 @@ def sync_items(tcg: str, page_size: int = PAGE_SIZE) -> int:
     try:
         with conn.cursor() as cur:
             while True:
+                if page > 1:
+                    time.sleep(PAGE_PAUSE_SECONDS)
                 payload = list_products(tcg=tcg, page=page, limit=page_size)
                 data = payload["data"]
                 if not data:
