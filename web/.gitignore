@@ -40,3 +40,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# scripts de capture d'écran ad hoc (QA manuelle, pas de l'outillage réutilisé
+# -- ne référencés nulle part dans package.json) + leurs sorties
+screenshot*.js
+screenshot*.png
