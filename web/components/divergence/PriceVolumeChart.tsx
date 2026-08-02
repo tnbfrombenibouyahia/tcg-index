@@ -6,24 +6,28 @@ import { formatUsd } from "@/lib/format";
 import type { DailyTimelinePoint } from "@/lib/types";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Prix moyen + volume quotidiens, en deux panneaux empilés partageant le même
-// axe x (jours) -- JAMAIS un double axe y sur un même graphique (cf. dataviz
-// skill, règle non négociable n°1), donc deux grandeurs différentes = deux
-// panneaux, pas deux échelles sur un seul. Le volume est une grandeur, pas
-// une identité catégorielle : gris neutre plutôt qu'une 2e teinte
-// catégorielle, le bleu "prix" reste cohérent avec le reste de l'app.
+// Prix (barres) et volume (ligne) superposés sur UN seul graphique (demande
+// utilisateur -- "c'est la meilleure manière de comparer deux variables").
+// Un vrai double axe y (dollars à gauche, nb de ventes à droite) est
+// justement l'anti-pattern classique : en choisissant librement les deux
+// échelles on peut faire *paraître* deux séries corrélées alors que ça ne
+// tient qu'à l'échelle -- règle non négociable n°1 du dataviz skill.
+// Alternative prescrite par le skill pour comparer deux grandeurs
+// différentes sur un seul graphique : les indexer sur une base commune. Ici,
+// les deux séries sont normalisées en % de LEUR PROPRE maximum sur la
+// période affichée et partagent donc un seul axe 0-100% -- la forme/
+// co-évolution reste lisible sans qu'aucune échelle ne soit arbitraire.
+// Les vraies valeurs ($ et nb de ventes) restent accessibles au survol.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const PRICE_COLOR = "#2a78d6";
-const VOLUME_COLOR = "#B8B2AC";
+const PRICE_COLOR = "#2a78d6"; // slot catégoriel 1 (validé dataviz skill)
+const VOLUME_COLOR = "#eb6834"; // slot catégoriel 2 (validé dataviz skill, paire avec PRICE_COLOR)
 
 const W = 700;
+const H = 220;
 const PAD_X = 16;
-const PRICE_H = 130;
-const PRICE_PAD_TOP = 12;
-const PANEL_GAP = 14;
-const VOLUME_H = 54;
-const TOTAL_H = PRICE_H + PANEL_GAP + VOLUME_H;
+const PAD_TOP = 12;
+const PAD_BOTTOM = 8;
 const BAR_RADIUS = 3;
 
 function roundedTopBarPath(x: number, width: number, yTop: number, yBottom: number): string {
@@ -40,6 +44,10 @@ function roundedTopBarPath(x: number, width: number, yTop: number, yBottom: numb
   ].join(" ");
 }
 
+function linePath(pts: { x: number; y: number }[]): string {
+  return pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+}
+
 export function PriceVolumeChart({ points }: { points: DailyTimelinePoint[] }) {
   const t = useTranslations("divergence.modal");
   const locale = useLocale();
@@ -48,37 +56,43 @@ export function PriceVolumeChart({ points }: { points: DailyTimelinePoint[] }) {
 
   const n = points.length;
   const plotW = W - PAD_X * 2;
+  const plotH = H - PAD_TOP - PAD_BOTTOM;
+  const baseline = PAD_TOP + plotH;
   const slot = n > 0 ? plotW / n : 0;
   const barWidth = Math.max(0.6, slot - (n > 60 ? 0.6 : 2));
 
   const prices = points.map((p) => p.avgPrice).filter((p): p is number => p != null);
-  const maxPrice = (prices.length ? Math.max(...prices) : 0) * 1.08 || 1;
+  const maxPrice = prices.length ? Math.max(...prices) : 0;
   const counts = points.map((p) => p.count);
-  const maxVolume = (counts.length ? Math.max(...counts) : 0) * 1.15 || 1;
+  const maxVolume = counts.length ? Math.max(...counts) : 0;
 
-  const priceBaseline = PRICE_H;
-  const volumeBaseline = TOTAL_H;
-
-  const toYPrice = (price: number) => PRICE_PAD_TOP + (1 - price / maxPrice) * (PRICE_H - PRICE_PAD_TOP);
-  const toYVolume = (count: number) => PRICE_H + PANEL_GAP + (1 - count / maxVolume) * VOLUME_H;
+  // Indexation : chaque série est normalisée sur SON PROPRE maximum (0-1),
+  // toutes deux projetées sur le même axe -- pas de dollars ni de nombre de
+  // ventes lisibles directement sur l'axe, seulement au survol (cf. en-tête).
+  const toY = (frac: number) => PAD_TOP + (1 - frac) * plotH;
 
   const bars = useMemo(
     () =>
       points.map((p, i) => {
         const x = PAD_X + slot * i + (slot - barWidth) / 2;
+        const priceFrac = p.avgPrice != null && maxPrice > 0 ? p.avgPrice / maxPrice : null;
+        const volumeFrac = maxVolume > 0 ? p.count / maxVolume : 0;
         return {
           x,
           point: p,
-          priceYTop: p.avgPrice != null ? toYPrice(p.avgPrice) : null,
-          volumeYTop: toYVolume(p.count),
+          priceYTop: priceFrac != null ? toY(priceFrac) : null,
+          lineX: x + barWidth / 2,
+          lineY: toY(volumeFrac),
         };
       }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- toYPrice/toYVolume dérivées de maxPrice/maxVolume, déjà dans les deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- toY dérivée de plotH/PAD_TOP (constantes), pas besoin de la lister
     [points, slot, barWidth, maxPrice, maxVolume]
   );
 
-  const priceGridLines = [0.5, 1].map((frac) => ({ y: toYPrice(maxPrice * frac), value: maxPrice * frac }));
-  const volumeGridLine = { y: toYVolume(maxVolume / 1.15), value: Math.round(maxVolume / 1.15) };
+  const linePts = bars.map((b) => ({ x: b.lineX, y: b.lineY }));
+  const path = linePath(linePts);
+
+  const gridLines = [0.25, 0.5, 0.75, 1].map((frac) => ({ y: toY(frac) }));
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<SVGSVGElement>) => {
@@ -93,7 +107,7 @@ export function PriceVolumeChart({ points }: { points: DailyTimelinePoint[] }) {
 
   if (points.length === 0) {
     return (
-      <div className="flex items-center justify-center text-xs" style={{ height: TOTAL_H, color: "var(--foreground-subtle)" }}>
+      <div className="flex items-center justify-center text-xs" style={{ height: H, color: "var(--foreground-subtle)" }}>
         {t("noData")}
       </div>
     );
@@ -106,24 +120,24 @@ export function PriceVolumeChart({ points }: { points: DailyTimelinePoint[] }) {
       <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
         <span className="inline-block h-2 w-2 rounded-full" style={{ background: PRICE_COLOR }} />
         {t("priceLabel")}
-        <span className="ml-3 inline-block h-2 w-2 rounded-full" style={{ background: VOLUME_COLOR }} />
+        <span className="ml-3 inline-block h-2 w-0.5 rounded-full" style={{ background: VOLUME_COLOR }} />
         {t("volumeLabel")}
+        <span className="ml-1 text-[10px] italic opacity-70">{t("indexedNote")}</span>
       </div>
 
-      <div className="relative" style={{ height: TOTAL_H }}>
+      <div className="relative" style={{ height: H }}>
         <svg
           ref={svgRef}
-          viewBox={`0 0 ${W} ${TOTAL_H}`}
+          viewBox={`0 0 ${W} ${H}`}
           preserveAspectRatio="none"
           className="h-full w-full cursor-crosshair"
           onMouseMove={handleMouseMove}
           onMouseLeave={() => setHoverIndex(null)}
           aria-label={t("chartLabel")}
         >
-          {/* Grille prix */}
-          {priceGridLines.map((gl, i) => (
+          {gridLines.map((gl, i) => (
             <line
-              key={`pg-${i}`}
+              key={i}
               x1={PAD_X}
               y1={gl.y}
               x2={W - PAD_X}
@@ -133,74 +147,49 @@ export function PriceVolumeChart({ points }: { points: DailyTimelinePoint[] }) {
               strokeDasharray="4 4"
             />
           ))}
-          {priceGridLines.map((gl, i) => (
-            <text
-              key={`pgt-${i}`}
-              x={W - PAD_X}
-              y={gl.y - 3}
-              textAnchor="end"
-              fontSize="9"
-              fill="var(--foreground-subtle)"
-              style={{ fontVariantNumeric: "tabular-nums" }}
-            >
-              {formatUsd(gl.value)}
-            </text>
-          ))}
 
-          {/* Barres de prix */}
+          {/* Barres de prix, indexées sur leur propre maximum */}
           {bars.map(
             (b, i) =>
               b.priceYTop != null && (
                 <path
                   key={`p-${i}`}
-                  d={roundedTopBarPath(b.x, barWidth, b.priceYTop, priceBaseline)}
+                  d={roundedTopBarPath(b.x, barWidth, b.priceYTop, baseline)}
                   fill={PRICE_COLOR}
                   fillOpacity={hoverIndex != null && hoverIndex !== i ? 0.4 : 1}
                 />
               )
           )}
 
-          {/* Séparateur entre panneaux */}
-          <line x1={PAD_X} y1={PRICE_H + PANEL_GAP / 2} x2={W - PAD_X} y2={PRICE_H + PANEL_GAP / 2} stroke="var(--border)" strokeWidth="1" />
-
-          {/* Grille volume */}
-          <line
-            x1={PAD_X}
-            y1={volumeGridLine.y}
-            x2={W - PAD_X}
-            y2={volumeGridLine.y}
-            stroke="var(--chart-grid, #EDE7DC)"
-            strokeWidth="0.5"
-            strokeDasharray="4 4"
-          />
-          <text
-            x={W - PAD_X}
-            y={volumeGridLine.y - 3}
-            textAnchor="end"
-            fontSize="9"
-            fill="var(--foreground-subtle)"
-            style={{ fontVariantNumeric: "tabular-nums" }}
-          >
-            {volumeGridLine.value}
-          </text>
-
-          {/* Barres de volume */}
-          {bars.map((b, i) => (
+          {/* Ligne de volume, indexée sur son propre maximum, superposée */}
+          {path && (
             <path
-              key={`v-${i}`}
-              d={roundedTopBarPath(b.x, barWidth, b.volumeYTop, volumeBaseline)}
+              d={path}
+              fill="none"
+              stroke={VOLUME_COLOR}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          )}
+          {linePts.map((p, i) => (
+            <circle
+              key={i}
+              cx={p.x}
+              cy={p.y}
+              r={hoverIndex === i ? 3.5 : 2}
               fill={VOLUME_COLOR}
               fillOpacity={hoverIndex != null && hoverIndex !== i ? 0.5 : 1}
             />
           ))}
 
-          {/* Ligne verticale reliant les deux panneaux au survol */}
           {hoverBar && (
             <line
-              x1={hoverBar.x + barWidth / 2}
-              y1={0}
-              x2={hoverBar.x + barWidth / 2}
-              y2={TOTAL_H}
+              x1={hoverBar.lineX}
+              y1={PAD_TOP}
+              x2={hoverBar.lineX}
+              y2={baseline}
               stroke="var(--foreground-subtle)"
               strokeWidth="1"
               strokeDasharray="2 2"
@@ -212,7 +201,7 @@ export function PriceVolumeChart({ points }: { points: DailyTimelinePoint[] }) {
           <div
             className="pointer-events-none absolute flex flex-col items-center"
             style={{
-              left: `${((hoverBar.x + barWidth / 2) / W) * 100}%`,
+              left: `${(hoverBar.lineX / W) * 100}%`,
               top: 0,
               transform: "translate(-50%, -100%)",
             }}
@@ -229,10 +218,10 @@ export function PriceVolumeChart({ points }: { points: DailyTimelinePoint[] }) {
                   timeZone: "UTC",
                 })}
               </div>
-              <div style={{ fontSize: "11px", fontWeight: 600 }}>
+              <div style={{ fontSize: "11px", fontWeight: 600, color: PRICE_COLOR }}>
                 {hoverBar.point.avgPrice != null ? formatUsd(hoverBar.point.avgPrice) : "—"}
               </div>
-              <div style={{ fontSize: "10px", fontWeight: 400, opacity: 0.75 }}>
+              <div style={{ fontSize: "10px", fontWeight: 600, color: VOLUME_COLOR }}>
                 {t("salesCount", { count: hoverBar.point.count })}
               </div>
             </div>

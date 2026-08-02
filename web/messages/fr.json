@@ -234,7 +234,8 @@
       "chartLabel": "Prix moyen et volume quotidiens, deux panneaux empilés",
       "loading": "Chargement...",
       "noData": "Pas assez de ventes sur cette période",
-      "salesCount": "{count, plural, one {# vente} other {# ventes}}"
+      "salesCount": "{count, plural, one {# vente} other {# ventes}}",
+      "indexedNote": "(indexé, valeurs réelles au survol)"
     }
   }
 }

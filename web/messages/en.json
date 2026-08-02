@@ -235,7 +235,8 @@
       "chartLabel": "Daily average price and volume, two stacked panels",
       "loading": "Loading...",
       "noData": "Not enough sales over this period",
-      "salesCount": "{count, plural, one {# sale} other {# sales}}"
+      "salesCount": "{count, plural, one {# sale} other {# sales}}",
+      "indexedNote": "(indexed, real values on hover)"
     }
   }
 }

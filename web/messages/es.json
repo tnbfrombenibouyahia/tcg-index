@@ -234,7 +234,8 @@
       "chartLabel": "Precio medio y volumen diarios, dos paneles apilados",
       "loading": "Cargando...",
       "noData": "No hay suficientes ventas en este período",
-      "salesCount": "{count, plural, one {# venta} other {# ventas}}"
+      "salesCount": "{count, plural, one {# venta} other {# ventas}}",
+      "indexedNote": "(indexado, valores reales al pasar el cursor)"
     }
   }
 }
