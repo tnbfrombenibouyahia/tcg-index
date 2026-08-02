@@ -174,6 +174,23 @@
       "pullCost": "Pull cost",
       "pullRate": "Pull rate",
       "score": "Score"
+    },
+    "modal": {
+      "close": "Close",
+      "analysisTitle": "Calculation breakdown",
+      "packPrice": "Pack price",
+      "pullRateLabel": "Pull rate",
+      "pullCost": "Pull cost",
+      "characterMultiplier": "Character multiplier",
+      "theoreticalValue": "Theoretical value",
+      "marketPrice": "Market price",
+      "scoreLabel": "Undervalued score",
+      "salesHistoryTitle": "Sales history",
+      "loading": "Loading...",
+      "noSales": "No sales found for this card",
+      "looseSales": "Loose sales",
+      "gradedSales": "Graded sales",
+      "chartLabel": "Loose and graded sales scatter plot"
     }
   }
 }

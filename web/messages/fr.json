@@ -173,6 +173,23 @@
       "pullCost": "Pull cost",
       "pullRate": "Pull rate",
       "score": "Score"
+    },
+    "modal": {
+      "close": "Fermer",
+      "analysisTitle": "Détail du calcul",
+      "packPrice": "Prix du pack",
+      "pullRateLabel": "Pull rate",
+      "pullCost": "Pull cost",
+      "characterMultiplier": "Multiplicateur personnage",
+      "theoreticalValue": "Valeur théorique",
+      "marketPrice": "Prix marché",
+      "scoreLabel": "Score de sous-évaluation",
+      "salesHistoryTitle": "Historique des ventes",
+      "loading": "Chargement...",
+      "noSales": "Aucune vente trouvée pour cette carte",
+      "looseSales": "Ventes loose",
+      "gradedSales": "Ventes gradées",
+      "chartLabel": "Nuage de ventes loose et gradées"
     }
   }
 }
