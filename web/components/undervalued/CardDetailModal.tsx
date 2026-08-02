@@ -148,7 +148,13 @@ export function CardDetailModal({ row, onClose }: { row: UndervaluedRow; onClose
               {t("loading")}
             </div>
           ) : (
-            <SalesHistoryChart sales={sales} />
+            <SalesHistoryChart
+              sales={sales}
+              tcg={row.tcg}
+              name={row.name}
+              rarity={row.rarity}
+              language={row.language}
+            />
           )}
         </div>
       </div>
