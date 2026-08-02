@@ -8,6 +8,7 @@
     "transactions": "Transactions",
     "sealedEv": "Undervalued Sealed",
     "undervalued": "Undervalued Cards",
+    "divergence": "Divergence",
     "live": "Live Market Data",
     "footer": "Public data · transparent methodology"
   },
@@ -191,6 +192,37 @@
       "looseSales": "Loose sales",
       "gradedSales": "Graded sales",
       "chartLabel": "Sale price by transaction, bar chart"
+    }
+  },
+  "divergence": {
+    "title": "Volume/Price Divergence",
+    "description": "Compares two time windows of equal length (current vs previous period) on a card's number of sales and average price. A price rising while volume falls (or the reverse) is a less confirmed move than one where both go the same direction.",
+    "methodologyLabel": "Methodology:",
+    "methodology": "divergence = price_change(%) − volume_change(%) between the current window and the previous window of equal length. Only cards with at least 3 sales in each of the two windows are included -- otherwise the delta isn't reliable (e.g. 1 sale vs 2 sales would show +100% while meaning nothing).",
+    "filterWindow": "Window:",
+    "filterAll": "All TCGs",
+    "windows": {
+      "d7": "7 days",
+      "d15": "15 days",
+      "d30": "1 month",
+      "d90": "3 months",
+      "d180": "6 months"
+    },
+    "count": "{count} cards",
+    "emptyTitle": "No data yet",
+    "emptyDescription": "Not enough sales in the selected windows to compute a reliable divergence -- try a longer window.",
+    "table": {
+      "card": "Card",
+      "language": "Language",
+      "tcg": "TCG",
+      "volume": "Volume (sales)",
+      "price": "Average price",
+      "divergence": "Divergence",
+      "badges": {
+        "aligned": "Aligned",
+        "priceUpVolumeDown": "Price ↑ · Volume ↓",
+        "priceDownVolumeUp": "Price ↓ · Volume ↑"
+      }
     }
   }
 }

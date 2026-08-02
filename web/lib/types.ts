@@ -125,6 +125,23 @@ export interface SealedEvRow {
   evRatioTop10: number;
 }
 
+export interface DivergenceRow {
+  itemId: number;
+  name: string;
+  imageUrl: string | null;
+  tcg: Tcg;
+  language: string;
+  setCode: string | null;
+  rarity: string | null;
+  volumeCurrent: number;
+  volumePrevious: number;
+  priceCurrent: number;
+  pricePrevious: number;
+  priceChangePct: number;
+  volumeChangePct: number;
+  divergenceScore: number;
+}
+
 export interface UndervaluedRow {
   itemId: number;
   name: string;

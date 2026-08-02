@@ -8,6 +8,7 @@
     "transactions": "Transactions",
     "sealedEv": "Scellés sous-évalués",
     "undervalued": "Cartes sous-évaluées",
+    "divergence": "Divergences",
     "live": "Live Market Data",
     "footer": "Données publiques · méthodologie transparente"
   },
@@ -190,6 +191,37 @@
       "looseSales": "Ventes loose",
       "gradedSales": "Ventes gradées",
       "chartLabel": "Prix de vente par transaction, graphique en barres"
+    }
+  },
+  "divergence": {
+    "title": "Divergences volume/prix",
+    "description": "Compare deux fenêtres de temps de même durée (période courante vs précédente) sur le nombre de ventes et le prix moyen d'une carte. Un prix qui monte pendant que le volume baisse (ou l'inverse) est un mouvement moins confirmé qu'un mouvement où les deux vont dans le même sens.",
+    "methodologyLabel": "Méthodologie :",
+    "methodology": "divergence = variation_prix(%) − variation_volume(%) entre la fenêtre courante et la fenêtre précédente de même durée. Seules les cartes ayant au moins 3 ventes dans chacune des deux fenêtres sont incluses -- sinon le delta n'est pas fiable (ex. 1 vente vs 2 ventes afficherait +100% sans rien vouloir dire).",
+    "filterWindow": "Fenêtre :",
+    "filterAll": "Tous les TCG",
+    "windows": {
+      "d7": "7 jours",
+      "d15": "15 jours",
+      "d30": "1 mois",
+      "d90": "3 mois",
+      "d180": "6 mois"
+    },
+    "count": "{count} cartes",
+    "emptyTitle": "Pas encore de données",
+    "emptyDescription": "Pas assez de ventes sur les fenêtres sélectionnées pour calculer une divergence fiable -- essayez une fenêtre plus longue.",
+    "table": {
+      "card": "Carte",
+      "language": "Langue",
+      "tcg": "TCG",
+      "volume": "Volume (ventes)",
+      "price": "Prix moyen",
+      "divergence": "Divergence",
+      "badges": {
+        "aligned": "Aligné",
+        "priceUpVolumeDown": "Prix ↑ · Volume ↓",
+        "priceDownVolumeUp": "Prix ↓ · Volume ↑"
+      }
     }
   }
 }
