@@ -53,11 +53,16 @@ mapping slug-de-set différent, cf. les deux sections ci-dessous :
 
 Limites connues, acceptées (pas la peine de creuser plus pour ce backfill
 d'appoint) :
-- One Piece : le bucket promo (préfixe `code` = "P", ~349 cartes) --
-  `/cards/P` fait 404 et `/cards/promos` (le vrai slug) ne renvoie aucun bloc
-  `card-page-main` avec `display=full` -- structure de page différente, non
-  creusée ici. "1/1000" (1 seule ligne) : artefact de données API TCG.
-- Pokémon : ~30 sets LimitlessTCG sur 152 restent sans correspondance
+- One Piece : `/cards/promos` n'est pas une page de set classique mais un
+  index d'environ 75 produits promo individuels (Welcome Pack, Tournament
+  Pack, Event Pack...), chacun avec son propre slug -- cf.
+  `list_one_piece_promo_releases`/`sync_all_one_piece_promos`, qui scrapent
+  ces ~75 pages séparément (pas juste `/cards/P` qui 404). Une partie de ces
+  produits n'a toujours aucune rareté exploitable (cartes en Alternate Art
+  d'un code déjà couvert par le set d'origine, ou aucun libellé du tout) --
+  laissé de côté au-delà de l'inférence "Promo" pour les codes "P-XXX" sans
+  libellé. "1/1000" (1 seule ligne) : artefact de données API TCG.
+- Pokémon : ~15 sets LimitlessTCG sur 152 restent sans correspondance
   (ambigus ou score de matching trop faible) -- cf. `build_pokemon_set_mapping`.
 Tout échoue proprement (fetch en erreur ou 0 rareté trouvée) et est compté
 dans `skipped`/`errors`, jamais une exception qui casse tout le run.
@@ -145,9 +150,15 @@ def fetch_one_piece_set_page(slug: str) -> str:
     return resp.text
 
 
-def parse_one_piece_set_rarities(html: str) -> dict[str, str]:
+def parse_one_piece_set_rarities(html: str, infer_promo_prefix: str | None = None) -> dict[str, str]:
     """Une carte (`code`) -> rareté officielle. Cf. docstring module pour le
-    filtre `ONE_PIECE_KNOWN_RARITIES` (ignore les blocs "Alternate Art" etc.)."""
+    filtre `ONE_PIECE_KNOWN_RARITIES` (ignore les blocs "Alternate Art" etc.).
+
+    `infer_promo_prefix` (utilisé pour les pages de promo individuelles, cf.
+    `sync_one_piece_promo_release`) : une carte dont le code a ce préfixe
+    (ex. "P-") et n'a AUCUN libellé de rareté affiché est une carte promo
+    "pure" sans palier de rareté propre côté LimitlessTCG -- on lui assigne
+    "Promo" nous-mêmes plutôt que de la laisser vide, cf. docstring module."""
     soup = BeautifulSoup(html, "html.parser")
     by_code: dict[str, str] = {}
     for block in soup.select("div.card-page-main"):
@@ -156,11 +167,11 @@ def parse_one_piece_set_rarities(html: str) -> dict[str, str]:
             continue
         code = code_el.get_text(strip=True)
         rarity_spans = block.select(".card-prints-current .prints-current-details span")
-        if len(rarity_spans) < 2:
-            continue
-        label = rarity_spans[1].get_text(strip=True)
+        label = rarity_spans[1].get_text(strip=True) if len(rarity_spans) >= 2 else ""
         if label in ONE_PIECE_KNOWN_RARITIES:
             by_code[code] = label
+        elif not label and infer_promo_prefix and code.startswith(infer_promo_prefix):
+            by_code[code] = "Promo"
     return by_code
 
 
@@ -210,6 +221,81 @@ def sync_all_one_piece_rarities(slugs: list[str] | None = None) -> dict:
             time.sleep(REQUEST_PAUSE_SECONDS)
         try:
             n = sync_one_piece_set_rarities(slug)
+        except Exception as exc:
+            print(f"  {slug}: erreur -- {exc}")
+            errors.append({"slug": slug, "error": str(exc)})
+            continue
+        if n == 0:
+            skipped.append(slug)
+            print(f"  {slug}: aucune rareté trouvée (ignoré)")
+        else:
+            total += n
+            print(f"  {slug}: {n} code(s) traité(s)")
+
+    return {"total": total, "skipped": skipped, "errors": errors}
+
+
+def list_one_piece_promo_releases() -> dict[str, str]:
+    """slug -> nom lisible pour chaque produit promo individuel, depuis
+    `/cards/promos` -- PAS une page de set classique (aucun bloc
+    `card-page-main`, cf. mémoire projet) mais un index d'environ 75
+    mini-produits (Welcome Pack, Tournament Pack, Event Pack...), chacun
+    avec son propre slug à scraper séparément."""
+    resp = requests.get(f"{ONE_PIECE_BASE_URL}/cards/promos", headers=HEADERS, timeout=30)
+    resp.raise_for_status()
+    soup = BeautifulSoup(resp.text, "html.parser")
+    main = soup.select_one("main") or soup
+    date_re = re.compile(r"^[A-Za-z]{3} \d{2}$")
+    stat_re = re.compile(r"^\d")
+    releases: dict[str, str] = {}
+    for a in main.select('a[href^="/cards/"]'):
+        slug = a.get("href").split("/")[-1]
+        if slug in releases:
+            continue
+        text = a.get_text(strip=True)
+        if not text or date_re.match(text) or stat_re.match(text):
+            continue
+        releases[slug] = text
+    return releases
+
+
+def sync_one_piece_promo_release(slug: str) -> int:
+    """Scrape un produit promo individuel. Deux cas de figure trouvés en
+    conditions réelles (cf. docstring module) : certaines cartes de ces
+    produits réutilisent le code d'un set déjà scrapé par
+    `sync_one_piece_set_rarities` avec un libellé de traitement de print
+    ("Alternate Art") -- ignorées ici comme ailleurs, déjà couvertes ;
+    d'autres ont un vrai code "P-XXX" propre à la carte promo, sans rareté
+    listée -- `infer_promo_prefix="P-"` leur assigne "Promo"."""
+    html = fetch_one_piece_set_page(slug)
+    by_code = parse_one_piece_set_rarities(html, infer_promo_prefix="P-")
+    if not by_code:
+        return 0
+    rows = list(by_code.items())
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            execute_values(cur, _UPDATE_ONE_PIECE_RARITY_SQL, rows, page_size=len(rows))
+        conn.commit()
+    finally:
+        conn.close()
+    return len(rows)
+
+
+def sync_all_one_piece_promos(releases: dict[str, str] | None = None) -> dict:
+    """Boucle sur tous les produits promo individuels -- une requête par
+    produit, pause entre chaque."""
+    if releases is None:
+        releases = list_one_piece_promo_releases()
+
+    total = 0
+    skipped: list[str] = []
+    errors: list[dict] = []
+    for i, slug in enumerate(releases):
+        if i > 0:
+            time.sleep(REQUEST_PAUSE_SECONDS)
+        try:
+            n = sync_one_piece_promo_release(slug)
         except Exception as exc:
             print(f"  {slug}: erreur -- {exc}")
             errors.append({"slug": slug, "error": str(exc)})
@@ -440,6 +526,13 @@ def main():
     if args.tcg == "one-piece":
         print("== Backfill rareté One Piece (LimitlessTCG) ==")
         result = sync_all_one_piece_rarities()
+        print("\n== Backfill rareté One Piece -- produits promo individuels ==")
+        promo_result = sync_all_one_piece_promos()
+        result = {
+            "total": result["total"] + promo_result["total"],
+            "skipped": result["skipped"] + promo_result["skipped"],
+            "errors": result["errors"] + promo_result["errors"],
+        }
     else:
         print("== Backfill rareté Pokémon (LimitlessTCG) ==")
         mapping = build_pokemon_set_mapping()
