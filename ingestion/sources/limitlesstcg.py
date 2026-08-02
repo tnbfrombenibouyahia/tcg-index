@@ -437,7 +437,10 @@ def parse_pokemon_set_rarities(html: str) -> dict[str, str]:
         name_link = block.select_one(".card-text-name a")
         if not name_link:
             continue
-        number = name_link.get("href").split("/")[-1]
+        # `.split("?")[0]` avant de prendre le dernier segment -- nécessaire
+        # côté JP (`/cards/jp/M6/1?translate=en`), sans effet côté EN
+        # (jamais de query string dans ces href-là).
+        number = name_link.get("href").split("?")[0].split("/")[-1]
         spans = block.select(".card-prints-current .prints-current-details span")
         if len(spans) < 2:
             continue
@@ -523,6 +526,180 @@ def sync_all_pokemon_rarities(mapping: dict[str, str] | None = None) -> dict:
     return {"total": total, "skipped": skipped, "errors": errors}
 
 
+# ─────────────────────────────────────────────────────────────────────────
+# Pokémon JP -- même technique que le Pokémon EN ci-dessus, mais sur la
+# section japonaise dédiée de limitlesstcg.com (pas un "extra" bricolé :
+# c'est un vrai catalogue de sets JP séparé, avec traduction anglaise
+# disponible via `?translate=en`). Trouvé après coup (l'utilisateur a
+# remarqué que la rareté JP n'était pas couverte) -- nos items JP viennent
+# de pricecharting.py (cf. mémoire projet jp_singles_tracking), `code` y est
+# un simple numéro sans "/total" (contrairement au format EN "033/163"), et
+# `set_code` est un slug natif ("pokemon-jp-mega-brave") déjà en anglais
+# traduit -- il matche très bien par recouvrement de tokens contre les noms
+# de sets JP de LimitlessTCG (131 matchs propres sur 262, zéro collision,
+# testé avant d'écrire quoi que ce soit).
+# ─────────────────────────────────────────────────────────────────────────
+
+
+def fetch_pokemon_jp_set_list() -> dict[str, str]:
+    """slug -> nom lisible (déjà traduit en anglais par LimitlessTCG) pour
+    chaque set Pokémon JP, depuis `/cards/jp` (une seule requête)."""
+    resp = requests.get(f"{POKEMON_BASE_URL}/cards/jp", headers=HEADERS, timeout=30)
+    resp.raise_for_status()
+    soup = BeautifulSoup(resp.text, "html.parser")
+    date_re = re.compile(r"^\d{1,2} [A-Za-z]{3} \d{2}$")
+    stat_re = re.compile(r"^\d+\s")
+    sets: dict[str, str] = {}
+    for a in soup.select('table a[href^="/cards/jp/"]'):
+        slug = a.get("href").split("?")[0].split("/")[-1]
+        if slug in sets:
+            continue
+        ann = a.select_one(".code.annotation")
+        ann_text = ann.get_text(strip=True) if ann else ""
+        name = a.get_text(" ", strip=True).replace(ann_text, "").strip()
+        if not name or date_re.match(name) or stat_re.match(name):
+            continue
+        sets[slug] = name
+    return sets
+
+
+def build_pokemon_jp_set_mapping() -> dict[str, str]:
+    """slug LimitlessTCG JP -> notre `set_code` JP, même logique de score de
+    Jaccard que `build_pokemon_set_mapping` (cf. sa docstring pour le
+    detail/les leçons apprises), appliquée aux 370 `set_code` JP au lieu des
+    `set_code` EN."""
+    limitless_sets = fetch_pokemon_jp_set_list()
+
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT DISTINCT set_code FROM items
+                   WHERE tcg = 'pokemon' AND language = 'JP' AND category = 'single'
+                     AND set_code IS NOT NULL"""
+            )
+            our_codes = [r[0] for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+    def jp_tokens(s: str) -> set[str]:
+        s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
+        s = s.lower()
+        s = re.sub(r"^pokemon-jp-", "", s)
+        s = s.replace("'", "")
+        s = s.replace("&", " and ")
+        s = re.sub(r"[^a-z0-9]+", " ", s)
+        toks = {_PLURAL_NORMALIZE.get(t, t) for t in s.split() if t}
+        return toks
+
+    our_tokens = {code: jp_tokens(code) for code in our_codes}
+
+    raw_matches: dict[str, str] = {}
+    for slug, name in limitless_sets.items():
+        ltoks = jp_tokens(name)
+        if not ltoks:
+            continue
+        best_code, best_score = None, 0.0
+        for code, otoks in our_tokens.items():
+            if not otoks:
+                continue
+            union = ltoks | otoks
+            s = len(ltoks & otoks) / len(union) if union else 0.0
+            if s > best_score:
+                best_score, best_code = s, code
+        if best_score >= 1.0:
+            raw_matches[slug] = best_code
+
+    by_code: dict[str, list[str]] = {}
+    for slug, code in raw_matches.items():
+        by_code.setdefault(code, []).append(slug)
+    return {slug: code for slug, code in raw_matches.items() if len(by_code[code]) == 1}
+
+
+def fetch_pokemon_jp_set_page(slug: str) -> str:
+    resp = requests.get(
+        f"{POKEMON_BASE_URL}/cards/jp/{slug}",
+        params={"translate": "en", "display": "full"},
+        headers=HEADERS,
+        timeout=30,
+    )
+    resp.raise_for_status()
+    return resp.text
+
+
+def sync_pokemon_jp_set_rarities(slug: str, set_code: str) -> int:
+    """Comme `sync_pokemon_set_rarities`, mais le `code` de nos items JP est
+    un simple numéro sans "/total" (ex. "33", pas "033/163") -- pas de split
+    sur "/" nécessaire, juste la normalisation du padding."""
+    html = fetch_pokemon_jp_set_page(slug)
+    by_number = parse_pokemon_set_rarities(html)
+    if not by_number:
+        return 0
+
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT id, code FROM items
+                   WHERE tcg = 'pokemon' AND language = 'JP' AND category = 'single'
+                     AND set_code = %s AND code IS NOT NULL""",
+                (set_code,),
+            )
+            rows = cur.fetchall()
+
+        updates = []
+        for item_id, code in rows:
+            numerator = _normalize_numerator(code)
+            if numerator is None:
+                continue
+            rarity = by_number.get(numerator)
+            if rarity:
+                updates.append((item_id, rarity))
+
+        if not updates:
+            return 0
+
+        with conn.cursor() as cur:
+            execute_values(
+                cur,
+                "UPDATE items SET rarity = data.rarity FROM (VALUES %s) AS data (id, rarity) WHERE items.id = data.id",
+                updates,
+                page_size=len(updates),
+            )
+        conn.commit()
+    finally:
+        conn.close()
+    return len(updates)
+
+
+def sync_all_pokemon_jp_rarities(mapping: dict[str, str] | None = None) -> dict:
+    """Boucle sur le mapping slug JP -> set_code JP -- une requête par set,
+    pause entre chaque."""
+    if mapping is None:
+        mapping = build_pokemon_jp_set_mapping()
+
+    total = 0
+    skipped: list[str] = []
+    errors: list[dict] = []
+    for i, (slug, set_code) in enumerate(mapping.items()):
+        if i > 0:
+            time.sleep(REQUEST_PAUSE_SECONDS)
+        try:
+            n = sync_pokemon_jp_set_rarities(slug, set_code)
+        except Exception as exc:
+            print(f"  {slug} ({set_code}): erreur -- {exc}")
+            errors.append({"slug": slug, "set_code": set_code, "error": str(exc)})
+            continue
+        if n == 0:
+            skipped.append(slug)
+            print(f"  {slug} ({set_code}): aucune rareté trouvée (ignoré)")
+        else:
+            total += n
+            print(f"  {slug} ({set_code}): {n} carte(s) traitée(s)")
+
+    return {"total": total, "skipped": skipped, "errors": errors}
+
+
 def main():
     import argparse
 
@@ -544,13 +721,26 @@ def main():
             "errors": result["errors"] + promo_result["errors"],
         }
     else:
-        print("== Backfill rareté Pokémon (LimitlessTCG) ==")
+        print("== Backfill rareté Pokémon EN (LimitlessTCG) ==")
         mapping = build_pokemon_set_mapping()
         print(f"{len(mapping)} set(s) LimitlessTCG mis en correspondance :")
         for slug, set_code in mapping.items():
             print(f"  {slug} -> {set_code}")
         print()
         result = sync_all_pokemon_rarities(mapping)
+
+        print("\n== Backfill rareté Pokémon JP (LimitlessTCG) ==")
+        jp_mapping = build_pokemon_jp_set_mapping()
+        print(f"{len(jp_mapping)} set(s) JP LimitlessTCG mis en correspondance :")
+        for slug, set_code in jp_mapping.items():
+            print(f"  {slug} -> {set_code}")
+        print()
+        jp_result = sync_all_pokemon_jp_rarities(jp_mapping)
+        result = {
+            "total": result["total"] + jp_result["total"],
+            "skipped": result["skipped"] + jp_result["skipped"],
+            "errors": result["errors"] + jp_result["errors"],
+        }
 
     print(f"\nTerminé : {result['total']} traité(s) au total.")
     if result["skipped"]:
