@@ -92,15 +92,17 @@ export function CardDetailModal({ row, onClose }: { row: UndervaluedRow; onClose
           {/* Image (gauche) + infos & détail du calcul (droite) */}
           <div className="flex flex-col gap-5 sm:flex-row">
             {row.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
+              // eslint-disable-next-line @next/next/no-img-element -- source PriceCharting
+              // plafonnée à 60px de large (cf. mémoire projet) : au-delà de ~w-32,
+              // l'agrandissement devient visiblement flou/pixelisé.
               <img
                 src={row.imageUrl}
                 alt={row.name}
-                className="h-64 w-48 flex-shrink-0 self-center rounded-xl object-contain bg-white shadow-sm sm:self-start"
+                className="h-40 w-[7.5rem] flex-shrink-0 self-center rounded-xl object-contain bg-white shadow-sm sm:self-start"
                 style={{ aspectRatio: "3/4" }}
               />
             ) : (
-              <div className="h-64 w-48 flex-shrink-0 self-center rounded-xl bg-muted sm:self-start" />
+              <div className="h-40 w-[7.5rem] flex-shrink-0 self-center rounded-xl bg-muted sm:self-start" />
             )}
 
             <div className="min-w-0 flex-1 pr-8">
