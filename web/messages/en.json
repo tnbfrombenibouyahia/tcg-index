@@ -190,7 +190,7 @@
       "noSales": "No sales found for this card",
       "looseSales": "Loose sales",
       "gradedSales": "Graded sales",
-      "chartLabel": "Loose and graded sales scatter plot"
+      "chartLabel": "Sale price by transaction, bar chart"
     }
   }
 }

@@ -7,57 +7,55 @@ import { formatUsd } from "@/lib/format";
 import { GRADES, GRADE_LABELS, type Grade } from "@/lib/constants";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Historique de ventes, en ligne lissée (pas en nuage de points -- demande
-// utilisateur, cohérent avec les graphiques "prix dans le temps" de
-// PriceCharting dont vient la donnée). Un sélecteur de grade (loose ou PSA
-// 7-10) filtre à UNE série à la fois plutôt que de les empiler toutes --
-// mélanger loose/PSA7/PSA10 sur la même ligne produisait un tracé en dents
-// de scie (des tranches de prix très différentes bout à bout), le sélecteur
-// règle le bruit ET la lisibilité en même temps (demande utilisateur).
-// Une seule série affichée = pas de légende nécessaire (cf. dataviz skill).
+// Historique de ventes, en barres -- une barre = une vente (demande
+// utilisateur). Chaque vente est un évènement ponctuel, pas un indice
+// continu : espacer les barres selon le calendrier réel exagérerait les longs
+// silences entre deux ventes (courant sur des cartes peu liquides), donc les
+// barres sont réparties uniformément et triées par date plutôt que
+// positionnées proportionnellement au temps. Un sélecteur de grade (loose ou
+// PSA 7-10) filtre à UNE série à la fois -- une seule série affichée = pas de
+// légende nécessaire (cf. dataviz skill).
 // ─────────────────────────────────────────────────────────────────────────────
 
-const LINE_COLOR = "#2a78d6"; // slot catégoriel 1 (validé dataviz skill) -- une seule série à la fois désormais
+const BAR_COLOR = "#2a78d6"; // slot catégoriel 1 (validé dataviz skill) -- une seule série à la fois
 
 const W = 700;
 const H = 220;
 const PAD_X = 16;
 const PAD_Y = 16;
 const PAD_BOTTOM = 28;
+const BAR_RADIUS = 4;
+const BAR_GAP = 2;
 
-interface Point {
+interface Bar {
   x: number;
-  y: number;
+  width: number;
+  yTop: number;
+  yBottom: number;
   sale: SaleRow;
 }
 
-// Catmull-Rom -> Bézier cubique (tension standard 1/6) : fait passer une
-// courbe lisse par tous les points plutôt que des segments droits bout à
-// bout. Simple à la main, pas besoin d'une lib de charting pour ça.
-function smoothPath(points: Point[]): string {
-  if (points.length < 2) return "";
-  if (points.length === 2) {
-    return `M${points[0].x.toFixed(1)},${points[0].y.toFixed(1)} L${points[1].x.toFixed(1)},${points[1].y.toFixed(1)}`;
-  }
-  let d = `M${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}`;
-  for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[i - 1] ?? points[i];
-    const p1 = points[i];
-    const p2 = points[i + 1];
-    const p3 = points[i + 2] ?? p2;
-    const cp1x = p1.x + (p2.x - p0.x) / 6;
-    const cp1y = p1.y + (p2.y - p0.y) / 6;
-    const cp2x = p2.x - (p3.x - p1.x) / 6;
-    const cp2y = p2.y - (p3.y - p1.y) / 6;
-    d += ` C${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
-  }
-  return d;
+// Rectangle avec coins arrondis en haut seulement -- la base reste ancrée à
+// la ligne zéro (cf. dataviz skill : "rounded data-ends anchored to the
+// baseline").
+function roundedTopBarPath(x: number, width: number, yTop: number, yBottom: number): string {
+  const r = Math.min(BAR_RADIUS, width / 2, yBottom - yTop);
+  if (r <= 0) return `M${x},${yBottom} L${x},${yTop} L${x + width},${yTop} L${x + width},${yBottom} Z`;
+  return [
+    `M${x},${yBottom}`,
+    `L${x},${yTop + r}`,
+    `Q${x},${yTop} ${x + r},${yTop}`,
+    `L${x + width - r},${yTop}`,
+    `Q${x + width},${yTop} ${x + width},${yTop + r}`,
+    `L${x + width},${yBottom}`,
+    "Z",
+  ].join(" ");
 }
 
 export function SalesHistoryChart({ sales }: { sales: SaleRow[] }) {
   const t = useTranslations("undervalued.modal");
   const locale = useLocale();
-  const [hover, setHover] = useState<Point | null>(null);
+  const [hover, setHover] = useState<Bar | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
   const availableGrades = useMemo(
@@ -68,37 +66,39 @@ export function SalesHistoryChart({ sales }: { sales: SaleRow[] }) {
   const activeGrade = selectedGrade && availableGrades.includes(selectedGrade) ? selectedGrade : availableGrades[0];
 
   const filtered = useMemo(
-    () => sales.filter((s) => s.grade === activeGrade),
+    () =>
+      sales
+        .filter((s) => s.grade === activeGrade)
+        .slice()
+        .sort((a, b) => a.saleDate.localeCompare(b.saleDate)),
     [sales, activeGrade]
   );
 
   // Tous les hooks avant tout retour anticipé (cf. rules-of-hooks) -- les
-  // calculs restent sûrs sur un tableau vide (dateRange/priceRange retombent
-  // sur 1 via `|| 1`), le rendu "pas de données" arrive dans le JSX plus bas.
-  const dates = filtered.map((s) => new Date(`${s.saleDate}T00:00:00Z`).getTime());
+  // calculs restent sûrs sur un tableau vide, le rendu "pas de données"
+  // arrive dans le JSX plus bas.
   const prices = filtered.map((s) => s.price);
-  const minDate = dates.length ? Math.min(...dates) : 0;
-  const maxDate = dates.length ? Math.max(...dates) : 0;
-  const dateRange = maxDate - minDate || 1;
   const minPrice = 0; // toujours ancrer à 0 -- évite de sur-dramatiser l'écart visuel
   const maxPrice = (prices.length ? Math.max(...prices) : 0) * 1.08 || 1;
   const priceRange = maxPrice - minPrice || 1;
 
   const plotW = W - PAD_X * 2;
   const plotH = H - PAD_Y - PAD_BOTTOM;
+  const baseline = PAD_Y + plotH;
 
-  const toX = (time: number) => PAD_X + ((time - minDate) / dateRange) * plotW;
   const toY = (price: number) => PAD_Y + (1 - (price - minPrice) / priceRange) * plotH;
 
-  const points: Point[] = filtered
-    .map((sale) => ({
-      x: toX(new Date(`${sale.saleDate}T00:00:00Z`).getTime()),
-      y: toY(sale.price),
-      sale,
-    }))
-    .sort((a, b) => a.x - b.x);
+  const n = filtered.length;
+  const slot = n > 0 ? plotW / n : 0;
+  const barWidth = Math.max(1, slot - BAR_GAP);
 
-  const path = smoothPath(points);
+  const bars: Bar[] = filtered.map((sale, i) => ({
+    x: PAD_X + slot * i + (slot - barWidth) / 2,
+    width: barWidth,
+    yTop: toY(sale.price),
+    yBottom: baseline,
+    sale,
+  }));
 
   const gridLines = [0.25, 0.5, 0.75, 1].map((frac) => ({
     y: PAD_Y + (1 - frac) * plotH,
@@ -107,24 +107,13 @@ export function SalesHistoryChart({ sales }: { sales: SaleRow[] }) {
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<SVGSVGElement>) => {
-      if (!svgRef.current) return;
+      if (!svgRef.current || slot <= 0) return;
       const rect = svgRef.current.getBoundingClientRect();
       const relX = ((e.clientX - rect.left) / rect.width) * W;
-      const relY = ((e.clientY - rect.top) / rect.height) * H;
-
-      let nearest: Point | null = null;
-      let best = Infinity;
-      for (const p of points) {
-        const d = (p.x - relX) ** 2 + (p.y - relY) ** 2;
-        if (d < best) {
-          best = d;
-          nearest = p;
-        }
-      }
-      // 20px de tolérance (au carré) -- au-delà, on considère qu'on ne survole aucun point
-      setHover(best < 400 ? nearest : null);
+      const idx = Math.floor((relX - PAD_X) / slot);
+      setHover(idx >= 0 && idx < bars.length ? bars[idx] : null);
     },
-    [points]
+    [bars, slot]
   );
 
   if (sales.length === 0) {
@@ -159,7 +148,7 @@ export function SalesHistoryChart({ sales }: { sales: SaleRow[] }) {
       </div>
 
       <div className="relative" style={{ height: H }}>
-        {points.length === 0 ? (
+        {bars.length === 0 ? (
           <div
             className="flex h-full items-center justify-center text-xs"
             style={{ color: "var(--foreground-subtle)" }}
@@ -189,28 +178,12 @@ export function SalesHistoryChart({ sales }: { sales: SaleRow[] }) {
               />
             ))}
 
-            {path && (
+            {bars.map((b, i) => (
               <path
-                d={path}
-                fill="none"
-                stroke={LINE_COLOR}
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                vectorEffect="non-scaling-stroke"
-              />
-            )}
-
-            {points.map((p, i) => (
-              <circle
                 key={i}
-                cx={p.x}
-                cy={p.y}
-                r={hover === p ? 5 : 3}
-                fill={LINE_COLOR}
-                fillOpacity={hover && hover !== p ? 0.4 : 1}
-                stroke="var(--surface-solid, #fff)"
-                strokeWidth={hover === p ? 2 : 1}
+                d={roundedTopBarPath(b.x, b.width, b.yTop, b.yBottom)}
+                fill={BAR_COLOR}
+                fillOpacity={hover && hover !== b ? 0.4 : 1}
               />
             ))}
 
@@ -234,8 +207,8 @@ export function SalesHistoryChart({ sales }: { sales: SaleRow[] }) {
           <div
             className="pointer-events-none absolute flex flex-col items-center"
             style={{
-              left: `${(hover.x / W) * 100}%`,
-              top: `${Math.max(0, (hover.y / H) * 100 - 14)}%`,
+              left: `${((hover.x + hover.width / 2) / W) * 100}%`,
+              top: `${Math.max(0, (hover.yTop / H) * 100 - 4)}%`,
               transform: "translate(-50%, -100%)",
             }}
           >

@@ -189,7 +189,7 @@
       "noSales": "No se encontraron ventas para esta carta",
       "looseSales": "Ventas sueltas",
       "gradedSales": "Ventas gradadas",
-      "chartLabel": "Nube de ventas sueltas y gradadas"
+      "chartLabel": "Precio de venta por transacción, gráfico de barras"
     }
   }
 }
