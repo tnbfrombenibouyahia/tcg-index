@@ -64,6 +64,23 @@ dans `skipped`/`errors`, jamais une exception qui casse tout le run.
 """
 import re
 import time
+import unicodedata
+
+# Numérateur de `code` -> forme canonique comparable au numéro nu
+# LimitlessTCG : gère le préfixe alpha optionnel (sous-collections type
+# Trainer Gallery/Shiny Vault/Galarian Gallery, ex. "TG01" -> "TG1",
+# "SV001" -> "SV1", "GG01" -> "GG1") et les zéros de padding -- cf. mémoire
+# projet, découvert en creusant pourquoi ces sous-collections ne matchaient
+# jamais alors que leur set_code matchait bien.
+_NUMERATOR_RE = re.compile(r"^([A-Za-z]*)0*(\d+)$")
+
+
+def _normalize_numerator(raw: str) -> str | None:
+    m = _NUMERATOR_RE.match(raw)
+    if not m:
+        return None
+    prefix, digits = m.groups()
+    return f"{prefix}{digits}"
 
 import requests
 from bs4 import BeautifulSoup
@@ -211,19 +228,24 @@ def sync_all_one_piece_rarities(slugs: list[str] | None = None) -> dict:
 # Pokémon
 # ─────────────────────────────────────────────────────────────────────────
 
-# Tokens trop génériques pour, à eux seuls, valider une correspondance de set
-# (ex. "Mega Promos" ne doit pas matcher n'importe quel set contenant
-# "promos") -- cf. docstring module, incident rencontré en développant ceci.
-_GENERIC_SET_TOKENS = {"promos", "promo", "energy", "energies", "trainer", "kit", "cards", "collection"}
+# Normalisation singulier/pluriel -- LimitlessTCG dit "Mega Promos", notre
+# set_code dit "...-promo" (singulier) : sans ça, les deux ne partagent pas
+# le même token alors qu'ils désignent la même notion. Pas un retrait pur
+# (contrairement à une v1 de ce module) : un retrait complet de "promo"
+# faisait matcher "Mega Evolution" et "Mega Evolution Promo" comme
+# identiques, un faux positif -- cf. mémoire projet.
+_PLURAL_NORMALIZE = {"promos": "promo", "energies": "energy", "cards": "card"}
 _GEN_CODE_RE = re.compile(r"^(sv|swsh|sm|xy|bw|dp|ex|hgss|me)\d*$")
 
 
 def _set_name_tokens(s: str) -> set[str]:
+    s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
     s = s.lower()
     s = re.sub(r"^pokemon-", "", s)
     s = s.replace("'", "")
+    s = s.replace("&", " and ")  # LimitlessTCG "Black & White" vs our "black-and-white"
     s = re.sub(r"[^a-z0-9]+", " ", s)
-    toks = {t for t in s.split() if t}
+    toks = {_PLURAL_NORMALIZE.get(t, t) for t in s.split() if t}
     return {t for t in toks if not _GEN_CODE_RE.fullmatch(t)}
 
 
@@ -252,11 +274,17 @@ def fetch_pokemon_set_list() -> dict[str, str]:
 def build_pokemon_set_mapping() -> dict[str, str]:
     """slug LimitlessTCG -> notre `set_code`, par recouvrement de tokens de
     nom (cf. docstring module -- pas de raccourci direct comme pour One
-    Piece). Un match ne compte que si TOUS les tokens significatifs du nom
-    le plus court se retrouvent dans l'autre (score 1.0) ; les `set_code`
-    réclamés par plusieurs slugs LimitlessTCG à la fois sont exclus (bucket
-    ambigu côté API TCG, cf. exemples dans le docstring) plutôt que résolus
-    au hasard."""
+    Piece). Score de Jaccard symétrique (intersection/union des tokens
+    significatifs des deux côtés) : un match ne compte que si les deux noms
+    ont exactement le même ensemble de tokens significatifs (score 1.0).
+    Une comparaison asymétrique ("tous les tokens du plus petit sont dans
+    le plus grand") a été essayée d'abord et faisait matcher "Base Set 2"
+    aussi bien contre "pokemon-base-set" que "pokemon-base-set-2" (le
+    premier n'a pas le token "2" en trop qui pénalise, mais rien ne
+    pénalisait le second d'en avoir un de moins) -- cf. mémoire projet.
+    Les `set_code` réclamés par plusieurs slugs LimitlessTCG à la fois
+    restent exclus (bucket réellement fourre-tout côté API TCG) plutôt que
+    résolus au hasard."""
     limitless_sets = fetch_pokemon_set_list()
 
     conn = get_connection()
@@ -281,11 +309,8 @@ def build_pokemon_set_mapping() -> dict[str, str]:
         for code, otoks in our_tokens.items():
             if not otoks:
                 continue
-            smaller, larger = (ltoks, otoks) if len(ltoks) <= len(otoks) else (otoks, ltoks)
-            meaningful = smaller - _GENERIC_SET_TOKENS
-            if not meaningful:
-                continue
-            s = len(meaningful & larger) / len(meaningful)
+            union = ltoks | otoks
+            s = len(ltoks & otoks) / len(union) if union else 0.0
             if s > best_score:
                 best_score, best_code = s, code
         if best_score >= 1.0:
@@ -351,10 +376,10 @@ def sync_pokemon_set_rarities(slug: str, set_code: str) -> int:
 
         updates = []
         for item_id, code in rows:
-            numerator = code.split("/")[0]
-            if not numerator.isdigit():
+            numerator = _normalize_numerator(code.split("/")[0])
+            if numerator is None:
                 continue
-            rarity = by_number.get(str(int(numerator)))
+            rarity = by_number.get(numerator)
             if rarity:
                 updates.append((item_id, rarity))
 
