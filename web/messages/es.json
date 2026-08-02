@@ -7,6 +7,7 @@
     "home": "Inicio",
     "transactions": "Transacciones",
     "sealedEv": "Sellados infravalorados",
+    "undervalued": "Cartas infravaloradas",
     "live": "Live Market Data",
     "footer": "Datos públicos · metodología transparente"
   },
@@ -151,6 +152,27 @@
       "notCrossChecked": "Sin verificar",
       "notCrossCheckedTooltip": "No se encontró ninguna venta individual -- agregado de PriceCharting sin verificar",
       "scoreTooltip": "Fiabilidad {score}/100 ({count, plural, one {# venta utilizada} other {# ventas utilizadas}})"
+    }
+  },
+  "undervalued": {
+    "title": "Cartas infravaloradas",
+    "description": "Cartas cuyo precio de mercado es inferior al coste estructural de obtención (pull cost), ponderado por la popularidad del personaje. Un ratio > 1 indica que la carta cuesta estadísticamente más abrirla en un sobre que comprarla en el mercado.",
+    "methodologyLabel": "Metodología:",
+    "methodology": "valor_teórico = pull_cost × character_multiplier. pull_cost = precio_sobre / pull_rate (derivado de la estructura del set). undervalued_score = valor_teórico / precio_mercado. MVP: factores collector y demand fijados en 1.0.",
+    "filterAll": "Todos los TCG",
+    "filterMinPrice": "Precio mín.",
+    "count": "{count} cartas",
+    "emptyTitle": "Sin datos todavía",
+    "emptyDescription": "El cálculo de puntuaciones undervalued aún no se ha ejecutado, o ninguna carta coincide con los filtros actuales.",
+    "table": {
+      "card": "Carta",
+      "language": "Idioma",
+      "tcg": "TCG",
+      "rarity": "Rareza",
+      "marketPrice": "Precio de mercado",
+      "pullCost": "Pull cost",
+      "pullRate": "Pull rate",
+      "score": "Puntuación"
     }
   }
 }

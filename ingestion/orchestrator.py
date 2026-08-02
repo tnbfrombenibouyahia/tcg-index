@@ -49,6 +49,7 @@ from dotenv import load_dotenv
 
 from index import calculate as index_calculate
 from index import sealed_ev as index_sealed_ev
+from index import undervalued as index_undervalued
 from index import volume as index_volume
 from index.methodology import INDEX_DEFINITIONS
 from ingestion.sources import apitcg, pricecharting
@@ -266,6 +267,26 @@ def run_sealed_ev_calculation(run_type: str) -> None:
     finish_run(run_id, status="success", rows_written=n, detail=f"{n} Booster Box(es) mis à jour")
 
 
+def run_undervalued_calculation(run_type: str) -> None:
+    """Calcule les scores de sous-évaluation (cf. index/undervalued.py) à
+    partir de `price_snapshots` + `sealed_ev`. Tourne à chaque run comme le
+    calcul d'indice et le ratio EV -- dépend des deux (prix marché + prix
+    box), donc s'exécute après `run_sealed_ev_calculation`."""
+    print("\n=== Calcul des scores undervalued ===")
+    run_id = start_run(run_type, "undervalued")
+    conn = get_connection()
+    try:
+        results = index_undervalued.calculate_undervalued(conn)
+        n = len(results)
+        print(f"  {n} single(s) scoré(s)." if n else "  Aucun single avec prix marché + pack price trouvé.")
+    except Exception as exc:
+        finish_run(run_id, status="error", detail=str(exc))
+        raise
+    finally:
+        conn.close()
+    finish_run(run_id, status="success", rows_written=n, detail=f"{n} single(s) scoré(s)")
+
+
 def run_volume_calculation(run_type: str) -> None:
     """Recalcule le volume de ventes (cf. index/volume.py) à partir de
     `sales`. Seulement appelé sur un run --tier, cf. docstring du module."""
@@ -354,6 +375,12 @@ def main() -> int:
     except Exception as exc:
         had_errors = True
         print(f"\n!! Erreur pendant le calcul du ratio EV des scellés : {exc}")
+
+    try:
+        run_undervalued_calculation(run_type)
+    except Exception as exc:
+        had_errors = True
+        print(f"\n!! Erreur pendant le calcul des scores undervalued : {exc}")
 
     if args.tier is not None:
         try:

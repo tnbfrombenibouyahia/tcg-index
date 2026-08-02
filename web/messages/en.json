@@ -7,6 +7,7 @@
     "home": "Home",
     "transactions": "Transactions",
     "sealedEv": "Undervalued Sealed",
+    "undervalued": "Undervalued Cards",
     "live": "Live Market Data",
     "footer": "Public data · transparent methodology"
   },
@@ -69,6 +70,7 @@
       "grades_sales": "PSA grading & sales",
       "index": "Index calculation",
       "sealed_ev": "Sealed EV ratio",
+      "undervalued": "Undervalued scores",
       "volume": "Sales volume"
     },
     "tiers": {
@@ -151,6 +153,27 @@
       "notCrossChecked": "Not cross-checked",
       "notCrossCheckedTooltip": "No individual sale found -- PriceCharting aggregate not cross-checked",
       "scoreTooltip": "Reliability {score}/100 ({count, plural, one {# sale used} other {# sales used}})"
+    }
+  },
+  "undervalued": {
+    "title": "Undervalued Cards",
+    "description": "Cards trading below their structural pull cost, weighted by character popularity. A ratio > 1 means the market price is below what it statistically costs to open that card from a pack — a potential buying signal.",
+    "methodologyLabel": "Methodology:",
+    "methodology": "theoretical_value = pull_cost × character_multiplier. pull_cost = pack_price / pull_rate (derived from set structure). undervalued_score = theoretical_value / market_price. MVP: collector & demand factors fixed at 1.0.",
+    "filterAll": "All TCGs",
+    "filterMinPrice": "Min price",
+    "count": "{count} cards",
+    "emptyTitle": "No data yet",
+    "emptyDescription": "The undervalued score calculation hasn't run yet, or no card matches the current filters.",
+    "table": {
+      "card": "Card",
+      "language": "Language",
+      "tcg": "TCG",
+      "rarity": "Rarity",
+      "marketPrice": "Market price",
+      "pullCost": "Pull cost",
+      "pullRate": "Pull rate",
+      "score": "Score"
     }
   }
 }

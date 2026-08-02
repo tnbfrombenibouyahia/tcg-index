@@ -72,7 +72,7 @@ export interface SalesFiltersResponse {
   rarities: string[];
 }
 
-export type SyncStep = "items" | "prices" | "grades_sales" | "index" | "sealed_ev" | "volume";
+export type SyncStep = "items" | "prices" | "grades_sales" | "index" | "sealed_ev" | "volume" | "undervalued";
 export type SyncRunStatus = "running" | "success" | "error";
 
 export interface SyncRun {
@@ -123,4 +123,22 @@ export interface SealedEvRow {
   singlesTop10Value: number;
   evRatioTotal: number;
   evRatioTop10: number;
+}
+
+export interface UndervaluedRow {
+  itemId: number;
+  name: string;
+  imageUrl: string | null;
+  tcg: Tcg;
+  language: string;
+  setCode: string | null;
+  rarity: string | null;
+  capturedAt: string;
+  packPrice: number | null;
+  pullRate: number | null;
+  pullCost: number | null;
+  characterMultiplier: number | null;
+  theoreticalValue: number;
+  marketPrice: number;
+  undervaluedScore: number;
 }

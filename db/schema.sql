@@ -128,6 +128,39 @@ CREATE TABLE IF NOT EXISTS sync_runs (
 CREATE INDEX IF NOT EXISTS idx_sync_runs_started ON sync_runs (started_at DESC);
 CREATE INDEX IF NOT EXISTS idx_sync_runs_running ON sync_runs (status) WHERE status = 'running';
 
+-- Score de sous-évaluation par carte : compare une valeur théorique composite
+-- (pull_cost × character_multiplier × collector_factor × demand_factor) au prix
+-- marché réel pour détecter les cartes vendues en dessous de leur valeur
+-- structurelle. undervalued_score > 1 = potentiellement sous-évalué.
+--
+-- MVP : collector_factor et demand_factor fixés à 1.0 (cf. index/undervalued.py
+-- pour la méthodologie complète). pull_cost = pack_price × (1/pull_rate),
+-- pull_rate dérivé structurellement depuis items.rarity (nb cartes de cette
+-- rareté dans le set). pack_price dérivé du Booster Box (sealed_ev) ou table
+-- statique de fallback (index/pack_price_table.py).
+CREATE TABLE IF NOT EXISTS undervalued_scores (
+  id                   BIGSERIAL PRIMARY KEY,
+  item_id              BIGINT NOT NULL REFERENCES items(id),
+  captured_at          DATE NOT NULL,
+  -- inputs du calcul (pour audit/replay)
+  pack_price           NUMERIC(12,2),          -- prix du pack dérivé (box/nb_packs)
+  pull_rate            NUMERIC(10,6),          -- 1/nb_cartes_de_cette_rareté
+  pull_cost            NUMERIC(12,2),          -- pack_price × (1/pull_rate)
+  character_multiplier NUMERIC(6,4),           -- normalized_score/10 (table statique)
+  collector_factor     NUMERIC(6,4) DEFAULT 1.0,
+  demand_factor        NUMERIC(6,4) DEFAULT 1.0,
+  -- output
+  theoretical_value    NUMERIC(12,2) NOT NULL, -- valeur théorique composite
+  market_price         NUMERIC(12,2) NOT NULL, -- dernier prix marché (price_snapshots ungraded)
+  undervalued_score    NUMERIC(10,4) NOT NULL, -- theoretical_value / market_price
+  created_at           TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (item_id, captured_at)
+);
+CREATE INDEX IF NOT EXISTS idx_undervalued_score
+    ON undervalued_scores (captured_at DESC, undervalued_score DESC);
+CREATE INDEX IF NOT EXISTS idx_undervalued_item
+    ON undervalued_scores (item_id, captured_at DESC);
+
 -- Indice calculé : l'output, ce que le front lit
 CREATE TABLE index_values (
   id            BIGSERIAL PRIMARY KEY,
