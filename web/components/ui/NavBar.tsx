@@ -1,17 +1,22 @@
 import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
+import { LanguageSelector } from "@/components/ui/LanguageSelector";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SideBar — Fixed left navigation, "Quiet Luxury / White Mode"
 // ─────────────────────────────────────────────────────────────────────────────
 
-const PRIMARY_NAV = [
-  { href: "/", label: "Accueil", icon: <HomeIcon /> },
-  { href: "/transactions", label: "Transactions", icon: <TransactionsIcon /> },
-  { href: "/sealed-ev", label: "Scellés sous-évalués", icon: <BoxIcon /> },
-  { href: "/live", label: "Live Market Data", icon: <PulseIcon /> },
-];
+export async function NavBar() {
+  const t = await getTranslations("nav");
+  const locale = await getLocale();
 
-export function NavBar() {
+  const PRIMARY_NAV = [
+    { href: "/", label: t("home"), icon: <HomeIcon /> },
+    { href: "/transactions", label: t("transactions"), icon: <TransactionsIcon /> },
+    { href: "/sealed-ev", label: t("sealedEv"), icon: <BoxIcon /> },
+    { href: "/live", label: t("live"), icon: <PulseIcon /> },
+  ];
+
   return (
     <aside
       id="sidebar"
@@ -83,11 +88,13 @@ export function NavBar() {
           padding: "16px 24px 0",
           borderTop: "1px solid rgba(26,26,26,0.07)",
           marginTop: "auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
         }}
       >
-        <p style={{ fontSize: "11px", color: "#B8B2AC", margin: 0, lineHeight: 1.5 }}>
-          Données publiques · méthodologie transparente
-        </p>
+        <LanguageSelector current={locale} />
+        <p style={{ fontSize: "11px", color: "#B8B2AC", margin: 0, lineHeight: 1.5 }}>{t("footer")}</p>
       </div>
     </aside>
   );

@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { LastUpdatedBadge } from "@/components/ui/LastUpdatedBadge";
 import { HeadlineSection } from "@/components/homepage/HeadlineSection";
 import { SubIndexGrid } from "@/components/homepage/SubIndexGrid";
@@ -6,6 +7,8 @@ import { getAllIndices } from "@/lib/queries/indices";
 
 export default async function HomePage() {
   const { asOf, indices } = await getAllIndices(180);
+  const tNav = await getTranslations("nav");
+  const tHome = await getTranslations("home");
 
   const headline = indices.filter((i) => i.kind === "global");
   const detail = indices.filter((i) => i.kind !== "global");
@@ -29,7 +32,7 @@ export default async function HomePage() {
             cursor: "pointer",
           }}
         >
-          Accueil
+          {tNav("home")}
         </span>
         <span style={{ fontSize: "14px", color: "#B8B2AC" }}>/</span>
         <span
@@ -40,7 +43,7 @@ export default async function HomePage() {
             letterSpacing: "-0.01em",
           }}
         >
-          Marché TCG
+          {tHome("breadcrumbCurrent")}
         </span>
 
         {/* Spacer */}

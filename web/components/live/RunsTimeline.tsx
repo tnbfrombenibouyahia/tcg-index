@@ -1,8 +1,10 @@
+"use client";
+
+import { useLocale, useTranslations } from "next-intl";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TcgIcon } from "@/components/homepage/TcgIcon";
 import { TCGS, type Tcg } from "@/lib/constants";
 import { formatDuration, formatRelativeTime } from "@/lib/format";
-import { STEP_LABELS, TIER_LABELS } from "@/lib/live";
 import type { SyncRun } from "@/lib/types";
 import { StatusDot } from "./StatusDot";
 
@@ -28,20 +30,21 @@ function StatusIcon({ status }: { status: SyncRun["status"] }) {
 }
 
 export function RunsTimeline({ runs }: { runs: SyncRun[] }) {
+  const t = useTranslations("live");
+  const tSteps = useTranslations("live.steps");
+  const locale = useLocale();
+
   return (
     <section>
       <h2
         className="text-xs font-semibold uppercase"
         style={{ color: "var(--foreground-muted)", letterSpacing: "0.10em", marginBottom: "12px" }}
       >
-        Historique des runs
+        {t("historyTitle")}
       </h2>
 
       {runs.length === 0 ? (
-        <EmptyState
-          title="Pas encore de run enregistré"
-          description="Le journal démarre avec le prochain sync programmé (référentiel + prix à 06:00 UTC). Rien à faire de votre côté — ça s'accumule tout seul."
-        />
+        <EmptyState title={t("emptyRunsTitle")} description={t("emptyRunsDescription")} />
       ) : (
         <div className="card-glass" style={{ padding: "6px 22px" }}>
           {runs.map((run, i) => (
@@ -61,7 +64,7 @@ export function RunsTimeline({ runs }: { runs: SyncRun[] }) {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px 8px" }}>
                   <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--foreground)" }}>
-                    {STEP_LABELS[run.step]}
+                    {tSteps(run.step)}
                   </span>
                   {run.tcg ? (
                     <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "12px", color: "var(--foreground-muted)" }}>
@@ -69,11 +72,11 @@ export function RunsTimeline({ runs }: { runs: SyncRun[] }) {
                       {TCG_LABEL[run.tcg]}
                     </span>
                   ) : (
-                    <span style={{ fontSize: "12px", color: "var(--foreground-muted)" }}>Pokémon &amp; One Piece</span>
+                    <span style={{ fontSize: "12px", color: "var(--foreground-muted)" }}>{t("bothTcgs")}</span>
                   )}
                   {run.tier ? (
                     <span style={{ fontSize: "11.5px", color: "var(--foreground-subtle)" }}>
-                      {TIER_LABELS[run.tier] ?? run.tier}
+                      {t.has(`tiers.${run.tier}`) ? t(`tiers.${run.tier}`) : run.tier}
                     </span>
                   ) : null}
                 </div>
@@ -82,8 +85,8 @@ export function RunsTimeline({ runs }: { runs: SyncRun[] }) {
                 ) : null}
               </div>
               <div style={{ textAlign: "right", flexShrink: 0, fontSize: "11.5px", color: "var(--foreground-subtle)" }}>
-                <div>{formatRelativeTime(run.startedAt)}</div>
-                {run.finishedAt ? <div>{formatDuration(run.startedAt, run.finishedAt)}</div> : <div>en cours…</div>}
+                <div>{formatRelativeTime(run.startedAt, locale)}</div>
+                {run.finishedAt ? <div>{formatDuration(run.startedAt, run.finishedAt)}</div> : <div>{t("inProgress")}</div>}
               </div>
             </div>
           ))}

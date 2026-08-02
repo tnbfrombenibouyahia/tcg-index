@@ -7,7 +7,7 @@ export interface SalesFilterParams {
   setCode?: string;
   itemId?: number;
   grade?: string;
-  sort?: "date_desc" | "date_asc" | "price_desc" | "price_asc";
+  sort?: "date_desc" | "date_asc" | "price_desc" | "price_asc" | "language_asc" | "language_desc";
   page?: number;
   pageSize?: number;
 }
@@ -38,6 +38,10 @@ function orderFragment(sort: SalesFilterParams["sort"]) {
       return sql`ORDER BY s.price DESC, s.id DESC`;
     case "price_asc":
       return sql`ORDER BY s.price ASC, s.id ASC`;
+    case "language_asc":
+      return sql`ORDER BY i.language ASC, s.sale_date DESC, s.id DESC`;
+    case "language_desc":
+      return sql`ORDER BY i.language DESC, s.sale_date DESC, s.id DESC`;
     case "date_desc":
     default:
       return sql`ORDER BY s.sale_date DESC, s.id DESC`;

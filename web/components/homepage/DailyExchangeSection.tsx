@@ -1,3 +1,4 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import { StatDelta } from "@/components/ui/StatDelta";
 import { formatDate, formatUsd } from "@/lib/format";
 import type { IndexSummary, VolumePoint } from "@/lib/types";
@@ -15,8 +16,11 @@ function latestTwo(volume: VolumePoint[]) {
   };
 }
 
-function DailyExchangeTile({ summary }: { summary: IndexSummary }) {
+async function DailyExchangeTile({ summary }: { summary: IndexSummary }) {
   const { latest, previous } = latestTwo(summary.volume);
+  const t = await getTranslations("home");
+  const tIndices = await getTranslations("indices");
+  const locale = await getLocale();
 
   const changePct =
     latest && previous && previous.salesCount !== 0
@@ -37,7 +41,7 @@ function DailyExchangeTile({ summary }: { summary: IndexSummary }) {
         className="text-xs font-semibold uppercase"
         style={{ color: "var(--foreground-muted)", letterSpacing: "0.10em" }}
       >
-        {summary.label}
+        {tIndices(summary.code)}
       </h3>
 
       <div className="mt-2 flex items-baseline gap-2">
@@ -45,18 +49,18 @@ function DailyExchangeTile({ summary }: { summary: IndexSummary }) {
           className="text-2xl font-bold tracking-tight tabular-nums"
           style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}
         >
-          {latest ? latest.salesCount.toLocaleString("fr-FR") : "—"}
+          {latest ? latest.salesCount.toLocaleString(locale) : "—"}
         </span>
         <span className="text-xs font-medium" style={{ color: "var(--foreground-muted)" }}>
-          ventes
+          {t("salesUnit")}
         </span>
         {latest && <StatDelta changePct={changePct} />}
       </div>
 
       <p className="mt-1 text-xs" style={{ color: "var(--foreground-subtle)" }}>
         {latest
-          ? `${formatUsd(latest.salesValue)} échangés · ${formatDate(latest.capturedAt)}`
-          : "Pas encore de données"}
+          ? t("exchangedOn", { price: formatUsd(latest.salesValue), date: formatDate(latest.capturedAt, locale) })
+          : t("noDataYet")}
       </p>
 
       <div style={{ marginTop: "16px" }}>
@@ -66,13 +70,14 @@ function DailyExchangeTile({ summary }: { summary: IndexSummary }) {
   );
 }
 
-export function DailyExchangeSection({ indices }: { indices: IndexSummary[] }) {
+export async function DailyExchangeSection({ indices }: { indices: IndexSummary[] }) {
   if (indices.length === 0) return null;
+  const t = await getTranslations("home");
 
   return (
     <section>
       <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        Échanges du marché
+        {t("marketExchanges")}
       </h2>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {indices.map((summary) => (

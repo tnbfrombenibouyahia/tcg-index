@@ -1,10 +1,12 @@
+import { getTranslations } from "next-intl/server";
 import { StatDelta } from "@/components/ui/StatDelta";
 import { formatIndexValue } from "@/lib/format";
 import type { IndexSummary } from "@/lib/types";
 import { IndexChart } from "./IndexChart";
 
-export function SubIndexTile({ summary }: { summary: IndexSummary }) {
+export async function SubIndexTile({ summary }: { summary: IndexSummary }) {
   const positive = (summary.changePct ?? 0) >= 0;
+  const tIndices = await getTranslations("indices");
 
   return (
     <div className="tile-glass p-4">
@@ -16,7 +18,7 @@ export function SubIndexTile({ summary }: { summary: IndexSummary }) {
           letterSpacing: "0.10em",
         }}
       >
-        {summary.label}
+        {tIndices(summary.code)}
       </h3>
 
       {/* Valeur + delta */}

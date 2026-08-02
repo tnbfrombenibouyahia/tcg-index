@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import type { IndexPoint } from "@/lib/types";
 import { TIME_RANGES, type TimeRange, filterByRange } from "@/lib/chartRanges";
 
@@ -76,6 +77,8 @@ function FullChart({ history }: { history: IndexPoint[] }) {
   const [activeRange, setActiveRange] = useState<TimeRange>("1M");
   const [tooltip, setTooltip] = useState<{ x: number; y: number; value: number; date: string } | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const t = useTranslations("home");
+  const locale = useLocale();
 
   const W = 800;
   const H = 220;
@@ -108,14 +111,14 @@ function FullChart({ history }: { history: IndexPoint[] }) {
         x: px,
         y: py,
         value: point.value,
-        date: new Date(point.capturedAt).toLocaleDateString("fr-FR", {
+        date: new Date(point.capturedAt).toLocaleDateString(locale, {
           day: "2-digit",
           month: "short",
           year: "numeric",
         }),
       });
     },
-    [filtered, min, vRange]
+    [filtered, min, vRange, locale]
   );
 
   const handleMouseLeave = useCallback(() => setTooltip(null), []);
@@ -138,7 +141,7 @@ function FullChart({ history }: { history: IndexPoint[] }) {
           className="h-full w-full cursor-crosshair"
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
-          aria-label="Graphique d'évolution"
+          aria-label={t("indexChartLabel")}
         >
           {/* Subtle grid */}
           {gridLines.map((gl, i) => (
@@ -268,13 +271,15 @@ function FullChart({ history }: { history: IndexPoint[] }) {
 
 // ── Public export ─────────────────────────────────────────────────────────────
 export function IndexChart({ history, mode = "full" }: IndexChartProps) {
+  const t = useTranslations("home");
+
   if (history.length === 0) {
     return (
       <div
         className="flex h-full items-center justify-center text-xs"
         style={{ color: "var(--foreground-subtle)" }}
       >
-        Pas encore de données
+        {t("noDataYet")}
       </div>
     );
   }

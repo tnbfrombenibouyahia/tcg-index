@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { formatRelativeTime } from "@/lib/format";
 import type { SyncStatusResponse } from "@/lib/types";
 import { FreshnessGrid } from "./FreshnessGrid";
@@ -14,6 +15,8 @@ export function LiveDashboard({ initialData }: { initialData: SyncStatusResponse
   const [data, setData] = useState(initialData);
   const [live, setLive] = useState(true);
   const mounted = useRef(true);
+  const t = useTranslations("live");
+  const locale = useLocale();
 
   useEffect(() => {
     mounted.current = true;
@@ -42,7 +45,7 @@ export function LiveDashboard({ initialData }: { initialData: SyncStatusResponse
       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
         <StatusDot color={live ? "var(--positive)" : "var(--foreground-subtle)"} pulsing={live} size={7} />
         <span style={{ fontSize: "12px", color: "var(--foreground-muted)" }}>
-          {live ? "Live" : "Connexion perdue"} · actualisé {formatRelativeTime(data.fetchedAt)}
+          {live ? t("liveStatus") : t("disconnected")} · {t("refreshed", { time: formatRelativeTime(data.fetchedAt, locale) })}
         </span>
       </div>
 

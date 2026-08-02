@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import type { VolumePoint } from "@/lib/types";
 import { TIME_RANGES, type TimeRange, filterByRange } from "@/lib/chartRanges";
 import { formatUsd, formatUsdCompact } from "@/lib/format";
@@ -21,6 +22,8 @@ export function VolumeBarChart({ volume }: { volume: VolumePoint[] }) {
   const [activeRange, setActiveRange] = useState<TimeRange>("1M");
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const t = useTranslations("home");
+  const locale = useLocale();
 
   const filtered = filterByRange(volume, activeRange);
   const n = filtered.length;
@@ -54,7 +57,7 @@ export function VolumeBarChart({ volume }: { volume: VolumePoint[] }) {
         className="flex items-center justify-center text-xs"
         style={{ height: H, color: "var(--foreground-subtle)" }}
       >
-        Pas encore de données
+        {t("noDataYet")}
       </div>
     );
   }
@@ -75,7 +78,7 @@ export function VolumeBarChart({ volume }: { volume: VolumePoint[] }) {
           className="h-full w-full cursor-crosshair"
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
-          aria-label="Volume d'échange quotidien"
+          aria-label={t("volumeChartLabel")}
         >
           {/* Subtle grid */}
           {gridLines.map((gl, i) => (
@@ -124,11 +127,10 @@ export function VolumeBarChart({ volume }: { volume: VolumePoint[] }) {
               }}
             >
               <div style={{ fontSize: "11px", fontWeight: 600 }}>
-                {formatUsd(hovered.salesValue)} · {hovered.salesCount} vente
-                {hovered.salesCount > 1 ? "s" : ""}
+                {t("volumeTooltip", { price: formatUsd(hovered.salesValue), count: hovered.salesCount })}
               </div>
               <div style={{ fontSize: "10px", fontWeight: 400, opacity: 0.75 }}>
-                {new Date(hovered.capturedAt).toLocaleDateString("fr-FR", {
+                {new Date(hovered.capturedAt).toLocaleDateString(locale, {
                   day: "2-digit",
                   month: "short",
                   year: "numeric",

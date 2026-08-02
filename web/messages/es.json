@@ -1,0 +1,154 @@
+{
+  "meta": {
+    "title": "TCG Index — Índice de mercado Pokémon y One Piece",
+    "description": "Índice de mercado comunitario para Pokémon y One Piece — metodología pública, datos transparentes. Sigue la evolución del mercado TCG en tiempo real."
+  },
+  "nav": {
+    "home": "Inicio",
+    "transactions": "Transacciones",
+    "sealedEv": "Sellados infravalorados",
+    "live": "Live Market Data",
+    "footer": "Datos públicos · metodología transparente"
+  },
+  "home": {
+    "breadcrumbCurrent": "Mercado TCG",
+    "categoryDetail": "Detalle por categoría",
+    "marketExchanges": "Intercambios del mercado",
+    "salesUnit": "ventas",
+    "exchangedOn": "{price} intercambiados · {date}",
+    "noDataYet": "Aún no hay datos",
+    "volumeTooltip": "{price} · {count, plural, one {# venta} other {# ventas}}",
+    "volumeChartLabel": "Volumen de intercambio diario",
+    "indexChartLabel": "Gráfico de evolución"
+  },
+  "lastUpdated": {
+    "none": "Aún no hay datos disponibles.",
+    "label": "Última actualización:"
+  },
+  "indices": {
+    "PKM_GLOBAL": "Pokémon",
+    "PKM_SEALED": "Pokémon — Sellado",
+    "PKM_SINGLES": "Pokémon — Cartas",
+    "OP_GLOBAL": "One Piece",
+    "OP_SEALED": "One Piece — Sellado",
+    "OP_SINGLES": "One Piece — Cartas"
+  },
+  "headlineCard": {
+    "marketGlobal": "TCG · Mercado global",
+    "details": "Detalles",
+    "description": "{label} es un índice de mercado comunitario que agrega los precios de cartas TCG (Pokémon, One Piece) intercambiadas en plataformas francófonas. La metodología es pública y los datos son transparentes. Este índice refleja el estado del mercado en tiempo real, ponderado por el volumen de transacciones y el número de componentes seguidos.",
+    "constituents": "Componentes",
+    "items": "items",
+    "currency": "Divisa",
+    "updated": "Actualización",
+    "updatedValue": "Tiempo real",
+    "source": "Fuente",
+    "sourceValue": "TCG Community"
+  },
+  "live": {
+    "breadcrumbCurrent": "Live Market Data",
+    "description": "Lo que se está ejecutando ahora mismo en la ingesta, y la frescura de los datos por TCG — catálogo, precios, gradación.",
+    "liveStatus": "En vivo",
+    "disconnected": "Conexión perdida",
+    "refreshed": "actualizado {time}",
+    "freshnessTitle": "Frescura de los datos por TCG",
+    "tracked": "{count} seguidos",
+    "noData": "sin datos",
+    "runningTitle": "Sincronización en curso",
+    "noRunningTitle": "Ninguna sincronización en curso",
+    "bothTcgs": "Pokémon y One Piece",
+    "startedAt": "iniciado {time}",
+    "scheduleIntro": "El pipeline se ejecuta con un cron de GitHub Actions, no de forma continua — aquí está la próxima ventana programada.",
+    "historyTitle": "Historial de ejecuciones",
+    "emptyRunsTitle": "Aún no hay ninguna ejecución registrada",
+    "emptyRunsDescription": "El registro empieza con la próxima sincronización programada (catálogo + precios a las 06:00 UTC). No hay nada que hacer de tu parte — se acumula solo.",
+    "inProgress": "en curso…",
+    "steps": {
+      "items": "Catálogo",
+      "prices": "Precios — sellado y cartas",
+      "grades_sales": "Gradación PSA y ventas",
+      "index": "Cálculo de índices",
+      "sealed_ev": "Ratio EV de sellados",
+      "volume": "Volumen de ventas"
+    },
+    "tiers": {
+      "hot": "Hot (< 6 meses)",
+      "recent": "Recent (6–18 meses)",
+      "established": "Established (18–36 meses)",
+      "vintage": "Vintage (36+ meses)"
+    },
+    "segments": {
+      "items": "Catálogo",
+      "sealed": "Sellado (display)",
+      "single": "Cartas (singles)",
+      "grading": "Gradación PSA"
+    },
+    "schedule": {
+      "itemsPrices": { "label": "Catálogo + precios", "cron": "diario, 06:00 UTC" },
+      "hot": { "label": "Gradación y ventas — hot", "cron": "diario, 04:00 UTC" },
+      "recent": { "label": "Gradación y ventas — recent", "cron": "lun/mié/vie, 03:00 UTC" },
+      "established": { "label": "Gradación y ventas — established", "cron": "domingo, 03:00 UTC" },
+      "vintage": { "label": "Gradación y ventas — vintage", "cron": "sábado, 03:00 UTC" }
+    }
+  },
+  "transactions": {
+    "title": "Transacciones recientes",
+    "count": "{count} ventas encontradas",
+    "emptyTitle": "Ninguna transacción coincide con estos filtros",
+    "emptyDescription": "Los sellados y los sets más antiguos aún no tienen datos de ventas (alcance actual: cartas de sets recientes).",
+    "table": {
+      "date": "Fecha",
+      "card": "Carta",
+      "language": "Idioma",
+      "grade": "Grado",
+      "price": "Precio",
+      "marketplace": "Marketplace"
+    },
+    "filters": {
+      "tcg": "TCG",
+      "set": "Set",
+      "grade": "Grado",
+      "all": "Todos",
+      "allSets": "Todos los sets",
+      "chooseTcgFirst": "Elige primero un TCG"
+    },
+    "combobox": {
+      "cardLabel": "Carta",
+      "placeholder": "Buscar una carta...",
+      "clearAria": "Borrar búsqueda"
+    },
+    "pagination": {
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "pageOf": "Página {page} / {totalPages}"
+    }
+  },
+  "sealedEv": {
+    "title": "Sellados infravalorados",
+    "description": "Compara el precio de cada Booster Box con el valor de sus singles sueltos (ungraded). Señal comparativa entre sets, no una ganancia esperada garantizada — un ratio alto puede venir de una sola carta muy rara, no de un set globalmente rico.",
+    "modeTotal": "Set completo",
+    "modeTop10": "Top 10 cartas",
+    "emptyTitle": "Aún no hay datos",
+    "emptyDescription": "El cálculo del ratio EV aún no se ha ejecutado para sellados con precio y singles disponibles.",
+    "table": {
+      "boosterBox": "Booster Box",
+      "language": "Idioma",
+      "tcg": "TCG",
+      "boxPrice": "Precio caja",
+      "valueTop10": "Valor top 10",
+      "valueTotal": "Valor total",
+      "cards": "Cartas",
+      "ratio": "Ratio",
+      "reliability": "Fiabilidad del precio"
+    },
+    "reliability": {
+      "low": "Poco fiable",
+      "weak": "Débil",
+      "ok": "Correcto",
+      "good": "Fiable",
+      "notCrossChecked": "Sin verificar",
+      "notCrossCheckedTooltip": "No se encontró ninguna venta individual -- agregado de PriceCharting sin verificar",
+      "scoreTooltip": "Fiabilidad {score}/100 ({count, plural, one {# venta utilizada} other {# ventas utilizadas}})"
+    }
+  }
+}

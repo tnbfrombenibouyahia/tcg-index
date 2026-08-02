@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import type { ItemSummary } from "@/lib/types";
 import { LanguageFlag } from "@/components/ui/LanguageFlag";
 
@@ -12,6 +13,7 @@ const DEBOUNCE_MS = 300;
 export function CardSearchCombobox({ tcg }: { tcg?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useTranslations("transactions.combobox");
   const initialName = searchParams.get("item_name") ?? "";
 
   const [query, setQuery] = useState(initialName);
@@ -77,7 +79,7 @@ export function CardSearchCombobox({ tcg }: { tcg?: string }) {
 
   return (
     <div ref={containerRef} className="relative">
-      <label className="mb-1 block text-xs font-medium text-muted-foreground">Carte</label>
+      <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("cardLabel")}</label>
       <div className="relative">
         <input
           type="text"
@@ -92,14 +94,14 @@ export function CardSearchCombobox({ tcg }: { tcg?: string }) {
               router.replace(`/transactions?${params.toString()}`);
             }
           }}
-          placeholder="Rechercher une carte..."
+          placeholder={t("placeholder")}
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
         />
         {query && (
           <button
             type="button"
             onClick={clearSelection}
-            aria-label="Effacer la recherche"
+            aria-label={t("clearAria")}
             className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
             ×

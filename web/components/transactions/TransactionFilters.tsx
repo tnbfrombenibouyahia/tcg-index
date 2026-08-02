@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { GRADE_LABELS, TCGS, type Grade } from "@/lib/constants";
 import type { SetOption } from "@/lib/types";
 import { CardSearchCombobox } from "./CardSearchCombobox";
@@ -13,6 +14,7 @@ interface TransactionFiltersProps {
 export function TransactionFilters({ sets, grades }: TransactionFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useTranslations("transactions.filters");
 
   const tcg = searchParams.get("tcg") ?? "";
   const setCode = searchParams.get("set_code") ?? "";
@@ -38,30 +40,30 @@ export function TransactionFilters({ sets, grades }: TransactionFiltersProps) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <div>
-        <label className="mb-1 block text-xs font-medium text-muted-foreground">TCG</label>
+        <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("tcg")}</label>
         <select
           value={tcg}
           onChange={(e) => updateParam("tcg", e.target.value)}
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
         >
-          <option value="">Tous</option>
-          {TCGS.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
+          <option value="">{t("all")}</option>
+          {TCGS.map((tcgOption) => (
+            <option key={tcgOption.value} value={tcgOption.value}>
+              {tcgOption.label}
             </option>
           ))}
         </select>
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-muted-foreground">Set</label>
+        <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("set")}</label>
         <select
           value={setCode}
           onChange={(e) => updateParam("set_code", e.target.value)}
           disabled={!tcg}
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-accent"
         >
-          <option value="">{tcg ? "Tous les sets" : "Choisir un TCG d'abord"}</option>
+          <option value="">{tcg ? t("allSets") : t("chooseTcgFirst")}</option>
           {sets.map((s) => (
             <option key={s.setCode} value={s.setCode}>
               {s.setCode} ({s.itemCount})
@@ -73,13 +75,13 @@ export function TransactionFilters({ sets, grades }: TransactionFiltersProps) {
       <CardSearchCombobox tcg={tcg || undefined} />
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-muted-foreground">Grade</label>
+        <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("grade")}</label>
         <select
           value={grade}
           onChange={(e) => updateParam("grade", e.target.value)}
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
         >
-          <option value="">Tous</option>
+          <option value="">{t("all")}</option>
           {grades.map((g) => (
             <option key={g} value={g}>
               {GRADE_LABELS[g]}

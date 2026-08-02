@@ -1,3 +1,4 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination } from "@/components/ui/Pagination";
 import { TransactionFilters } from "@/components/transactions/TransactionFilters";
@@ -5,7 +6,7 @@ import { TransactionsTable } from "@/components/transactions/TransactionsTable";
 import { GRADES } from "@/lib/constants";
 import { getSales, getSalesFilters, type SalesFilterParams } from "@/lib/queries/sales";
 
-const SORTS = new Set(["date_desc", "date_asc", "price_desc", "price_asc"]);
+const SORTS = new Set(["date_desc", "date_asc", "price_desc", "price_asc", "language_asc", "language_desc"]);
 
 export default async function TransactionsPage({
   searchParams,
@@ -36,12 +37,15 @@ export default async function TransactionsPage({
     Object.entries(raw).flatMap(([k, v]) => (v === undefined ? [] : [[k, Array.isArray(v) ? v[0] : v]]))
   );
 
+  const t = await getTranslations("transactions");
+  const locale = await getLocale();
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Transactions récentes</h1>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {salesResult.totalCount.toLocaleString("fr-FR")} ventes trouvées
+          {t("count", { count: salesResult.totalCount.toLocaleString(locale) })}
         </p>
       </div>
 
@@ -50,10 +54,7 @@ export default async function TransactionsPage({
       </div>
 
       {salesResult.sales.length === 0 ? (
-        <EmptyState
-          title="Aucune transaction ne correspond à ces filtres"
-          description="Le scellé et les sets plus anciens n'ont pas encore de données de ventes (scope actuel : cartes des sets récents)."
-        />
+        <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
       ) : (
         <>
           <TransactionsTable sales={salesResult.sales} sort={sort ?? "date_desc"} searchParams={searchParamsForLinks} />

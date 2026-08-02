@@ -1,3 +1,4 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import { StatDelta } from "@/components/ui/StatDelta";
 import { formatIndexValue } from "@/lib/format";
 import type { IndexSummary } from "@/lib/types";
@@ -14,9 +15,13 @@ import { TcgIcon } from "./TcgIcon";
 // • Details block below
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function HeadlineIndexCard({ summary }: { summary: IndexSummary }) {
+export async function HeadlineIndexCard({ summary }: { summary: IndexSummary }) {
   const positive = (summary.changePct ?? 0) >= 0;
   const hasData = !!summary.latest;
+  const t = await getTranslations("headlineCard");
+  const tIndices = await getTranslations("indices");
+  const locale = await getLocale();
+  const label = tIndices(summary.code);
 
   return (
     <div
@@ -67,7 +72,7 @@ export function HeadlineIndexCard({ summary }: { summary: IndexSummary }) {
                 margin: 0,
               }}
             >
-              {summary.label}
+              {label}
             </h2>
             <p
               style={{
@@ -77,7 +82,7 @@ export function HeadlineIndexCard({ summary }: { summary: IndexSummary }) {
                 fontWeight: 500,
               }}
             >
-              TCG · Marché global
+              {t("marketGlobal")}
             </p>
           </div>
         </div>
@@ -161,7 +166,7 @@ export function HeadlineIndexCard({ summary }: { summary: IndexSummary }) {
             margin: "0 0 8px",
           }}
         >
-          Details
+          {t("details")}
         </h3>
         <p
           style={{
@@ -172,11 +177,7 @@ export function HeadlineIndexCard({ summary }: { summary: IndexSummary }) {
             maxWidth: "660px",
           }}
         >
-          {summary.label}{" "}
-          est un indice de marché communautaire qui agrège les prix des cartes TCG (Pokémon, One
-          Piece) échangées sur les plateformes francophones. La méthodologie est publique et les
-          données sont transparentes. Cet indice reflète l&apos;état du marché en temps réel,
-          pondéré par le volume de transactions et le nombre de constituants suivis.
+          {t("description", { label })}
         </p>
 
         {/* Metadata row */}
@@ -189,14 +190,14 @@ export function HeadlineIndexCard({ summary }: { summary: IndexSummary }) {
         >
           {[
             {
-              label: "Constituants",
+              label: t("constituents"),
               value: hasData
-                ? summary.latest!.constituents.toLocaleString("fr-FR") + " items"
+                ? `${summary.latest!.constituents.toLocaleString(locale)} ${t("items")}`
                 : "—",
             },
-            { label: "Devise", value: "EUR" },
-            { label: "Mise à jour", value: "Temps réel" },
-            { label: "Source", value: "TCG Community" },
+            { label: t("currency"), value: "EUR" },
+            { label: t("updated"), value: t("updatedValue") },
+            { label: t("source"), value: t("sourceValue") },
           ].map((m) => (
             <div key={m.label}>
               <p

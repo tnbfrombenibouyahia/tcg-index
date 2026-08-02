@@ -1,7 +1,9 @@
+"use client";
+
+import { useLocale, useTranslations } from "next-intl";
 import { TcgIcon } from "@/components/homepage/TcgIcon";
 import { TCGS, type Tcg } from "@/lib/constants";
 import { formatRelativeTime } from "@/lib/format";
-import { STEP_LABELS, TIER_LABELS } from "@/lib/live";
 import type { SyncRun } from "@/lib/types";
 import { StatusDot } from "./StatusDot";
 
@@ -12,21 +14,22 @@ const TCG_LABEL: Record<Tcg, string> = Object.fromEntries(TCGS.map((t) => [t.val
 
 // Cadence réelle des deux workflows GitHub Actions (cf. .github/workflows/) --
 // statique, pas interrogé : c'est la programmation elle-même, pas une donnée.
-const SCHEDULE = [
-  { label: "Référentiel + prix", cron: "quotidien, 06:00 UTC" },
-  { label: "Gradation & ventes — hot", cron: "quotidien, 04:00 UTC" },
-  { label: "Gradation & ventes — recent", cron: "lun/mer/ven, 03:00 UTC" },
-  { label: "Gradation & ventes — established", cron: "dimanche, 03:00 UTC" },
-  { label: "Gradation & ventes — vintage", cron: "samedi, 03:00 UTC" },
-];
+// Les libellés viennent de messages/*.json (namespace live.schedule), les
+// horaires cron restent en dur ici (locale-invariants, ce sont des heures UTC).
+const SCHEDULE_KEYS = ["itemsPrices", "hot", "recent", "established", "vintage"] as const;
 
 export function RunningNowPanel({ runs: running }: { runs: SyncRun[] }) {
+  const t = useTranslations("live");
+  const tSteps = useTranslations("live.steps");
+  const tSchedule = useTranslations("live.schedule");
+  const locale = useLocale();
+
   return (
     <div className="card-glass" style={{ padding: "24px 24px 22px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
         <StatusDot color={running.length > 0 ? "var(--foreground)" : "var(--foreground-subtle)"} pulsing={running.length > 0} size={9} />
         <h2 style={{ fontSize: "15px", fontWeight: 700, color: "var(--foreground)", letterSpacing: "-0.01em", margin: 0 }}>
-          {running.length > 0 ? "En cours de synchronisation" : "Aucune synchronisation en cours"}
+          {running.length > 0 ? t("runningTitle") : t("noRunningTitle")}
         </h2>
       </div>
 
@@ -41,7 +44,7 @@ export function RunningNowPanel({ runs: running }: { runs: SyncRun[] }) {
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <StatusDot color="var(--foreground)" pulsing size={7} />
                 <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--foreground)" }}>
-                  {STEP_LABELS[run.step]}
+                  {tSteps(run.step)}
                 </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--foreground-muted)", fontSize: "12px" }}>
@@ -51,12 +54,12 @@ export function RunningNowPanel({ runs: running }: { runs: SyncRun[] }) {
                     <span>{TCG_LABEL[run.tcg]}</span>
                   </>
                 ) : (
-                  <span>Pokémon &amp; One Piece</span>
+                  <span>{t("bothTcgs")}</span>
                 )}
-                {run.tier ? <span>· {TIER_LABELS[run.tier] ?? run.tier}</span> : null}
+                {run.tier ? <span>· {t.has(`tiers.${run.tier}`) ? t(`tiers.${run.tier}`) : run.tier}</span> : null}
               </div>
               <span style={{ fontSize: "11px", color: "var(--foreground-subtle)" }}>
-                démarré {formatRelativeTime(run.startedAt)}
+                {t("startedAt", { time: formatRelativeTime(run.startedAt, locale) })}
               </span>
             </div>
           ))}
@@ -64,12 +67,12 @@ export function RunningNowPanel({ runs: running }: { runs: SyncRun[] }) {
       ) : (
         <div>
           <p style={{ fontSize: "13px", color: "var(--foreground-muted)", margin: "0 0 14px" }}>
-            Le pipeline tourne sur un cron GitHub Actions, pas en continu — voici la prochaine fenêtre de passage.
+            {t("scheduleIntro")}
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-            {SCHEDULE.map((s) => (
+            {SCHEDULE_KEYS.map((key) => (
               <span
-                key={s.label}
+                key={key}
                 className="tile-glass"
                 style={{
                   padding: "6px 12px",
@@ -80,9 +83,9 @@ export function RunningNowPanel({ runs: running }: { runs: SyncRun[] }) {
                   gap: "6px",
                 }}
               >
-                <span style={{ fontWeight: 600, color: "var(--foreground)" }}>{s.label}</span>
+                <span style={{ fontWeight: 600, color: "var(--foreground)" }}>{tSchedule(`${key}.label`)}</span>
                 <span>·</span>
-                <span>{s.cron}</span>
+                <span>{tSchedule(`${key}.cron`)}</span>
               </span>
             ))}
           </div>

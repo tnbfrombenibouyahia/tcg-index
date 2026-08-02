@@ -1,15 +1,17 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import { formatDate } from "@/lib/format";
 
-export function LastUpdatedBadge({ asOf }: { asOf: string | null }) {
+export async function LastUpdatedBadge({ asOf }: { asOf: string | null }) {
+  const t = await getTranslations("lastUpdated");
+  const locale = await getLocale();
+
   if (!asOf) {
-    return (
-      <p className="text-sm text-muted-foreground">Pas encore de données disponibles.</p>
-    );
+    return <p className="text-sm text-muted-foreground">{t("none")}</p>;
   }
 
   return (
     <p className="text-sm text-muted-foreground">
-      Dernière mise à jour : <span className="font-medium text-foreground">{formatDate(asOf)}</span>
+      {t("label")} <span className="font-medium text-foreground">{formatDate(asOf, locale)}</span>
     </p>
   );
 }

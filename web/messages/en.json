@@ -1,0 +1,154 @@
+{
+  "meta": {
+    "title": "TCG Index — Pokémon & One Piece Market Index",
+    "description": "Community market index for Pokémon and One Piece — public methodology, transparent data. Track the TCG market's evolution in real time."
+  },
+  "nav": {
+    "home": "Home",
+    "transactions": "Transactions",
+    "sealedEv": "Undervalued Sealed",
+    "live": "Live Market Data",
+    "footer": "Public data · transparent methodology"
+  },
+  "home": {
+    "breadcrumbCurrent": "TCG Market",
+    "categoryDetail": "Detail by category",
+    "marketExchanges": "Market exchanges",
+    "salesUnit": "sales",
+    "exchangedOn": "{price} traded · {date}",
+    "noDataYet": "No data yet",
+    "volumeTooltip": "{price} · {count, plural, one {# sale} other {# sales}}",
+    "volumeChartLabel": "Daily exchange volume",
+    "indexChartLabel": "Trend chart"
+  },
+  "lastUpdated": {
+    "none": "No data available yet.",
+    "label": "Last updated:"
+  },
+  "indices": {
+    "PKM_GLOBAL": "Pokémon",
+    "PKM_SEALED": "Pokémon — Sealed",
+    "PKM_SINGLES": "Pokémon — Cards",
+    "OP_GLOBAL": "One Piece",
+    "OP_SEALED": "One Piece — Sealed",
+    "OP_SINGLES": "One Piece — Cards"
+  },
+  "headlineCard": {
+    "marketGlobal": "TCG · Global market",
+    "details": "Details",
+    "description": "{label} is a community market index that aggregates TCG card prices (Pokémon, One Piece) traded on French-speaking platforms. The methodology is public and the data is transparent. This index reflects the state of the market in real time, weighted by transaction volume and the number of tracked constituents.",
+    "constituents": "Constituents",
+    "items": "items",
+    "currency": "Currency",
+    "updated": "Updated",
+    "updatedValue": "Real-time",
+    "source": "Source",
+    "sourceValue": "TCG Community"
+  },
+  "live": {
+    "breadcrumbCurrent": "Live Market Data",
+    "description": "What's running right now on the ingestion side, and data freshness per TCG — catalog, prices, grading.",
+    "liveStatus": "Live",
+    "disconnected": "Connection lost",
+    "refreshed": "refreshed {time}",
+    "freshnessTitle": "Data freshness by TCG",
+    "tracked": "{count} tracked",
+    "noData": "no data",
+    "runningTitle": "Sync in progress",
+    "noRunningTitle": "No sync in progress",
+    "bothTcgs": "Pokémon & One Piece",
+    "startedAt": "started {time}",
+    "scheduleIntro": "The pipeline runs on a GitHub Actions cron, not continuously — here's the next scheduled window.",
+    "historyTitle": "Run history",
+    "emptyRunsTitle": "No run recorded yet",
+    "emptyRunsDescription": "The log starts with the next scheduled sync (catalog + prices at 06:00 UTC). Nothing to do on your end — it accumulates on its own.",
+    "inProgress": "in progress…",
+    "steps": {
+      "items": "Catalog",
+      "prices": "Prices — sealed & cards",
+      "grades_sales": "PSA grading & sales",
+      "index": "Index calculation",
+      "sealed_ev": "Sealed EV ratio",
+      "volume": "Sales volume"
+    },
+    "tiers": {
+      "hot": "Hot (< 6 months)",
+      "recent": "Recent (6–18 months)",
+      "established": "Established (18–36 months)",
+      "vintage": "Vintage (36+ months)"
+    },
+    "segments": {
+      "items": "Catalog",
+      "sealed": "Sealed (display)",
+      "single": "Cards (singles)",
+      "grading": "PSA grading"
+    },
+    "schedule": {
+      "itemsPrices": { "label": "Catalog + prices", "cron": "daily, 06:00 UTC" },
+      "hot": { "label": "Grading & sales — hot", "cron": "daily, 04:00 UTC" },
+      "recent": { "label": "Grading & sales — recent", "cron": "Mon/Wed/Fri, 03:00 UTC" },
+      "established": { "label": "Grading & sales — established", "cron": "Sunday, 03:00 UTC" },
+      "vintage": { "label": "Grading & sales — vintage", "cron": "Saturday, 03:00 UTC" }
+    }
+  },
+  "transactions": {
+    "title": "Recent transactions",
+    "count": "{count} sales found",
+    "emptyTitle": "No transaction matches these filters",
+    "emptyDescription": "Sealed products and older sets don't have sales data yet (current scope: cards from recent sets).",
+    "table": {
+      "date": "Date",
+      "card": "Card",
+      "language": "Language",
+      "grade": "Grade",
+      "price": "Price",
+      "marketplace": "Marketplace"
+    },
+    "filters": {
+      "tcg": "TCG",
+      "set": "Set",
+      "grade": "Grade",
+      "all": "All",
+      "allSets": "All sets",
+      "chooseTcgFirst": "Choose a TCG first"
+    },
+    "combobox": {
+      "cardLabel": "Card",
+      "placeholder": "Search for a card...",
+      "clearAria": "Clear search"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "pageOf": "Page {page} / {totalPages}"
+    }
+  },
+  "sealedEv": {
+    "title": "Undervalued Sealed",
+    "description": "Compares each Booster Box's price to the loose (ungraded) value of its singles. A comparative signal between sets, not a guaranteed expected gain — a high ratio can come from a single very rare card, not a globally rich set.",
+    "modeTotal": "Whole set",
+    "modeTop10": "Top 10 cards",
+    "emptyTitle": "No data yet",
+    "emptyDescription": "The EV ratio calculation hasn't run yet for sealed products with both price and singles data available.",
+    "table": {
+      "boosterBox": "Booster Box",
+      "language": "Language",
+      "tcg": "TCG",
+      "boxPrice": "Box price",
+      "valueTop10": "Top 10 value",
+      "valueTotal": "Total value",
+      "cards": "Cards",
+      "ratio": "Ratio",
+      "reliability": "Price reliability"
+    },
+    "reliability": {
+      "low": "Low reliability",
+      "weak": "Weak",
+      "ok": "Fair",
+      "good": "Reliable",
+      "notCrossChecked": "Not cross-checked",
+      "notCrossCheckedTooltip": "No individual sale found -- PriceCharting aggregate not cross-checked",
+      "scoreTooltip": "Reliability {score}/100 ({count, plural, one {# sale used} other {# sales used}})"
+    }
+  }
+}

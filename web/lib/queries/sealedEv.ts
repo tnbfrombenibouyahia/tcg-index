@@ -21,8 +21,14 @@ interface SealedEvQueryRow {
 }
 
 // Les colonnes de tri ne peuvent pas être paramétrées via ${...} (ça les
-// citerait comme chaîne) -- enum fermé comme dans queries/sales.ts.
-function orderFragment(mode: SealedEvMode) {
+// citerait comme chaîne) -- enum fermé comme dans queries/sales.ts. `sort`
+// (langue) est optionnel et prioritaire sur le tri par ratio EV piloté par
+// `mode` -- le ratio EV reste le tri par défaut de la page.
+export type SealedEvSort = "language_asc" | "language_desc";
+
+function orderFragment(mode: SealedEvMode, sort?: SealedEvSort) {
+  if (sort === "language_asc") return sql`ORDER BY i.language ASC, l.ev_ratio_total DESC`;
+  if (sort === "language_desc") return sql`ORDER BY i.language DESC, l.ev_ratio_total DESC`;
   return mode === "top10" ? sql`ORDER BY l.ev_ratio_top10 DESC` : sql`ORDER BY l.ev_ratio_total DESC`;
 }
 
@@ -30,10 +36,11 @@ export interface SealedEvParams {
   mode: SealedEvMode;
   tcg?: string;
   limit?: number;
+  sort?: SealedEvSort;
 }
 
-export async function getSealedEv({ mode, tcg, limit = 50 }: SealedEvParams): Promise<SealedEvRow[]> {
-  const order = orderFragment(mode);
+export async function getSealedEv({ mode, tcg, limit = 50, sort }: SealedEvParams): Promise<SealedEvRow[]> {
+  const order = orderFragment(mode, sort);
 
   // `sealed_ev` est append-only (une ligne par item/jour) -- DISTINCT ON
   // pour ne garder que le dernier calcul par Booster Box, même si l'historique

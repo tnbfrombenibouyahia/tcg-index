@@ -1,27 +1,6 @@
-import type { FreshnessSegment, SyncStep } from "./types";
-
-export const STEP_LABELS: Record<SyncStep, string> = {
-  items: "Référentiel",
-  prices: "Prix — scellé & cartes",
-  grades_sales: "Gradation PSA & ventes",
-  index: "Calcul des indices",
-  sealed_ev: "Ratio EV scellés",
-  volume: "Volume de ventes",
-};
-
-export const TIER_LABELS: Record<string, string> = {
-  hot: "Hot (< 6 mois)",
-  recent: "Recent (6–18 mois)",
-  established: "Established (18–36 mois)",
-  vintage: "Vintage (36+ mois)",
-};
-
-export const SEGMENT_LABELS: Record<FreshnessSegment, string> = {
-  items: "Référentiel",
-  sealed: "Scellé (display)",
-  single: "Cartes (singles)",
-  grading: "Gradation PSA",
-};
+// Les libellés (étapes de sync, paliers, segments) vivent désormais dans
+// messages/*.json (namespace "live") -- cf. LanguageSelector -- plutôt
+// qu'ici en dur, pour suivre la langue choisie dans l'UI.
 
 export type FreshnessTone = "fresh" | "warn" | "stale" | "unknown";
 

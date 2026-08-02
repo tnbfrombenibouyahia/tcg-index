@@ -25,8 +25,8 @@ export function formatPct(pct: number): string {
   return `${sign}${pct.toFixed(2)}%`;
 }
 
-export function formatDate(iso: string): string {
-  return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-US", {
+export function formatDate(iso: string, locale: string = "fr"): string {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale, {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -52,15 +52,19 @@ export function formatDuration(startIso: string, endIso: string): string {
   return minutes ? `${hours} h ${minutes} min` : `${hours} h`;
 }
 
-export function formatRelativeTime(iso: string): string {
+// Intl.RelativeTimeFormat gère nativement "à l'instant"/"il y a 5 min"/"5
+// min ago"/"hace 5 min" pour n'importe quelle locale BCP-47 -- pas besoin de
+// traduire ces fragments à la main dans messages/*.json.
+export function formatRelativeTime(iso: string, locale: string = "fr"): string {
   const diffMs = Date.now() - toDate(iso).getTime();
   const diffMin = Math.round(diffMs / 60000);
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
 
-  if (diffMin < 1) return "à l'instant";
-  if (diffMin < 60) return `il y a ${diffMin} min`;
+  if (diffMin < 1) return rtf.format(0, "second");
+  if (diffMin < 60) return rtf.format(-diffMin, "minute");
   const diffH = Math.round(diffMin / 60);
-  if (diffH < 24) return `il y a ${diffH} h`;
+  if (diffH < 24) return rtf.format(-diffH, "hour");
   const diffJ = Math.round(diffH / 24);
-  if (diffJ < 14) return `il y a ${diffJ} j`;
-  return formatDate(iso.length === 10 ? iso : iso.slice(0, 10));
+  if (diffJ < 14) return rtf.format(-diffJ, "day");
+  return formatDate(iso.length === 10 ? iso : iso.slice(0, 10), locale);
 }
