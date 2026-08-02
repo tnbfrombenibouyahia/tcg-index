@@ -197,9 +197,11 @@
     "title": "Divergencia volumen/precio",
     "description": "Compara dos ventanas de tiempo de igual duración (período actual vs anterior) sobre el número de ventas y el precio medio de una carta. Un precio que sube mientras el volumen baja (o al revés) es un movimiento menos confirmado que uno en el que ambos van en el mismo sentido.",
     "methodologyLabel": "Metodología:",
-    "methodology": "divergencia = variación_precio(%) − variación_volumen(%) entre la ventana actual y la ventana anterior de igual duración. Solo se incluyen cartas con al menos 3 ventas en cada una de las dos ventanas -- si no, el delta no es fiable (ej. 1 venta vs 2 ventas mostraría +100% sin significar nada).",
+    "methodology": "divergencia = variación_precio(%) − variación_volumen(%) entre la ventana actual y la ventana anterior de igual duración. Solo se cuentan las ventas ungraded (mezclar grados distorsionaría la media) y solo se incluyen cartas con al menos 3 ventas en cada una de las dos ventanas -- si no, el delta no es fiable (ej. 1 venta vs 2 ventas mostraría +100% sin significar nada).",
     "filterWindow": "Ventana:",
     "filterAll": "Todos los TCG",
+    "filterMinPrice": "Precio mín.",
+    "filterMinPriceAll": "Todos",
     "windows": {
       "d7": "7 días",
       "d15": "15 días",
@@ -218,10 +220,21 @@
       "price": "Precio medio",
       "divergence": "Divergencia",
       "badges": {
-        "aligned": "Alineado",
-        "priceUpVolumeDown": "Precio ↑ · Volumen ↓",
-        "priceDownVolumeUp": "Precio ↓ · Volumen ↑"
+        "accumulation": "Acumulación",
+        "distribution": "Distribución",
+        "alignedUp": "Alineado (subida)",
+        "alignedDown": "Alineado (bajada)"
       }
+    },
+    "modal": {
+      "close": "Cerrar",
+      "volumeLabel": "Volumen",
+      "priceLabel": "Precio medio",
+      "chartTitle": "Precio y volumen diarios",
+      "chartLabel": "Precio medio y volumen diarios, dos paneles apilados",
+      "loading": "Cargando...",
+      "noData": "No hay suficientes ventas en este período",
+      "salesCount": "{count, plural, one {# venta} other {# ventas}}"
     }
   }
 }

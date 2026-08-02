@@ -125,6 +125,12 @@ export interface SealedEvRow {
   evRatioTop10: number;
 }
 
+export interface DailyTimelinePoint {
+  date: string;
+  count: number;
+  avgPrice: number | null;
+}
+
 export interface DivergenceRow {
   itemId: number;
   name: string;

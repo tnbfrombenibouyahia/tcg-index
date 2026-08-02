@@ -41,3 +41,12 @@ export const TCGS: { value: Tcg; label: string }[] = [
   { value: "pokemon", label: "Pokémon" },
   { value: "one-piece", label: "One Piece" },
 ];
+
+// Fenêtres de temps du détecteur de divergence volume/prix (cf.
+// lib/queries/divergence.ts). Vivent ici (fichier de constantes pures, sans
+// import serveur) et non dans divergence.ts car des Client Components
+// (DivergenceDetailModal, PriceVolumeChart...) en ont besoin -- importer une
+// valeur runtime (pas juste un type) depuis un module qui importe `sql`
+// (postgres -> fs) casse le bundle navigateur, même via un ré-export.
+export const DIVERGENCE_WINDOWS = [7, 15, 30, 90, 180] as const;
+export type DivergenceWindowDays = (typeof DIVERGENCE_WINDOWS)[number];

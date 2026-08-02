@@ -13,6 +13,13 @@ const VALID_SORTS = new Set<string>([
   "language_asc", "language_desc",
 ]);
 
+// Cartes à quelques centimes (commons en vrac) : les % de variation y sont
+// dominés par du bruit d'arrondi ($0.05 -> $0.20 = "+300%" sans rien vouloir
+// dire) -- filtre par défaut à $1 pour écarter ce cas, ajustable comme sur
+// Undervalued.
+const MIN_PRICES = [0, 1, 2, 5, 10] as const;
+type MinPrice = (typeof MIN_PRICES)[number];
+
 export default async function DivergencePage({
   searchParams,
 }: {
@@ -31,12 +38,10 @@ export default async function DivergencePage({
     ? (windowRaw as DivergenceWindowDays)
     : 30;
 
-  // Plafonné à 60 (vs 150 pour Undervalued) -- les drapeaux pixel-art rendus
-  // dans un Server Component pur coûtent nettement plus cher par ligne côté
-  // poids de page que dans un tableau avec boundary client (cf. SealedEvTable,
-  // même coût constaté) ; 60 reste cohérent avec l'esprit "divergences les
-  // plus notables", pas une liste exhaustive.
-  const rows = await getDivergence({ tcg, windowDays, limit: 60, sort });
+  const minRaw = Number(Array.isArray(raw.min) ? raw.min[0] : raw.min);
+  const minPrice: MinPrice = (MIN_PRICES as readonly number[]).includes(minRaw) ? (minRaw as MinPrice) : 1;
+
+  const rows = await getDivergence({ tcg, windowDays, minPrice, limit: 100, sort });
 
   const searchParamsForLinks = new URLSearchParams(
     Object.entries(raw).flatMap(([k, v]) => (v === undefined ? [] : [[k, Array.isArray(v) ? v[0] : v]]))
@@ -84,6 +89,18 @@ export default async function DivergencePage({
             </FilterPill>
           ))}
         </div>
+
+        <div style={{ width: "1px", height: "20px", background: "var(--border)", flexShrink: 0 }} />
+
+        {/* Prix minimum -- écarte le bruit d'arrondi des commons à quelques centimes */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-muted-foreground mr-1">{t("filterMinPrice")}</span>
+          {MIN_PRICES.map((p) => (
+            <FilterPill key={p} active={minPrice === p} href={buildHref(searchParamsForLinks, { min: String(p) })}>
+              {p === 0 ? t("filterMinPriceAll") : `$${p}+`}
+            </FilterPill>
+          ))}
+        </div>
       </div>
 
       {rows.length === 0 ? (
@@ -91,7 +108,7 @@ export default async function DivergencePage({
       ) : (
         <>
           <p className="mb-3 text-xs text-muted-foreground">{t("count", { count: rows.length })}</p>
-          <DivergenceTable rows={rows} sort={sort ?? ""} searchParams={searchParamsForLinks} />
+          <DivergenceTable rows={rows} sort={sort ?? ""} searchParams={searchParamsForLinks} windowDays={windowDays} />
         </>
       )}
     </div>

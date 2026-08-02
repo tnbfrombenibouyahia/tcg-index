@@ -198,9 +198,11 @@
     "title": "Volume/Price Divergence",
     "description": "Compares two time windows of equal length (current vs previous period) on a card's number of sales and average price. A price rising while volume falls (or the reverse) is a less confirmed move than one where both go the same direction.",
     "methodologyLabel": "Methodology:",
-    "methodology": "divergence = price_change(%) − volume_change(%) between the current window and the previous window of equal length. Only cards with at least 3 sales in each of the two windows are included -- otherwise the delta isn't reliable (e.g. 1 sale vs 2 sales would show +100% while meaning nothing).",
+    "methodology": "divergence = price_change(%) − volume_change(%) between the current window and the previous window of equal length. Only ungraded sales are counted (mixing grades would skew the average) and only cards with at least 3 sales in each of the two windows are included -- otherwise the delta isn't reliable (e.g. 1 sale vs 2 sales would show +100% while meaning nothing).",
     "filterWindow": "Window:",
     "filterAll": "All TCGs",
+    "filterMinPrice": "Min price",
+    "filterMinPriceAll": "All",
     "windows": {
       "d7": "7 days",
       "d15": "15 days",
@@ -219,10 +221,21 @@
       "price": "Average price",
       "divergence": "Divergence",
       "badges": {
-        "aligned": "Aligned",
-        "priceUpVolumeDown": "Price ↑ · Volume ↓",
-        "priceDownVolumeUp": "Price ↓ · Volume ↑"
+        "accumulation": "Accumulation",
+        "distribution": "Distribution",
+        "alignedUp": "Aligned (up)",
+        "alignedDown": "Aligned (down)"
       }
+    },
+    "modal": {
+      "close": "Close",
+      "volumeLabel": "Volume",
+      "priceLabel": "Average price",
+      "chartTitle": "Daily price and volume",
+      "chartLabel": "Daily average price and volume, two stacked panels",
+      "loading": "Loading...",
+      "noData": "Not enough sales over this period",
+      "salesCount": "{count, plural, one {# sale} other {# sales}}"
     }
   }
 }

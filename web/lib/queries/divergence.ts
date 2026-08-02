@@ -1,6 +1,14 @@
 import sql from "@/lib/db";
 import type { DivergenceRow } from "@/lib/types";
-import type { Tcg } from "@/lib/constants";
+import { DIVERGENCE_WINDOWS, type DivergenceWindowDays, type Tcg } from "@/lib/constants";
+
+// Ré-exportées pour les Server Components qui les récupèrent déjà via ce
+// module (app/divergence/page.tsx, DivergenceTable.tsx) -- sans risque
+// puisqu'ils ne sont jamais bundlés côté navigateur. Les Client Components
+// (DivergenceDetailModal, PriceVolumeChart, DivergenceTableBody) doivent
+// importer directement depuis "@/lib/constants" à la place.
+export { DIVERGENCE_WINDOWS };
+export type { DivergenceWindowDays };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Divergence volume/prix (demande utilisateur) : compare deux fenêtres
@@ -18,10 +26,14 @@ import type { Tcg } from "@/lib/constants";
 // dénué de sens) -- vérifié empiriquement : avec un seuil de 3, entre ~4100
 // (fenêtre 7j) et ~9700 (30j/90j) cartes qualifient sur les deux fenêtres à
 // la fois, largement assez pour peupler la page à toutes les granularités.
+//
+// Scope volontairement restreint à grade='ungraded' (bug corrigé après
+// retour utilisateur) : sans ce filtre, une seule vente PSA10 à $500 se
+// mélangeait dans la moyenne avec des ungraded à $0.05-0.18, produisant des
+// deltas de prix à +220 000% -- des grades différents ne sont pas le même
+// marché, les mélanger n'a pas de sens. Les grades PSA sont de toute façon
+// trop rares pour soutenir une comparaison de volume par fenêtre.
 // ─────────────────────────────────────────────────────────────────────────────
-
-export const DIVERGENCE_WINDOWS = [7, 15, 30, 90, 180] as const;
-export type DivergenceWindowDays = (typeof DIVERGENCE_WINDOWS)[number];
 
 const MIN_SALES_PER_WINDOW = 3;
 
@@ -75,6 +87,7 @@ interface DivergenceQueryRow {
 export interface DivergenceParams {
   tcg?: Tcg;
   windowDays?: DivergenceWindowDays;
+  minPrice?: number;
   limit?: number;
   sort?: DivergenceSort;
 }
@@ -82,6 +95,7 @@ export interface DivergenceParams {
 export async function getDivergence({
   tcg,
   windowDays = 30,
+  minPrice = 0,
   limit = 100,
   sort,
 }: DivergenceParams): Promise<DivergenceRow[]> {
@@ -91,7 +105,8 @@ export async function getDivergence({
     WITH cur AS (
       SELECT item_id, COUNT(*)::int AS vol, AVG(price)::float8 AS avg_price
       FROM sales
-      WHERE sale_date >= CURRENT_DATE - make_interval(days => ${windowDays})
+      WHERE grade = 'ungraded'
+        AND sale_date >= CURRENT_DATE - make_interval(days => ${windowDays})
         AND sale_date < CURRENT_DATE
       GROUP BY item_id
       HAVING COUNT(*) >= ${MIN_SALES_PER_WINDOW}
@@ -99,7 +114,8 @@ export async function getDivergence({
     prev AS (
       SELECT item_id, COUNT(*)::int AS vol, AVG(price)::float8 AS avg_price
       FROM sales
-      WHERE sale_date >= CURRENT_DATE - make_interval(days => ${windowDays * 2})
+      WHERE grade = 'ungraded'
+        AND sale_date >= CURRENT_DATE - make_interval(days => ${windowDays * 2})
         AND sale_date < CURRENT_DATE - make_interval(days => ${windowDays})
       GROUP BY item_id
       HAVING COUNT(*) >= ${MIN_SALES_PER_WINDOW}
@@ -135,7 +151,7 @@ export async function getDivergence({
       j.divergence_score      AS "divergenceScore"
     FROM joined j
     JOIN items i ON i.id = j.item_id
-    WHERE 1=1
+    WHERE j.price_current >= ${minPrice}
       ${tcg ? sql`AND i.tcg = ${tcg}` : sql``}
     ${order}
     LIMIT ${limit}
