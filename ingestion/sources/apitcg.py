@@ -22,6 +22,12 @@ Limitations connues du catalogue (constatées en conditions réelles) :
   `_request` ci-dessous absorbe les 429 par retry/backoff (respecte
   `Retry-After` si présent), et `PAGE_PAUSE_SECONDS` espace les pages de
   `sync_items` pour limiter le risque d'y retomber.
+- `rarity` (cf. `_rarity` ci-dessous) vient de `attributes.Rarity`, documenté
+  dans l'openapi.json comme un attribut dynamique par carte (varie par TCG :
+  codes courts type 'R'/'SR'/'SEC' pour One Piece, noms longs type 'Rare
+  Holo'/'Illustration Rare' pour Pokémon a priori) -- non vérifié en
+  conditions réelles au moment d'écrire ceci (quota épuisé, cf. mémoire
+  projet), à ajuster si le format observé diffère une fois le quota reset.
 """
 import os
 import time
@@ -147,6 +153,16 @@ def _image_url(product: dict) -> str | None:
     return first.get("medium") or first.get("small") or first.get("large")
 
 
+def _rarity(product: dict) -> str | None:
+    """`attributes.Rarity` (cf. openapi.json d'apitcg.com, "Dynamic card
+    attributes (Rarity, Color, etc.)") -- NULL pour le scellé (pas
+    d'attributs de carte) et casse pas vérifiée en conditions réelles faute
+    de quota disponible au moment d'écrire ceci (cf. mémoire projet incident
+    quota 2026-07-31/08-01), d'où le fallback sur plusieurs casses."""
+    attributes = product.get("attributes") or {}
+    return attributes.get("Rarity") or attributes.get("rarity")
+
+
 def _map_product_to_item(tcg: str, product: dict) -> tuple:
     markets = product.get("markets", {})
     set_obj = product.get("set") or {}
@@ -164,12 +180,13 @@ def _map_product_to_item(tcg: str, product: dict) -> tuple:
         _image_url(product),                                            # image_url
         DEFAULT_LANGUAGE,                                                # language
         product.get("name", ""),                                        # name
+        _rarity(product),                                               # rarity
     )
 
 
 _UPSERT_ITEMS_SQL = """
     INSERT INTO items
-        (external_id, source, cardmarket_id, tcgplayer_id, tcg, category, set_code, release_date, code, image_url, language, name)
+        (external_id, source, cardmarket_id, tcgplayer_id, tcg, category, set_code, release_date, code, image_url, language, name, rarity)
     VALUES %s
     ON CONFLICT (source, external_id) DO UPDATE SET
         cardmarket_id = EXCLUDED.cardmarket_id,
@@ -180,7 +197,8 @@ _UPSERT_ITEMS_SQL = """
         code          = EXCLUDED.code,
         image_url     = EXCLUDED.image_url,
         language      = EXCLUDED.language,
-        name          = EXCLUDED.name
+        name          = EXCLUDED.name,
+        rarity        = EXCLUDED.rarity
 """
 
 

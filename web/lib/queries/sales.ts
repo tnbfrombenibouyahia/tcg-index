@@ -7,7 +7,16 @@ export interface SalesFilterParams {
   setCode?: string;
   itemId?: number;
   grade?: string;
-  sort?: "date_desc" | "date_asc" | "price_desc" | "price_asc" | "language_asc" | "language_desc";
+  rarity?: string;
+  sort?:
+    | "date_desc"
+    | "date_asc"
+    | "price_desc"
+    | "price_asc"
+    | "language_asc"
+    | "language_desc"
+    | "rarity_asc"
+    | "rarity_desc";
   page?: number;
   pageSize?: number;
 }
@@ -24,6 +33,7 @@ function whereFragment(f: SalesFilterParams) {
     ${f.setCode ? sql`AND i.set_code = ${f.setCode}` : sql``}
     ${f.itemId ? sql`AND s.item_id = ${f.itemId}` : sql``}
     ${f.grade ? sql`AND s.grade = ${f.grade}` : sql``}
+    ${f.rarity ? sql`AND i.rarity = ${f.rarity}` : sql``}
   `;
 }
 
@@ -42,6 +52,10 @@ function orderFragment(sort: SalesFilterParams["sort"]) {
       return sql`ORDER BY i.language ASC, s.sale_date DESC, s.id DESC`;
     case "language_desc":
       return sql`ORDER BY i.language DESC, s.sale_date DESC, s.id DESC`;
+    case "rarity_asc":
+      return sql`ORDER BY i.rarity ASC NULLS LAST, s.sale_date DESC, s.id DESC`;
+    case "rarity_desc":
+      return sql`ORDER BY i.rarity DESC NULLS LAST, s.sale_date DESC, s.id DESC`;
     case "date_desc":
     default:
       return sql`ORDER BY s.sale_date DESC, s.id DESC`;
@@ -64,6 +78,7 @@ interface SaleQueryRow {
   itemCode: string | null;
   itemImageUrl: string | null;
   itemLanguage: string;
+  itemRarity: string | null;
 }
 
 export async function getSales(filters: SalesFilterParams): Promise<SalesResponse> {
@@ -91,7 +106,8 @@ export async function getSales(filters: SalesFilterParams): Promise<SalesRespons
         i.set_code AS "itemSetCode",
         i.code AS "itemCode",
         i.image_url AS "itemImageUrl",
-        i.language AS "itemLanguage"
+        i.language AS "itemLanguage",
+        i.rarity AS "itemRarity"
       FROM sales s
       JOIN items i ON i.id = s.item_id
       ${where}
@@ -125,6 +141,7 @@ export async function getSales(filters: SalesFilterParams): Promise<SalesRespons
       code: r.itemCode,
       imageUrl: r.itemImageUrl,
       language: r.itemLanguage,
+      rarity: r.itemRarity,
     },
   }));
 
@@ -138,15 +155,23 @@ export async function getSales(filters: SalesFilterParams): Promise<SalesRespons
 }
 
 export async function getSalesFilters(tcg: string): Promise<SalesFiltersResponse> {
-  const sets = await sql<SetOption[]>`
-    SELECT
-      set_code AS "setCode",
-      MIN(release_date)::text AS "releaseDate",
-      COUNT(*)::int AS "itemCount"
-    FROM items
-    WHERE tcg = ${tcg} AND set_code IS NOT NULL
-    GROUP BY set_code
-    ORDER BY MIN(release_date) DESC NULLS LAST
-  `;
-  return { sets, grades: GRADES };
+  const [sets, rarityRows] = await Promise.all([
+    sql<SetOption[]>`
+      SELECT
+        set_code AS "setCode",
+        MIN(release_date)::text AS "releaseDate",
+        COUNT(*)::int AS "itemCount"
+      FROM items
+      WHERE tcg = ${tcg} AND set_code IS NOT NULL
+      GROUP BY set_code
+      ORDER BY MIN(release_date) DESC NULLS LAST
+    `,
+    sql<{ rarity: string }[]>`
+      SELECT DISTINCT rarity
+      FROM items
+      WHERE tcg = ${tcg} AND rarity IS NOT NULL
+      ORDER BY rarity ASC
+    `,
+  ]);
+  return { sets, grades: GRADES, rarities: rarityRows.map((r) => r.rarity) };
 }

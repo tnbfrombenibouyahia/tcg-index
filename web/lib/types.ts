@@ -38,6 +38,7 @@ export interface ItemSummary {
   code: string | null;
   imageUrl: string | null;
   language: string;
+  rarity: string | null;
 }
 
 export interface SaleRow {
@@ -68,6 +69,7 @@ export interface SetOption {
 export interface SalesFiltersResponse {
   sets: SetOption[];
   grades: readonly Grade[];
+  rarities: string[];
 }
 
 export type SyncStep = "items" | "prices" | "grades_sales" | "index" | "sealed_ev" | "volume";

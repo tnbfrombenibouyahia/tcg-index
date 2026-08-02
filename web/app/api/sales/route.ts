@@ -3,7 +3,16 @@ import { getSales, type SalesFilterParams } from "@/lib/queries/sales";
 import { GRADES } from "@/lib/constants";
 
 const TCGS = ["pokemon", "one-piece"];
-const SORTS = ["date_desc", "date_asc", "price_desc", "price_asc"];
+const SORTS = [
+  "date_desc",
+  "date_asc",
+  "price_desc",
+  "price_asc",
+  "language_asc",
+  "language_desc",
+  "rarity_asc",
+  "rarity_desc",
+];
 
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
@@ -47,6 +56,7 @@ export async function GET(request: NextRequest) {
       setCode: params.get("set_code") ?? undefined,
       itemId,
       grade,
+      rarity: params.get("rarity") ?? undefined,
       sort,
       page,
       pageSize,

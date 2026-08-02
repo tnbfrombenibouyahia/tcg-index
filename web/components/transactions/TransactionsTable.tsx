@@ -46,6 +46,16 @@ export async function TransactionsTable({
             <th className="px-4 py-3">{t("grade")}</th>
             <th className="px-4 py-3">
               <SortHeader
+                label={t("rarity")}
+                ascValue="rarity_asc"
+                descValue="rarity_desc"
+                currentSort={sort}
+                searchParams={searchParams}
+                basePath="/transactions"
+              />
+            </th>
+            <th className="px-4 py-3">
+              <SortHeader
                 label={t("price")}
                 ascValue="price_asc"
                 descValue="price_desc"
@@ -90,6 +100,15 @@ export async function TransactionsTable({
                 <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
                   {GRADE_LABELS[sale.grade as Grade] ?? sale.grade}
                 </span>
+              </td>
+              <td className="px-4 py-3">
+                {sale.item.rarity ? (
+                  <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+                    {sale.item.rarity}
+                  </span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">—</span>
+                )}
               </td>
               <td className="whitespace-nowrap px-4 py-3 font-semibold tabular-nums">{formatUsd(sale.price)}</td>
               <td className="whitespace-nowrap px-4 py-3 capitalize text-muted-foreground">{sale.marketplace}</td>

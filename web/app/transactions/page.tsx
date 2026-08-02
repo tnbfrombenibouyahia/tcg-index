@@ -6,7 +6,16 @@ import { TransactionsTable } from "@/components/transactions/TransactionsTable";
 import { GRADES } from "@/lib/constants";
 import { getSales, getSalesFilters, type SalesFilterParams } from "@/lib/queries/sales";
 
-const SORTS = new Set(["date_desc", "date_asc", "price_desc", "price_asc", "language_asc", "language_desc"]);
+const SORTS = new Set([
+  "date_desc",
+  "date_asc",
+  "price_desc",
+  "price_asc",
+  "language_asc",
+  "language_desc",
+  "rarity_asc",
+  "rarity_desc",
+]);
 
 export default async function TransactionsPage({
   searchParams,
@@ -24,13 +33,14 @@ export default async function TransactionsPage({
   const itemIdRaw = get("item_id");
   const itemId = itemIdRaw ? parseInt(itemIdRaw, 10) : undefined;
   const grade = get("grade");
+  const rarity = get("rarity");
   const sortRaw = get("sort") ?? "date_desc";
   const sort = (SORTS.has(sortRaw) ? sortRaw : "date_desc") as SalesFilterParams["sort"];
   const page = get("page") ? parseInt(get("page")!, 10) : 1;
 
   const [salesResult, filtersResult] = await Promise.all([
-    getSales({ tcg, setCode, itemId, grade, sort, page, pageSize: 25 }),
-    tcg ? getSalesFilters(tcg) : Promise.resolve({ sets: [], grades: GRADES }),
+    getSales({ tcg, setCode, itemId, grade, rarity, sort, page, pageSize: 25 }),
+    tcg ? getSalesFilters(tcg) : Promise.resolve({ sets: [], grades: GRADES, rarities: [] }),
   ]);
 
   const searchParamsForLinks = new URLSearchParams(
@@ -50,7 +60,7 @@ export default async function TransactionsPage({
       </div>
 
       <div className="mb-6">
-        <TransactionFilters sets={filtersResult.sets} grades={filtersResult.grades} />
+        <TransactionFilters sets={filtersResult.sets} grades={filtersResult.grades} rarities={filtersResult.rarities} />
       </div>
 
       {salesResult.sales.length === 0 ? (

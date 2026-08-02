@@ -13,6 +13,7 @@ CREATE TABLE items (
   image_url     TEXT,                 -- image produit (taille 'medium'), NULL si absente côté source
   language      TEXT NOT NULL,        -- 'EN', 'JP', 'FR'
   name          TEXT NOT NULL,
+  rarity        TEXT,                 -- valeur brute de API TCG attributes.Rarity ; NULL pour le scellé et tant que non backfillé
   created_at    TIMESTAMPTZ DEFAULT now(),
   UNIQUE (source, external_id)
 );
