@@ -92,9 +92,9 @@ export function CardDetailModal({ row, onClose }: { row: UndervaluedRow; onClose
           {/* Image (gauche) + infos & détail du calcul (droite) */}
           <div className="flex flex-col gap-5 sm:flex-row">
             {row.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- source PriceCharting
-              // plafonnée à 60px de large (cf. mémoire projet) : au-delà de ~w-32,
-              // l'agrandissement devient visiblement flou/pixelisé.
+              // Source PriceCharting plafonnée à 60px de large (cf. mémoire projet) --
+              // au-delà de ~w-32, l'agrandissement devient visiblement flou/pixelisé.
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={row.imageUrl}
                 alt={row.name}

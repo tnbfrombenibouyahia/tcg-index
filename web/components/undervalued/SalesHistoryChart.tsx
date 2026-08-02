@@ -1,22 +1,23 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { SaleRow } from "@/lib/types";
 import { formatUsd } from "@/lib/format";
+import { GRADES, GRADE_LABELS, type Grade } from "@/lib/constants";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Historique de ventes loose vs gradées, en ligne (pas en nuage de points --
-// demande utilisateur, cohérent avec les graphiques "prix dans le temps" de
-// PriceCharting dont vient la donnée). Palette catégorielle validée (dataviz
-// skill, slots 1/2 : bleu #2a78d6 / orange #eb6834, CVD-safe) plutôt que le
-// noir/blanc habituel des autres graphiques de l'app : ici les deux séries
-// sont une vraie distinction d'identité (loose vs gradée), pas une polarité
-// haut/bas, donc le monochrome de IndexChart ne convient pas.
+// Historique de ventes, en ligne lissée (pas en nuage de points -- demande
+// utilisateur, cohérent avec les graphiques "prix dans le temps" de
+// PriceCharting dont vient la donnée). Un sélecteur de grade (loose ou PSA
+// 7-10) filtre à UNE série à la fois plutôt que de les empiler toutes --
+// mélanger loose/PSA7/PSA10 sur la même ligne produisait un tracé en dents
+// de scie (des tranches de prix très différentes bout à bout), le sélecteur
+// règle le bruit ET la lisibilité en même temps (demande utilisateur).
+// Une seule série affichée = pas de légende nécessaire (cf. dataviz skill).
 // ─────────────────────────────────────────────────────────────────────────────
 
-const LOOSE_COLOR = "#2a78d6";
-const GRADED_COLOR = "#eb6834";
+const LINE_COLOR = "#2a78d6"; // slot catégoriel 1 (validé dataviz skill) -- une seule série à la fois désormais
 
 const W = 700;
 const H = 220;
@@ -28,14 +29,29 @@ interface Point {
   x: number;
   y: number;
   sale: SaleRow;
-  graded: boolean;
 }
 
-function buildPath(points: Point[]): string {
+// Catmull-Rom -> Bézier cubique (tension standard 1/6) : fait passer une
+// courbe lisse par tous les points plutôt que des segments droits bout à
+// bout. Simple à la main, pas besoin d'une lib de charting pour ça.
+function smoothPath(points: Point[]): string {
   if (points.length < 2) return "";
-  return points
-    .map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
-    .join(" ");
+  if (points.length === 2) {
+    return `M${points[0].x.toFixed(1)},${points[0].y.toFixed(1)} L${points[1].x.toFixed(1)},${points[1].y.toFixed(1)}`;
+  }
+  let d = `M${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i - 1] ?? points[i];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2] ?? p2;
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+  }
+  return d;
 }
 
 export function SalesHistoryChart({ sales }: { sales: SaleRow[] }) {
@@ -44,11 +60,23 @@ export function SalesHistoryChart({ sales }: { sales: SaleRow[] }) {
   const [hover, setHover] = useState<Point | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
+  const availableGrades = useMemo(
+    () => GRADES.filter((g) => sales.some((s) => s.grade === g)),
+    [sales]
+  );
+  const [selectedGrade, setSelectedGrade] = useState<Grade | null>(null);
+  const activeGrade = selectedGrade && availableGrades.includes(selectedGrade) ? selectedGrade : availableGrades[0];
+
+  const filtered = useMemo(
+    () => sales.filter((s) => s.grade === activeGrade),
+    [sales, activeGrade]
+  );
+
   // Tous les hooks avant tout retour anticipé (cf. rules-of-hooks) -- les
   // calculs restent sûrs sur un tableau vide (dateRange/priceRange retombent
   // sur 1 via `|| 1`), le rendu "pas de données" arrive dans le JSX plus bas.
-  const dates = sales.map((s) => new Date(`${s.saleDate}T00:00:00Z`).getTime());
-  const prices = sales.map((s) => s.price);
+  const dates = filtered.map((s) => new Date(`${s.saleDate}T00:00:00Z`).getTime());
+  const prices = filtered.map((s) => s.price);
   const minDate = dates.length ? Math.min(...dates) : 0;
   const maxDate = dates.length ? Math.max(...dates) : 0;
   const dateRange = maxDate - minDate || 1;
@@ -62,20 +90,15 @@ export function SalesHistoryChart({ sales }: { sales: SaleRow[] }) {
   const toX = (time: number) => PAD_X + ((time - minDate) / dateRange) * plotW;
   const toY = (price: number) => PAD_Y + (1 - (price - minPrice) / priceRange) * plotH;
 
-  const allPoints: Point[] = sales.map((sale) => ({
-    x: toX(new Date(`${sale.saleDate}T00:00:00Z`).getTime()),
-    y: toY(sale.price),
-    sale,
-    graded: sale.grade !== "ungraded",
-  }));
+  const points: Point[] = filtered
+    .map((sale) => ({
+      x: toX(new Date(`${sale.saleDate}T00:00:00Z`).getTime()),
+      y: toY(sale.price),
+      sale,
+    }))
+    .sort((a, b) => a.x - b.x);
 
-  // Une ligne par série, triée chronologiquement (indépendamment l'une de
-  // l'autre -- les ventes loose et gradées n'arrivent pas forcément aux
-  // mêmes dates).
-  const loosePoints = allPoints.filter((p) => !p.graded).sort((a, b) => a.x - b.x);
-  const gradedPoints = allPoints.filter((p) => p.graded).sort((a, b) => a.x - b.x);
-  const loosePath = buildPath(loosePoints);
-  const gradedPath = buildPath(gradedPoints);
+  const path = smoothPath(points);
 
   const gridLines = [0.25, 0.5, 0.75, 1].map((frac) => ({
     y: PAD_Y + (1 - frac) * plotH,
@@ -91,7 +114,7 @@ export function SalesHistoryChart({ sales }: { sales: SaleRow[] }) {
 
       let nearest: Point | null = null;
       let best = Infinity;
-      for (const p of allPoints) {
+      for (const p of points) {
         const d = (p.x - relX) ** 2 + (p.y - relY) ** 2;
         if (d < best) {
           best = d;
@@ -101,7 +124,7 @@ export function SalesHistoryChart({ sales }: { sales: SaleRow[] }) {
       // 20px de tolérance (au carré) -- au-delà, on considère qu'on ne survole aucun point
       setHover(best < 400 ? nearest : null);
     },
-    [allPoints]
+    [points]
   );
 
   if (sales.length === 0) {
@@ -116,92 +139,96 @@ export function SalesHistoryChart({ sales }: { sales: SaleRow[] }) {
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      {/* Légende -- toujours présente dès 2 séries (cf. dataviz skill) */}
-      <div className="flex items-center gap-4 text-xs" style={{ color: "var(--foreground-muted)" }}>
-        <span className="inline-flex items-center gap-1.5">
-          <span style={{ width: 12, height: 2, background: LOOSE_COLOR, display: "inline-block" }} />
-          {t("looseSales")}
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span style={{ width: 12, height: 2, background: GRADED_COLOR, display: "inline-block" }} />
-          {t("gradedSales")}
-        </span>
+    <div className="flex flex-col gap-3">
+      {/* Sélecteur de grade -- une série à la fois (demande utilisateur) */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {availableGrades.map((g) => (
+          <button
+            key={g}
+            type="button"
+            onClick={() => setSelectedGrade(g)}
+            className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+              g === activeGrade
+                ? "bg-foreground text-background"
+                : "bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {GRADE_LABELS[g]}
+          </button>
+        ))}
       </div>
 
       <div className="relative" style={{ height: H }}>
-        <svg
-          ref={svgRef}
-          viewBox={`0 0 ${W} ${H}`}
-          preserveAspectRatio="none"
-          className="h-full w-full cursor-crosshair"
-          onMouseMove={handleMouseMove}
-          onMouseLeave={() => setHover(null)}
-          aria-label={t("chartLabel")}
-        >
-          {gridLines.map((gl, i) => (
-            <line
-              key={i}
-              x1={PAD_X}
-              y1={gl.y}
-              x2={W - PAD_X}
-              y2={gl.y}
-              stroke="var(--chart-grid, #EDE7DC)"
-              strokeWidth="0.5"
-              strokeDasharray="4 4"
-            />
-          ))}
+        {points.length === 0 ? (
+          <div
+            className="flex h-full items-center justify-center text-xs"
+            style={{ color: "var(--foreground-subtle)" }}
+          >
+            {t("noSales")}
+          </div>
+        ) : (
+          <svg
+            ref={svgRef}
+            viewBox={`0 0 ${W} ${H}`}
+            preserveAspectRatio="none"
+            className="h-full w-full cursor-crosshair"
+            onMouseMove={handleMouseMove}
+            onMouseLeave={() => setHover(null)}
+            aria-label={t("chartLabel")}
+          >
+            {gridLines.map((gl, i) => (
+              <line
+                key={i}
+                x1={PAD_X}
+                y1={gl.y}
+                x2={W - PAD_X}
+                y2={gl.y}
+                stroke="var(--chart-grid, #EDE7DC)"
+                strokeWidth="0.5"
+                strokeDasharray="4 4"
+              />
+            ))}
 
-          {loosePath && (
-            <path
-              d={loosePath}
-              fill="none"
-              stroke={LOOSE_COLOR}
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              vectorEffect="non-scaling-stroke"
-            />
-          )}
-          {gradedPath && (
-            <path
-              d={gradedPath}
-              fill="none"
-              stroke={GRADED_COLOR}
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              vectorEffect="non-scaling-stroke"
-            />
-          )}
+            {path && (
+              <path
+                d={path}
+                fill="none"
+                stroke={LINE_COLOR}
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                vectorEffect="non-scaling-stroke"
+              />
+            )}
 
-          {allPoints.map((p, i) => (
-            <circle
-              key={i}
-              cx={p.x}
-              cy={p.y}
-              r={hover === p ? 5 : 3}
-              fill={p.graded ? GRADED_COLOR : LOOSE_COLOR}
-              fillOpacity={hover && hover !== p ? 0.4 : 1}
-              stroke="var(--surface-solid, #fff)"
-              strokeWidth={hover === p ? 2 : 1}
-            />
-          ))}
+            {points.map((p, i) => (
+              <circle
+                key={i}
+                cx={p.x}
+                cy={p.y}
+                r={hover === p ? 5 : 3}
+                fill={LINE_COLOR}
+                fillOpacity={hover && hover !== p ? 0.4 : 1}
+                stroke="var(--surface-solid, #fff)"
+                strokeWidth={hover === p ? 2 : 1}
+              />
+            ))}
 
-          {gridLines.map((gl, i) => (
-            <text
-              key={i}
-              x={W - PAD_X}
-              y={gl.y - 3}
-              textAnchor="end"
-              fontSize="9"
-              fill="var(--foreground-subtle)"
-              style={{ fontVariantNumeric: "tabular-nums" }}
-            >
-              {formatUsd(gl.value)}
-            </text>
-          ))}
-        </svg>
+            {gridLines.map((gl, i) => (
+              <text
+                key={i}
+                x={W - PAD_X}
+                y={gl.y - 3}
+                textAnchor="end"
+                fontSize="9"
+                fill="var(--foreground-subtle)"
+                style={{ fontVariantNumeric: "tabular-nums" }}
+              >
+                {formatUsd(gl.value)}
+              </text>
+            ))}
+          </svg>
+        )}
 
         {hover && (
           <div
@@ -216,9 +243,7 @@ export function SalesHistoryChart({ sales }: { sales: SaleRow[] }) {
               className="rounded-lg px-2.5 py-1.5 text-center shadow-md"
               style={{ background: "#000000", color: "#FFFFFF", whiteSpace: "nowrap" }}
             >
-              <div style={{ fontSize: "11px", fontWeight: 600 }}>
-                {formatUsd(hover.sale.price)} · {hover.graded ? hover.sale.grade.toUpperCase() : t("looseSales")}
-              </div>
+              <div style={{ fontSize: "11px", fontWeight: 600 }}>{formatUsd(hover.sale.price)}</div>
               <div style={{ fontSize: "10px", fontWeight: 400, opacity: 0.75 }}>
                 {new Date(`${hover.sale.saleDate}T00:00:00Z`).toLocaleDateString(locale, {
                   day: "2-digit",
