@@ -178,8 +178,18 @@ def parse_one_piece_set_rarities(html: str, infer_promo_prefix: str | None = Non
 _UPDATE_ONE_PIECE_RARITY_SQL = """
     UPDATE items SET rarity = data.rarity
     FROM (VALUES %s) AS data (code, rarity)
-    WHERE items.tcg = 'one-piece' AND items.source = 'apitcg' AND items.code = data.code
+    WHERE items.tcg = 'one-piece' AND items.code = data.code
 """
+# Pas de filtre `source = 'apitcg'` : `code` (ex. "OP09-022") est unique
+# globalement pour One Piece (contrairement à Pokémon où "033/163" se
+# répète d'un set à l'autre, cf. mémoire projet) -- il matche donc aussi
+# bien les doublons JP créés par pricecharting.py (`sync_all_jp_singles_items`,
+# qui réutilise le code EN, cf. mémoire projet "jp_singles_tracking") que
+# les entrées apitcg elles-mêmes. Découvert via un vrai cas utilisateur :
+# "Lim [Alternate Art]" (JP, source pricecharting) n'avait aucune rareté
+# alors que "Lim (022)" (EN, source apitcg) partageant le même code
+# OP09-022 en avait une -- la rareté officielle d'une carte ne change pas
+# entre éditions EN/JP, seul le physique (langue, print) change.
 
 
 def sync_one_piece_set_rarities(slug: str) -> int:
