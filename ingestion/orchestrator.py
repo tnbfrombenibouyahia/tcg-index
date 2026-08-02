@@ -88,8 +88,15 @@ def _current_vintage_slice(num_slices: int) -> int:
     return (date.today().toordinal() // 7) % num_slices
 
 
-def run_items_sync(run_type: str) -> None:
+def run_items_sync(run_type: str) -> list[Exception]:
+    """Un tcg qui échoue (quota, timeout...) ne doit pas empêcher l'autre
+    d'être tenté -- avant ce fix, une exception ici remontait et coupait la
+    boucle, donc one-piece (traité en second) n'était jamais synced les
+    jours où pokemon (son catalogue est ~4.5x plus gros, donc plus vite en
+    quota) échouait. Retourne la liste des erreurs plutôt que de lever,
+    charge à l'appelant d'agréger (cf. `main`)."""
     print("\n=== Référentiel (API TCG) ===")
+    errors: list[Exception] = []
     for tcg in TCGS:
         print(f"-- {tcg} --")
         run_id = start_run(run_type, "items", tcg=tcg)
@@ -97,9 +104,11 @@ def run_items_sync(run_type: str) -> None:
             total = apitcg.sync_items(tcg)
         except Exception as exc:
             finish_run(run_id, status="error", detail=str(exc))
-            raise
+            errors.append(exc)
+            continue
         print(f"   {total} produits upsertés.")
         finish_run(run_id, status="success", rows_written=total, detail=f"{total} produits upsertés")
+    return errors
 
 
 def run_price_sync(tier: str | None, run_type: str) -> list[dict]:
@@ -319,7 +328,10 @@ def main() -> int:
 
     if not args.skip_items:
         try:
-            run_items_sync(run_type)
+            items_errors = run_items_sync(run_type)
+            had_errors = had_errors or bool(items_errors)
+            for exc in items_errors:
+                print(f"\n!! Erreur pendant la sync référentiel : {exc}")
         except Exception as exc:
             had_errors = True
             print(f"\n!! Erreur pendant la sync référentiel : {exc}")

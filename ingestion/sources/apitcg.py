@@ -22,6 +22,14 @@ Limitations connues du catalogue (constatées en conditions réelles) :
   `_request` ci-dessous absorbe les 429 par retry/backoff (respecte
   `Retry-After` si présent), et `PAGE_PAUSE_SECONDS` espace les pages de
   `sync_items` pour limiter le risque d'y retomber.
+  **2026-08-02 : quota réel bien plus bas qu'estimé (1000 req/mois, cf. compte
+  apitcg.com de l'utilisateur)** -- un sync complet quotidien des deux TCG
+  (~66 pages Pokémon + ~15 One Piece = ~81 requêtes) coûtait à lui seul
+  ~2400/mois, largement au-dessus du budget. `sync_items` fait donc
+  maintenant un sync incrémental par défaut (`updatedSince`, cf. son
+  docstring) -- le sync complet (`--full`) reste disponible pour un
+  rattrapage manuel occasionnel, largement soutenable au tarif d'une fois de
+  temps en temps plutôt que quotidien.
 - `rarity` (cf. `_rarity` ci-dessous) vient de `attributes.Rarity`, documenté
   dans l'openapi.json comme un attribut dynamique par carte (varie par TCG :
   codes courts type 'R'/'SR'/'SEC' pour One Piece, noms longs type 'Rare
@@ -105,8 +113,14 @@ def list_products(
     product_type: str | None = None,
     page: int = 1,
     limit: int = 100,
+    updated_since: str | None = None,
 ) -> dict:
-    """Une page de /api/products. Voir `total` dans la réponse pour paginer."""
+    """Une page de /api/products. Voir `total` dans la réponse pour paginer.
+
+    `updated_since` (ISO 8601) ne renvoie que les produits modifiés depuis
+    cette date côté API TCG -- cf. `sync_items`/incident quota mensuel
+    (mémoire projet), c'est ce qui permet un sync quotidien sans retélécharger
+    tout le catalogue à chaque fois."""
     params = {"page": page, "limit": limit}
     if tcg:
         params["tcg"] = tcg
@@ -114,6 +128,8 @@ def list_products(
         params["set"] = set_id
     if product_type:
         params["type"] = product_type
+    if updated_since:
+        params["updatedSince"] = updated_since
     return _request(f"{BASE_URL}/api/products", params=params).json()
 
 
@@ -121,12 +137,13 @@ def list_all_products(
     tcg: str | None = None,
     set_id: str | None = None,
     product_type: str | None = None,
+    updated_since: str | None = None,
 ) -> list[dict]:
     """Boucle sur la pagination de /api/products jusqu'à épuisement de `total`."""
     items: list[dict] = []
     page = 1
     while True:
-        payload = list_products(tcg=tcg, set_id=set_id, product_type=product_type, page=page)
+        payload = list_products(tcg=tcg, set_id=set_id, product_type=product_type, page=page, updated_since=updated_since)
         items.extend(payload["data"])
         if len(items) >= payload["total"] or not payload["data"]:
             break
@@ -202,12 +219,52 @@ _UPSERT_ITEMS_SQL = """
 """
 
 
-def sync_items(tcg: str, page_size: int = PAGE_SIZE) -> int:
+def _last_synced_at(tcg: str) -> str | None:
+    """Timestamp (ISO 8601) du dernier sync `items` réussi pour ce tcg,
+    lu dans `sync_runs` (alimentée par shared/sync_log.py depuis
+    l'orchestrateur) -- sert de borne `updatedSince` pour un sync
+    incrémental. `None` si jamais syncé avec succès via l'orchestrateur
+    (premier run, ou seulement des runs manuels hors orchestrateur qui
+    n'écrivent pas dans `sync_runs`) : `sync_items` retombe alors sur un
+    sync complet."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT MAX(started_at) FROM sync_runs
+                   WHERE step = 'items' AND tcg = %s AND status = 'success'""",
+                (tcg,),
+            )
+            row = cur.fetchone()
+            return row[0].isoformat() if row and row[0] else None
+    finally:
+        conn.close()
+
+
+def sync_items(tcg: str, page_size: int = PAGE_SIZE, incremental: bool = True) -> int:
     """Peuple/maj la table `items` avec le catalogue produit d'API TCG pour un TCG.
 
     Idempotent (upsert sur `(source, external_id)`) : rejouable sans créer de
     doublons ni perdre l'`id` existant d'un item déjà connu.
+
+    `incremental=True` (défaut, utilisé par le cron quotidien) : ne redemande
+    que les produits modifiés depuis le dernier sync réussi (`updatedSince`,
+    cf. `_last_synced_at`) -- un jour calme coûte ~1-2 requêtes au lieu des
+    ~66 (Pokémon) / ~15 (One Piece) d'un sync complet (cf. incident quota
+    mensuel 1000 req/mois, mémoire projet -- un sync complet quotidien des
+    deux TCG en consommait ~2400/mois à lui seul). Retombe automatiquement
+    sur un sync complet si aucun sync réussi n'est enregistré.
+
+    `incremental=False` (`--full` du CLI ci-dessous) : sync complet forcé, à
+    lancer manuellement de temps en temps pour rattraper d'éventuels ratés
+    d'`updatedSince` et pour backfiller un champ ajouté après coup (ex.
+    `rarity`) sur des items déjà en base mais pas "updated" récemment côté
+    API TCG.
     """
+    updated_since = _last_synced_at(tcg) if incremental else None
+    if incremental:
+        print(f"  sync incrémental depuis {updated_since}" if updated_since else "  aucun sync réussi antérieur -- sync complet")
+
     conn = get_connection()
     total_fetched = 0
     page = 1
@@ -216,7 +273,7 @@ def sync_items(tcg: str, page_size: int = PAGE_SIZE) -> int:
             while True:
                 if page > 1:
                     time.sleep(PAGE_PAUSE_SECONDS)
-                payload = list_products(tcg=tcg, page=page, limit=page_size)
+                payload = list_products(tcg=tcg, page=page, limit=page_size, updated_since=updated_since)
                 data = payload["data"]
                 if not data:
                     break
@@ -241,10 +298,14 @@ def main():
     load_dotenv()
     parser = argparse.ArgumentParser()
     parser.add_argument("--tcg", default="pokemon")
+    parser.add_argument(
+        "--full", action="store_true",
+        help="Sync complet (ignore updatedSince) -- backfill ou rattrapage manuel, cf. docstring sync_items.",
+    )
     args = parser.parse_args()
 
-    print(f"== Sync items pour tcg={args.tcg} ==")
-    total = sync_items(args.tcg)
+    print(f"== Sync items pour tcg={args.tcg} ({'complet' if args.full else 'incrémental'}) ==")
+    total = sync_items(args.tcg, incremental=not args.full)
     print(f"\nTerminé : {total} produits upsertés dans `items`.")
 
 
