@@ -6,7 +6,9 @@ import type { SaleRow } from "@/lib/types";
 import { formatUsd } from "@/lib/format";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Nuage de ventes loose vs gradées -- palette catégorielle validée (dataviz
+// Historique de ventes loose vs gradées, en ligne (pas en nuage de points --
+// demande utilisateur, cohérent avec les graphiques "prix dans le temps" de
+// PriceCharting dont vient la donnée). Palette catégorielle validée (dataviz
 // skill, slots 1/2 : bleu #2a78d6 / orange #eb6834, CVD-safe) plutôt que le
 // noir/blanc habituel des autres graphiques de l'app : ici les deux séries
 // sont une vraie distinction d'identité (loose vs gradée), pas une polarité
@@ -29,7 +31,14 @@ interface Point {
   graded: boolean;
 }
 
-export function SalesScatterChart({ sales }: { sales: SaleRow[] }) {
+function buildPath(points: Point[]): string {
+  if (points.length < 2) return "";
+  return points
+    .map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+    .join(" ");
+}
+
+export function SalesHistoryChart({ sales }: { sales: SaleRow[] }) {
   const t = useTranslations("undervalued.modal");
   const locale = useLocale();
   const [hover, setHover] = useState<Point | null>(null);
@@ -53,12 +62,20 @@ export function SalesScatterChart({ sales }: { sales: SaleRow[] }) {
   const toX = (time: number) => PAD_X + ((time - minDate) / dateRange) * plotW;
   const toY = (price: number) => PAD_Y + (1 - (price - minPrice) / priceRange) * plotH;
 
-  const points: Point[] = sales.map((sale) => ({
+  const allPoints: Point[] = sales.map((sale) => ({
     x: toX(new Date(`${sale.saleDate}T00:00:00Z`).getTime()),
     y: toY(sale.price),
     sale,
     graded: sale.grade !== "ungraded",
   }));
+
+  // Une ligne par série, triée chronologiquement (indépendamment l'une de
+  // l'autre -- les ventes loose et gradées n'arrivent pas forcément aux
+  // mêmes dates).
+  const loosePoints = allPoints.filter((p) => !p.graded).sort((a, b) => a.x - b.x);
+  const gradedPoints = allPoints.filter((p) => p.graded).sort((a, b) => a.x - b.x);
+  const loosePath = buildPath(loosePoints);
+  const gradedPath = buildPath(gradedPoints);
 
   const gridLines = [0.25, 0.5, 0.75, 1].map((frac) => ({
     y: PAD_Y + (1 - frac) * plotH,
@@ -74,7 +91,7 @@ export function SalesScatterChart({ sales }: { sales: SaleRow[] }) {
 
       let nearest: Point | null = null;
       let best = Infinity;
-      for (const p of points) {
+      for (const p of allPoints) {
         const d = (p.x - relX) ** 2 + (p.y - relY) ** 2;
         if (d < best) {
           best = d;
@@ -84,7 +101,7 @@ export function SalesScatterChart({ sales }: { sales: SaleRow[] }) {
       // 20px de tolérance (au carré) -- au-delà, on considère qu'on ne survole aucun point
       setHover(best < 400 ? nearest : null);
     },
-    [points]
+    [allPoints]
   );
 
   if (sales.length === 0) {
@@ -103,11 +120,11 @@ export function SalesScatterChart({ sales }: { sales: SaleRow[] }) {
       {/* Légende -- toujours présente dès 2 séries (cf. dataviz skill) */}
       <div className="flex items-center gap-4 text-xs" style={{ color: "var(--foreground-muted)" }}>
         <span className="inline-flex items-center gap-1.5">
-          <span style={{ width: 8, height: 8, borderRadius: 9999, background: LOOSE_COLOR, display: "inline-block" }} />
+          <span style={{ width: 12, height: 2, background: LOOSE_COLOR, display: "inline-block" }} />
           {t("looseSales")}
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span style={{ width: 8, height: 8, borderRadius: 9999, background: GRADED_COLOR, display: "inline-block" }} />
+          <span style={{ width: 12, height: 2, background: GRADED_COLOR, display: "inline-block" }} />
           {t("gradedSales")}
         </span>
       </div>
@@ -135,14 +152,37 @@ export function SalesScatterChart({ sales }: { sales: SaleRow[] }) {
             />
           ))}
 
-          {points.map((p, i) => (
+          {loosePath && (
+            <path
+              d={loosePath}
+              fill="none"
+              stroke={LOOSE_COLOR}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          )}
+          {gradedPath && (
+            <path
+              d={gradedPath}
+              fill="none"
+              stroke={GRADED_COLOR}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          )}
+
+          {allPoints.map((p, i) => (
             <circle
               key={i}
               cx={p.x}
               cy={p.y}
-              r={hover === p ? 5 : 3.5}
+              r={hover === p ? 5 : 3}
               fill={p.graded ? GRADED_COLOR : LOOSE_COLOR}
-              fillOpacity={hover && hover !== p ? 0.35 : 0.85}
+              fillOpacity={hover && hover !== p ? 0.4 : 1}
               stroke="var(--surface-solid, #fff)"
               strokeWidth={hover === p ? 2 : 1}
             />
