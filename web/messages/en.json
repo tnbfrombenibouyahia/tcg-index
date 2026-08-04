@@ -5,9 +5,11 @@
   },
   "nav": {
     "home": "Home",
+    "catalog": "Catalog",
     "transactions": "Transactions",
     "sealedEv": "Undervalued Sealed",
     "undervalued": "Undervalued Cards",
+    "gradingRoi": "Grading ROI",
     "divergence": "Divergence",
     "live": "Live Market Data",
     "footer": "Public data · transparent methodology",
@@ -198,6 +200,70 @@
       "chartLabel": "Sale price by transaction, bar chart"
     }
   },
+  "gradingRoi": {
+    "title": "Grading ROI Calculator",
+    "description": "Compares an ungraded card's price plus PSA submission cost to its expected value once graded — weighted by that specific card's own grade odds, not just an optimistic PSA10 price.",
+    "methodologyLabel": "Methodology:",
+    "methodology": "expected_value = Σ P(grade) × price(grade), where P(grade) comes from the card's own mix of graded sales (falls back to same-rarity cards in the set, then the whole set, then TCG-wide when there aren't enough sales). Grades below PSA 7 aren't tracked by any of our sources — that risk is a manual assumption, not a measurement. PSA fees shown are indicative tiers, all editable per submission.",
+    "filterAll": "All TCGs",
+    "filterMinPrice": "Min ungraded price",
+    "count": "{count} cards",
+    "emptyTitle": "No data yet",
+    "emptyDescription": "No card currently has both an ungraded price and at least one graded price to compute from.",
+    "table": {
+      "card": "Card",
+      "language": "Language",
+      "tcg": "TCG",
+      "ungraded": "Ungraded",
+      "bestGraded": "Best graded",
+      "sample": "Confidence",
+      "netProfit": "Net profit",
+      "roi": "ROI",
+      "sampleLevels": {
+        "card": "This card",
+        "setRarity": "Set · rarity",
+        "set": "Set-wide",
+        "tcg": "TCG-wide"
+      }
+    },
+    "modal": {
+      "close": "Close",
+      "openStandalone": "Open full page",
+      "ineligibleTitle": "Not enough data for this card",
+      "ineligibleDescription": "This card needs both an ungraded price and at least one graded price (PSA7-10) to compute a grading ROI."
+    },
+    "calculator": {
+      "expectedValueNet": "Expected value (net)",
+      "totalCost": "Total cost",
+      "netProfit": "Net profit",
+      "roi": "ROI",
+      "inputsTitle": "Assumptions",
+      "serviceTier": "PSA service tier",
+      "serviceTierNote": "Indicative PSA fees, revised periodically by PSA — verify at psacard.com/services before submitting.",
+      "maxDeclaredValue": "up to {value} declared",
+      "turnaround": "~{days} business days",
+      "extraCosts": "Shipping + insurance + return (flat)",
+      "lowGradeRisk": "Risk of grading below PSA 7",
+      "lowGradeRiskNote": "Not measured — no source tracks grades below PSA 7. Manual assumption.",
+      "lowGradeValue": "Low-grade value (% of ungraded price)",
+      "resaleFee": "Resale fee (%)",
+      "resaleFeeNote": "e.g. ~12-13% on eBay/TCGPlayer",
+      "breakdownTitle": "Expected value breakdown",
+      "breakdownGrade": "Outcome",
+      "breakdownPrice": "Price",
+      "breakdownProbability": "Probability",
+      "breakdownContribution": "EV contribution",
+      "expectedValueGross": "Expected value (gross)",
+      "lowGradeRow": "Below PSA 7",
+      "distributionNote": "Grade mix from {count} graded sales — {level}.",
+      "distributionLevels": {
+        "card": "this exact card",
+        "setRarity": "cards of the same rarity in this set",
+        "set": "this set",
+        "tcg": "{tcg}-wide (low confidence)"
+      }
+    }
+  },
   "divergence": {
     "title": "Volume/Price Divergence",
     "description": "Compares two time windows of equal length (current vs previous period) on a card's number of sales and average price. A price rising while volume falls (or the reverse) is a less confirmed move than one where both go the same direction.",
@@ -249,5 +315,54 @@
       "salesCount": "{count, plural, one {# sale} other {# sales}}",
       "indexedNote": "(indexed, real values on hover)"
     }
+  },
+  "catalog": {
+    "title": "Card Catalog",
+    "description": "Search by card name or collector number to jump straight to its full price analysis.",
+    "searchPlaceholder": "Card name or number (e.g. 065/165)...",
+    "searchAria": "Search the catalog",
+    "filterAll": "All TCGs",
+    "promptTitle": "Search the catalog",
+    "promptDescription": "Type at least 2 characters — a card name or its collector number.",
+    "noResultsTitle": "No matching card",
+    "noResultsDescription": "Try a different spelling, or search by collector number instead of name.",
+    "resultsCount": "{count} results",
+    "loading": "Searching…",
+    "clearAria": "Clear search"
+  },
+  "itemDetail": {
+    "breadcrumb": "Catalog",
+    "notFoundTitle": "Card not found",
+    "notFoundDescription": "This item doesn't exist or has been removed.",
+    "backToCatalog": "Back to catalog",
+    "category": {
+      "single": "Card",
+      "sealed": "Sealed product"
+    },
+    "pricesTitle": "Current price by grade",
+    "pricesTable": {
+      "grade": "Grade",
+      "price": "Price",
+      "updated": "Updated",
+      "source": "Source"
+    },
+    "noPrices": "No price recorded yet for this item.",
+    "priceHistoryTitle": "Price history",
+    "loading": "Loading...",
+    "noPriceHistory": "Not enough history yet to draw a chart for this grade.",
+    "salesHistoryTitle": "Sales history",
+    "divergenceTitle": "Volume/Price signal",
+    "divergenceDescription": "Compares the selected window to the previous window of equal length — the same signal as the Divergence page, for this card only.",
+    "divergenceEmpty": "Not enough sales in the selected window to compute a reliable signal.",
+    "undervaluedTitle": "Undervalued score",
+    "sealedEvTitle": "Sealed EV ratio",
+    "gradingRoiTitle": "Grading ROI",
+    "openCalculator": "Open calculator",
+    "gradingRoiUngraded": "Ungraded price",
+    "gradingRoiExpectedValue": "Expected value (graded)",
+    "gradingRoiCost": "Total cost",
+    "gradingRoiProfit": "Net profit",
+    "gradingRoiLabel": "Expected ROI",
+    "seeMethodology": "See full methodology"
   }
 }

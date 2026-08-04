@@ -95,7 +95,15 @@ function FullChart({ history }: { history: IndexPoint[] }) {
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<SVGSVGElement>) => {
-      if (!svgRef.current || filtered.length === 0) return;
+      // < 2 (pas seulement === 0) : avec un seul point, `filtered.length - 1`
+      // vaut 0 et la division plus bas (`clamped / (filtered.length - 1)`)
+      // produit NaN -- buildPath() applique déjà ce même seuil (pas de ligne
+      // tracée en dessous de 2 points), donc pas de crosshair/tooltip
+      // cohérent à afficher non plus. Invisible avec l'historique d'indice
+      // (toujours des dizaines de points) mais atteint en réutilisant ce
+      // graphique pour l'historique de prix d'un item (fiche /catalog/[id])
+      // qui peut n'avoir qu'un seul price_snapshot.
+      if (!svgRef.current || filtered.length < 2) return;
       const rect = svgRef.current.getBoundingClientRect();
       const relX = ((e.clientX - rect.left) / rect.width) * W;
 

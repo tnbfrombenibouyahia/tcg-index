@@ -100,6 +100,7 @@ interface DivergenceQueryRow {
 
 export interface DivergenceParams {
   tcg?: Tcg;
+  itemId?: number;
   windowDays?: DivergenceWindowDays;
   minPrice?: number;
   tagFilter?: DivergenceTagFilter;
@@ -108,8 +109,14 @@ export interface DivergenceParams {
   sort?: DivergenceSort;
 }
 
+// `itemId` restreint le calcul à une seule carte (fiche carte /catalog/[id],
+// cf. app/api/item-divergence) -- même requête que la page Divergence, pas
+// de duplication. MIN_SALES_PER_WINDOW s'applique quand même : une carte
+// avec trop peu de ventes sur l'une des deux fenêtres ne renvoie aucune
+// ligne plutôt qu'un delta non fiable, cohérent avec la page liste.
 export async function getDivergence({
   tcg,
+  itemId,
   windowDays = 30,
   minPrice = 0,
   tagFilter,
@@ -119,6 +126,7 @@ export async function getDivergence({
 }: DivergenceParams): Promise<DivergenceRow[]> {
   const order = orderFragment(sort);
   const tagClause = tagFragment(tagFilter);
+  const itemClause = itemId ? sql`AND item_id = ${itemId}` : sql``;
 
   const rows = await sql<DivergenceQueryRow[]>`
     WITH cur AS (
@@ -127,6 +135,7 @@ export async function getDivergence({
       WHERE grade = ${grade}
         AND sale_date >= CURRENT_DATE - make_interval(days => ${windowDays})
         AND sale_date < CURRENT_DATE
+        ${itemClause}
       GROUP BY item_id
       HAVING COUNT(*) >= ${MIN_SALES_PER_WINDOW}
     ),
@@ -136,6 +145,7 @@ export async function getDivergence({
       WHERE grade = ${grade}
         AND sale_date >= CURRENT_DATE - make_interval(days => ${windowDays * 2})
         AND sale_date < CURRENT_DATE - make_interval(days => ${windowDays})
+        ${itemClause}
       GROUP BY item_id
       HAVING COUNT(*) >= ${MIN_SALES_PER_WINDOW}
     ),

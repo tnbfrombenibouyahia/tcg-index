@@ -13,9 +13,11 @@ export async function NavBar() {
 
   const PRIMARY_NAV = [
     { href: "/", label: t("home"), icon: <HomeIcon /> },
+    { href: "/catalog", label: t("catalog"), icon: <SearchIcon /> },
     { href: "/transactions", label: t("transactions"), icon: <TransactionsIcon /> },
     { href: "/sealed-ev", label: t("sealedEv"), icon: <BoxIcon /> },
     { href: "/undervalued", label: t("undervalued"), icon: <TrendingUpIcon /> },
+    { href: "/grading-roi", label: t("gradingRoi"), icon: <GradingRoiIcon /> },
     { href: "/divergence", label: t("divergence"), icon: <DivergenceIcon /> },
     { href: "/live", label: t("live"), icon: <PulseIcon /> },
   ];
@@ -148,6 +150,14 @@ function HomeIcon() {
     </svg>
   );
 }
+function SearchIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="7" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
 function TransactionsIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -178,6 +188,14 @@ function TrendingUpIcon() {
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
       <polyline points="16 7 22 7 22 13" />
+    </svg>
+  );
+}
+function GradingRoiIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5l-8-3z" />
+      <path d="m9 12 2 2 4-4" />
     </svg>
   );
 }

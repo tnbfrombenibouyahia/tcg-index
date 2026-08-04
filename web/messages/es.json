@@ -5,9 +5,11 @@
   },
   "nav": {
     "home": "Inicio",
+    "catalog": "Catálogo",
     "transactions": "Transacciones",
     "sealedEv": "Sellados infravalorados",
     "undervalued": "Cartas infravaloradas",
+    "gradingRoi": "ROI de gradación",
     "divergence": "Divergencias",
     "live": "Live Market Data",
     "footer": "Datos públicos · metodología transparente",
@@ -198,6 +200,70 @@
       "chartLabel": "Precio de venta por transacción, gráfico de barras"
     }
   },
+  "gradingRoi": {
+    "title": "Calculadora de ROI de gradación",
+    "description": "Compara el precio de una carta ungraded más el coste de envío a PSA con su valor esperado una vez gradada -- ponderado por las probabilidades de nota propias de ESA carta, no solo un precio PSA10 optimista.",
+    "methodologyLabel": "Metodología:",
+    "methodology": "valor_esperado = Σ P(grado) × precio(grado), donde P(grado) viene de la mezcla real de ventas gradadas de la carta (recurre a cartas de la misma rareza en el set, luego todo el set, luego todo el TCG si no hay suficientes ventas). Los grados por debajo de PSA 7 no están rastreados por ninguna de nuestras fuentes -- ese riesgo sigue siendo una suposición manual, no una medición. Las tarifas de PSA mostradas son niveles indicativos, todos editables por envío.",
+    "filterAll": "Todos los TCG",
+    "filterMinPrice": "Precio ungraded mín.",
+    "count": "{count} cartas",
+    "emptyTitle": "Aún no hay datos",
+    "emptyDescription": "Ninguna carta tiene actualmente a la vez un precio ungraded y al menos un precio gradado para calcular un ROI.",
+    "table": {
+      "card": "Carta",
+      "language": "Idioma",
+      "tcg": "TCG",
+      "ungraded": "Ungraded",
+      "bestGraded": "Mejor gradado",
+      "sample": "Confianza",
+      "netProfit": "Beneficio neto",
+      "roi": "ROI",
+      "sampleLevels": {
+        "card": "Esta carta",
+        "setRarity": "Set · rareza",
+        "set": "Todo el set",
+        "tcg": "Todo el TCG"
+      }
+    },
+    "modal": {
+      "close": "Cerrar",
+      "openStandalone": "Abrir página completa",
+      "ineligibleTitle": "No hay suficientes datos para esta carta",
+      "ineligibleDescription": "Esta carta necesita un precio ungraded Y al menos un precio gradado (PSA7-10) para calcular un ROI de gradación."
+    },
+    "calculator": {
+      "expectedValueNet": "Valor esperado (neto)",
+      "totalCost": "Coste total",
+      "netProfit": "Beneficio neto",
+      "roi": "ROI",
+      "inputsTitle": "Suposiciones",
+      "serviceTier": "Nivel de envío PSA",
+      "serviceTierNote": "Tarifas PSA indicativas, revisadas periódicamente por PSA -- verifica en psacard.com/services antes de enviar.",
+      "maxDeclaredValue": "hasta {value} de valor declarado",
+      "turnaround": "~{days} días hábiles",
+      "extraCosts": "Envío + seguro + devolución (fijo)",
+      "lowGradeRisk": "Riesgo de nota por debajo de PSA 7",
+      "lowGradeRiskNote": "No medido -- ninguna fuente rastrea grados por debajo de PSA 7. Suposición manual.",
+      "lowGradeValue": "Valor de una carta mal gradada (% del precio ungraded)",
+      "resaleFee": "Comisión de reventa (%)",
+      "resaleFeeNote": "ej. ~12-13% en eBay/TCGPlayer",
+      "breakdownTitle": "Desglose del valor esperado",
+      "breakdownGrade": "Resultado",
+      "breakdownPrice": "Precio",
+      "breakdownProbability": "Probabilidad",
+      "breakdownContribution": "Contribución al EV",
+      "expectedValueGross": "Valor esperado (bruto)",
+      "lowGradeRow": "Por debajo de PSA 7",
+      "distributionNote": "Mezcla de grados basada en {count} ventas gradadas -- {level}.",
+      "distributionLevels": {
+        "card": "esta carta exacta",
+        "setRarity": "cartas de la misma rareza en este set",
+        "set": "este set",
+        "tcg": "todo {tcg} (baja confianza)"
+      }
+    }
+  },
   "divergence": {
     "title": "Divergencia volumen/precio",
     "description": "Compara dos ventanas de tiempo de igual duración (período actual vs anterior) sobre el número de ventas y el precio medio de una carta. Un precio que sube mientras el volumen baja (o al revés) es un movimiento menos confirmado que uno en el que ambos van en el mismo sentido.",
@@ -249,5 +315,54 @@
       "salesCount": "{count, plural, one {# venta} other {# ventas}}",
       "indexedNote": "(indexado, valores reales al pasar el cursor)"
     }
+  },
+  "catalog": {
+    "title": "Catálogo de cartas",
+    "description": "Busca por nombre de carta o número de colección para acceder directamente a su análisis completo.",
+    "searchPlaceholder": "Nombre o número de carta (ej. 065/165)...",
+    "searchAria": "Buscar en el catálogo",
+    "filterAll": "Todos los TCG",
+    "promptTitle": "Busca en el catálogo",
+    "promptDescription": "Escribe al menos 2 caracteres — un nombre de carta o su número de colección.",
+    "noResultsTitle": "Ninguna carta encontrada",
+    "noResultsDescription": "Prueba otra ortografía, o busca por número de colección en lugar del nombre.",
+    "resultsCount": "{count} resultados",
+    "loading": "Buscando…",
+    "clearAria": "Borrar búsqueda"
+  },
+  "itemDetail": {
+    "breadcrumb": "Catálogo",
+    "notFoundTitle": "Carta no encontrada",
+    "notFoundDescription": "Este item no existe o ha sido eliminado.",
+    "backToCatalog": "Volver al catálogo",
+    "category": {
+      "single": "Carta",
+      "sealed": "Producto sellado"
+    },
+    "pricesTitle": "Precio actual por grado",
+    "pricesTable": {
+      "grade": "Grado",
+      "price": "Precio",
+      "updated": "Actualizado",
+      "source": "Fuente"
+    },
+    "noPrices": "Todavía no hay precio registrado para este item.",
+    "priceHistoryTitle": "Historial de precios",
+    "loading": "Cargando...",
+    "noPriceHistory": "Aún no hay suficiente historial para trazar un gráfico en este grado.",
+    "salesHistoryTitle": "Historial de ventas",
+    "divergenceTitle": "Señal volumen/precio",
+    "divergenceDescription": "Compara la ventana seleccionada con la ventana anterior de igual duración — la misma señal que la página Divergencias, restringida a esta carta.",
+    "divergenceEmpty": "No hay suficientes ventas en la ventana seleccionada para calcular una señal fiable.",
+    "undervaluedTitle": "Puntuación de infravaloración",
+    "sealedEvTitle": "Ratio EV de sellado",
+    "gradingRoiTitle": "ROI de gradación",
+    "openCalculator": "Abrir calculadora",
+    "gradingRoiUngraded": "Precio ungraded",
+    "gradingRoiExpectedValue": "Valor esperado (gradada)",
+    "gradingRoiCost": "Coste total",
+    "gradingRoiProfit": "Beneficio neto",
+    "gradingRoiLabel": "ROI esperado",
+    "seeMethodology": "Ver la metodología completa"
   }
 }

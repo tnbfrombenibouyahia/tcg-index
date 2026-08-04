@@ -165,3 +165,52 @@ export interface UndervaluedRow {
   marketPrice: number;
   undervaluedScore: number;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Page catalogue / fiche carte (recherche générale par nom ou numéro +
+// "analyse totale") -- cf. lib/queries/itemDetail.ts.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ItemPriceEntry {
+  grade: Grade;
+  price: number;
+  currency: string;
+  capturedAt: string;
+  volume: number | null;
+  source: string;
+}
+
+// Sous-ensembles de UndervaluedRow / SealedEvRow sans les champs déjà portés
+// par ItemDetail (itemId, name, imageUrl, tcg, language, setCode...) --
+// évite la duplication quand ces calculs sont affichés dans le contexte
+// d'une fiche carte déjà identifiée.
+export interface UndervaluedCalc {
+  capturedAt: string;
+  packPrice: number | null;
+  pullRate: number | null;
+  pullCost: number | null;
+  characterMultiplier: number | null;
+  theoreticalValue: number;
+  marketPrice: number;
+  undervaluedScore: number;
+}
+
+export interface SealedEvCalc {
+  capturedAt: string;
+  boxPrice: number;
+  boxPriceSource: "sales_median" | "pricecharting_aggregate";
+  boxSalesUsed: number;
+  boxReliabilityScore: number | null;
+  singlesCount: number;
+  singlesTotalValue: number;
+  singlesTop10Value: number;
+  evRatioTotal: number;
+  evRatioTop10: number;
+}
+
+export interface ItemDetail extends ItemSummary {
+  releaseDate: string | null;
+  latestPrices: ItemPriceEntry[];
+  undervalued: UndervaluedCalc | null;
+  sealedEv: SealedEvCalc | null;
+}
