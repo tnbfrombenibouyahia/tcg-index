@@ -38,6 +38,7 @@ Limitations connues du catalogue (constatées en conditions réelles) :
   projet), à ajuster si le format observé diffère une fois le quota reset.
 """
 import os
+import re
 import time
 from datetime import datetime
 
@@ -162,12 +163,36 @@ def _parse_release_date(set_obj: dict):
     return datetime.fromisoformat(raw.replace("Z", "+00:00")).date()
 
 
+_TCGPLAYER_IMAGE_ID_RE = re.compile(r"tcgplayer-cdn\.tcgplayer\.com/product/(\d+)_")
+
+
 def _image_url(product: dict) -> str | None:
+    """L'API renvoie `images[0].{small,medium,large}`, tous servis depuis
+    `tcgplayer-cdn.tcgplayer.com/product/{id}_{200,400}w.jpg` -- plafonné à
+    400x400px réel quelle que soit la clé demandée (confirmé 2026-08-04,
+    retour utilisateur "qualité vraiment très médiocre"), donc le choix entre
+    small/medium/large ne change rien à la résolution.
+
+    TCGPlayer sert par ailleurs la même image en pleine résolution (jusqu'à
+    ~900x900 sur les exemples testés, ~5x plus de pixels) sur un host
+    séparé : `product-images.tcgplayer.com/{id}.jpg`, avec le même id
+    produit numérique. Confirmé sur un échantillon stratifié de 80 items
+    (sets anciens/récents x Pokémon/One Piece) : 0 régression, l'image
+    pleine résolution est disponible partout où la miniature l'est, sauf
+    pour une poignée de sorties One Piece très récentes où TCGPlayer n'a pas
+    encore traité l'image (déjà cassé côté miniature aussi -- pas une
+    régression introduite ici)."""
     images = product.get("images") or []
     if not images:
         return None
     first = images[0]
-    return first.get("medium") or first.get("small") or first.get("large")
+    thumb = first.get("medium") or first.get("small") or first.get("large")
+    if not thumb:
+        return None
+    match = _TCGPLAYER_IMAGE_ID_RE.search(thumb)
+    if match:
+        return f"https://product-images.tcgplayer.com/{match.group(1)}.jpg"
+    return thumb
 
 
 def _rarity(product: dict) -> str | None:

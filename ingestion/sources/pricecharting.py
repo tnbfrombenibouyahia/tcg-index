@@ -991,6 +991,24 @@ def _parse_price(text: str) -> float | None:
         return None
 
 
+_PRICECHARTING_IMAGE_RE = re.compile(
+    r"^(https://storage\.googleapis\.com/images\.pricecharting\.com/[^/]+/)\d+(\.jpg)$"
+)
+
+
+def _upscale_pricecharting_image(src: str | None) -> str | None:
+    """Réécrit `.../{hash}/60.jpg` (miniature listing, 43x60px réels) en
+    `.../{hash}/1600.jpg` (même hash, ~440x620px réels -- cf. commentaire
+    d'appel). Laisse passer tel quel toute URL qui ne matche pas ce format
+    exact (pas de raison de casser sur un format inattendu)."""
+    if not src:
+        return src
+    match = _PRICECHARTING_IMAGE_RE.match(src)
+    if not match:
+        return src
+    return f"{match.group(1)}1600{match.group(2)}"
+
+
 def _parse_rows_from_soup(soup: BeautifulSoup) -> list[dict]:
     table = soup.find("table", id="games_table")
     if table is None:
@@ -1010,13 +1028,25 @@ def _parse_rows_from_soup(soup: BeautifulSoup) -> list[dict]:
         # disponible pour les items créés directement depuis PriceCharting
         # (scellé JP, cf. sync_jp_sealed_items_for_set) : autant la capturer
         # ici puisque la page est déjà récupérée, zéro requête en plus.
+        #
+        # La miniature de la page listing est servie en 60x60 (nom de fichier
+        # ".../{hash}/60.jpg") -- qualité très dégradée (43x60px réels,
+        # confirmé 2026-08-04, retour utilisateur "qualité vraiment très
+        # médiocre"). Le même hash existe aussi en 240 et 1600 sur le même
+        # bucket GCS (confirmé en inspectant la page produit individuelle,
+        # qui affiche le 240 et lie vers le 1600 comme "image agrandie") --
+        # `_upscale_pricecharting_image` réécrit juste le segment de taille,
+        # zéro requête supplémentaire, 100% de réussite sur un échantillon de
+        # 40 hashes. Le 1600 n'est pas littéralement 1600px de large (c'est un
+        # paramètre de resize côté PriceCharting) : la vraie résolution source
+        # tourne autour de 440x620, ~10x plus de pixels que le 60x43 actuel.
         img = tr.select_one("td.image img.photo")
         rows.append({
             "pricecharting_id": tr.get("data-product"),
             "title": title_link.get_text(strip=True),
             "used_price": used_price,
             "url": f"{BASE_URL}{href}" if href and href.startswith("/") else href,
-            "image_url": img.get("src") if img else None,
+            "image_url": _upscale_pricecharting_image(img.get("src")) if img else None,
         })
     return rows
 

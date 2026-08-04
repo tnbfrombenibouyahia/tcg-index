@@ -92,9 +92,7 @@ export function CardDetailModal({ row, onClose }: { row: UndervaluedRow; onClose
           {/* Image (gauche) + infos & détail du calcul (droite) */}
           <div className="flex flex-col gap-5 sm:flex-row">
             {row.imageUrl ? (
-              // Source PriceCharting plafonnée à 60px de large (cf. mémoire projet) --
-              // au-delà de ~w-32, l'agrandissement devient visiblement flou/pixelisé.
-              // eslint-disable-next-line @next/next/no-img-element
+              // eslint-disable-next-line @next/next/no-img-element -- hôtes CDN externes (TCGPlayer/PriceCharting), cf. plan §5
               <img
                 src={row.imageUrl}
                 alt={row.name}

@@ -83,7 +83,7 @@ export function DivergenceDetailModal({
 
           <div className="flex flex-col gap-5 sm:flex-row">
             {row.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- source PriceCharting plafonnée à 60px de large
+              // eslint-disable-next-line @next/next/no-img-element -- hôtes CDN externes (TCGPlayer/PriceCharting), cf. plan §5
               <img
                 src={row.imageUrl}
                 alt={row.name}
