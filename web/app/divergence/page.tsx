@@ -2,9 +2,15 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { DivergenceTable } from "@/components/divergence/DivergenceTable";
-import { getDivergence, DIVERGENCE_WINDOWS, type DivergenceSort, type DivergenceWindowDays } from "@/lib/queries/divergence";
-import type { Tcg } from "@/lib/constants";
-import { TCGS } from "@/lib/constants";
+import {
+  getDivergence,
+  DIVERGENCE_WINDOWS,
+  type DivergenceSort,
+  type DivergenceTagFilter,
+  type DivergenceWindowDays,
+} from "@/lib/queries/divergence";
+import type { Grade, Tcg } from "@/lib/constants";
+import { GRADE_LABELS, TCGS } from "@/lib/constants";
 
 const VALID_SORTS = new Set<string>([
   "divergence_desc", "divergence_asc",
@@ -15,10 +21,17 @@ const VALID_SORTS = new Set<string>([
 
 // Cartes à quelques centimes (commons en vrac) : les % de variation y sont
 // dominés par du bruit d'arrondi ($0.05 -> $0.20 = "+300%" sans rien vouloir
-// dire) -- filtre par défaut à $1 pour écarter ce cas, ajustable comme sur
-// Undervalued.
-const MIN_PRICES = [0, 1, 2, 5, 10] as const;
+// dire) -- $5 est le plancher (demande utilisateur : aucune carte en dessous
+// de $5 affichée, contrairement à Undervalued qui a un palier "Tous").
+const MIN_PRICES = [5, 10, 20, 50, 100, 300] as const;
 type MinPrice = (typeof MIN_PRICES)[number];
+const DEFAULT_MIN_PRICE: MinPrice = 5;
+
+const TAG_FILTERS = ["accumulation", "distribution", "aligned"] as const;
+
+// Sous-ensemble de Grade (lib/constants.ts) : psa9.5 exclu ici (demande
+// utilisateur -- ungraded/psa7/psa8/psa9/psa10 pour ce sélecteur).
+const DIVERGENCE_GRADES = ["ungraded", "psa7", "psa8", "psa9", "psa10"] as const;
 
 export default async function DivergencePage({
   searchParams,
@@ -39,9 +52,19 @@ export default async function DivergencePage({
     : 30;
 
   const minRaw = Number(Array.isArray(raw.min) ? raw.min[0] : raw.min);
-  const minPrice: MinPrice = (MIN_PRICES as readonly number[]).includes(minRaw) ? (minRaw as MinPrice) : 1;
+  const minPrice: MinPrice = (MIN_PRICES as readonly number[]).includes(minRaw) ? (minRaw as MinPrice) : DEFAULT_MIN_PRICE;
 
-  const rows = await getDivergence({ tcg, windowDays, minPrice, limit: 100, sort });
+  const tagRaw = Array.isArray(raw.tag) ? raw.tag[0] : raw.tag;
+  const tagFilter = (TAG_FILTERS as readonly string[]).includes(tagRaw ?? "")
+    ? (tagRaw as DivergenceTagFilter)
+    : undefined;
+
+  const gradeRaw = Array.isArray(raw.grade) ? raw.grade[0] : raw.grade;
+  const grade: Grade = (DIVERGENCE_GRADES as readonly string[]).includes(gradeRaw ?? "")
+    ? (gradeRaw as Grade)
+    : "ungraded";
+
+  const rows = await getDivergence({ tcg, windowDays, minPrice, tagFilter, grade, limit: 100, sort });
 
   const searchParamsForLinks = new URLSearchParams(
     Object.entries(raw).flatMap(([k, v]) => (v === undefined ? [] : [[k, Array.isArray(v) ? v[0] : v]]))
@@ -58,7 +81,7 @@ export default async function DivergencePage({
 
       <div
         className="mb-6 rounded-xl border border-border p-4 text-sm text-muted-foreground"
-        style={{ background: "rgba(26,26,26,0.03)" }}
+        style={{ background: "var(--border-softer)" }}
       >
         <p>
           <strong className="text-foreground">{t("methodologyLabel")}</strong> {t("methodology")}
@@ -97,7 +120,34 @@ export default async function DivergencePage({
           <span className="text-xs text-muted-foreground mr-1">{t("filterMinPrice")}</span>
           {MIN_PRICES.map((p) => (
             <FilterPill key={p} active={minPrice === p} href={buildHref(searchParamsForLinks, { min: String(p) })}>
-              {p === 0 ? t("filterMinPriceAll") : `$${p}+`}
+              {`$${p}+`}
+            </FilterPill>
+          ))}
+        </div>
+
+        <div style={{ width: "1px", height: "20px", background: "var(--border)", flexShrink: 0 }} />
+
+        {/* Tag (accumulation / distribution / aligné) */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-muted-foreground mr-1">{t("filterTag")}</span>
+          <FilterPill active={!tagFilter} href={buildHref(searchParamsForLinks, { tag: undefined })}>
+            {t("filterTagAll")}
+          </FilterPill>
+          {TAG_FILTERS.map((tag) => (
+            <FilterPill key={tag} active={tagFilter === tag} href={buildHref(searchParamsForLinks, { tag })}>
+              {t(`filterTagLabels.${tag}`)}
+            </FilterPill>
+          ))}
+        </div>
+
+        <div style={{ width: "1px", height: "20px", background: "var(--border)", flexShrink: 0 }} />
+
+        {/* Grade -- une seule série à la fois (cf. lib/queries/divergence.ts, ne mélange jamais deux grades) */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-muted-foreground mr-1">{t("filterGrade")}</span>
+          {DIVERGENCE_GRADES.map((g) => (
+            <FilterPill key={g} active={grade === g} href={buildHref(searchParamsForLinks, { grade: g === "ungraded" ? undefined : g })}>
+              {GRADE_LABELS[g]}
             </FilterPill>
           ))}
         </div>

@@ -47,7 +47,7 @@ export async function ReliabilityBars({
               width: 3,
               height: h,
               borderRadius: 1,
-              background: i < level.bars ? level.color : "rgba(26,26,26,0.12)",
+              background: i < level.bars ? level.color : "var(--tint-neutral-strong)",
             }}
           />
         ))}

@@ -16,8 +16,7 @@ export function GlassCard({
   const handleEnter = () => {
     if (!ref.current) return;
     ref.current.style.transform = "translateY(-3px)";
-    ref.current.style.boxShadow =
-      "0 2px 8px rgba(0,0,0,0.07), 0 20px 60px rgba(0,0,0,0.10)";
+    ref.current.style.boxShadow = "var(--shadow-lift)";
   };
 
   const handleLeave = () => {

@@ -1,18 +1,23 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { StatDelta } from "@/components/ui/StatDelta";
-import { formatDate, formatUsd } from "@/lib/format";
+import { VOLUME_STABILIZATION_DAYS } from "@/lib/constants";
+import { daysAgoIso, formatDate, formatUsd } from "@/lib/format";
 import type { IndexSummary, VolumePoint } from "@/lib/types";
 import { VolumeBarChart } from "./VolumeBarChart";
 
-// `volume` est trié ASC par captured_at (cf. getAllIndices) -- les deux
-// derniers éléments sont donc le dernier jour de scraping de ventes et
-// celui d'avant (pas forcément "hier" : le cron ventes tourne 3x/semaine,
-// cf. mémoire projet "sales_volume_tracking", contrairement au prix qui est
-// quotidien -- d'où la date affichée à côté du nombre plutôt qu'un "aujourd'hui" fixe).
+// `volume` est trié ASC par captured_at (cf. getAllIndices). On ignore les
+// VOLUME_STABILIZATION_DAYS derniers jours avant de prendre les deux plus
+// récents restants : ces jours-là sont encore en cours de recensement (scan
+// par paliers tournants, cf. lib/constants.ts), donc bruts ils font
+// systématiquement croire à une chute du marché qui n'existe pas (constaté
+// le 2026-08-03 -- 424 ventes affichées le jour même contre ~2300 la veille,
+// remonté à des dizaines de milliers une fois les paliers repassés dessus).
 function latestTwo(volume: VolumePoint[]) {
+  const stableCutoff = daysAgoIso(VOLUME_STABILIZATION_DAYS);
+  const stable = volume.filter((p) => p.capturedAt <= stableCutoff);
   return {
-    latest: volume[volume.length - 1] ?? null,
-    previous: volume[volume.length - 2] ?? null,
+    latest: stable[stable.length - 1] ?? null,
+    previous: stable[stable.length - 2] ?? null,
   };
 }
 
@@ -30,10 +35,10 @@ async function DailyExchangeTile({ summary }: { summary: IndexSummary }) {
   return (
     <div
       style={{
-        background: "#FFFFFF",
+        background: "var(--surface-solid)",
         borderRadius: "20px",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.05), 0 8px 32px rgba(0,0,0,0.06)",
-        border: "1px solid rgba(26,26,26,0.06)",
+        boxShadow: "var(--shadow-card)",
+        border: "1px solid var(--border-soft)",
         padding: "24px 28px 28px",
       }}
     >

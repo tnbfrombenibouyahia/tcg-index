@@ -26,10 +26,10 @@ export async function HeadlineIndexCard({ summary }: { summary: IndexSummary }) 
   return (
     <div
       style={{
-        background: "#FFFFFF",
+        background: "var(--surface-solid)",
         borderRadius: "20px",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.05), 0 8px 32px rgba(0,0,0,0.06)",
-        border: "1px solid rgba(26,26,26,0.06)",
+        boxShadow: "var(--shadow-card)",
+        border: "1px solid var(--border-soft)",
         overflow: "hidden",
       }}
     >
@@ -51,8 +51,8 @@ export async function HeadlineIndexCard({ summary }: { summary: IndexSummary }) 
               width: "44px",
               height: "44px",
               borderRadius: "12px",
-              background: "#F8F9FA",
-              border: "1px solid rgba(26,26,26,0.08)",
+              background: "var(--surface-alt)",
+              border: "1px solid var(--border)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -67,7 +67,7 @@ export async function HeadlineIndexCard({ summary }: { summary: IndexSummary }) 
               style={{
                 fontSize: "16px",
                 fontWeight: 700,
-                color: "#1A1A1A",
+                color: "var(--foreground)",
                 letterSpacing: "-0.02em",
                 margin: 0,
               }}
@@ -77,7 +77,7 @@ export async function HeadlineIndexCard({ summary }: { summary: IndexSummary }) 
             <p
               style={{
                 fontSize: "12px",
-                color: "#8A8480",
+                color: "var(--foreground-muted)",
                 margin: "2px 0 0",
                 fontWeight: 500,
               }}
@@ -91,7 +91,7 @@ export async function HeadlineIndexCard({ summary }: { summary: IndexSummary }) 
         <div
           style={{
             fontSize: "11px",
-            color: "#8A8480",
+            color: "var(--foreground-muted)",
             fontWeight: 500,
           }}
         >
@@ -109,11 +109,11 @@ export async function HeadlineIndexCard({ summary }: { summary: IndexSummary }) 
             gap: "6px",
             padding: "5px 10px",
             borderRadius: "8px",
-            background: "#F8F9FA",
-            border: "1px solid rgba(26,26,26,0.08)",
+            background: "var(--surface-alt)",
+            border: "1px solid var(--border)",
             fontSize: "12px",
             fontWeight: 600,
-            color: "#1A1A1A",
+            color: "var(--foreground)",
             marginBottom: "16px",
           }}
         >
@@ -127,7 +127,7 @@ export async function HeadlineIndexCard({ summary }: { summary: IndexSummary }) 
               fontSize: "clamp(1.8rem, 3vw, 2.5rem)",
               fontWeight: 800,
               letterSpacing: "-0.04em",
-              color: "#1A1A1A",
+              color: "var(--foreground)",
               lineHeight: 1,
             }}
           >
@@ -154,14 +154,14 @@ export async function HeadlineIndexCard({ summary }: { summary: IndexSummary }) 
         style={{
           padding: "20px 28px 28px",
           marginTop: "20px",
-          borderTop: "1px solid rgba(26,26,26,0.07)",
+          borderTop: "1px solid var(--border-soft)",
         }}
       >
         <h3
           style={{
             fontSize: "15px",
             fontWeight: 700,
-            color: "#1A1A1A",
+            color: "var(--foreground)",
             letterSpacing: "-0.02em",
             margin: "0 0 8px",
           }}
@@ -172,7 +172,7 @@ export async function HeadlineIndexCard({ summary }: { summary: IndexSummary }) 
           style={{
             fontSize: "13px",
             lineHeight: "1.65",
-            color: "#8A8480",
+            color: "var(--foreground-muted)",
             margin: 0,
             maxWidth: "660px",
           }}
@@ -204,7 +204,7 @@ export async function HeadlineIndexCard({ summary }: { summary: IndexSummary }) 
                 style={{
                   fontSize: "10px",
                   fontWeight: 600,
-                  color: "#B8B2AC",
+                  color: "var(--foreground-subtle)",
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
                   margin: "0 0 3px",
@@ -216,7 +216,7 @@ export async function HeadlineIndexCard({ summary }: { summary: IndexSummary }) 
                 style={{
                   fontSize: "13px",
                   fontWeight: 600,
-                  color: "#1A1A1A",
+                  color: "var(--foreground)",
                   margin: 0,
                 }}
               >

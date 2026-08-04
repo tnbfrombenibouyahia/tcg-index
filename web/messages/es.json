@@ -10,7 +10,9 @@
     "undervalued": "Cartas infravaloradas",
     "divergence": "Divergencias",
     "live": "Live Market Data",
-    "footer": "Datos públicos · metodología transparente"
+    "footer": "Datos públicos · metodología transparente",
+    "themeToLight": "Cambiar a modo claro",
+    "themeToDark": "Cambiar a modo oscuro"
   },
   "home": {
     "breadcrumbCurrent": "Mercado TCG",
@@ -20,6 +22,8 @@
     "exchangedOn": "{price} intercambiados · {date}",
     "noDataYet": "Aún no hay datos",
     "volumeTooltip": "{price} · {count, plural, one {# venta} other {# ventas}}",
+    "volumeProvisional": "provisional",
+    "volumeProvisionalNote": "Las barras sombreadas (últimos {days} días) todavía se están completando — las cartas se reescanean por lotes rotativos, así que las ventas recientes siguen llegando.",
     "volumeChartLabel": "Volumen de intercambio diario",
     "indexChartLabel": "Gráfico de evolución"
   },
@@ -71,6 +75,7 @@
       "grades_sales": "Gradación PSA y ventas",
       "index": "Cálculo de índices",
       "sealed_ev": "Ratio EV de sellados",
+      "undervalued": "Puntuaciones de infravaloración",
       "volume": "Volumen de ventas"
     },
     "tiers": {
@@ -201,7 +206,14 @@
     "filterWindow": "Ventana:",
     "filterAll": "Todos los TCG",
     "filterMinPrice": "Precio mín.",
-    "filterMinPriceAll": "Todos",
+    "filterGrade": "Grado:",
+    "filterTag": "Etiqueta:",
+    "filterTagAll": "Todos",
+    "filterTagLabels": {
+      "accumulation": "Acumulación",
+      "distribution": "Distribución",
+      "aligned": "Alineado"
+    },
     "windows": {
       "d7": "7 días",
       "d15": "15 días",

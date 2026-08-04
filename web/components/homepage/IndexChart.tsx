@@ -67,7 +67,7 @@ function Sparkline({ history }: { history: IndexPoint[] }) {
       className="h-full w-full"
       aria-hidden
     >
-      <path d={path} fill="none" stroke="#1A1A1A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d={path} fill="none" stroke="var(--chart-line)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -151,7 +151,7 @@ function FullChart({ history }: { history: IndexPoint[] }) {
               y1={gl.y}
               x2={W - PAD_X}
               y2={gl.y}
-              stroke="#E8E4DF"
+              stroke="var(--chart-grid)"
               strokeWidth="0.5"
               strokeDasharray="4 4"
             />
@@ -162,7 +162,7 @@ function FullChart({ history }: { history: IndexPoint[] }) {
             <path
               d={path}
               fill="none"
-              stroke="#000000"
+              stroke="var(--chart-line)"
               strokeWidth="1.8"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -178,7 +178,7 @@ function FullChart({ history }: { history: IndexPoint[] }) {
                 y1={PAD_Y}
                 x2={tooltip.x}
                 y2={H - PAD_Y}
-                stroke="#ADB5BD"
+                stroke="var(--chart-axis)"
                 strokeWidth="0.8"
                 strokeDasharray="3 3"
                 vectorEffect="non-scaling-stroke"
@@ -187,8 +187,8 @@ function FullChart({ history }: { history: IndexPoint[] }) {
                 cx={tooltip.x}
                 cy={tooltip.y}
                 r="4"
-                fill="#000000"
-                stroke="#FFFFFF"
+                fill="var(--chart-line)"
+                stroke="var(--surface-solid)"
                 strokeWidth="2"
                 vectorEffect="non-scaling-stroke"
               />
@@ -209,8 +209,8 @@ function FullChart({ history }: { history: IndexPoint[] }) {
             <div
               className="rounded-lg px-2.5 py-1.5 text-xs font-semibold shadow-md"
               style={{
-                background: "#000000",
-                color: "#FFFFFF",
+                background: "var(--tooltip-bg)",
+                color: "var(--tooltip-text)",
                 whiteSpace: "nowrap",
                 fontSize: "11px",
               }}
@@ -229,7 +229,7 @@ function FullChart({ history }: { history: IndexPoint[] }) {
               top: `${(gl.y / H) * 100}%`,
               transform: "translateY(-50%)",
               fontSize: "10px",
-              color: "#ADB5BD",
+              color: "var(--chart-axis)",
               fontVariantNumeric: "tabular-nums",
             }}
           >
@@ -241,7 +241,7 @@ function FullChart({ history }: { history: IndexPoint[] }) {
       {/* Time range selectors */}
       <div
         className="flex items-center gap-0.5 pt-4"
-        style={{ borderTop: "1px solid #F0EBE5" }}
+        style={{ borderTop: "1px solid var(--chart-grid)" }}
       >
         {TIME_RANGES.map((r) => (
           <button
@@ -252,12 +252,12 @@ function FullChart({ history }: { history: IndexPoint[] }) {
             style={
               r === activeRange
                 ? {
-                    background: "#000000",
-                    color: "#FFFFFF",
+                    background: "var(--ink)",
+                    color: "var(--ink-text)",
                   }
                 : {
                     background: "transparent",
-                    color: "#8A8480",
+                    color: "var(--foreground-muted)",
                   }
             }
           >

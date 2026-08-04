@@ -50,3 +50,18 @@ export const TCGS: { value: Tcg; label: string }[] = [
 // (postgres -> fs) casse le bundle navigateur, même via un ré-export.
 export const DIVERGENCE_WINDOWS = [7, 15, 30, 90, 180] as const;
 export type DivergenceWindowDays = (typeof DIVERGENCE_WINDOWS)[number];
+
+// Le volume de ventes (`sales`, agrégé dans index_volume) n'arrive jamais
+// "en temps réel" : chaque carte n'est rescannée que sur le rythme de son
+// palier (hot = quotidien, recent = 3x/semaine, established = hebdo,
+// vintage/jp_singles = 1 tranche/semaine soit une rotation complète toutes
+// les 8-12 semaines, cf. ingestion/orchestrator.py TIERS). Une vente datée
+// d'il y a quelques jours peut donc n'être détectée que bien plus tard,
+// quand la carte concernée retombe dans une tranche scannée -- vérifié
+// empiriquement le 2026-08-03 : le total de ventes d'une journée continue
+// de grimper sensiblement même après 40+ jours (cf. mémoire projet
+// "sales_volume_tracking"). 14 jours ne rend donc pas les chiffres
+// définitifs, mais couvre plusieurs cycles hot/recent (les paliers les plus
+// actifs) -- assez pour que la tendance récente cesse d'être dominée par le
+// bruit de scan plutôt que par une vraie variation de marché.
+export const VOLUME_STABILIZATION_DAYS = 14;

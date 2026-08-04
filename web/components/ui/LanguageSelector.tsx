@@ -20,8 +20,8 @@ export function LanguageSelector({ current }: { current: string }) {
       style={{
         display: "flex",
         gap: "2px",
-        background: "#F8F9FA",
-        border: "1px solid rgba(26,26,26,0.08)",
+        background: "var(--surface-alt)",
+        border: "1px solid var(--border)",
         borderRadius: "8px",
         padding: "2px",
       }}
@@ -47,8 +47,8 @@ export function LanguageSelector({ current }: { current: string }) {
               letterSpacing: "0.02em",
               border: "none",
               cursor: isPending ? "default" : "pointer",
-              background: active ? "#000000" : "transparent",
-              color: active ? "#FFFFFF" : "#8A8480",
+              background: active ? "var(--ink)" : "transparent",
+              color: active ? "var(--ink-text)" : "var(--foreground-muted)",
               opacity: isPending ? 0.6 : 1,
             }}
           >

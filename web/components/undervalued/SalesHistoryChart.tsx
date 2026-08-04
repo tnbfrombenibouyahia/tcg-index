@@ -339,7 +339,7 @@ export function SalesHistoryChart({
           >
             <div
               className="rounded-lg px-2.5 py-1.5 text-center shadow-md"
-              style={{ background: "#000000", color: "#FFFFFF", whiteSpace: "nowrap" }}
+              style={{ background: "var(--tooltip-bg)", color: "var(--tooltip-text)", whiteSpace: "nowrap" }}
             >
               <div style={{ fontSize: "11px", fontWeight: 600 }}>{formatUsd(hoverBar.sale.price)}</div>
               <div style={{ fontSize: "10px", fontWeight: 400, opacity: 0.75 }}>
@@ -358,7 +358,7 @@ export function SalesHistoryChart({
                     fontWeight: 600,
                     color: COMPARE_COLOR,
                     marginTop: "2px",
-                    borderTop: "1px solid rgba(255,255,255,0.2)",
+                    borderTop: "1px solid var(--tooltip-divider)",
                     paddingTop: "2px",
                   }}
                 >

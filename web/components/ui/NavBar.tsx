@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { LanguageSelector } from "@/components/ui/LanguageSelector";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SideBar — Fixed left navigation, "Quiet Luxury / White Mode"
@@ -25,8 +26,8 @@ export async function NavBar() {
       style={{
         width: "192px",
         minWidth: "192px",
-        background: "#FFFFFF",
-        borderRight: "1px solid rgba(26,26,26,0.07)",
+        background: "var(--surface-solid)",
+        borderRight: "1px solid var(--border-soft)",
         display: "flex",
         flexDirection: "column",
         height: "100vh",
@@ -34,7 +35,7 @@ export async function NavBar() {
         top: 0,
         flexShrink: 0,
         padding: "28px 0 20px",
-        boxShadow: "1px 0 0 rgba(26,26,26,0.04)",
+        boxShadow: "1px 0 0 var(--border-softer)",
       }}
     >
       {/* Brand */}
@@ -53,13 +54,13 @@ export async function NavBar() {
               width: "34px",
               height: "34px",
               borderRadius: "10px",
-              background: "#000000",
+              background: "var(--ink)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-text)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z" />
               <path d="M9 21V12h6v9" />
             </svg>
@@ -69,7 +70,7 @@ export async function NavBar() {
               fontSize: "14px",
               fontWeight: 700,
               letterSpacing: "-0.02em",
-              color: "#1A1A1A",
+              color: "var(--foreground)",
             }}
           >
             TCG Index
@@ -88,15 +89,18 @@ export async function NavBar() {
       <div
         style={{
           padding: "16px 24px 0",
-          borderTop: "1px solid rgba(26,26,26,0.07)",
+          borderTop: "1px solid var(--border-soft)",
           marginTop: "auto",
           display: "flex",
           flexDirection: "column",
           gap: "12px",
         }}
       >
-        <LanguageSelector current={locale} />
-        <p style={{ fontSize: "11px", color: "#B8B2AC", margin: 0, lineHeight: 1.5 }}>{t("footer")}</p>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <LanguageSelector current={locale} />
+          <ThemeToggle />
+        </div>
+        <p style={{ fontSize: "11px", color: "var(--foreground-subtle)", margin: 0, lineHeight: 1.5 }}>{t("footer")}</p>
       </div>
     </aside>
   );
@@ -122,7 +126,7 @@ function SideLink({
         padding: "8px 12px",
         borderRadius: "10px",
         textDecoration: "none",
-        color: "#8A8480",
+        color: "var(--foreground-muted)",
         fontSize: "13px",
         fontWeight: 500,
         transition: "background 0.15s, color 0.15s",

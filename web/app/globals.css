@@ -13,6 +13,7 @@
   /* ── Surfaces / cartes ───────────────────────────────────────────────────── */
   --surface:          rgba(255, 255, 255, 0.88);
   --surface-solid:    #FFFFFF;
+  --surface-alt:      #F8F9FA;  /* badges, pastilles, tuiles icône */
   --glass-blur:       blur(20px) saturate(1.4);
 
   /* ── Palette texte (monochrome chaud) ────────────────────────────────────── */
@@ -22,6 +23,8 @@
 
   /* ── Bordures & ombres ───────────────────────────────────────────────────── */
   --border:        rgba(26, 26, 26, 0.08);
+  --border-soft:   rgba(26, 26, 26, 0.06);  /* cartes, séparateurs discrets */
+  --border-softer: rgba(26, 26, 26, 0.035); /* filets à peine visibles */
   /* Ambient shadow à deux couches : profondeur + halo très diffus */
   --shadow-card:   0 1px 3px rgba(0,0,0,0.05), 0 8px 32px rgba(0,0,0,0.06);
   --shadow-tile:   0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.05);
@@ -43,6 +46,20 @@
   --chart-fill:    rgba(26, 26, 26, 0.06);
   --chart-grid:    #EDE7DC;  /* grille champagne très douce */
   --chart-muted:   #8A8480;
+  --chart-axis:    #ADB5BD;  /* libellés d'axe */
+  --bar-muted:     rgba(26, 26, 26, 0.5);  /* barre non survolée (volume) */
+
+  /* ── Tints neutres (badges, pastilles, segments vides) ───────────────────── */
+  --tint-neutral:        rgba(26, 26, 26, 0.06);
+  --tint-neutral-strong: rgba(26, 26, 26, 0.12);
+
+  /* ── Overlays (modales) ──────────────────────────────────────────────────── */
+  --overlay-scrim: rgba(26, 26, 26, 0.45);
+
+  /* ── Tooltips (toujours à fort contraste, quel que soit le thème) ────────── */
+  --tooltip-bg:      #000000;
+  --tooltip-text:    #FFFFFF;
+  --tooltip-divider: rgba(255, 255, 255, 0.2);
 
   /* ── Compatibilité variables legacy ─────────────────────────────────────── */
   --background:         var(--bg-from);
@@ -50,6 +67,55 @@
   --accent:             var(--ink);
   --muted:              rgba(26,26,26,0.05);
   --muted-foreground:   var(--foreground-muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Dark mode — mêmes tokens, valeurs inversées. Activé via [data-theme="dark"]
+   sur <html> (cf. ThemeScript dans layout.tsx) plutôt que prefers-color-scheme
+   seul, pour que le bouton de bascule (ThemeToggle) puisse forcer un choix
+   explicite indépendant des préférences OS.
+   ───────────────────────────────────────────────────────────────────────────── */
+:root[data-theme="dark"] {
+  --bg-from: #17140F;
+  --bg-to:   #1F1B15;
+
+  --surface:          rgba(30, 27, 23, 0.88);
+  --surface-solid:    #211E1A;
+  --surface-alt:      #2A2620;
+
+  --foreground:          #F2EDE6;
+  --foreground-muted:    #A39C93;
+  --foreground-subtle:   #726B62;
+
+  --border:        rgba(255, 255, 255, 0.10);
+  --border-soft:   rgba(255, 255, 255, 0.07);
+  --border-softer: rgba(255, 255, 255, 0.045);
+  --shadow-card:   0 1px 3px rgba(0,0,0,0.3), 0 8px 32px rgba(0,0,0,0.35);
+  --shadow-tile:   0 1px 2px rgba(0,0,0,0.25), 0 4px 16px rgba(0,0,0,0.3);
+  --shadow-lift:   0 2px 8px rgba(0,0,0,0.35), 0 16px 48px rgba(0,0,0,0.4);
+
+  --ink:           #F2EDE6;  /* boutons/pill pleins : clair sur fond sombre */
+  --ink-text:      #17140F;
+
+  --positive:      #22c55e;
+  --negative:      #f87171;
+  --chart-line:    #F2EDE6;
+  --chart-fill:    rgba(255, 255, 255, 0.08);
+  --chart-grid:    rgba(255, 255, 255, 0.08);
+  --chart-muted:   #A39C93;
+  --chart-axis:    #726B62;
+  --bar-muted:     rgba(255, 255, 255, 0.35);
+
+  --tint-neutral:        rgba(255, 255, 255, 0.07);
+  --tint-neutral-strong: rgba(255, 255, 255, 0.14);
+
+  --overlay-scrim: rgba(0, 0, 0, 0.6);
+
+  --tooltip-bg:      #F2EDE6;
+  --tooltip-text:    #17140F;
+  --tooltip-divider: rgba(0, 0, 0, 0.15);
+
+  --muted:              rgba(255, 255, 255, 0.06);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -123,7 +189,7 @@ body {
 
 /* Sidebar link hover */
 .sidebar-link:hover {
-  background: rgba(26, 26, 26, 0.05);
+  background: var(--tint-neutral);
   color: var(--foreground) !important;
 }
 

@@ -25,6 +25,16 @@ export function formatPct(pct: number): string {
   return `${sign}${pct.toFixed(2)}%`;
 }
 
+// Utilisé pour distinguer les jours "stabilisés" des jours encore
+// provisoires dans les séries de volume (cf. lib/constants.ts
+// VOLUME_STABILIZATION_DAYS) -- comparaison de string 'YYYY-MM-DD' pure,
+// pas besoin de re-parser en Date ensuite.
+export function daysAgoIso(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+
 export function formatDate(iso: string, locale: string = "fr"): string {
   return new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale, {
     year: "numeric",

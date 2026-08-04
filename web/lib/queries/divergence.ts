@@ -1,6 +1,6 @@
 import sql from "@/lib/db";
 import type { DivergenceRow } from "@/lib/types";
-import { DIVERGENCE_WINDOWS, type DivergenceWindowDays, type Tcg } from "@/lib/constants";
+import { DIVERGENCE_WINDOWS, type DivergenceWindowDays, type Grade, type Tcg } from "@/lib/constants";
 
 // Ré-exportées pour les Server Components qui les récupèrent déjà via ce
 // module (app/divergence/page.tsx, DivergenceTable.tsx) -- sans risque
@@ -27,15 +27,29 @@ export type { DivergenceWindowDays };
 // (fenêtre 7j) et ~9700 (30j/90j) cartes qualifient sur les deux fenêtres à
 // la fois, largement assez pour peupler la page à toutes les granularités.
 //
-// Scope volontairement restreint à grade='ungraded' (bug corrigé après
-// retour utilisateur) : sans ce filtre, une seule vente PSA10 à $500 se
-// mélangeait dans la moyenne avec des ungraded à $0.05-0.18, produisant des
-// deltas de prix à +220 000% -- des grades différents ne sont pas le même
-// marché, les mélanger n'a pas de sens. Les grades PSA sont de toute façon
-// trop rares pour soutenir une comparaison de volume par fenêtre.
+// Toujours filtré sur UN SEUL grade à la fois (bug corrigé après retour
+// utilisateur) : sans ce filtre, une seule vente PSA10 à $500 se mélangeait
+// dans la moyenne avec des ungraded à $0.05-0.18, produisant des deltas de
+// prix à +220 000% -- des grades différents ne sont pas le même marché, les
+// mélanger n'a pas de sens. `grade` est donc un paramètre (sélecteur
+// ungraded/psa7/psa8/psa9, demande utilisateur) plutôt qu'une constante,
+// mais la requête ne compare jamais deux grades entre eux.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MIN_SALES_PER_WINDOW = 3;
+
+// Filtre par tag (demande utilisateur) : "aligned" regroupe alignedUp +
+// alignedDown (cf. divergenceTag.ts côté client) -- les deux sont "confirmés"
+// au même titre, la distinction up/down n'a de sens que pour l'affichage du
+// badge, pas pour filtrer.
+export type DivergenceTagFilter = "accumulation" | "distribution" | "aligned";
+
+function tagFragment(tagFilter?: DivergenceTagFilter) {
+  if (tagFilter === "accumulation") return sql`AND j.price_change_pct < 0 AND j.volume_change_pct >= 0`;
+  if (tagFilter === "distribution") return sql`AND j.price_change_pct >= 0 AND j.volume_change_pct < 0`;
+  if (tagFilter === "aligned") return sql`AND (j.price_change_pct >= 0) = (j.volume_change_pct >= 0)`;
+  return sql``;
+}
 
 export type DivergenceSort =
   | "divergence_desc"
@@ -88,6 +102,8 @@ export interface DivergenceParams {
   tcg?: Tcg;
   windowDays?: DivergenceWindowDays;
   minPrice?: number;
+  tagFilter?: DivergenceTagFilter;
+  grade?: Grade;
   limit?: number;
   sort?: DivergenceSort;
 }
@@ -96,16 +112,19 @@ export async function getDivergence({
   tcg,
   windowDays = 30,
   minPrice = 0,
+  tagFilter,
+  grade = "ungraded",
   limit = 100,
   sort,
 }: DivergenceParams): Promise<DivergenceRow[]> {
   const order = orderFragment(sort);
+  const tagClause = tagFragment(tagFilter);
 
   const rows = await sql<DivergenceQueryRow[]>`
     WITH cur AS (
       SELECT item_id, COUNT(*)::int AS vol, AVG(price)::float8 AS avg_price
       FROM sales
-      WHERE grade = 'ungraded'
+      WHERE grade = ${grade}
         AND sale_date >= CURRENT_DATE - make_interval(days => ${windowDays})
         AND sale_date < CURRENT_DATE
       GROUP BY item_id
@@ -114,7 +133,7 @@ export async function getDivergence({
     prev AS (
       SELECT item_id, COUNT(*)::int AS vol, AVG(price)::float8 AS avg_price
       FROM sales
-      WHERE grade = 'ungraded'
+      WHERE grade = ${grade}
         AND sale_date >= CURRENT_DATE - make_interval(days => ${windowDays * 2})
         AND sale_date < CURRENT_DATE - make_interval(days => ${windowDays})
       GROUP BY item_id
@@ -153,6 +172,7 @@ export async function getDivergence({
     JOIN items i ON i.id = j.item_id
     WHERE j.price_current >= ${minPrice}
       ${tcg ? sql`AND i.tcg = ${tcg}` : sql``}
+      ${tagClause}
     ${order}
     LIMIT ${limit}
   `;

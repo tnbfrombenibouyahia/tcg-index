@@ -63,7 +63,7 @@ export default async function UndervaluedPage({
       {/* Methodology callout */}
       <div
         className="mb-6 rounded-xl border border-border p-4 text-sm text-muted-foreground"
-        style={{ background: "rgba(26,26,26,0.03)" }}
+        style={{ background: "var(--border-softer)" }}
       >
         <p>
           <strong className="text-foreground">{t("methodologyLabel")}</strong>{" "}

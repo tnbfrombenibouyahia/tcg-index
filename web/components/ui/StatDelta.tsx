@@ -6,7 +6,7 @@ export function StatDelta({ changePct }: { changePct: number | null }) {
       <span
         className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
         style={{
-          background: "rgba(26,26,26,0.06)",
+          background: "var(--tint-neutral)",
           color: "var(--foreground-muted)",
         }}
       >

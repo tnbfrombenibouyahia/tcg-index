@@ -27,8 +27,8 @@ function ScoreBadge({ score }: { score: number }) {
       ? "rgba(21, 128, 61, 0.1)"
       : isMedium
       ? "rgba(180, 120, 20, 0.1)"
-      : "rgba(26, 26, 26, 0.06)",
-    color: isStrong ? "#15803d" : isMedium ? "#a16207" : "#8A8480",
+      : "var(--tint-neutral)",
+    color: isStrong ? "#15803d" : isMedium ? "#a16207" : "var(--foreground-muted)",
   };
 
   return <span style={style}>{score.toFixed(1)}×</span>;

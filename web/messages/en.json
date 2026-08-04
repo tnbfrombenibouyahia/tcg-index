@@ -10,7 +10,9 @@
     "undervalued": "Undervalued Cards",
     "divergence": "Divergence",
     "live": "Live Market Data",
-    "footer": "Public data · transparent methodology"
+    "footer": "Public data · transparent methodology",
+    "themeToLight": "Switch to light mode",
+    "themeToDark": "Switch to dark mode"
   },
   "home": {
     "breadcrumbCurrent": "TCG Market",
@@ -20,6 +22,8 @@
     "exchangedOn": "{price} traded · {date}",
     "noDataYet": "No data yet",
     "volumeTooltip": "{price} · {count, plural, one {# sale} other {# sales}}",
+    "volumeProvisional": "provisional",
+    "volumeProvisionalNote": "Shaded bars ({days} most recent days) are still being completed — cards are rescanned in rotating batches, so recent sales keep trickling in.",
     "volumeChartLabel": "Daily exchange volume",
     "indexChartLabel": "Trend chart"
   },
@@ -202,7 +206,14 @@
     "filterWindow": "Window:",
     "filterAll": "All TCGs",
     "filterMinPrice": "Min price",
-    "filterMinPriceAll": "All",
+    "filterGrade": "Grade:",
+    "filterTag": "Tag:",
+    "filterTagAll": "All",
+    "filterTagLabels": {
+      "accumulation": "Accumulation",
+      "distribution": "Distribution",
+      "aligned": "Aligned"
+    },
     "windows": {
       "d7": "7 days",
       "d15": "15 days",

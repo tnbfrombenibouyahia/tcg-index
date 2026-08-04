@@ -27,19 +27,19 @@ export default async function HomePage() {
         <span
           style={{
             fontSize: "14px",
-            color: "#8A8480",
+            color: "var(--foreground-muted)",
             fontWeight: 500,
             cursor: "pointer",
           }}
         >
           {tNav("home")}
         </span>
-        <span style={{ fontSize: "14px", color: "#B8B2AC" }}>/</span>
+        <span style={{ fontSize: "14px", color: "var(--foreground-subtle)" }}>/</span>
         <span
           style={{
             fontSize: "14px",
             fontWeight: 700,
-            color: "#1A1A1A",
+            color: "var(--foreground)",
             letterSpacing: "-0.01em",
           }}
         >

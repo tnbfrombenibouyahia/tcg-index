@@ -1,15 +1,22 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { VolumePoint } from "@/lib/types";
 import { TIME_RANGES, type TimeRange, filterByRange } from "@/lib/chartRanges";
-import { formatUsd, formatUsdCompact } from "@/lib/format";
+import { VOLUME_STABILIZATION_DAYS } from "@/lib/constants";
+import { daysAgoIso, formatUsd, formatUsdCompact } from "@/lib/format";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Volume bar chart — même langage visuel que IndexChart (SVG pur, monochrome,
 // mêmes sélecteurs de plage temporelle). Une barre = $ échangés ce jour-là ;
 // le nombre de ventes apparaît dans l'infobulle au survol.
+//
+// Les VOLUME_STABILIZATION_DAYS derniers jours sont grisés (cf.
+// lib/constants.ts) : ces ventes sont encore en cours de recensement (scan
+// par paliers tournants), pas définitives -- sans cette distinction, une
+// chute purement due au décalage de scan se lit comme un vrai ralentissement
+// du marché (constaté le 2026-08-03, cf. mémoire projet).
 // ─────────────────────────────────────────────────────────────────────────────
 
 const W = 800;
@@ -28,6 +35,10 @@ export function VolumeBarChart({ volume }: { volume: VolumePoint[] }) {
   const filtered = filterByRange(volume, activeRange);
   const n = filtered.length;
   const max = Math.max(...filtered.map((p) => p.salesValue), 1);
+
+  const stableCutoff = useMemo(() => daysAgoIso(VOLUME_STABILIZATION_DAYS), []);
+  const isProvisional = useCallback((capturedAt: string) => capturedAt > stableCutoff, [stableCutoff]);
+  const hasProvisional = filtered.some((p) => isProvisional(p.capturedAt));
 
   const plotW = W - PAD_X * 2;
   const plotH = H - PAD_Y - PAD_BOTTOM;
@@ -88,7 +99,7 @@ export function VolumeBarChart({ volume }: { volume: VolumePoint[] }) {
               y1={gl.y}
               x2={W - PAD_X}
               y2={gl.y}
-              stroke="#E8E4DF"
+              stroke="var(--chart-grid)"
               strokeWidth="0.5"
               strokeDasharray="4 4"
             />
@@ -102,7 +113,8 @@ export function VolumeBarChart({ volume }: { volume: VolumePoint[] }) {
               y={barY(p.salesValue)}
               width={barW}
               height={Math.max(0.5, barH(p.salesValue))}
-              fill={hoverIdx === i ? "#000000" : "rgba(26,26,26,0.5)"}
+              fill={hoverIdx === i ? "var(--ink)" : "var(--bar-muted)"}
+              fillOpacity={hoverIdx !== i && isProvisional(p.capturedAt) ? 0.4 : 1}
               rx={barW > 2 ? 1 : 0}
             />
           ))}
@@ -121,8 +133,8 @@ export function VolumeBarChart({ volume }: { volume: VolumePoint[] }) {
             <div
               className="rounded-lg px-2.5 py-1.5 text-center shadow-md"
               style={{
-                background: "#000000",
-                color: "#FFFFFF",
+                background: "var(--tooltip-bg)",
+                color: "var(--tooltip-text)",
                 whiteSpace: "nowrap",
               }}
             >
@@ -135,6 +147,7 @@ export function VolumeBarChart({ volume }: { volume: VolumePoint[] }) {
                   month: "short",
                   year: "numeric",
                 })}
+                {isProvisional(hovered.capturedAt) ? ` · ${t("volumeProvisional")}` : ""}
               </div>
             </div>
           </div>
@@ -149,7 +162,7 @@ export function VolumeBarChart({ volume }: { volume: VolumePoint[] }) {
               top: `${(gl.y / H) * 100}%`,
               transform: "translateY(-50%)",
               fontSize: "10px",
-              color: "#ADB5BD",
+              color: "var(--chart-axis)",
               fontVariantNumeric: "tabular-nums",
             }}
           >
@@ -159,7 +172,7 @@ export function VolumeBarChart({ volume }: { volume: VolumePoint[] }) {
       </div>
 
       {/* Time range selectors */}
-      <div className="flex items-center gap-0.5 pt-4" style={{ borderTop: "1px solid #F0EBE5" }}>
+      <div className="flex items-center gap-0.5 pt-4" style={{ borderTop: "1px solid var(--chart-grid)" }}>
         {TIME_RANGES.map((r) => (
           <button
             key={r}
@@ -167,14 +180,34 @@ export function VolumeBarChart({ volume }: { volume: VolumePoint[] }) {
             className="rounded-full px-2.5 py-1 text-xs font-medium transition-all duration-150"
             style={
               r === activeRange
-                ? { background: "#000000", color: "#FFFFFF" }
-                : { background: "transparent", color: "#8A8480" }
+                ? { background: "var(--ink)", color: "var(--ink-text)" }
+                : { background: "transparent", color: "var(--foreground-muted)" }
             }
           >
             {r}
           </button>
         ))}
       </div>
+
+      {hasProvisional && (
+        <div
+          className="flex items-center gap-1.5 pt-2"
+          style={{ fontSize: "10.5px", color: "var(--foreground-subtle)" }}
+        >
+          <span
+            aria-hidden
+            style={{
+              display: "inline-block",
+              width: "8px",
+              height: "8px",
+              borderRadius: "2px",
+              background: "var(--bar-muted)",
+              opacity: 0.4,
+            }}
+          />
+          {t("volumeProvisionalNote", { days: VOLUME_STABILIZATION_DAYS })}
+        </div>
+      )}
     </div>
   );
 }

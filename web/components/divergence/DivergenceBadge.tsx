@@ -19,8 +19,8 @@ export function DivergenceBadge({ row }: { row: DivergenceRow }) {
     <span
       className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
       style={{
-        background: strong ? "rgba(180, 120, 20, 0.1)" : "rgba(26, 26, 26, 0.06)",
-        color: strong ? "#a16207" : "#8A8480",
+        background: strong ? "rgba(180, 120, 20, 0.1)" : "var(--tint-neutral)",
+        color: strong ? "#a16207" : "var(--foreground-muted)",
       }}
     >
       {t(tag)}
