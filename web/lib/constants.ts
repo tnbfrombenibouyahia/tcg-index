@@ -51,6 +51,62 @@ export const TCGS: { value: Tcg; label: string }[] = [
 export const DIVERGENCE_WINDOWS = [7, 15, 30, 90, 180] as const;
 export type DivergenceWindowDays = (typeof DIVERGENCE_WINDOWS)[number];
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Calculateur ROI de gradation (demande utilisateur, cf. lib/gradingRoi.ts) --
+// vivent ici (pas dans lib/gradingRoi.ts) pour la même raison que
+// DIVERGENCE_WINDOWS ci-dessus : ce sont des constantes pures réutilisées par
+// des Client Components.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Les 5 paliers qu'on trace réellement (cf. GRADES) -- 'ungraded' exclu, ce
+// n'est jamais un résultat de gradation.
+export const GRADED_TIERS = GRADES.filter((g) => g !== "ungraded") as Exclude<Grade, "ungraded">[];
+export type GradedTier = (typeof GRADED_TIERS)[number];
+
+export interface PsaServiceTier {
+  id: string;
+  label: string;
+  feeUsd: number;
+  maxDeclaredValue: number;
+  turnaroundBusinessDays: number;
+}
+
+// Tarifs indicatifs PSA (US), relevés le 2026-08-04 par recherche web --
+// PSA révise ses tarifs régulièrement (dernière hausse notée : +5$ sur la
+// plupart des paliers le 2026-02-10) et les sources tierces se
+// contredisent déjà entre elles sur certains paliers (Value/Value Plus
+// signalés "en pause" par une source, actifs par une autre le même jour).
+// Défauts éditables dans le calculateur (cf. GradingRoiCalculator) -- à
+// vérifier sur https://www.psacard.com/services avant toute soumission
+// réelle, jamais présentés comme une donnée live.
+export const PSA_SERVICE_TIERS: PsaServiceTier[] = [
+  { id: "value", label: "Value", feeUsd: 30, maxDeclaredValue: 499, turnaroundBusinessDays: 65 },
+  { id: "valuePlus", label: "Value Plus", feeUsd: 50, maxDeclaredValue: 999, turnaroundBusinessDays: 45 },
+  { id: "regular", label: "Regular", feeUsd: 80, maxDeclaredValue: 1500, turnaroundBusinessDays: 40 },
+  { id: "express", label: "Express", feeUsd: 150, maxDeclaredValue: 2499, turnaroundBusinessDays: 20 },
+  { id: "superExpress", label: "Super Express", feeUsd: 349, maxDeclaredValue: 9999, turnaroundBusinessDays: 7 },
+  { id: "walkThrough", label: "Walk-Through", feeUsd: 599, maxDeclaredValue: 24999, turnaroundBusinessDays: 7 },
+];
+
+// Hypothèses par défaut du calculateur -- toutes éditables en UI.
+// `lowGradeProbabilityPct`/`lowGradeValueFactor` n'ont PAS de source
+// mesurée : on ne trace aucune vente/prix en dessous de psa7 (cf. schéma,
+// mémoire projet "grading_tiers"), donc le risque de sous-note reste une
+// hypothèse manuelle, pas une donnée -- cf. lib/gradingRoi.ts.
+export const GRADING_ROI_DEFAULTS = {
+  extraCostsUsd: 20, // envoi + assurance + retour, forfait éditable
+  lowGradeProbabilityPct: 8,
+  lowGradeValueFactor: 0.85,
+  resaleFeePct: 0, // frais de revente (ex. ~12-13% eBay/TCGPlayer) -- 0 par défaut
+};
+
+// Seuil de ventes gradées avant repli set+rareté -> set -> tcg (cf.
+// resolveGradeDistribution dans lib/gradingRoi.ts) -- même ordre de
+// grandeur que MIN_SALES_PER_WINDOW (lib/queries/divergence.ts) pour la
+// même raison : en dessous, la proportion mesurée est trop instable pour
+// être montrée comme "la" distribution de cette carte.
+export const MIN_GRADED_SALES_SAMPLE = 5;
+
 // Le volume de ventes (`sales`, agrégé dans index_volume) n'arrive jamais
 // "en temps réel" : chaque carte n'est rescannée que sur le rythme de son
 // palier (hot = quotidien, recent = 3x/semaine, established = hebdo,
