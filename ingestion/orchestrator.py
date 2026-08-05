@@ -347,15 +347,24 @@ def main() -> int:
     started = time.monotonic()
     had_errors = False
 
+    items_had_errors = False
     if not args.skip_items:
         try:
             items_errors = run_items_sync(run_type)
-            had_errors = had_errors or bool(items_errors)
+            items_had_errors = bool(items_errors)
             for exc in items_errors:
                 print(f"\n!! Erreur pendant la sync référentiel : {exc}")
         except Exception as exc:
-            had_errors = True
+            items_had_errors = True
             print(f"\n!! Erreur pendant la sync référentiel : {exc}")
+        # Volontairement PAS répercuté dans `had_errors` (donc pas dans le code
+        # de sortie) : le référentiel échoue couramment sur le seul quota API
+        # TCG (1000 req/mois, cf. mémoire projet "apitcg_quota"), ce qui
+        # n'empêche pas le reste du run (prix/gradation/ventes/index) de
+        # tourner normalement -- avant ce fix, ça déclenchait un mail GitHub
+        # Actions "failure" quotidien pour un run qui avait en fait réussi à
+        # ~95%. L'erreur reste visible ci-dessus et dans sync_runs (status
+        # "error" par tcg, cf. run_items_sync) pour qui veut la voir.
 
     try:
         errors = run_price_sync(tier=args.tier, run_type=run_type)
@@ -392,7 +401,12 @@ def main() -> int:
     print_storage_usage()
 
     elapsed = time.monotonic() - started
-    status = "avec erreurs" if had_errors else "OK"
+    if had_errors:
+        status = "avec erreurs"
+    elif items_had_errors:
+        status = "OK, référentiel en erreur (non bloquant)"
+    else:
+        status = "OK"
     print(f"\n=== Terminé en {elapsed / 60:.1f} min ({status}) ===")
     return 1 if had_errors else 0
 

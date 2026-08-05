@@ -46,7 +46,11 @@ CREATE TABLE sales (
   marketplace       TEXT NOT NULL,        -- 'ebay', 'tcgplayer' (marché d'origine de la vente)
   external_sale_id  TEXT NOT NULL,        -- id de l'annonce chez le marketplace, clé naturelle de dédup
   title             TEXT,                 -- titre de l'annonce (QA du matching)
-  source            TEXT NOT NULL DEFAULT 'pricecharting',
+  -- pas de colonne `source` ici (contrairement à price_snapshots) : ventes
+  -- scrapées uniquement depuis PriceCharting, une valeur constante n'a rien
+  -- à apporter -- supprimée le 2026-08-05 après avoir mesuré ~15-20 Mo
+  -- gaspillés dessus (donnée+index) sur 500 Mo de plan Free, cf. mémoire
+  -- projet "supabase_storage_plan".
   created_at        TIMESTAMPTZ DEFAULT now(),
   UNIQUE (marketplace, external_sale_id)
 );

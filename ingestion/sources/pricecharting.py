@@ -1361,7 +1361,7 @@ _UPSERT_PRICE_SNAPSHOTS_WITH_GRADE_SQL = """
 """
 
 _UPSERT_SALES_SQL = """
-    INSERT INTO sales (item_id, sale_date, price, currency, grade, marketplace, external_sale_id, title, source)
+    INSERT INTO sales (item_id, sale_date, price, currency, grade, marketplace, external_sale_id, title)
     VALUES %s
     ON CONFLICT (marketplace, external_sale_id) DO NOTHING
 """
@@ -1489,7 +1489,7 @@ def sync_price_snapshots_for_set(
 
                     sale_rows = [
                         (item_id, s["sale_date"], s["price"], "USD", s["grade"],
-                         s["marketplace"], s["external_sale_id"], s["title"], "pricecharting")
+                         s["marketplace"], s["external_sale_id"], s["title"])
                         for s in details["sales"]
                         if not is_sealed or s["grade"] == "ungraded"
                     ]
@@ -1809,7 +1809,7 @@ def sync_jp_sealed_items_for_set(set_code: str, tcg: str, fetch_sales: bool = Fa
                         continue
                     sale_rows = [
                         (item_id, s["sale_date"], s["price"], "USD", s["grade"],
-                         s["marketplace"], s["external_sale_id"], s["title"], "pricecharting")
+                         s["marketplace"], s["external_sale_id"], s["title"])
                         for s in details["sales"] if s["grade"] == "ungraded"
                     ]
                     if sale_rows:
@@ -1995,7 +1995,7 @@ def sync_jp_singles_items_for_set(set_code: str, tcg: str, fetch_grades: bool = 
 
                     sale_rows = [
                         (item_id, s["sale_date"], s["price"], "USD", s["grade"],
-                         s["marketplace"], s["external_sale_id"], s["title"], "pricecharting")
+                         s["marketplace"], s["external_sale_id"], s["title"])
                         for s in details["sales"]
                     ]
                     if sale_rows:
