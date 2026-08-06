@@ -45,3 +45,6 @@ next-env.d.ts
 # -- ne référencés nulle part dans package.json) + leurs sorties
 screenshot*.js
 screenshot*.png
+
+.vercel
+.env*
