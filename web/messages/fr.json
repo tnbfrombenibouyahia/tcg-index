@@ -78,6 +78,7 @@
       "index": "Calcul des indices",
       "sealed_ev": "Ratio EV scellés",
       "undervalued": "Scores de sous-évaluation",
+      "grading_roi": "Données ROI de gradation",
       "volume": "Volume de ventes"
     },
     "tiers": {
@@ -127,12 +128,12 @@
       "cardLabel": "Carte",
       "placeholder": "Rechercher une carte...",
       "clearAria": "Effacer la recherche"
-    },
-    "pagination": {
-      "previous": "Précédent",
-      "next": "Suivant",
-      "pageOf": "Page {page} / {totalPages}"
     }
+  },
+  "pagination": {
+    "previous": "Précédent",
+    "next": "Suivant",
+    "pageOf": "Page {page} / {totalPages}"
   },
   "sealedEv": {
     "title": "Scellés sous-évalués",

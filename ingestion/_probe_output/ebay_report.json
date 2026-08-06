@@ -1,0 +1,366 @@
+{
+  "tcg": "pokemon",
+  "singles": [
+    {
+      "item_id": 261,
+      "name": "Aegislash",
+      "code": "058/088",
+      "set_code": "pokemon-me03-perfect-order",
+      "total_ungraded": 2428,
+      "sample_size": 10,
+      "sample_confirmed": 9,
+      "sample_titles": [
+        "Aegislash 058/088 Uncommon Perfect Order Pokemon Reverse Holo Near Mint",
+        "Aegislash 058/088 Me03: Perfect Order - Near Mint",
+        "Aegislash 058/088 Uncommon Perfect Order Pokemon Near Mint",
+        "AEGISLASH 058/088 UC PERFECT ORDER POKEMON NM/M",
+        "Aegislash 058/088 Uncommon Perfect Order Pokemon Near Mint"
+      ]
+    },
+    {
+      "item_id": 21568,
+      "name": "Pikachu",
+      "code": "015/017",
+      "set_code": "pokemon-pop-series-9",
+      "total_ungraded": 55,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Pikachu Common POP #015/017 LP",
+        "Pikachu 015/017 POP Series 9 Regular",
+        "Pikachu [POP - 015/017LP",
+        "POP Series 9 #015/017 Pikachu",
+        "Pikachu 015/017 POP Series 9 LP"
+      ]
+    },
+    {
+      "item_id": 30502,
+      "name": "Vanillite",
+      "code": "027/086",
+      "set_code": "pokemon-sv-white-flare",
+      "total_ungraded": 9,
+      "sample_size": 9,
+      "sample_confirmed": 9,
+      "sample_titles": [
+        "Vanillite - 027/086 - Common - Near Mint",
+        "Vanillite - 027/086 - Common - Reverse Holo - Near Mint",
+        "Vanillite - [WHT - 027/086] - Common - Pokemon - EN",
+        "Vanillite 027/086 Common White Flare Pokemon Near Mint",
+        "Vanillite Reverse Holo Common SV: White Flare 027/086 NM"
+      ]
+    },
+    {
+      "item_id": 1179,
+      "name": "Arven's Greedent - 205/182",
+      "code": "205/182",
+      "set_code": "pokemon-sv10-destined-rivals",
+      "total_ungraded": 936,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Arven's Greedent 205/182 Illustration Rare Destined Rivals Pokemon Holo NM",
+        "Arven's Greedent DRI 205/182 Holo",
+        "Arven's Greedent 205/182 NM Destined Rivals Illustration Rare Pokemon",
+        "Arven's Greedent 205/182 Destined Rivals Pokemon TCG Holo Illustration Rare NM",
+        "Arven's Greedent 205/182 Illustration Rare Destined Rivals Pokemon Holo NM"
+      ]
+    },
+    {
+      "item_id": 15468,
+      "name": "Landorus - 131/086",
+      "code": "131/086",
+      "set_code": "pokemon-sv-black-bolt",
+      "total_ungraded": 56,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Pokemon BLK Black Bolt Landorus 131/086 Illustration Rare",
+        "Pokémon TCG Landorus SV: Black Bolt 131/086 IR Full Art Holo EN",
+        "2025 Pokemon Black Bolt Landorus IR #131/086 Illustration Rare Full Art NM 🌾💥",
+        "Landorus 131/086 Holo Illustration Rare Black Bolt Pokemon NM/M",
+        "Landorus 131/086 Black Bolt Illustration Rare Pokemon TCG NM"
+      ]
+    },
+    {
+      "item_id": 24760,
+      "name": "Rotom ex - 126/094",
+      "code": "126/094",
+      "set_code": "pokemon-me02-phantasmal-flames",
+      "total_ungraded": 702,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Rotom EX SIR 126/094 Phantasmal Flames Pokémon Tcg",
+        "Rotom ex 126/094 ME02 Phantasmal Flames SAR NM Buy 2+ Save Up To 15%",
+        "Rotom ex 126/094 PFL Phantasmal Flames Special Illustration Rare",
+        "Rotom ex 126/094 Special Illustration Rare Phantasmal Flames Pokemon Holo NM",
+        "Rotom ex 126/094 SIR Holo Me02: Phantasmal Flames English 190 HP Basic"
+      ]
+    },
+    {
+      "item_id": 9846,
+      "name": "Fearow",
+      "code": "103/132",
+      "set_code": "pokemon-me01-mega-evolution",
+      "total_ungraded": 1960,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Pokemon TCG ~ Fearow 103/132 ~ Common Reverse Holo English Near Mint",
+        "Fearow #103/132 Me01 Mega Evolution Common Reverse Holo Pokemon TCG NM",
+        "Fearow 103/132 ~ Reverse Holo English Near Mint",
+        "Fearow 103/132 Common Mega Evolution Pokemon NM",
+        "Fearow Reverse Holo Common ME01: Mega Evolution 103/132 NM"
+      ]
+    },
+    {
+      "item_id": 883,
+      "name": "Arcanine",
+      "code": "028/182",
+      "set_code": "pokemon-sv10-destined-rivals",
+      "total_ungraded": 1288,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Arcanine 028/182 Uncommon Destined Rivals Pokemon Reverse Holo NM/M",
+        "Arcanine 028/182 Uncommon Destined Rivals Pokemon TCG Reverse Holo Near Mint",
+        "Arcanine 028/182 Uncommon Destined Rivals Pokemon Reverse Holo Near Mint",
+        "Arcanine Reverse Holo Uncommon SV10: Destined Rivals 028/182 NM",
+        "Arcanine - 028/182 - Uncommon - Near Mint"
+      ]
+    },
+    {
+      "item_id": 30365,
+      "name": "Urbain",
+      "code": "214/217",
+      "set_code": "pokemon-me-ascended-heroes",
+      "total_ungraded": 1012,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Urbain 214/217 Uncommon Ascended Heroes Pokemon NM/M",
+        "Urbain 214/217 Uncommon Ascended Heroes Pokemon Reverse Holo Near Mint",
+        "Pokémon TCG 4x Urbain 214/217 Ascended Heroes Playset NM",
+        "Urbain 214/217 Uncommon Ascended Heroes Pokemon Near Mint",
+        "URBAIN 214/217 UNCOMMON ASCENDED HEROES POKEMON NM"
+      ]
+    },
+    {
+      "item_id": 23096,
+      "name": "Professor's Research [Professor Magnolia] - 223",
+      "code": "223",
+      "set_code": "pokemon-professor-program-promos",
+      "total_ungraded": 15,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Professor's Research [Professor Magnolia] - 223 223/167 Scarlet & Violet Promo C",
+        "Professor's Research [Professor Magnolia] Normal [SVP - 223] Pokemon NM",
+        "Pokemon Professor's Research (Professor Magnolia) 223 SV Promo Holo Trainer",
+        "Pokemon Professor's Research Professor Magnolia 223 Trainer's Toolkit 2025 Promo",
+        "Pokemon Professor's Research Professor Magnolia 223 Trainer's Toolkit 2025 Promo"
+      ]
+    },
+    {
+      "item_id": 16485,
+      "name": "Lt. Surge's Bargain - 185/132",
+      "code": "185/132",
+      "set_code": "pokemon-me01-mega-evolution",
+      "total_ungraded": 321,
+      "sample_size": 10,
+      "sample_confirmed": 9,
+      "sample_titles": [
+        "Lt. Surge's Bargain 185/132 Mega Evolution Pokemon Holo NM",
+        "LT. SURGE'S BARGAIN 185/132 POKEMON MEGA EVOLUTION NM/M",
+        "The Pokémon Company Lt. Surge's Bargain 185/132 ME01 Special Illustration Rare",
+        "Lt. Surge's Bargain - 185/132 [MEG - 185/132]",
+        "Lt. Surge's Bargain ME01: Mega Evolution 185/132 NM Holo"
+      ]
+    },
+    {
+      "item_id": 7046,
+      "name": "Dawn - 118/094",
+      "code": "118/094",
+      "set_code": "pokemon-me02-phantasmal-flames",
+      "total_ungraded": 1515,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Dawn 118/094 Ultra Rare Phantasmal Flames Pokemon Holo Near Mint",
+        "Dawn 118/094 Me02: Phantasmal Flames Holo",
+        "Dawn 118/094 Me02: Phantasmal Flames Holo",
+        "Dawn 118/094 Me02: Phantasmal Flames Holo",
+        "Dawn 118/094 Me02: Phantasmal Flames Holo"
+      ]
+    }
+  ],
+  "sealed": [
+    {
+      "item_id": 18154,
+      "name": "Mega Forces Tin [Mega Darkrai ex]",
+      "set_code": "pokemon-miscellaneous-cards-products",
+      "total_packs": 2,
+      "total_boxes": 4,
+      "total": 6,
+      "sample_titles": [
+        "Pokemon TCG: Mega Forces Tin (1 of each) Dragonite ex Zeraora ex Darkrai ex 8/28",
+        "Pokemon | Mega Forces Tins: Mega Darkrai ex Tin | ITA",
+        "Pokémon x 3 Mega Forces Dragonite ex & Zeraora ex &  Darkrai ex  Tins Ships 8/28",
+        "Pokémon Mega Forces Dragonite ex Zeraora ex Darkrai ex Tin Case x6 | SHIPS 8/28",
+        "Pokémon x 6 Mega Forces Dragonite ex Zeraora ex Darkrai ex Tin Sealed Case  8/28"
+      ]
+    },
+    {
+      "item_id": 18129,
+      "name": "Mega Evolution Premium Checklane Blister [Tyranitar]",
+      "set_code": "pokemon-me01-mega-evolution",
+      "total_packs": 15,
+      "total_boxes": 0,
+      "total": 15,
+      "sample_titles": [
+        "Mega Evolution Premium Checklane Blister [Tyranitar]",
+        "Pokemon Mega Evolution Premium Checklane Blister Tyranitar Sealed Extremely HTF",
+        "Pokémon Mega Evolution Premium Checklane Booster Blister Pack (Tyranitar) Sealed",
+        "Lot of (3) Pokémon Phantasmal Flames Premium Checklane Blisters",
+        "Pokemon TCG Mega Evolution Premium Checklane ME01 Tyranitar Booster + Promo Card"
+      ]
+    },
+    {
+      "item_id": 4806,
+      "name": "Code Card - Cyclizar ex Box",
+      "set_code": "pokemon-miscellaneous-cards-products",
+      "total_packs": 0,
+      "total_boxes": 2,
+      "total": 2,
+      "sample_titles": [
+        "Pokemon Cyclizar EX Box 4 Boosters - 2 Foils - 1 Jumbo Foil NEW FACTORY SEALED",
+        "Pokemon TCG EX Collection Box | Cyclizar"
+      ]
+    },
+    {
+      "item_id": 3657,
+      "name": "Chaos Rising Booster Bundle",
+      "set_code": "pokemon-me04-chaos-rising",
+      "total_packs": 871,
+      "total_boxes": 1629,
+      "total": 2500,
+      "sample_titles": [
+        "Pokemon Pokmon TCG Mega Evolution Chaos Rising Booster Bundle, 6 Booster Packs,",
+        "Chaos Rising Booster Bundle Unsealed",
+        "Chaos Rising Booster Bundle New Sealed",
+        "Pokemon Chaos Rising Booster Bundle",
+        "Pokemon TCG Chaos Rising Booster Bundle New Sealed"
+      ]
+    },
+    {
+      "item_id": 5195,
+      "name": "Code Card - Mega Moonlit Tin [Mega Gengar ex]",
+      "set_code": "pokemon-miscellaneous-cards-products",
+      "total_packs": 17,
+      "total_boxes": 74,
+      "total": 91,
+      "sample_titles": [
+        "Pokemon TCG Mega Moonlit Mega Gengar ex Tin SEALED Halloween Promo Card NEW",
+        "Pokemon TCG Mega Moonlit Tin Mega Gengar ex Promo New Sealed",
+        "Pokemon TCG: Mega Moonlit Tin Mega Gengar Ex Holo Foil Promo SEALED",
+        "Pokemon TCG: Tin - Mega Moonlit- Mega Gengar ex",
+        "Pokemon TCG: Tin - Mega Moonlit: Mega Gengar ex - SEALED 4 Booster Packs + Promo"
+      ]
+    },
+    {
+      "item_id": 14799,
+      "name": "Kanto Friends Mini Tin [Squirtle]",
+      "set_code": "pokemon-miscellaneous-cards-products",
+      "total_packs": 54,
+      "total_boxes": 11,
+      "total": 65,
+      "sample_titles": [
+        "Pokemon TCG Kanto Friends Mini Tins Complete Art Set Of 5 New Sealed Pikachu D21",
+        "Pokemon TCG Kanto Friends Mini Tin Squirtle D21 New Sealed",
+        "Charmander Pokémon TCG Kanto Friends Mini Tin Set (D22) - Factory Sealed!",
+        "Pokemon TCG Kanto Friends 5 Pack Mini Tin Set with Promos Sealed Brand New",
+        "Pokemon TCG Kanto Freinds Mini Tin H24 [ Squirtle Edition ] NEW"
+      ]
+    },
+    {
+      "item_id": 112,
+      "name": "30th Celebration Tech Sticker Collection [Set of 2]",
+      "set_code": "pokemon-me-30th-celebration",
+      "total_packs": 0,
+      "total_boxes": 1,
+      "total": 1,
+      "sample_titles": [
+        "Sealed 30th Celebration Tech Sticker Collection Set of 2 PRESALE 9-16 Pokemon "
+      ]
+    },
+    {
+      "item_id": 22052,
+      "name": "Poke Ball Tin Display (Q2 2022)",
+      "set_code": "pokemon-miscellaneous-cards-products",
+      "total_packs": 0,
+      "total_boxes": 0,
+      "total": 0,
+      "sample_titles": []
+    },
+    {
+      "item_id": 30248,
+      "name": "Unova Mini Tin [Volcarona & Emolga]",
+      "set_code": "pokemon-sv-black-bolt",
+      "total_packs": 13,
+      "total_boxes": 5,
+      "total": 18,
+      "sample_titles": [
+        "Pokémon TCG: Scarlet & Violet Unova Mini Tin  - Various Characters - Sealed",
+        "Unova Mini Tin [Volcarona & Emolga] - SV: Black Bolt (BLK)",
+        "Pokémon TCG: Unova Mini Tin Feature Volcarona & Emolga - 2 Booster Packs Inside",
+        "BRAND NEW-Pokemon TCG Unova Mini Tin Volcarona & Emolga-Black Bolt White Flare",
+        "Pokemon TCG Mini Tin Unova Scarlet Violet Card Pack Collectible Anime"
+      ]
+    },
+    {
+      "item_id": 13224,
+      "name": "Hidden Potential Tin [Giratina V]",
+      "set_code": "pokemon-miscellaneous-cards-products",
+      "total_packs": 6,
+      "total_boxes": 8,
+      "total": 14,
+      "sample_titles": [
+        "Pokemon Hidden Potential Giratina V Tin",
+        "Pokémon TCG Hidden Potential Full Art Tin Set Rotom V Gallade V Giratina V - NEW",
+        "POKEMON HIDDEN POTENTIALS ROTOM V  TIN - NEW & SEALED",
+        "Pokémon Hidden Potential Tin – Rotom V (1 Foil Card & 4 Booster Packs) X10",
+        "Pokemon TCG Hidden Potential Sealed 3 Tin Bundle - Giratina V/Rotom V/Gallade V"
+      ]
+    },
+    {
+      "item_id": 21927,
+      "name": "Pitch Black Pokemon Center Elite Trainer Box Case (Exclusive)",
+      "set_code": "pokemon-me05-pitch-black",
+      "total_packs": 4,
+      "total_boxes": 536,
+      "total": 540,
+      "sample_titles": [
+        "Pokemon Center Pitch Black Elite Trainer Box PKC Exclusive ETB SEALED ME05 NEW",
+        "Pokemon Pitch Black (ME05) Elite Trainer Case Brand New Factory Sealed",
+        "Pitch Black Pokemon Center Elite Trainer Box (ETB)",
+        "Pokémon Center Pokémon Pitch Black Elite Trainer Box presale",
+        "Pitch Black POKEMON CENTER Elite Trainer Box PC ETB"
+      ]
+    },
+    {
+      "item_id": 38,
+      "name": "2 Pack Blister [Snorlax, Morpeko & Applin Cards]",
+      "set_code": "pokemon-miscellaneous-cards-products",
+      "total_packs": 15,
+      "total_boxes": 0,
+      "total": 15,
+      "sample_titles": [
+        "MORPEKO SNORLAX APPLIN Pokemon Promo 2 Pack Blister with coin  SEALED",
+        "Morpeko Snorlax Applin Pokémon Promo 2 Pack Blister Coin Darkeness Ablaze Battle",
+        "Morpeko Snorlax Applin Pokémon Promo 2 Pack Blister Coin Darkeness Ablaze Battle",
+        "Pokémon TCG Snorlax Morpeko Applin 2 Pack Blister Sword & Shield SEALED",
+        "MORPEKO SNORLAX APPLIN Pokemon Promo 2 Pack Blister with coin SEALED"
+      ]
+    }
+  ]
+}

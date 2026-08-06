@@ -49,16 +49,30 @@ export interface UndervaluedParams {
   tcg?: Tcg;
   minMarketPrice?: number;
   limit?: number;
+  page?: number;
   sort?: UndervaluedSort;
+}
+
+// Filtre partagé entre getUndervalued et getUndervaluedCount (page + count
+// exécutées en parallèle depuis app/undervalued/page.tsx, même pattern que
+// lib/queries/sales.ts) -- évite que les deux divergent silencieusement.
+function whereFragment(tcg: Tcg | undefined, minMarketPrice: number) {
+  return sql`
+    WHERE l.market_price >= ${minMarketPrice}
+      ${tcg ? sql`AND i.tcg = ${tcg}` : sql``}
+  `;
 }
 
 export async function getUndervalued({
   tcg,
   minMarketPrice = 1.0,
-  limit = 100,
+  limit = 50,
+  page = 1,
   sort,
 }: UndervaluedParams): Promise<UndervaluedRow[]> {
   const order = orderFragment(sort);
+  const where = whereFragment(tcg, minMarketPrice);
+  const offset = (Math.max(1, page) - 1) * limit;
 
   // DISTINCT ON (item_id) : ne garder que le score le plus récent par carte,
   // même si undervalued_scores est append-only et accumule un point par jour.
@@ -95,10 +109,9 @@ export async function getUndervalued({
       l.undervalued_score::float8             AS "undervaluedScore"
     FROM latest l
     JOIN items i ON i.id = l.item_id
-    WHERE l.market_price >= ${minMarketPrice}
-      ${tcg ? sql`AND i.tcg = ${tcg}` : sql``}
+    ${where}
     ${order}
-    LIMIT ${limit}
+    LIMIT ${limit} OFFSET ${offset}
   `;
 
   return rows.map((r) => ({
@@ -118,4 +131,29 @@ export async function getUndervalued({
     marketPrice: r.marketPrice,
     undervaluedScore: r.undervaluedScore,
   }));
+}
+
+// Total de lignes matchant les mêmes filtres, pour calculer totalPages côté
+// page.tsx (Promise.all avec getUndervalued, cf. app/undervalued/page.tsx).
+// Même coût que la requête principale côté DISTINCT ON (l'essentiel du
+// travail), mais sans le JOIN items ni le tri -- reste rapide.
+export async function getUndervaluedCount({
+  tcg,
+  minMarketPrice = 1.0,
+}: Pick<UndervaluedParams, "tcg" | "minMarketPrice">): Promise<number> {
+  const where = whereFragment(tcg, minMarketPrice);
+
+  const [row] = await sql<{ count: number }[]>`
+    WITH latest AS (
+      SELECT DISTINCT ON (item_id) item_id, market_price
+      FROM undervalued_scores
+      ORDER BY item_id, captured_at DESC
+    )
+    SELECT COUNT(*)::int4 AS count
+    FROM latest l
+    JOIN items i ON i.id = l.item_id
+    ${where}
+  `;
+
+  return row?.count ?? 0;
 }

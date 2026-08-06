@@ -78,6 +78,7 @@
       "index": "Cálculo de índices",
       "sealed_ev": "Ratio EV de sellados",
       "undervalued": "Puntuaciones de infravaloración",
+      "grading_roi": "Datos de ROI de gradación",
       "volume": "Volumen de ventas"
     },
     "tiers": {
@@ -127,12 +128,12 @@
       "cardLabel": "Carta",
       "placeholder": "Buscar una carta...",
       "clearAria": "Borrar búsqueda"
-    },
-    "pagination": {
-      "previous": "Anterior",
-      "next": "Siguiente",
-      "pageOf": "Página {page} / {totalPages}"
     }
+  },
+  "pagination": {
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "pageOf": "Página {page} / {totalPages}"
   },
   "sealedEv": {
     "title": "Sellados infravalorados",

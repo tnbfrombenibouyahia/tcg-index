@@ -78,6 +78,7 @@
       "index": "Index calculation",
       "sealed_ev": "Sealed EV ratio",
       "undervalued": "Undervalued scores",
+      "grading_roi": "Grading ROI inputs",
       "volume": "Sales volume"
     },
     "tiers": {
@@ -127,12 +128,12 @@
       "cardLabel": "Card",
       "placeholder": "Search for a card...",
       "clearAria": "Clear search"
-    },
-    "pagination": {
-      "previous": "Previous",
-      "next": "Next",
-      "pageOf": "Page {page} / {totalPages}"
     }
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "pageOf": "Page {page} / {totalPages}"
   },
   "sealedEv": {
     "title": "Undervalued Sealed",

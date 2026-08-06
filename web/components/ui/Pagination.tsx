@@ -1,18 +1,31 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 
-export function Pagination({ page, totalPages }: { page: number; totalPages: number }) {
+// `basePath` optionnel : par défaut le chemin courant (usePathname), pour
+// que ce composant reste réutilisable tel quel sur /transactions,
+// /undervalued, /divergence, /grading-roi -- pas besoin de le passer sauf
+// cas particulier (ex. lien vers une autre route que la page courante).
+export function Pagination({
+  page,
+  totalPages,
+  basePath,
+}: {
+  page: number;
+  totalPages: number;
+  basePath?: string;
+}) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const t = useTranslations("transactions.pagination");
+  const t = useTranslations("pagination");
   const locale = useLocale();
 
   function goTo(target: number) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", String(target));
-    router.push(`/transactions?${params.toString()}`);
+    router.push(`${basePath ?? pathname}?${params.toString()}`);
   }
 
   if (totalPages <= 1) return null;

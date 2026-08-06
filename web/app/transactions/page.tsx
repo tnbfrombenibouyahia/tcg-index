@@ -39,7 +39,7 @@ export default async function TransactionsPage({
   const page = get("page") ? parseInt(get("page")!, 10) : 1;
 
   const [salesResult, filtersResult] = await Promise.all([
-    getSales({ tcg, setCode, itemId, grade, rarity, sort, page, pageSize: 25 }),
+    getSales({ tcg, setCode, itemId, grade, rarity, sort, page, pageSize: 50 }),
     tcg ? getSalesFilters(tcg) : Promise.resolve({ sets: [], grades: GRADES, rarities: [] }),
   ]);
 

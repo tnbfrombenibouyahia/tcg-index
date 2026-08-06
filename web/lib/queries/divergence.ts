@@ -106,6 +106,7 @@ export interface DivergenceParams {
   tagFilter?: DivergenceTagFilter;
   grade?: Grade;
   limit?: number;
+  page?: number;
   sort?: DivergenceSort;
 }
 
@@ -121,12 +122,14 @@ export async function getDivergence({
   minPrice = 0,
   tagFilter,
   grade = "ungraded",
-  limit = 100,
+  limit = 50,
+  page = 1,
   sort,
 }: DivergenceParams): Promise<DivergenceRow[]> {
   const order = orderFragment(sort);
   const tagClause = tagFragment(tagFilter);
   const itemClause = itemId ? sql`AND item_id = ${itemId}` : sql``;
+  const offset = (Math.max(1, page) - 1) * limit;
 
   // make_interval(days => N) (argument nommé) remplacé par
   // (N || ' days')::interval -- CockroachDB ne supporte pas cette syntaxe
@@ -198,7 +201,7 @@ export async function getDivergence({
       ${tcg ? sql`AND i.tcg = ${tcg}` : sql``}
       ${tagClause}
     ${order}
-    LIMIT ${limit}
+    LIMIT ${limit} OFFSET ${offset}
   `;
 
   return rows.map((r) => ({
@@ -217,4 +220,57 @@ export async function getDivergence({
     volumeChangePct: r.volumeChangePct,
     divergenceScore: r.divergenceScore,
   }));
+}
+
+// Total de lignes matchant les mêmes filtres, pour totalPages côté
+// app/divergence/page.tsx (Promise.all avec getDivergence, même pattern que
+// lib/queries/sales.ts / lib/queries/undervalued.ts). Rejoue les mêmes CTE
+// cur/prev -- coût comparable à la requête principale, mais exécutée en
+// parallèle donc pas de temps supplémentaire perçu.
+export async function getDivergenceCount({
+  tcg,
+  windowDays = 30,
+  minPrice = 0,
+  tagFilter,
+  grade = "ungraded",
+}: Pick<DivergenceParams, "tcg" | "windowDays" | "minPrice" | "tagFilter" | "grade">): Promise<number> {
+  const tagClause = tagFragment(tagFilter);
+
+  const [row] = await sql<{ count: number }[]>`
+    WITH cur AS (
+      SELECT item_id, COUNT(*)::int4 AS vol, AVG(price)::float8 AS avg_price
+      FROM sales
+      WHERE grade = ${grade}
+        AND sale_date >= CURRENT_DATE - (${windowDays} || ' days')::interval
+        AND sale_date < CURRENT_DATE
+      GROUP BY item_id
+      HAVING COUNT(*) >= ${MIN_SALES_PER_WINDOW}
+    ),
+    prev AS (
+      SELECT item_id, COUNT(*)::int4 AS vol, AVG(price)::float8 AS avg_price
+      FROM sales
+      WHERE grade = ${grade}
+        AND sale_date >= CURRENT_DATE - (${windowDays * 2} || ' days')::interval
+        AND sale_date < CURRENT_DATE - (${windowDays} || ' days')::interval
+      GROUP BY item_id
+      HAVING COUNT(*) >= ${MIN_SALES_PER_WINDOW}
+    ),
+    joined AS (
+      SELECT
+        cur.item_id,
+        cur.avg_price AS price_current,
+        (cur.avg_price - prev.avg_price) / prev.avg_price * 100 AS price_change_pct,
+        (cur.vol - prev.vol)::float8 / prev.vol::float8 * 100 AS volume_change_pct
+      FROM cur
+      JOIN prev USING (item_id)
+    )
+    SELECT COUNT(*)::int4 AS count
+    FROM joined j
+    JOIN items i ON i.id = j.item_id
+    WHERE j.price_current >= ${minPrice}
+      ${tcg ? sql`AND i.tcg = ${tcg}` : sql``}
+      ${tagClause}
+  `;
+
+  return row?.count ?? 0;
 }

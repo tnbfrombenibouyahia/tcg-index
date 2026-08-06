@@ -112,14 +112,26 @@ function toCandidate(row: RawRow): GradingRoiCandidate {
 
 // Coeur partagé : ingrédients de toutes les cartes éligibles (ungraded connu
 // + au moins un prix gradé), filtrées par tcg/prix mini, ou d'un seul item.
-// `hardCap` protège la requête liste (le tri par ROI% se fait ensuite en JS,
-// cf. getGradingRoiRanking) -- pas de portée pour un seul item (itemId
-// implique déjà au plus une ligne).
+//
+// Lit `grading_roi_inputs` (matérialisée une fois par run --tier par
+// index/grading_roi_inputs.py, cf. db/schema.sql) plutôt que de recalculer
+// via des CTE sur price_snapshots/sales à chaque requête -- ce bloc faisait
+// auparavant un plein scan des deux tables (~3.3s mesurés) à chaque
+// chargement de /grading-roi, /grading-roi/[id] ET la section "Grading ROI"
+// de /catalog/[id] (tous passent par fetchCandidates). Le SQL ci-dessous
+// est un simple SELECT indexé sur item_id -- le calcul ROI (frais PSA,
+// risque de sous-note) reste 100% en aval, en JS pur (toCandidate +
+// computeGradingRoi), inchangé.
+//
+// `hardCap` n'est plus une protection de coût (la requête est maintenant
+// bon marché quel que soit le nombre de lignes) mais un garde-fou défensif
+// contre une croissance imprévue du catalogue -- ~11k candidats éligibles
+// mesurés le 2026-08-06, largement sous le plafond.
 async function fetchCandidates({
   tcg,
   minUngradedPrice = 0,
   itemId,
-  hardCap = 3000,
+  hardCap = 20000,
 }: {
   tcg?: Tcg;
   minUngradedPrice?: number;
@@ -127,116 +139,52 @@ async function fetchCandidates({
   hardCap?: number;
 }): Promise<GradingRoiCandidate[]> {
   const rows = await sql<RawRow[]>`
-    WITH graded_prices AS (
-      SELECT DISTINCT ON (item_id, grade) item_id, grade, price
-      FROM price_snapshots
-      WHERE grade IN ('ungraded', 'psa7', 'psa8', 'psa9', 'psa9.5', 'psa10')
-      ORDER BY item_id, grade, captured_at DESC, created_at DESC
-    ),
-    prices AS (
-      SELECT
-        item_id,
-        MAX(price) FILTER (WHERE grade = 'ungraded') AS ungraded_price,
-        MAX(price) FILTER (WHERE grade = 'psa7')     AS psa7_price,
-        MAX(price) FILTER (WHERE grade = 'psa8')     AS psa8_price,
-        MAX(price) FILTER (WHERE grade = 'psa9')     AS psa9_price,
-        MAX(price) FILTER (WHERE grade = 'psa9.5')   AS psa95_price,
-        MAX(price) FILTER (WHERE grade = 'psa10')    AS psa10_price
-      FROM graded_prices
-      GROUP BY item_id
-    ),
-    item_grade_counts AS (
-      SELECT
-        item_id,
-        COUNT(*) FILTER (WHERE grade = 'psa7')   AS n7,
-        COUNT(*) FILTER (WHERE grade = 'psa8')   AS n8,
-        COUNT(*) FILTER (WHERE grade = 'psa9')   AS n9,
-        COUNT(*) FILTER (WHERE grade = 'psa9.5') AS n95,
-        COUNT(*) FILTER (WHERE grade = 'psa10')  AS n10
-      FROM sales
-      WHERE grade IN ('psa7', 'psa8', 'psa9', 'psa9.5', 'psa10')
-      GROUP BY item_id
-    ),
-    -- Contexte pour TOUTES les singles (pas juste les éligibles) : base des
-    -- agrégats set+rareté/set/tcg, cf. commentaire d'en-tête.
-    context AS (
-      SELECT
-        i.id AS item_id, i.tcg, i.set_code, i.rarity,
-        COALESCE(g.n7, 0)  AS n7,
-        COALESCE(g.n8, 0)  AS n8,
-        COALESCE(g.n9, 0)  AS n9,
-        COALESCE(g.n95, 0) AS n95,
-        COALESCE(g.n10, 0) AS n10
-      FROM items i
-      LEFT JOIN item_grade_counts g ON g.item_id = i.id
-      WHERE i.category = 'single'
-    ),
-    levels AS (
-      SELECT
-        item_id, n7, n8, n9, n95, n10,
-        SUM(n7)  OVER (PARTITION BY tcg, set_code, rarity) AS sr_n7,
-        SUM(n8)  OVER (PARTITION BY tcg, set_code, rarity) AS sr_n8,
-        SUM(n9)  OVER (PARTITION BY tcg, set_code, rarity) AS sr_n9,
-        SUM(n95) OVER (PARTITION BY tcg, set_code, rarity) AS sr_n95,
-        SUM(n10) OVER (PARTITION BY tcg, set_code, rarity) AS sr_n10,
-        SUM(n7)  OVER (PARTITION BY tcg, set_code) AS set_n7,
-        SUM(n8)  OVER (PARTITION BY tcg, set_code) AS set_n8,
-        SUM(n9)  OVER (PARTITION BY tcg, set_code) AS set_n9,
-        SUM(n95) OVER (PARTITION BY tcg, set_code) AS set_n95,
-        SUM(n10) OVER (PARTITION BY tcg, set_code) AS set_n10,
-        SUM(n7)  OVER (PARTITION BY tcg) AS tcg_n7,
-        SUM(n8)  OVER (PARTITION BY tcg) AS tcg_n8,
-        SUM(n9)  OVER (PARTITION BY tcg) AS tcg_n9,
-        SUM(n95) OVER (PARTITION BY tcg) AS tcg_n95,
-        SUM(n10) OVER (PARTITION BY tcg) AS tcg_n10
-      FROM context
+    WITH latest AS (
+      SELECT DISTINCT ON (item_id) *
+      FROM grading_roi_inputs
+      ORDER BY item_id, captured_at DESC
     )
     SELECT
-      i.id::int4             AS "itemId",
+      i.id::int4                AS "itemId",
       i.name,
-      i.image_url            AS "imageUrl",
+      i.image_url               AS "imageUrl",
       i.tcg,
       i.language,
-      i.set_code              AS "setCode",
+      i.set_code                 AS "setCode",
       i.code,
       i.rarity,
-      p.ungraded_price::float8 AS "ungradedPrice",
-      p.psa7_price::float8   AS "psa7Price",
-      p.psa8_price::float8   AS "psa8Price",
-      p.psa9_price::float8   AS "psa9Price",
-      p.psa95_price::float8  AS "psa95Price",
-      p.psa10_price::float8  AS "psa10Price",
-      l.n7::int4              AS "cardN7",
-      l.n8::int4              AS "cardN8",
-      l.n9::int4              AS "cardN9",
-      l.n95::int4             AS "cardN95",
-      l.n10::int4             AS "cardN10",
-      l.sr_n7::int4           AS "srN7",
-      l.sr_n8::int4           AS "srN8",
-      l.sr_n9::int4           AS "srN9",
-      l.sr_n95::int4          AS "srN95",
-      l.sr_n10::int4          AS "srN10",
-      l.set_n7::int4          AS "setN7",
-      l.set_n8::int4          AS "setN8",
-      l.set_n9::int4          AS "setN9",
-      l.set_n95::int4         AS "setN95",
-      l.set_n10::int4         AS "setN10",
-      l.tcg_n7::int4           AS "tcgN7",
-      l.tcg_n8::int4           AS "tcgN8",
-      l.tcg_n9::int4           AS "tcgN9",
-      l.tcg_n95::int4          AS "tcgN95",
-      l.tcg_n10::int4          AS "tcgN10"
-    FROM prices p
-    JOIN items i ON i.id = p.item_id
-    JOIN levels l ON l.item_id = p.item_id
-    WHERE p.ungraded_price IS NOT NULL
-      AND (
-        p.psa7_price IS NOT NULL OR p.psa8_price IS NOT NULL OR p.psa9_price IS NOT NULL
-        OR p.psa95_price IS NOT NULL OR p.psa10_price IS NOT NULL
-      )
+      l.ungraded_price::float8  AS "ungradedPrice",
+      l.psa7_price::float8      AS "psa7Price",
+      l.psa8_price::float8      AS "psa8Price",
+      l.psa9_price::float8      AS "psa9Price",
+      l.psa95_price::float8     AS "psa95Price",
+      l.psa10_price::float8     AS "psa10Price",
+      l.card_n7::int4            AS "cardN7",
+      l.card_n8::int4            AS "cardN8",
+      l.card_n9::int4            AS "cardN9",
+      l.card_n95::int4           AS "cardN95",
+      l.card_n10::int4           AS "cardN10",
+      l.sr_n7::int4              AS "srN7",
+      l.sr_n8::int4              AS "srN8",
+      l.sr_n9::int4              AS "srN9",
+      l.sr_n95::int4             AS "srN95",
+      l.sr_n10::int4             AS "srN10",
+      l.set_n7::int4             AS "setN7",
+      l.set_n8::int4             AS "setN8",
+      l.set_n9::int4             AS "setN9",
+      l.set_n95::int4            AS "setN95",
+      l.set_n10::int4            AS "setN10",
+      l.tcg_n7::int4             AS "tcgN7",
+      l.tcg_n8::int4             AS "tcgN8",
+      l.tcg_n9::int4             AS "tcgN9",
+      l.tcg_n95::int4            AS "tcgN95",
+      l.tcg_n10::int4            AS "tcgN10"
+    FROM latest l
+    JOIN items i ON i.id = l.item_id
+    WHERE 1=1
       ${itemId ? sql`AND i.id = ${itemId}` : sql``}
       ${tcg ? sql`AND i.tcg = ${tcg}` : sql``}
-      ${!itemId ? sql`AND p.ungraded_price >= ${minUngradedPrice}` : sql``}
+      ${!itemId ? sql`AND l.ungraded_price >= ${minUngradedPrice}` : sql``}
     ORDER BY i.id
     ${itemId ? sql`` : sql`LIMIT ${hardCap}`}
   `;
@@ -287,23 +235,39 @@ export interface GradingRoiRankingParams {
   minUngradedPrice?: number;
   sort?: GradingRoiSort;
   limit?: number;
+  page?: number;
+}
+
+export interface GradingRoiRankingResult {
+  rows: GradingRoiRow[];
+  totalCount: number;
 }
 
 // ROI% n'est pas une colonne DB (dépend d'hypothèses éditables côté client)
-// -- le tri se fait donc en JS sur le set déjà filtré/plafonné par SQL
-// (hardCap), avec les hypothèses PAR DÉFAUT (DEFAULT_GRADING_ROI_ASSUMPTIONS).
-// C'est ce classement par défaut qui alimente /grading-roi ; ouvrir une
-// carte permet ensuite de personnaliser (GradingRoiCalculator).
+// -- le tri se fait donc en JS sur tout le set filtré par SQL (fetchCandidates,
+// désormais bon marché -- lit grading_roi_inputs, cf. son commentaire),
+// avec les hypothèses PAR DÉFAUT (DEFAULT_GRADING_ROI_ASSUMPTIONS). C'est ce
+// classement par défaut qui alimente /grading-roi ; ouvrir une carte permet
+// ensuite de personnaliser (GradingRoiCalculator).
+//
+// `totalCount` vient du tableau déjà en mémoire (pas de requête COUNT
+// séparée comme lib/queries/undervalued.ts / divergence.ts) -- le set
+// entier tient largement en mémoire (~11k candidats max) et est de toute
+// façon déjà entièrement chargé pour le tri, donc le compter ne coûte rien
+// de plus.
 export async function getGradingRoiRanking({
   tcg,
   minUngradedPrice = 2,
   sort = "roi_desc",
-  limit = 100,
-}: GradingRoiRankingParams): Promise<GradingRoiRow[]> {
+  limit = 50,
+  page = 1,
+}: GradingRoiRankingParams): Promise<GradingRoiRankingResult> {
   const candidates = await fetchCandidates({ tcg, minUngradedPrice });
   const rows: GradingRoiRow[] = candidates.map((candidate) => ({
     ...candidate,
     defaultResult: computeGradingRoi(candidate, DEFAULT_GRADING_ROI_ASSUMPTIONS),
   }));
-  return sortRows(rows, sort).slice(0, limit);
+  const sorted = sortRows(rows, sort);
+  const offset = (Math.max(1, page) - 1) * limit;
+  return { rows: sorted.slice(offset, offset + limit), totalCount: sorted.length };
 }

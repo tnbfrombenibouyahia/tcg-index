@@ -31,6 +31,15 @@ CREATE TABLE price_snapshots (
   created_at    TIMESTAMPTZ DEFAULT now(),
   UNIQUE (item_id, captured_at, source, grade)   -- un prix par item/jour/source/grade
 );
+-- lib/queries/gradingRoi.ts fait un DISTINCT ON (item_id, grade) trié par
+-- captured_at DESC, created_at DESC sur toute la table (dernier prix par
+-- carte/grade) -- la contrainte UNIQUE ci-dessus ne matche pas cet ordre de
+-- tri, donc CockroachDB devait scanner + trier 434k lignes à chaque
+-- chargement de /grading-roi. Cet index reprend exactement l'ordre du
+-- ORDER BY : le DISTINCT ON peut alors streamer sans étape de tri séparée
+-- (cf. idx_sales_grade_date ci-dessus, même incident 2026-08-06).
+CREATE INDEX IF NOT EXISTS idx_price_snapshots_item_grade_captured
+    ON price_snapshots (item_id, grade, captured_at DESC, created_at DESC) STORING (price);
 
 -- Ventes individuelles (PriceCharting -- table "Sold Listings" des pages carte) :
 -- append-only, grain différent de price_snapshots (une ligne par transaction
@@ -54,6 +63,44 @@ CREATE TABLE sales (
   created_at        TIMESTAMPTZ DEFAULT now(),
   UNIQUE (marketplace, external_sale_id)
 );
+-- lib/queries/divergence.ts et lib/queries/gradingRoi.ts filtrent tous les
+-- deux par grade + fenêtre de sale_date sur TOUTE la table (pas juste un
+-- item_id) -- sans index, plein scan de `sales` (1M+ lignes) à chaque
+-- chargement de /divergence ou /grading-roi, mesuré à ~3.3-3.9s de requête
+-- pure (cf. discussion 2026-08-06, lenteur signalée par l'utilisateur).
+-- STORING (item_id, price) évite un lookup vers la table principale pour
+-- chaque ligne matchée. Ramène /divergence à ~0.7s de requête (indexé,
+-- ~1% de la table scannée au lieu de 100%).
+CREATE INDEX IF NOT EXISTS idx_sales_grade_date
+    ON sales (grade, sale_date) STORING (item_id, price);
+
+-- Supply active (pas un prix/une transaction) : comptage de listings actifs
+-- (auction + fixed-price) par item, proxy de pression vendeuse ("combien de
+-- gens essaient de se débarrasser de l'objet" -- demande utilisateur du
+-- 2026-08-06, cf. mémoire projet "ebay_active_listings"). Grain gauge (photo
+-- à l'instant T, comme price_snapshots) : `listing_count` plutôt qu'un prix,
+-- pas de notion de devise.
+--
+-- Source : eBay Browse API (ingestion/sources/ebay.py). `buying_option`
+-- vaut 'all' en v1 (auction + fixed-price combinés dans le même comptage
+-- eBay, cf. ebay.py) -- séparer les deux doublerait le nombre de requêtes
+-- par item pour un signal pas demandé explicitement ; 'auction'/'fixed_price'
+-- restent des valeurs valides pour un futur découpage sans migration.
+-- `grade` toujours 'ungraded' en v1 (seul le scellé est synchronisé, cf.
+-- sync_active_listings_for_tcg -- pas de notion de gradation pour du scellé).
+CREATE TABLE IF NOT EXISTS active_listings (
+  id             BIGSERIAL PRIMARY KEY,
+  item_id        BIGINT NOT NULL REFERENCES items(id),
+  captured_at    DATE NOT NULL,
+  marketplace    TEXT NOT NULL DEFAULT 'ebay',
+  buying_option  TEXT NOT NULL DEFAULT 'all',    -- 'all' | 'auction' | 'fixed_price'
+  grade          TEXT NOT NULL DEFAULT 'ungraded',
+  listing_count  INTEGER NOT NULL,
+  created_at     TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (item_id, captured_at, marketplace, buying_option, grade)
+);
+CREATE INDEX IF NOT EXISTS idx_active_listings_item
+    ON active_listings (item_id, captured_at DESC);
 
 -- Volume d'échange quotidien : agrégat de `sales` (nb de ventes + $ total),
 -- même grain (index_code, captured_at) que index_values mais pas de
@@ -118,9 +165,9 @@ CREATE TABLE IF NOT EXISTS sealed_ev (
 -- affichable séparément par TCG).
 CREATE TABLE IF NOT EXISTS sync_runs (
   id            BIGSERIAL PRIMARY KEY,
-  run_type      TEXT NOT NULL,        -- 'daily' | 'tier'
+  run_type      TEXT NOT NULL,        -- 'daily' | 'tier' | 'weekly'
   tier          TEXT,                 -- palier (cf. orchestrator.TIERS) si run_type='tier', sinon NULL
-  step          TEXT NOT NULL,        -- 'items' | 'prices' | 'grades_sales' | 'index' | 'sealed_ev' | 'volume'
+  step          TEXT NOT NULL,        -- 'items' | 'prices' | 'grades_sales' | 'index' | 'sealed_ev' | 'volume' | 'active_listings'
   tcg           TEXT,                 -- 'pokemon' | 'one-piece' | NULL (étape globale aux deux TCG)
   status        TEXT NOT NULL DEFAULT 'running',  -- 'running' | 'success' | 'error'
   started_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -164,6 +211,61 @@ CREATE INDEX IF NOT EXISTS idx_undervalued_score
     ON undervalued_scores (captured_at DESC, undervalued_score DESC);
 CREATE INDEX IF NOT EXISTS idx_undervalued_item
     ON undervalued_scores (item_id, captured_at DESC);
+
+-- Ingrédients du calculateur ROI de gradation (cf. lib/gradingRoi.ts +
+-- lib/queries/gradingRoi.ts, page /grading-roi) : PAS le ROI lui-même --
+-- juste les données coûteuses à dériver (dernier prix par grade, comptage
+-- des ventes gradées à 4 niveaux d'agrégation carte/set+rareté/set/tcg).
+-- Miroir exact de l'interface RawRow (lib/queries/gradingRoi.ts) : mêmes
+-- champs, mêmes CTE (graded_prices/item_grade_counts/context/levels)
+-- désormais exécutées ici une fois par run --tier plutôt qu'à chaque
+-- chargement de page.
+--
+-- Le calcul ROI proprement dit (frais PSA, risque de sous-note, %) reste
+-- 100% dans lib/gradingRoi.ts (TypeScript, pur) -- jamais dupliqué ici --
+-- puisqu'il doit rester recalculable en live côté client quand l'utilisateur
+-- modifie les hypothèses dans le calculateur interactif. Cette table ne
+-- fait gagner que la partie SQL (avant, plein scan de price_snapshots +
+-- sales à chaque page vue -- ~3.3s mesurés, cf. mémoire projet
+-- "slow_pages_missing_indexes" ; incident 2026-08-06).
+CREATE TABLE IF NOT EXISTS grading_roi_inputs (
+  id             BIGSERIAL PRIMARY KEY,
+  item_id        BIGINT NOT NULL REFERENCES items(id),
+  captured_at    DATE NOT NULL,
+  ungraded_price NUMERIC(12,2) NOT NULL,
+  psa7_price     NUMERIC(12,2),
+  psa8_price     NUMERIC(12,2),
+  psa9_price     NUMERIC(12,2),
+  psa95_price    NUMERIC(12,2),
+  psa10_price    NUMERIC(12,2),
+  -- comptage de ventes gradées (sales.grade) à 4 niveaux d'agrégation --
+  -- même cascade que resolveGradeDistribution (lib/gradingRoi.ts),
+  -- appliquée côté TS à la lecture, jamais ici (cf. commentaire ci-dessus).
+  card_n7        INTEGER NOT NULL DEFAULT 0,
+  card_n8        INTEGER NOT NULL DEFAULT 0,
+  card_n9        INTEGER NOT NULL DEFAULT 0,
+  card_n95       INTEGER NOT NULL DEFAULT 0,
+  card_n10       INTEGER NOT NULL DEFAULT 0,
+  sr_n7          INTEGER NOT NULL DEFAULT 0,   -- set + rareté
+  sr_n8          INTEGER NOT NULL DEFAULT 0,
+  sr_n9          INTEGER NOT NULL DEFAULT 0,
+  sr_n95         INTEGER NOT NULL DEFAULT 0,
+  sr_n10         INTEGER NOT NULL DEFAULT 0,
+  set_n7         INTEGER NOT NULL DEFAULT 0,
+  set_n8         INTEGER NOT NULL DEFAULT 0,
+  set_n9         INTEGER NOT NULL DEFAULT 0,
+  set_n95        INTEGER NOT NULL DEFAULT 0,
+  set_n10        INTEGER NOT NULL DEFAULT 0,
+  tcg_n7         INTEGER NOT NULL DEFAULT 0,
+  tcg_n8         INTEGER NOT NULL DEFAULT 0,
+  tcg_n9         INTEGER NOT NULL DEFAULT 0,
+  tcg_n95        INTEGER NOT NULL DEFAULT 0,
+  tcg_n10        INTEGER NOT NULL DEFAULT 0,
+  created_at     TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (item_id, captured_at)
+);
+CREATE INDEX IF NOT EXISTS idx_grading_roi_inputs_item
+    ON grading_roi_inputs (item_id, captured_at DESC);
 
 -- Indice calculé : l'output, ce que le front lit
 CREATE TABLE index_values (

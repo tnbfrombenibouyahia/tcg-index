@@ -48,11 +48,12 @@ from datetime import date
 from dotenv import load_dotenv
 
 from index import calculate as index_calculate
+from index import grading_roi_inputs as index_grading_roi_inputs
 from index import sealed_ev as index_sealed_ev
 from index import undervalued as index_undervalued
 from index import volume as index_volume
 from index.methodology import INDEX_DEFINITIONS
-from ingestion.sources import apitcg, pricecharting
+from ingestion.sources import apitcg, ebay, pricecharting
 from shared.db import get_connection
 from shared.sync_log import finish_run, start_run
 
@@ -227,6 +228,34 @@ def run_price_sync(tier: str | None, run_type: str) -> list[dict]:
     return errors
 
 
+def run_ebay_listings_sync(run_type: str) -> None:
+    """Comptage de listings actifs eBay (pression vendeuse, cf. mémoire projet
+    "ebay_active_listings" -- nouvelle dimension "supply", pas un prix).
+
+    Scope volontairement restreint en v1 : Pokémon seulement (One Piece pas
+    encore validé par une probe dédiée, cf. mémoire "phased_by_tcg"), scellé
+    + sets récents (même filtre que price_sync_scope/JustTCG). Ce n'est PAS
+    une contrainte de quota (5000 req/jour eBay est large, cf. ebay.py) --
+    juste la même prudence "valider avant d'élargir" que le reste du projet.
+    Appelé séparément du run quotidien/--tier (cf. `main`, flag
+    `--ebay-listings`) : nouvelle source, cadence hebdomadaire, sans lien avec
+    le système de paliers PriceCharting (TIERS ci-dessus, propre à un tout
+    autre coût de requête)."""
+    print("\n=== eBay : listings actifs (scellé, Pokémon) ===")
+    run_id = start_run(run_type, "active_listings", tcg="pokemon")
+    try:
+        stats = ebay.sync_active_listings_for_tcg("pokemon")
+    except Exception as exc:
+        finish_run(run_id, status="error", detail=str(exc))
+        raise
+    n_errors = len(stats["errors"])
+    detail = f"{stats['items_processed']} item(s), {stats['rows_written']} ligne(s)"
+    if n_errors:
+        detail += f", {n_errors} erreur(s)"
+    print(f"  {detail}")
+    finish_run(run_id, status="error" if n_errors else "success", rows_written=stats["rows_written"], detail=detail)
+
+
 def run_index_calculation(run_type: str) -> None:
     """Recalcule tous les indices de prix (cf. index/methodology.py) à partir
     des prix qu'on vient de synchroniser. Tourne à chaque run (quotidien et
@@ -287,6 +316,27 @@ def run_undervalued_calculation(run_type: str) -> None:
     finish_run(run_id, status="success", rows_written=n, detail=f"{n} single(s) scoré(s)")
 
 
+def run_grading_roi_inputs_calculation(run_type: str) -> None:
+    """Matérialise les ingrédients du calculateur ROI de gradation (cf.
+    index/grading_roi_inputs.py) à partir de `price_snapshots` (prix par
+    grade) + `sales` (comptage des ventes gradées). Comme le volume, ne
+    dépend que de données mises à jour par un run --tier, donc n'est
+    recalculé que sur ces runs-là (recalculer sur des données inchangées
+    serait du travail perdu)."""
+    print("\n=== Calcul des ingrédients ROI de gradation ===")
+    run_id = start_run(run_type, "grading_roi")
+    conn = get_connection()
+    try:
+        n = index_grading_roi_inputs.calculate_grading_roi_inputs(conn)
+        print(f"  {n} candidat(s) ROI de gradation calculé(s)." if n else "  Aucun candidat éligible trouvé.")
+    except Exception as exc:
+        finish_run(run_id, status="error", detail=str(exc))
+        raise
+    finally:
+        conn.close()
+    finish_run(run_id, status="success", rows_written=n, detail=f"{n} candidat(s) calculé(s)")
+
+
 def run_volume_calculation(run_type: str) -> None:
     """Recalcule le volume de ventes (cf. index/volume.py) à partir de
     `sales`. Seulement appelé sur un run --tier, cf. docstring du module."""
@@ -341,7 +391,28 @@ def main() -> int:
         "--skip-items", action="store_true",
         help="Saute la sync référentiel API TCG (un run --tier n'a pas besoin de la refaire, déjà faite par le run quotidien).",
     )
+    parser.add_argument(
+        "--ebay-listings", action="store_true",
+        help=(
+            "Lance UNIQUEMENT la sync eBay active listings (cf. run_ebay_listings_sync) et sort -- "
+            "n'entre pas dans le pipeline prix/index quotidien, nouvelle source indépendante à cadence "
+            "hebdomadaire (cf. .github/workflows/ebay-listings-sync.yml)."
+        ),
+    )
     args = parser.parse_args()
+
+    if args.ebay_listings:
+        started = time.monotonic()
+        had_errors = False
+        try:
+            run_ebay_listings_sync("weekly")
+        except Exception as exc:
+            had_errors = True
+            print(f"\n!! Erreur pendant la sync eBay active listings : {exc}")
+        elapsed = time.monotonic() - started
+        print(f"\n=== Terminé en {elapsed / 60:.1f} min ({'avec erreurs' if had_errors else 'OK'}) ===")
+        return 1 if had_errors else 0
+
     run_type = "daily" if args.tier is None else "tier"
 
     started = time.monotonic()
@@ -397,6 +468,12 @@ def main() -> int:
         except Exception as exc:
             had_errors = True
             print(f"\n!! Erreur pendant le calcul du volume : {exc}")
+
+        try:
+            run_grading_roi_inputs_calculation(run_type)
+        except Exception as exc:
+            had_errors = True
+            print(f"\n!! Erreur pendant le calcul des ingrédients ROI de gradation : {exc}")
 
     print_storage_usage()
 

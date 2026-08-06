@@ -1,10 +1,13 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Pagination } from "@/components/ui/Pagination";
 import { UndervaluedTable } from "@/components/undervalued/UndervaluedTable";
-import { getUndervalued, type UndervaluedSort } from "@/lib/queries/undervalued";
+import { getUndervalued, getUndervaluedCount, type UndervaluedSort } from "@/lib/queries/undervalued";
 import type { Tcg } from "@/lib/constants";
 import { TCGS } from "@/lib/constants";
+
+const PAGE_SIZE = 50;
 
 const VALID_SORTS = new Set<string>([
   "score_desc", "score_asc",
@@ -37,7 +40,14 @@ export default async function UndervaluedPage({
     ? (minRaw as MinMarketPrice)
     : 2;
 
-  const rows = await getUndervalued({ tcg, minMarketPrice, limit: 150, sort });
+  const pageRaw = Number(Array.isArray(raw.page) ? raw.page[0] : raw.page);
+  const page = Number.isInteger(pageRaw) && pageRaw >= 1 ? pageRaw : 1;
+
+  const [rows, totalCount] = await Promise.all([
+    getUndervalued({ tcg, minMarketPrice, limit: PAGE_SIZE, page, sort }),
+    getUndervaluedCount({ tcg, minMarketPrice }),
+  ]);
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   // Reconstruct search params for links
   const searchParamsForLinks = new URLSearchParams(
@@ -47,6 +57,7 @@ export default async function UndervaluedPage({
   );
 
   const t = await getTranslations("undervalued");
+  const locale = await getLocale();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
@@ -126,13 +137,16 @@ export default async function UndervaluedPage({
       ) : (
         <>
           <p className="mb-3 text-xs text-muted-foreground">
-            {t("count", { count: rows.length })}
+            {t("count", { count: totalCount.toLocaleString(locale) })}
           </p>
           <UndervaluedTable
             rows={rows}
             sort={sort ?? ""}
             searchParams={searchParamsForLinks}
           />
+          <div className="mt-4">
+            <Pagination page={page} totalPages={totalPages} />
+          </div>
         </>
       )}
     </div>
@@ -150,6 +164,9 @@ function buildHref(
     if (v === undefined) params.delete(k);
     else params.set(k, v);
   }
+  // Changer un filtre repart en page 1 -- sinon on peut atterrir sur une
+  // page vide si le nouveau filtre a moins de résultats.
+  if (!("page" in overrides)) params.delete("page");
   const qs = params.toString();
   return `/undervalued${qs ? `?${qs}` : ""}`;
 }

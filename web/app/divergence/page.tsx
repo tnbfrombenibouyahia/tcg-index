@@ -1,9 +1,11 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Pagination } from "@/components/ui/Pagination";
 import { DivergenceTable } from "@/components/divergence/DivergenceTable";
 import {
   getDivergence,
+  getDivergenceCount,
   DIVERGENCE_WINDOWS,
   type DivergenceSort,
   type DivergenceTagFilter,
@@ -11,6 +13,8 @@ import {
 } from "@/lib/queries/divergence";
 import type { Grade, Tcg } from "@/lib/constants";
 import { GRADE_LABELS, TCGS } from "@/lib/constants";
+
+const PAGE_SIZE = 50;
 
 const VALID_SORTS = new Set<string>([
   "divergence_desc", "divergence_asc",
@@ -64,13 +68,21 @@ export default async function DivergencePage({
     ? (gradeRaw as Grade)
     : "ungraded";
 
-  const rows = await getDivergence({ tcg, windowDays, minPrice, tagFilter, grade, limit: 100, sort });
+  const pageRaw = Number(Array.isArray(raw.page) ? raw.page[0] : raw.page);
+  const page = Number.isInteger(pageRaw) && pageRaw >= 1 ? pageRaw : 1;
+
+  const [rows, totalCount] = await Promise.all([
+    getDivergence({ tcg, windowDays, minPrice, tagFilter, grade, limit: PAGE_SIZE, page, sort }),
+    getDivergenceCount({ tcg, windowDays, minPrice, tagFilter, grade }),
+  ]);
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   const searchParamsForLinks = new URLSearchParams(
     Object.entries(raw).flatMap(([k, v]) => (v === undefined ? [] : [[k, Array.isArray(v) ? v[0] : v]]))
   );
 
   const t = await getTranslations("divergence");
+  const locale = await getLocale();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
@@ -157,8 +169,11 @@ export default async function DivergencePage({
         <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
       ) : (
         <>
-          <p className="mb-3 text-xs text-muted-foreground">{t("count", { count: rows.length })}</p>
+          <p className="mb-3 text-xs text-muted-foreground">{t("count", { count: totalCount.toLocaleString(locale) })}</p>
           <DivergenceTable rows={rows} sort={sort ?? ""} searchParams={searchParamsForLinks} windowDays={windowDays} />
+          <div className="mt-4">
+            <Pagination page={page} totalPages={totalPages} />
+          </div>
         </>
       )}
     </div>
@@ -173,6 +188,9 @@ function buildHref(base: URLSearchParams, overrides: Record<string, string | und
     if (v === undefined) params.delete(k);
     else params.set(k, v);
   }
+  // Changer un filtre repart en page 1 -- sinon on peut atterrir sur une
+  // page vide si le nouveau filtre a moins de résultats.
+  if (!("page" in overrides)) params.delete("page");
   const qs = params.toString();
   return `/divergence${qs ? `?${qs}` : ""}`;
 }

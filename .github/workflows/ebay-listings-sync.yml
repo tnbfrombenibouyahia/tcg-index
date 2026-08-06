@@ -1,0 +1,36 @@
+name: eBay active listings sync
+
+# Comptage de listings actifs (auction + fixed-price) par item scellé, via
+# eBay Browse API -- nouvelle dimension "supply"/pression vendeuse, cf.
+# ingestion/sources/ebay.py et mémoire projet "ebay_active_listings". Scope
+# v1 : Pokémon scellé + sets récents seulement (cf. run_ebay_listings_sync).
+#
+# Cadence hebdomadaire (pas quotidienne comme daily-sync.yml) : cette donnée
+# bouge moins vite que le prix, et le jeudi est le seul jour encore libre
+# dans le planning cron existant (cf. tiered-sync.yml : hot=quotidien,
+# recent=lun/mer/ven, established=dim, vintage=sam, jp_singles=mar). Même
+# logique d'heure/minute non ronde que les deux autres workflows (éviter la
+# file d'attente GitHub Actions aux horaires pile).
+on:
+  schedule:
+    - cron: "05 3 * * 4"  # jeudi, ~05:05 heure locale FR/SE (été)
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - run: python -m ingestion.orchestrator --ebay-listings
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          EBAY_APP_ID: ${{ secrets.EBAY_APP_ID }}
+          EBAY_CERT_ID: ${{ secrets.EBAY_CERT_ID }}

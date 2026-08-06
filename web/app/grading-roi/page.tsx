@@ -1,10 +1,13 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Pagination } from "@/components/ui/Pagination";
 import { GradingRoiTable } from "@/components/grading-roi/GradingRoiTable";
 import { getGradingRoiRanking, type GradingRoiSort } from "@/lib/queries/gradingRoi";
 import type { Tcg } from "@/lib/constants";
 import { TCGS } from "@/lib/constants";
+
+const PAGE_SIZE = 50;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Classement "meilleures opportunités" de gradation (demande utilisateur) --
@@ -45,13 +48,18 @@ export default async function GradingRoiPage({
     ? (minRaw as MinUngradedPrice)
     : 2;
 
-  const rows = await getGradingRoiRanking({ tcg, minUngradedPrice, limit: 150, sort });
+  const pageRaw = Number(Array.isArray(raw.page) ? raw.page[0] : raw.page);
+  const page = Number.isInteger(pageRaw) && pageRaw >= 1 ? pageRaw : 1;
+
+  const { rows, totalCount } = await getGradingRoiRanking({ tcg, minUngradedPrice, limit: PAGE_SIZE, page, sort });
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   const searchParamsForLinks = new URLSearchParams(
     Object.entries(raw).flatMap(([k, v]) => (v === undefined ? [] : [[k, Array.isArray(v) ? v[0] : v]]))
   );
 
   const t = await getTranslations("gradingRoi");
+  const locale = await getLocale();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
@@ -94,8 +102,11 @@ export default async function GradingRoiPage({
         <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
       ) : (
         <>
-          <p className="mb-3 text-xs text-muted-foreground">{t("count", { count: rows.length })}</p>
+          <p className="mb-3 text-xs text-muted-foreground">{t("count", { count: totalCount.toLocaleString(locale) })}</p>
           <GradingRoiTable rows={rows} sort={sort ?? ""} searchParams={searchParamsForLinks} />
+          <div className="mt-4">
+            <Pagination page={page} totalPages={totalPages} />
+          </div>
         </>
       )}
     </div>
@@ -108,6 +119,9 @@ function buildHref(base: URLSearchParams, overrides: Record<string, string | und
     if (v === undefined) params.delete(k);
     else params.set(k, v);
   }
+  // Changer un filtre repart en page 1 -- sinon on peut atterrir sur une
+  // page vide si le nouveau filtre a moins de résultats.
+  if (!("page" in overrides)) params.delete("page");
   const qs = params.toString();
   return `/grading-roi${qs ? `?${qs}` : ""}`;
 }
