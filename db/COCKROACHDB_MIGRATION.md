@@ -200,10 +200,37 @@ print(cur.fetchone())
    `COCKROACHDB_WEB_URL` (mot de passe généré aléatoirement, jamais passé
    par le chat). **C'est cette variable qu'il faudra utiliser côté Vercel**
    à la bascule, pas `COCKROACHDB_URL` (celle de `tcg-ingestion`).
-6. Confirmer la région des fonctions Vercel (`fra1`/`cdg1`).
-7. Seulement après ça : bascule de `DATABASE_URL` (web + secret GitHub
-   Actions) — étape à confirmer explicitement, Supabase gardé en lecture un
-   moment en filet de sécurité.
+6. ✅ **Fait** — région Vercel confirmée sur `fra1` (Frankfurt) via le header
+   `X-Vercel-Id` après déploiement (`web/vercel.json`, `{"regions": ["fra1"]}`).
+7. ✅ **Bascule faite le 2026-08-06** :
+   - Secret GitHub Actions `DATABASE_URL` → `tcg-ingestion` (CockroachDB,
+     lecture/écriture) — le cron écrira sur CockroachDB à partir du
+     prochain run.
+   - Variable Vercel `DATABASE_URL` (Production + Preview) →
+     `tcg-web` (CockroachDB, lecture seule) — fait via le dashboard
+     (mutation bloquée par le classificateur de permissions en CLI, geste
+     volontaire de sécurité, contournée en le faisant à la main).
+   - Nouveau déploiement production déclenché (`vercel --prod`) pour que
+     le changement de variable prenne effet. Vérifié après coup : région
+     `fra1` toujours correcte, page d'accueil affiche des données réelles
+     (`PKM_SINGLES`/`OP_SINGLES`), logs Vercel propres (200, aucune erreur).
+   - Supabase non supprimé, gardé en filet de sécurité -- mais n'est plus
+     lu ni écrit par rien tant que rien n'y repointe.
+
+## Migration terminée -- Supabase → CockroachDB
+
+CockroachDB est maintenant la base de production, des deux côtés (lecture
+web + écriture cron). Points d'attention pour la suite :
+- Le resync `db/resync_data_to_cockroachdb.py` n'a plus besoin d'être
+  relancé -- le cron écrit directement sur CockroachDB désormais, plus de
+  dérive à rattraper.
+- Garder Supabase actif encore un moment (pas de suppression) au cas où un
+  problème imprévu forcerait un retour arrière rapide (il suffirait de
+  reremettre `DATABASE_URL` sur la valeur Supabase des deux côtés).
+- Repenser la stratégie de rétention de `sales` (cf. mémoire projet
+  `supabase_storage_plan`) maintenant qu'on a 10GB de marge au lieu de
+  500MB -- moins urgent, mais toujours la bonne pratique à garder pour ne
+  pas revivre le même mur plus tard.
 
 ## Bugs trouvés en comparant les vraies requêtes (2026-08-06)
 
