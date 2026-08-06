@@ -42,7 +42,7 @@ export async function getLanguageComparison(params: {
   }
 
   const candidates = await sql<{ id: number; language: string }[]>`
-    SELECT id::int AS id, language
+    SELECT id::int4 AS id, language
     FROM items
     WHERE tcg = ${params.tcg}
       AND category = 'single'

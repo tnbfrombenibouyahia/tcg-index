@@ -29,13 +29,20 @@ export type UndervaluedSort =
   | "language_asc"
   | "language_desc";
 
+// `l.item_id ASC` final sur chaque branche : tiebreaker déterministe.
+// undervalued_score se répète souvent à l'identique (beaucoup de cartes de
+// même rareté dans un même set partagent le même pull_rate/pack_price, cf.
+// commentaire MVP du calcul) -- sans tiebreaker, LIMIT tronque un groupe de
+// lignes à égalité de façon non garantie par le SQL, potentiellement
+// différente d'un moteur à l'autre (repéré en comparant Supabase/
+// CockroachDB, cf. db/COCKROACHDB_MIGRATION.md).
 function orderFragment(sort?: UndervaluedSort) {
-  if (sort === "score_asc")     return sql`ORDER BY l.undervalued_score ASC`;
-  if (sort === "market_desc")   return sql`ORDER BY l.market_price DESC`;
-  if (sort === "market_asc")    return sql`ORDER BY l.market_price ASC`;
-  if (sort === "language_asc")  return sql`ORDER BY i.language ASC, l.undervalued_score DESC`;
-  if (sort === "language_desc") return sql`ORDER BY i.language DESC, l.undervalued_score DESC`;
-  return sql`ORDER BY l.undervalued_score DESC`; // défaut : score décroissant
+  if (sort === "score_asc")     return sql`ORDER BY l.undervalued_score ASC, l.item_id ASC`;
+  if (sort === "market_desc")   return sql`ORDER BY l.market_price DESC, l.item_id ASC`;
+  if (sort === "market_asc")    return sql`ORDER BY l.market_price ASC, l.item_id ASC`;
+  if (sort === "language_asc")  return sql`ORDER BY i.language ASC, l.undervalued_score DESC, l.item_id ASC`;
+  if (sort === "language_desc") return sql`ORDER BY i.language DESC, l.undervalued_score DESC, l.item_id ASC`;
+  return sql`ORDER BY l.undervalued_score DESC, l.item_id ASC`; // défaut : score décroissant
 }
 
 export interface UndervaluedParams {
@@ -71,7 +78,7 @@ export async function getUndervalued({
       ORDER BY item_id, captured_at DESC
     )
     SELECT
-      l.item_id::int                          AS "itemId",
+      l.item_id::int4                         AS "itemId",
       i.name,
       i.image_url                             AS "imageUrl",
       i.tcg,

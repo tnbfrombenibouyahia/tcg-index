@@ -128,23 +128,37 @@ export async function getDivergence({
   const tagClause = tagFragment(tagFilter);
   const itemClause = itemId ? sql`AND item_id = ${itemId}` : sql``;
 
+  // make_interval(days => N) (argument nommé) remplacé par
+  // (N || ' days')::interval -- CockroachDB ne supporte pas cette syntaxe
+  // (cf. db/COCKROACHDB_MIGRATION.md, testé le 2026-08-05). Équivalent sur
+  // Postgres comme sur CRDB.
+  //
+  // ::int -> ::int4 (id/vol) : CockroachDB fait de INT/::int un alias 64-bit
+  // (contrairement à Postgres, 32-bit) -- le client Node renvoie alors une
+  // string au lieu d'un number par sécurité anti-perte-de-précision.
+  // ::int4 force le vrai type 32-bit, cohérent avec ce que le reste du code
+  // attend (cf. db/COCKROACHDB_MIGRATION.md).
+  //
+  // prev.vol::float8 (division) : CockroachDB refuse `<float> / <int>`
+  // (implicite côté Postgres, explicite requis côté CRDB) -- les deux
+  // opérandes doivent être du même type.
   const rows = await sql<DivergenceQueryRow[]>`
     WITH cur AS (
-      SELECT item_id, COUNT(*)::int AS vol, AVG(price)::float8 AS avg_price
+      SELECT item_id, COUNT(*)::int4 AS vol, AVG(price)::float8 AS avg_price
       FROM sales
       WHERE grade = ${grade}
-        AND sale_date >= CURRENT_DATE - make_interval(days => ${windowDays})
+        AND sale_date >= CURRENT_DATE - (${windowDays} || ' days')::interval
         AND sale_date < CURRENT_DATE
         ${itemClause}
       GROUP BY item_id
       HAVING COUNT(*) >= ${MIN_SALES_PER_WINDOW}
     ),
     prev AS (
-      SELECT item_id, COUNT(*)::int AS vol, AVG(price)::float8 AS avg_price
+      SELECT item_id, COUNT(*)::int4 AS vol, AVG(price)::float8 AS avg_price
       FROM sales
       WHERE grade = ${grade}
-        AND sale_date >= CURRENT_DATE - make_interval(days => ${windowDays * 2})
-        AND sale_date < CURRENT_DATE - make_interval(days => ${windowDays})
+        AND sale_date >= CURRENT_DATE - (${windowDays * 2} || ' days')::interval
+        AND sale_date < CURRENT_DATE - (${windowDays} || ' days')::interval
         ${itemClause}
       GROUP BY item_id
       HAVING COUNT(*) >= ${MIN_SALES_PER_WINDOW}
@@ -157,14 +171,14 @@ export async function getDivergence({
         cur.avg_price AS price_current,
         prev.avg_price AS price_previous,
         (cur.avg_price - prev.avg_price) / prev.avg_price * 100 AS price_change_pct,
-        (cur.vol - prev.vol)::float8 / prev.vol * 100 AS volume_change_pct,
+        (cur.vol - prev.vol)::float8 / prev.vol::float8 * 100 AS volume_change_pct,
         ((cur.avg_price - prev.avg_price) / prev.avg_price * 100)
-          - ((cur.vol - prev.vol)::float8 / prev.vol * 100) AS divergence_score
+          - ((cur.vol - prev.vol)::float8 / prev.vol::float8 * 100) AS divergence_score
       FROM cur
       JOIN prev USING (item_id)
     )
     SELECT
-      j.item_id::int         AS "itemId",
+      j.item_id::int4        AS "itemId",
       i.name,
       i.image_url            AS "imageUrl",
       i.tcg,

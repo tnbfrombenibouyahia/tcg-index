@@ -29,7 +29,7 @@ export async function getItemById(itemId: number): Promise<ItemDetail | null> {
   const [itemRows, priceRows, undervaluedRows, sealedEvRows] = await Promise.all([
     sql<ItemRow[]>`
       SELECT
-        id::int AS id, name, tcg, category,
+        id::int4 AS id, name, tcg, category,
         set_code AS "setCode", code, image_url AS "imageUrl", language, rarity,
         release_date::text AS "releaseDate"
       FROM items
@@ -68,9 +68,9 @@ export async function getItemById(itemId: number): Promise<ItemDetail | null> {
         captured_at::text AS "capturedAt",
         box_price::float8 AS "boxPrice",
         box_price_source AS "boxPriceSource",
-        box_sales_used::int AS "boxSalesUsed",
+        box_sales_used::int4 AS "boxSalesUsed",
         box_reliability_score::float8 AS "boxReliabilityScore",
-        singles_count::int AS "singlesCount",
+        singles_count::int4 AS "singlesCount",
         singles_total_value::float8 AS "singlesTotalValue",
         singles_top10_value::float8 AS "singlesTop10Value",
         ev_ratio_total::float8 AS "evRatioTotal",

@@ -26,10 +26,14 @@ interface SealedEvQueryRow {
 // `mode` -- le ratio EV reste le tri par défaut de la page.
 export type SealedEvSort = "language_asc" | "language_desc";
 
+// `l.item_id ASC` final sur chaque branche : tiebreaker déterministe, même
+// raison que undervalued.ts orderFragment (cf. son commentaire).
 function orderFragment(mode: SealedEvMode, sort?: SealedEvSort) {
-  if (sort === "language_asc") return sql`ORDER BY i.language ASC, l.ev_ratio_total DESC`;
-  if (sort === "language_desc") return sql`ORDER BY i.language DESC, l.ev_ratio_total DESC`;
-  return mode === "top10" ? sql`ORDER BY l.ev_ratio_top10 DESC` : sql`ORDER BY l.ev_ratio_total DESC`;
+  if (sort === "language_asc") return sql`ORDER BY i.language ASC, l.ev_ratio_total DESC, l.item_id ASC`;
+  if (sort === "language_desc") return sql`ORDER BY i.language DESC, l.ev_ratio_total DESC, l.item_id ASC`;
+  return mode === "top10"
+    ? sql`ORDER BY l.ev_ratio_top10 DESC, l.item_id ASC`
+    : sql`ORDER BY l.ev_ratio_total DESC, l.item_id ASC`;
 }
 
 export interface SealedEvParams {
@@ -52,7 +56,7 @@ export async function getSealedEv({ mode, tcg, limit = 50, sort }: SealedEvParam
       ORDER BY item_id, captured_at DESC
     )
     SELECT
-      l.item_id::int AS "itemId",
+      l.item_id::int4 AS "itemId",
       i.name,
       i.image_url AS "imageUrl",
       i.tcg,
@@ -61,9 +65,9 @@ export async function getSealedEv({ mode, tcg, limit = 50, sort }: SealedEvParam
       l.captured_at::text AS "capturedAt",
       l.box_price::float8 AS "boxPrice",
       l.box_price_source AS "boxPriceSource",
-      l.box_sales_used::int AS "boxSalesUsed",
+      l.box_sales_used::int4 AS "boxSalesUsed",
       l.box_reliability_score::float8 AS "boxReliabilityScore",
-      l.singles_count::int AS "singlesCount",
+      l.singles_count::int4 AS "singlesCount",
       l.singles_total_value::float8 AS "singlesTotalValue",
       l.singles_top10_value::float8 AS "singlesTop10Value",
       l.ev_ratio_total::float8 AS "evRatioTotal",

@@ -92,14 +92,14 @@ export async function getSales(filters: SalesFilterParams): Promise<SalesRespons
   const [rows, countRows] = await Promise.all([
     sql<SaleQueryRow[]>`
       SELECT
-        s.id::int AS id,
+        s.id::int4 AS id,
         s.sale_date::text AS "saleDate",
         s.price::float8 AS price,
         s.currency,
         s.grade,
         s.marketplace,
         s.title,
-        i.id::int AS "itemId",
+        i.id::int4 AS "itemId",
         i.name AS "itemName",
         i.tcg AS "itemTcg",
         i.category AS "itemCategory",
@@ -115,7 +115,7 @@ export async function getSales(filters: SalesFilterParams): Promise<SalesRespons
       LIMIT ${pageSize} OFFSET ${offset}
     `,
     sql<{ count: number }[]>`
-      SELECT COUNT(*)::int AS count
+      SELECT COUNT(*)::int4 AS count
       FROM sales s
       JOIN items i ON i.id = s.item_id
       ${where}
@@ -160,7 +160,7 @@ export async function getSalesFilters(tcg: string): Promise<SalesFiltersResponse
       SELECT
         set_code AS "setCode",
         MIN(release_date)::text AS "releaseDate",
-        COUNT(*)::int AS "itemCount"
+        COUNT(*)::int4 AS "itemCount"
       FROM items
       WHERE tcg = ${tcg} AND set_code IS NOT NULL
       GROUP BY set_code

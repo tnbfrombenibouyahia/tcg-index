@@ -100,7 +100,7 @@ export async function getFreshnessGrid(): Promise<FreshnessCell[]> {
         i.tcg,
         i.category,
         MAX(ps.captured_at)::text AS "lastCapturedAt",
-        COUNT(DISTINCT ps.item_id)::int AS constituents
+        COUNT(DISTINCT ps.item_id)::int4 AS constituents
       FROM price_snapshots ps
       JOIN items i ON i.id = ps.item_id
       WHERE ps.grade = 'ungraded' AND ps.source = 'pricecharting'
@@ -110,7 +110,7 @@ export async function getFreshnessGrid(): Promise<FreshnessCell[]> {
       SELECT
         i.tcg,
         MAX(ps.captured_at)::text AS "lastCapturedAt",
-        COUNT(DISTINCT ps.item_id)::int AS constituents
+        COUNT(DISTINCT ps.item_id)::int4 AS constituents
       FROM price_snapshots ps
       JOIN items i ON i.id = ps.item_id
       WHERE ps.grade != 'ungraded' AND ps.source = 'pricecharting'
