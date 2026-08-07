@@ -69,6 +69,7 @@ const BASE_CTE = sql`
       sc.sales_30d::float8 / NULLIF(sc.sales_30d + ll.listing_count, 0)::float8 AS sell_through
     FROM latest_listing ll
     JOIN sales_counts sc ON sc.item_id = ll.item_id AND sc.sales_90d > 0
+    JOIN items i_filter ON i_filter.id = ll.item_id
     -- listing_count = 0 n'est pas "tout vendu", c'est "eBay n'a jamais eu
     -- d'annonce pour ce type de produit dans les catégories Sealed Packs/
     -- Boxes interrogées" (ex. One Piece "DON!! Card" -- 53% des items OP
@@ -77,6 +78,14 @@ const BASE_CTE = sql`
     -- classement (sort par défaut = taux décroissant). Vérifié via
     -- ingestion/probe_ebay.py --tcg one-piece le 2026-08-07.
     WHERE ll.listing_count > 0
+      -- One Piece scellé restreint aux Booster Box (demande utilisateur
+      -- 2026-08-07, après avoir vu des DON!! Card avec un vrai stock non-nul
+      -- squatter le classement) -- les Starter Deck/Double Pack Set/Booster
+      -- Pack simple ne sont pas comparables entre eux pour un classement de
+      -- liquidité, même logique que sealed_ev déjà restreint aux Booster
+      -- Box. Pokémon non touché (pas de DON!! Card côté Pokémon, sa
+      -- population scellée reste variée par choix).
+      AND (i_filter.tcg != 'one-piece' OR i_filter.name ILIKE '%Booster Box%')
   )
 `;
 

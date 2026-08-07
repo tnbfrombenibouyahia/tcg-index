@@ -322,7 +322,7 @@
     "title": "Liquidité",
     "description": "Taux d'écoulement : combien de cette carte s'est vendu récemment (ventes 30j) par rapport à combien en reste encore en vente sur eBay. Pas un carnet d'ordres (eBay n'a que des prix demandés, pas de profondeur d'achat) -- un signal de pression de stock, façon retail/resale.",
     "methodologyLabel": "Méthodologie :",
-    "methodology": "taux d'écoulement = ventes_30j / (ventes_30j + annonces_actives). Scope actuel : scellé EN uniquement, sets récents, et seulement les items ayant à la fois un instantané eBay et au moins une vente sur 90 jours.",
+    "methodology": "taux d'écoulement = ventes_30j / (ventes_30j + annonces_actives). Scope actuel : scellé EN uniquement, sets récents, et seulement les items ayant à la fois un instantané eBay et au moins une vente sur 90 jours. One Piece restreint aux Booster Box (les autres formats scellés ne sont pas comparables entre eux).",
     "filterAll": "Tous les TCG",
     "count": "{count} cartes",
     "emptyTitle": "Pas encore de données",

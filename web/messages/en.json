@@ -322,7 +322,7 @@
     "title": "Liquidity",
     "description": "Sell-through rate: how much of this card actually sold recently (30-day sales) versus how much is still listed on eBay. Not an order book (eBay only has asking prices, no buy-side depth) -- a stock-pressure signal, retail/resale style.",
     "methodologyLabel": "Methodology:",
-    "methodology": "sell-through rate = sales_30d / (sales_30d + active_listings). Current scope: EN sealed only, recent sets, and only items with both an eBay snapshot and at least one sale in the last 90 days.",
+    "methodology": "sell-through rate = sales_30d / (sales_30d + active_listings). Current scope: EN sealed only, recent sets, and only items with both an eBay snapshot and at least one sale in the last 90 days. One Piece restricted to Booster Box (other sealed formats aren't comparable to each other).",
     "filterAll": "All TCGs",
     "count": "{count} cards",
     "emptyTitle": "No data yet",

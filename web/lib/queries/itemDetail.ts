@@ -127,9 +127,13 @@ export async function getItemById(itemId: number): Promise<ItemDetail | null> {
   // listingCount > 0 exigé aussi : sinon un item jamais listé sur eBay dans
   // les catégories interrogées (ex. One Piece "DON!! Card") produit un faux
   // 100% d'écoulement plutôt qu'un vrai signal -- cf. lib/queries/liquidity.ts.
+  // One Piece scellé restreint aux Booster Box (même filtre que
+  // getLiquidity/getLiquidityCount, cf. leurs commentaires) -- une DON!!
+  // Card ne doit pas afficher ce bloc sur sa propre fiche non plus.
+  const isEligibleForLiquidity = item.tcg !== "one-piece" || item.name.includes("Booster Box");
   const liquidityRow = liquidityRows[0];
   const liquidity: LiquidityCalc | null =
-    liquidityRow && liquidityRow.salesCount90d > 0 && liquidityRow.listingCount > 0
+    isEligibleForLiquidity && liquidityRow && liquidityRow.salesCount90d > 0 && liquidityRow.listingCount > 0
       ? {
           capturedAt: liquidityRow.capturedAt,
           listingCount: liquidityRow.listingCount,

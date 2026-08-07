@@ -322,7 +322,7 @@
     "title": "Liquidez",
     "description": "Tasa de rotación: cuánto se vendió realmente esta carta hace poco (ventas de 30 días) frente a cuánto queda todavía en venta en eBay. No es un libro de órdenes (eBay solo tiene precios de venta, sin profundidad de compra) -- una señal de presión de stock, al estilo retail/reventa.",
     "methodologyLabel": "Metodología:",
-    "methodology": "tasa de rotación = ventas_30d / (ventas_30d + anuncios_activos). Alcance actual: solo scellé EN, sets recientes, y solo items con un instantáneo de eBay Y al menos una venta en los últimos 90 días.",
+    "methodology": "tasa de rotación = ventas_30d / (ventas_30d + anuncios_activos). Alcance actual: solo scellé EN, sets recientes, y solo items con un instantáneo de eBay Y al menos una venta en los últimos 90 días. One Piece restringido a Booster Box (los demás formatos sellados no son comparables entre sí).",
     "filterAll": "Todos los TCG",
     "count": "{count} cartas",
     "emptyTitle": "Aún no hay datos",
