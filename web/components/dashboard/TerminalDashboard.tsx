@@ -16,6 +16,7 @@ import {
   type WidgetSize,
 } from "@/lib/dashboard/types";
 import { WidgetShell } from "@/components/dashboard/WidgetShell";
+import { WidgetDock } from "@/components/dashboard/WidgetDock";
 import { CatalogueWidget } from "@/components/dashboard/widgets/CatalogueWidget";
 import { LiveMarketWidget } from "@/components/dashboard/widgets/LiveMarketWidget";
 import { TransactionsWidget } from "@/components/dashboard/widgets/TransactionsWidget";
@@ -176,8 +177,12 @@ export function TerminalDashboard({
         display: "grid",
         gridTemplateColumns: "repeat(12, 1fr)",
         gap: "22px",
+        // Espace pour que le dock flottant (fixed, bottom: 26px) ne recouvre
+        // jamais le bas de la grille -- surtout visible sur les tailles L.
+        paddingBottom: "90px",
       }}
     >
+      <WidgetDock expanded={layout.expanded} onSelect={(id) => setLayout((s) => ({ ...s, expanded: id }))} />
       {WIDGET_IDS.map((id) => (
         <WidgetShell
           key={id}

@@ -1,20 +1,16 @@
 import Link from "next/link";
-import { getLocale, getTranslations } from "next-intl/server";
-import { LanguageSelector } from "@/components/ui/LanguageSelector";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { UniverseSelector } from "@/components/ui/UniverseSelector";
-import { getUniverse } from "@/lib/universe";
+import { getTranslations } from "next-intl/server";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SideBar — Fixed left navigation, "Terminal" design system (verre sombre,
-// cf. app/globals.css) -- même ossature qu'avant, recolorée via les tokens
-// CSS existants + sélecteur d'univers ajouté en pied de colonne.
+// cf. app/globals.css). Navigation pure : univers/langue/thème/compte vivent
+// désormais dans le header global (components/ui/TopHeader.tsx, rendu par
+// app/(app)/layout.tsx au-dessus de cette sidebar + du contenu) plutôt qu'ici,
+// pour un seul jeu de contrôles au lieu d'un dupliqué par page.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function NavBar() {
   const t = await getTranslations("nav");
-  const locale = await getLocale();
-  const universe = await getUniverse();
 
   const PRIMARY_NAV = [
     { href: "/dashboard", label: t("home"), icon: <HomeIcon /> },
@@ -101,16 +97,8 @@ export async function NavBar() {
           padding: "16px 24px 0",
           borderTop: "1px solid var(--border-soft)",
           marginTop: "auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px",
         }}
       >
-        <UniverseSelector current={universe} />
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <LanguageSelector current={locale} />
-          <ThemeToggle />
-        </div>
         <p style={{ fontSize: "11px", color: "var(--foreground-subtle)", margin: 0, lineHeight: 1.5 }}>{t("footer")}</p>
       </div>
     </aside>

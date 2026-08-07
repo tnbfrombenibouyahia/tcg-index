@@ -4,7 +4,6 @@ import { HeadlineSection } from "@/components/homepage/HeadlineSection";
 import { SubIndexGrid } from "@/components/homepage/SubIndexGrid";
 import { DailyExchangeSection } from "@/components/homepage/DailyExchangeSection";
 import { TerminalDashboard } from "@/components/dashboard/TerminalDashboard";
-import { AuthTrigger } from "@/components/dashboard/AuthTrigger";
 import { getAllIndices } from "@/lib/queries/indices";
 import { searchItems } from "@/lib/queries/items";
 import { getDivergence } from "@/lib/queries/divergence";
@@ -62,7 +61,6 @@ export default async function HomePage() {
         <div style={{ flex: 1 }} />
 
         <LastUpdatedBadge asOf={asOf} />
-        <AuthTrigger />
       </div>
 
       {/* ── Dashboard "Terminal" ─────────────────────────────────────────────── */}

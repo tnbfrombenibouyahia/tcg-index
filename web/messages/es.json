@@ -407,7 +407,11 @@
     "liquiditySales90d": "Vendidas (90d)"
   },
   "dashboard": {
+    "header": {
+      "tagline": "Inteligencia de mercado TCG"
+    },
     "widgets": {
+      "gridView": "Vista de cuadrícula",
       "catalogue": { "title": "Catálogo", "subtitle": "Buscar cualquier carta, todos los idiomas" },
       "live": { "title": "Live Market", "subtitle": "Índice de mercado en tiempo real" },
       "tx": { "title": "Transacciones", "subtitle": "Ventas recientes registradas" },

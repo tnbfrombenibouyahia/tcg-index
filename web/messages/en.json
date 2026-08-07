@@ -407,7 +407,11 @@
     "liquiditySales90d": "Sold (90d)"
   },
   "dashboard": {
+    "header": {
+      "tagline": "TCG market intelligence"
+    },
     "widgets": {
+      "gridView": "Grid view",
       "catalogue": { "title": "Catalogue", "subtitle": "Search any card, all languages" },
       "live": { "title": "Live Market", "subtitle": "Real-time market index" },
       "tx": { "title": "Transactions", "subtitle": "Recently recorded sales" },
