@@ -405,5 +405,107 @@
     "liquidityListingCount": "Todavía en venta (eBay)",
     "liquiditySales30d": "Vendidas (30d)",
     "liquiditySales90d": "Vendidas (90d)"
+  },
+  "dashboard": {
+    "widgets": {
+      "catalogue": { "title": "Catálogo", "subtitle": "Buscar cualquier carta, todos los idiomas" },
+      "live": { "title": "Live Market", "subtitle": "Índice de mercado en tiempo real" },
+      "tx": { "title": "Transacciones", "subtitle": "Ventas recientes registradas" },
+      "under": { "title": "Infravalorado", "subtitle": "Diferencias entre precio y valor justo" },
+      "div": { "title": "Divergencias", "subtitle": "Diferencia precio vs volumen, solo ventas ungraded" },
+      "grade": { "title": "ROI de gradación", "subtitle": "Rentabilidad de enviar una carta a gradación" }
+    },
+    "catalogue": {
+      "searchPlaceholder": "Buscar una carta...",
+      "noResults": "Ninguna carta encontrada",
+      "empty": "Escribe al menos 2 caracteres para buscar"
+    },
+    "live": {
+      "topMovers": "MAYORES MOVIMIENTOS",
+      "noMovers": "No hay suficientes ventas recientes para clasificar movimientos",
+      "noHistory": "Todavía no hay suficiente historial"
+    },
+    "transactions": {
+      "colName": "Carta",
+      "colPlatform": "Plataforma",
+      "colGrade": "Grado",
+      "colPrice": "Precio",
+      "colDate": "Fecha",
+      "empty": "Ninguna transacción reciente"
+    },
+    "undervalued": {
+      "colCurrent": "Actual",
+      "colFair": "Valor justo",
+      "empty": "Todavía no hay datos"
+    },
+    "divergences": {
+      "colName": "Carta",
+      "colPriceChg": "Δ Precio",
+      "colVolChg": "Δ Volumen",
+      "colDivergence": "Divergencia",
+      "empty": "Todavía no hay datos",
+      "footnote": "Divergencia = variación de precio (%) − variación de volumen (%) entre dos ventanas iguales. Solo cartas ungraded con ≥3 ventas por ventana."
+    },
+    "gradingRoi": {
+      "colName": "Carta",
+      "colRaw": "Raw",
+      "colBestGraded": "Mejor gradado",
+      "colRoi": "ROI neto",
+      "colVerdict": "Veredicto",
+      "verdictGrade": "Gradarla",
+      "verdictWait": "Esperar",
+      "empty": "Todavía no hay datos"
+    },
+    "auth": {
+      "openLabel": "Cuenta",
+      "close": "Cerrar",
+      "login": "Iniciar sesión",
+      "signup": "Crear cuenta",
+      "loginHeading": "Bienvenido de nuevo",
+      "signupHeading": "Crea tu cuenta",
+      "continueWithGoogle": "Continuar con Google",
+      "or": "O",
+      "email": "Correo electrónico",
+      "password": "Contraseña",
+      "submitLogin": "Iniciar sesión",
+      "submitSignup": "Crear mi cuenta",
+      "disclaimer": "Las cuentas todavía no están activas — esto es un adelanto de lo que viene."
+    }
+  },
+  "landing": {
+    "kicker": "PARA COLECCIONISTAS E INVERSORES",
+    "h1Line1": "Arbitraje de cartas,",
+    "h1Line2": "con el rigor de una mesa de trading.",
+    "heroSub": "Seguimiento de precios en tiempo real, detección de divergencias y ROI de gradación para Pokémon y One Piece — en una sola plataforma.",
+    "heroSubNote": "Sellado y sueltas · gradadas y sin gradar · ediciones antiguas y nuevas.",
+    "ctaSignup": "Crear una cuenta gratis",
+    "ctaLogin": "Ya tengo una cuenta",
+    "navFeatures": "Funcionalidades",
+    "navLogin": "Iniciar sesión",
+    "navSignup": "Crear cuenta",
+    "statCards": "Cartas seguidas",
+    "statSales": "Ventas registradas",
+    "statRealtime": "Flujo en tiempo real",
+    "statUniversesValue": "2 universos",
+    "statUniversesLabel": "Pokémon · One Piece",
+    "markerBlue": "Divergencia detectada · oportunidad identificada",
+    "markerRed": "Momento óptimo: vender aquí · ROI +{roi}%",
+    "ticketPending": "Pendiente…",
+    "ticketBuy": "Compra: {price}",
+    "ticketSell": "Venta: {price}",
+    "profitRow": "Beneficio potencial: +{roi}% ({amount})",
+    "heroEmpty": "Todavía no hay suficientes datos gradados para la demo.",
+    "featuresKicker": "FUNCIONALIDADES CLAVE",
+    "featuresTitle": "Seis módulos, un solo terminal.",
+    "featuresSub": "Todo lo necesario para gestionar una cartera de cartas como un libro de trading — sin hacer malabares entre diez pestañas.",
+    "features": {
+      "catalogue": { "title": "Catálogo", "desc": "Búsqueda instantánea en todo el mercado Pokémon y One Piece, cotizaciones en directo." },
+      "transactions": { "title": "Transacciones", "desc": "Historial completo de tus compras y ventas, margen neto calculado automáticamente." },
+      "undervalued": { "title": "Cartas infravaloradas", "desc": "Detección algorítmica de diferencias entre precio cotizado y valor de mercado real." },
+      "divergences": { "title": "Divergencias", "desc": "Alertas sobre descorrelaciones precio / volumen antes de que se cierren." },
+      "live": { "title": "Live Market", "desc": "Flujo de datos en tiempo real de las principales plataformas de intercambio." },
+      "grading": { "title": "ROI de gradación", "desc": "Simula la rentabilidad de un envío a gradación PSA/BGS antes de pagar las tarifas." }
+    },
+    "footer": "© 2026 TCG Terminal. Datos de mercado proporcionados con fines informativos."
   }
 }

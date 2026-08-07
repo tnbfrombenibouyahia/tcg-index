@@ -1,60 +1,77 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   TCG Index — "Warm Minimalist / Quiet Luxury" Design System
-   Philosophie : Soft UI, champagne chaud, frosted glass, monochrome strict.
+   TCG Index — "Terminal" Design System
+   Philosophie : desk de trading pour cartes à collectionner. Fond quasi-noir,
+   verre dépoli, chiffres en monospace, accent de couleur par univers (bleu
+   Pokémon / rouge One Piece). Remplace l'ancien système "Quiet Luxury" --
+   mêmes noms de variables (pour que tout composant existant hérite sans
+   modif) mais valeurs et ambiance repensées, cf. mockup "TCG Terminal"
+   importé le 2026-08-07 (voir mémoire projet "site_terminal_redesign").
    ───────────────────────────────────────────────────────────────────────────── */
 
 :root {
   /* ── Fond global ─────────────────────────────────────────────────────────── */
-  --bg-from: #FAF6F0;        /* blanc cassé chaud */
-  --bg-to:   #F2EBE0;        /* lin crème poudré  */
+  --bg-from: #F2F3F5;
+  --bg-to:   #F2F3F5;
 
   /* ── Surfaces / cartes ───────────────────────────────────────────────────── */
   --surface:          rgba(255, 255, 255, 0.88);
   --surface-solid:    #FFFFFF;
-  --surface-alt:      #F8F9FA;  /* badges, pastilles, tuiles icône */
+  --surface-alt:      #F7F8F9;  /* badges, pastilles, tuiles icône */
   --glass-blur:       blur(20px) saturate(1.4);
 
-  /* ── Palette texte (monochrome chaud) ────────────────────────────────────── */
-  --foreground:          #1A1A1A;   /* quasi-noir chaud — titres, valeurs */
-  --foreground-muted:    #8A8480;   /* métadonnées, labels               */
-  --foreground-subtle:   #B8B2AC;   /* hints, placeholders               */
+  /* ── Palette texte ────────────────────────────────────────────────────────── */
+  --foreground:          #14171C;
+  --foreground-muted:    #68707C;
+  --foreground-subtle:   #9AA1AC;
 
   /* ── Bordures & ombres ───────────────────────────────────────────────────── */
-  --border:        rgba(26, 26, 26, 0.08);
-  --border-soft:   rgba(26, 26, 26, 0.06);  /* cartes, séparateurs discrets */
-  --border-softer: rgba(26, 26, 26, 0.035); /* filets à peine visibles */
-  /* Ambient shadow à deux couches : profondeur + halo très diffus */
-  --shadow-card:   0 1px 3px rgba(0,0,0,0.05), 0 8px 32px rgba(0,0,0,0.06);
-  --shadow-tile:   0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.05);
-  --shadow-lift:   0 2px 8px rgba(0,0,0,0.07), 0 16px 48px rgba(0,0,0,0.08);
+  --border:        rgba(15, 15, 20, 0.10);
+  --border-soft:   rgba(15, 15, 20, 0.08);
+  --border-softer: rgba(15, 15, 20, 0.045);
+  --shadow-card:   0 1px 3px rgba(15,15,20,0.05), 0 8px 32px rgba(15,15,20,0.08);
+  --shadow-tile:   0 1px 2px rgba(15,15,20,0.04), 0 4px 16px rgba(15,15,20,0.06);
+  --shadow-lift:   0 2px 8px rgba(15,15,20,0.08), 0 16px 48px rgba(15,15,20,0.1);
 
-  /* ── Rayons (smooth rounded) ─────────────────────────────────────────────── */
-  --radius-card:  28px;
-  --radius-tile:  20px;
+  /* ── Verre "widget" (panneaux denses du terminal) ────────────────────────── */
+  --glass-widget-bg:     linear-gradient(165deg, rgba(255,255,255,0.65), rgba(255,255,255,0.35));
+  --glass-widget-border: rgba(255, 255, 255, 0.5);
+  --glass-widget-shadow: 0 8px 32px rgba(15,15,20,0.1), inset 0 1px 0 rgba(255,255,255,0.6);
+
+  /* ── Rayons ───────────────────────────────────────────────────────────────── */
+  --radius-card:  18px;
+  --radius-tile:  14px;
   --radius-pill:  9999px;
 
   /* ── Éléments interactifs (CTA, nav) ─────────────────────────────────────── */
-  --ink:           #121212;   /* noir mat profond — boutons, navbar pill */
+  --ink:           #14171C;
   --ink-text:      #FFFFFF;
 
+  /* ── Accent par univers (demande utilisateur : filtre global persistant) ──
+     Piloté par data-universe sur <html>, cf. app/actions/universe.ts +
+     UniverseSelector -- fallback Pokémon si l'attribut n'est pas encore
+     posé (ex. avant hydratation). */
+  --accent-pokemon:  #3B82F6;
+  --accent-onepiece: #DC2626;
+  --accent:          var(--accent-pokemon);
+
   /* ── Données financières ─────────────────────────────────────────────────── */
-  --positive:      #15803d;
-  --negative:      #dc2626;
-  --chart-line:    #1A1A1A;  /* monochrome principal */
-  --chart-fill:    rgba(26, 26, 26, 0.06);
-  --chart-grid:    #EDE7DC;  /* grille champagne très douce */
-  --chart-muted:   #8A8480;
-  --chart-axis:    #ADB5BD;  /* libellés d'axe */
-  --bar-muted:     rgba(26, 26, 26, 0.5);  /* barre non survolée (volume) */
+  --positive:      #15803D;
+  --negative:      #DC2626;
+  --chart-line:    var(--accent);
+  --chart-fill:    color-mix(in srgb, var(--accent) 14%, transparent);
+  --chart-grid:    rgba(15, 15, 20, 0.06);
+  --chart-muted:   #68707C;
+  --chart-axis:    #9AA1AC;
+  --bar-muted:     rgba(15, 15, 20, 0.5);
 
   /* ── Tints neutres (badges, pastilles, segments vides) ───────────────────── */
-  --tint-neutral:        rgba(26, 26, 26, 0.06);
-  --tint-neutral-strong: rgba(26, 26, 26, 0.12);
+  --tint-neutral:        rgba(15, 15, 20, 0.06);
+  --tint-neutral-strong: rgba(15, 15, 20, 0.12);
 
   /* ── Overlays (modales) ──────────────────────────────────────────────────── */
-  --overlay-scrim: rgba(26, 26, 26, 0.45);
+  --overlay-scrim: rgba(5, 5, 5, 0.55);
 
   /* ── Tooltips (toujours à fort contraste, quel que soit le thème) ────────── */
   --tooltip-bg:      #000000;
@@ -64,58 +81,68 @@
   /* ── Compatibilité variables legacy ─────────────────────────────────────── */
   --background:         var(--bg-from);
   --primary:            var(--foreground-muted);
-  --accent:             var(--ink);
-  --muted:              rgba(26,26,26,0.05);
+  --accent-neutral:     var(--ink);
+  --muted:              rgba(15,15,20,0.05);
   --muted-foreground:   var(--foreground-muted);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Dark mode — mêmes tokens, valeurs inversées. Activé via [data-theme="dark"]
-   sur <html> (cf. ThemeScript dans layout.tsx) plutôt que prefers-color-scheme
-   seul, pour que le bouton de bascule (ThemeToggle) puisse forcer un choix
-   explicite indépendant des préférences OS.
+   Dark mode — l'ambiance "par défaut" du Terminal (quasi-noir #050505, verre
+   sombre). Activé via [data-theme="dark"] sur <html> (cf. ThemeScript dans
+   layout.tsx), indépendant de data-universe.
    ───────────────────────────────────────────────────────────────────────────── */
 :root[data-theme="dark"] {
-  --bg-from: #17140F;
-  --bg-to:   #1F1B15;
+  --bg-from: #050505;
+  --bg-to:   #050505;
 
-  --surface:          rgba(30, 27, 23, 0.88);
-  --surface-solid:    #211E1A;
-  --surface-alt:      #2A2620;
+  --surface:          rgba(14, 14, 16, 0.88);
+  --surface-solid:    #0E0E10;
+  --surface-alt:      #131315;
 
-  --foreground:          #F2EDE6;
-  --foreground-muted:    #A39C93;
-  --foreground-subtle:   #726B62;
+  --foreground:          #F4F5F7;
+  --foreground-muted:    #8D94A1;
+  --foreground-subtle:   #5B6270;
 
-  --border:        rgba(255, 255, 255, 0.10);
+  --border:        rgba(255, 255, 255, 0.09);
   --border-soft:   rgba(255, 255, 255, 0.07);
   --border-softer: rgba(255, 255, 255, 0.045);
-  --shadow-card:   0 1px 3px rgba(0,0,0,0.3), 0 8px 32px rgba(0,0,0,0.35);
-  --shadow-tile:   0 1px 2px rgba(0,0,0,0.25), 0 4px 16px rgba(0,0,0,0.3);
-  --shadow-lift:   0 2px 8px rgba(0,0,0,0.35), 0 16px 48px rgba(0,0,0,0.4);
+  --shadow-card:   0 1px 3px rgba(0,0,0,0.3), 0 8px 32px rgba(0,0,0,0.4);
+  --shadow-tile:   0 1px 2px rgba(0,0,0,0.25), 0 4px 16px rgba(0,0,0,0.35);
+  --shadow-lift:   0 2px 8px rgba(0,0,0,0.35), 0 16px 48px rgba(0,0,0,0.45);
 
-  --ink:           #F2EDE6;  /* boutons/pill pleins : clair sur fond sombre */
-  --ink-text:      #17140F;
+  --glass-widget-bg:     linear-gradient(165deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+  --glass-widget-border: rgba(255, 255, 255, 0.10);
+  --glass-widget-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
 
-  --positive:      #22c55e;
-  --negative:      #f87171;
-  --chart-line:    #F2EDE6;
-  --chart-fill:    rgba(255, 255, 255, 0.08);
-  --chart-grid:    rgba(255, 255, 255, 0.08);
-  --chart-muted:   #A39C93;
-  --chart-axis:    #726B62;
+  --ink:           #F4F5F7;
+  --ink-text:      #0B0B0C;
+
+  --positive:      #22C55E;
+  --negative:      #EF4444;
+  --chart-line:    var(--accent);
+  --chart-fill:    color-mix(in srgb, var(--accent) 16%, transparent);
+  --chart-grid:    rgba(255, 255, 255, 0.07);
+  --chart-muted:   #8D94A1;
+  --chart-axis:    #5B6270;
   --bar-muted:     rgba(255, 255, 255, 0.35);
 
   --tint-neutral:        rgba(255, 255, 255, 0.07);
   --tint-neutral-strong: rgba(255, 255, 255, 0.14);
 
-  --overlay-scrim: rgba(0, 0, 0, 0.6);
+  --overlay-scrim: rgba(0, 0, 0, 0.65);
 
-  --tooltip-bg:      #F2EDE6;
-  --tooltip-text:    #17140F;
+  --tooltip-bg:      #F4F5F7;
+  --tooltip-text:    #0B0B0C;
   --tooltip-divider: rgba(0, 0, 0, 0.15);
 
   --muted:              rgba(255, 255, 255, 0.06);
+}
+
+/* Univers actif — bascule uniquement l'accent (posé côté serveur sur <html>
+   via le cookie "universe", cf. app/actions/universe.ts -- pas de flash,
+   contrairement au thème qui dépend de localStorage). */
+:root[data-universe="one-piece"] {
+  --accent: var(--accent-onepiece);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -125,14 +152,15 @@
   --color-background:       var(--bg-from);
   --color-foreground:       var(--foreground);
   --color-primary:          var(--foreground-muted);
-  --color-accent:           var(--ink);
+  --color-accent:           var(--accent);
   --color-muted:            var(--muted);
   --color-muted-foreground: var(--foreground-muted);
   --color-border:           var(--border);
   --color-positive:         var(--positive);
   --color-negative:         var(--negative);
   --color-surface:          var(--surface-solid);
-  --font-sans:              var(--font-plus-jakarta-sans);
+  --font-sans:              var(--font-manrope);
+  --font-mono:              var(--font-ibm-plex-mono);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -145,23 +173,24 @@ html {
 body {
   background-color: var(--bg-from);
   color: var(--foreground);
-  font-family: var(--font-plus-jakarta-sans), sans-serif;
+  font-family: var(--font-manrope), sans-serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100dvh;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Utilitaires design system
    ───────────────────────────────────────────────────────────────────────────── */
 
-/* Carte frosted-glass */
+/* Carte frosted-glass (pages existantes : modales, fiches carte...) */
 .card-glass {
   background: var(--surface);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--border-soft);
 }
 
 /* Tuile frosted-glass */
@@ -171,7 +200,7 @@ body {
   -webkit-backdrop-filter: blur(12px) saturate(1.2);
   border-radius: var(--radius-tile);
   box-shadow: var(--shadow-tile);
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--border-soft);
   transition: box-shadow 0.25s ease, transform 0.25s ease;
 }
 
@@ -180,7 +209,18 @@ body {
   transform: translateY(-2px);
 }
 
-/* Pill noire (CTA / nav) */
+/* Panneau "widget" terminal (dashboard d'accueil) -- verre plus prononcé,
+   flou plus fort que .card-glass, cf. WidgetShell.tsx */
+.widget-glass {
+  background: var(--glass-widget-bg);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  border: 1px solid var(--glass-widget-border);
+  box-shadow: var(--glass-widget-shadow);
+  border-radius: 16px;
+}
+
+/* Pill pleine (CTA / nav) */
 .pill-ink {
   background: var(--ink);
   color: var(--ink-text);
@@ -224,4 +264,17 @@ button {
   border-radius: 9999px;
   background: inherit;
   animation: pulse-dot-ring 1.6s cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
+}
+
+/* Décor flottant (icônes pixel-art en arrière-plan du dashboard terminal,
+   carte animée du hero de la landing page) */
+@keyframes floatY {
+  0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+  50% { transform: translateY(-7px) rotate(var(--r, 0deg)); }
+}
+
+/* Pulse des badges "marqueur" du hero de la landing page (divergence / timing) */
+@keyframes markerPulse {
+  0%, 100% { opacity: 0.65; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.12); }
 }

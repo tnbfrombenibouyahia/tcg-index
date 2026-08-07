@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Manrope, IBM_Plex_Mono } from "next/font/google";
 import Script from "next/script";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
-import { NavBar } from "@/components/ui/NavBar";
+import { getUniverse } from "@/lib/universe";
 import "./globals.css";
 
 // Pose l'attribut data-theme sur <html> avant le premier paint (beforeInteractive)
@@ -21,10 +21,16 @@ const THEME_INIT_SCRIPT = `
 })();
 `;
 
-const plusJakartaSans = Plus_Jakarta_Sans({
-  variable: "--font-plus-jakarta-sans",
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["500", "600", "700", "800"],
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: "--font-ibm-plex-mono",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -35,6 +41,11 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+// Racine minimale -- html/body/polices/thème/i18n uniquement. La coquille
+// "app" (sidebar fixe + zone de contenu, cf. ancien layout.tsx) vit
+// maintenant dans app/(app)/layout.tsx : la landing page (app/page.tsx) n'a
+// pas de sidebar, seules les pages produit (dashboard, catalog, ...) en ont
+// une -- d'où le découpage par route group plutôt qu'un layout unique.
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -42,38 +53,20 @@ export default async function RootLayout({
 }>) {
   const locale = await getLocale();
   const messages = await getMessages();
+  const universe = await getUniverse();
 
   return (
     <html
       lang={locale}
-      className={`${plusJakartaSans.variable} h-full antialiased`}
+      data-universe={universe}
+      className={`${manrope.variable} ${ibmPlexMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body
-        className="min-h-full text-foreground"
-        style={{ display: "flex", flexDirection: "row" }}
-      >
+      <body className="min-h-full text-foreground">
         <Script id="theme-init" strategy="beforeInteractive">
           {THEME_INIT_SCRIPT}
         </Script>
-        <NextIntlClientProvider messages={messages}>
-          {/* ── Fixed left sidebar ───────────────────────────────────────────── */}
-          <NavBar />
-
-          {/* ── Main content area ────────────────────────────────────────────── */}
-          <div
-            style={{
-              flex: 1,
-              minWidth: 0,
-              display: "flex",
-              flexDirection: "column",
-              background: "var(--bg-from)",
-            }}
-          >
-            {/* Page content */}
-            <main style={{ flex: 1, overflowY: "auto" }}>{children}</main>
-          </div>
-        </NextIntlClientProvider>
+        <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
       </body>
     </html>
   );
