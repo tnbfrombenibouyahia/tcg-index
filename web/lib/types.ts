@@ -213,8 +213,8 @@ export interface SealedEvCalc {
 // récemment (sales) -- PAS un carnet d'ordres (pas de bid/ask, eBay n'a que
 // des prix demandés), plutôt un taux d'écoulement façon retail/resale.
 // N'existe que pour le scellé EN couvert par active_listings ET avec ≥1
-// vente sur 90j (cf. mémoire projet "pokecardex_image_source" §liquidité) --
-// sinon la carte n'a jamais ce champ (null), pas de ligne à zéro trompeuse.
+// vente sur 90j (cf. mémoire projet "liquidity_sell_through") -- sinon la
+// carte n'a jamais ce champ (null), pas de ligne à zéro trompeuse.
 export interface LiquidityCalc {
   capturedAt: string;
   listingCount: number;
@@ -223,6 +223,23 @@ export interface LiquidityCalc {
   // ventes30j / (ventes30j + encore en vente) -- borné [0,1], null si les
   // deux valent 0 (jamais le cas ici vu le gate salesCount90d > 0 en amont,
   // mais le type reste honnête sur le cas limite).
+  sellThroughRate30d: number | null;
+}
+
+// Ligne de classement /liquidity -- même LiquidityCalc + identité carte,
+// même duplication volontaire que UndervaluedRow/DivergenceRow vs leurs
+// Calc respectifs (contexte page liste vs contexte fiche déjà identifiée).
+export interface LiquidityRow {
+  itemId: number;
+  name: string;
+  imageUrl: string | null;
+  tcg: Tcg;
+  language: string;
+  setCode: string | null;
+  capturedAt: string;
+  listingCount: number;
+  salesCount30d: number;
+  salesCount90d: number;
   sellThroughRate30d: number | null;
 }
 

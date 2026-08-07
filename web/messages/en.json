@@ -11,6 +11,7 @@
     "undervalued": "Undervalued Cards",
     "gradingRoi": "Grading ROI",
     "divergence": "Divergence",
+    "liquidity": "Liquidity",
     "live": "Live Market Data",
     "footer": "Public data · transparent methodology",
     "themeToLight": "Switch to light mode",
@@ -315,6 +316,30 @@
       "noData": "Not enough sales over this period",
       "salesCount": "{count, plural, one {# sale} other {# sales}}",
       "indexedNote": "(indexed, real values on hover)"
+    }
+  },
+  "liquidity": {
+    "title": "Liquidity",
+    "description": "Sell-through rate: how much of this card actually sold recently (30-day sales) versus how much is still listed on eBay. Not an order book (eBay only has asking prices, no buy-side depth) -- a stock-pressure signal, retail/resale style.",
+    "methodologyLabel": "Methodology:",
+    "methodology": "sell-through rate = sales_30d / (sales_30d + active_listings). Current scope: Pokémon EN sealed only, recent sets, and only items with both an eBay snapshot and at least one sale in the last 90 days -- ~146 items today.",
+    "count": "{count} cards",
+    "emptyTitle": "No data yet",
+    "emptyDescription": "No item currently has both active eBay listings and recent sales.",
+    "table": {
+      "card": "Card",
+      "language": "Language",
+      "tcg": "TCG",
+      "listingCount": "Still listed",
+      "sales30d": "Sold (30d)",
+      "sellThrough": "Sell-through rate"
+    },
+    "modal": {
+      "close": "Close",
+      "listingCount": "Still listed (eBay)",
+      "sales30d": "Sold (30d)",
+      "sales90d": "Sold (90d)",
+      "sellThrough": "Sell-through rate (30d)"
     }
   },
   "catalog": {

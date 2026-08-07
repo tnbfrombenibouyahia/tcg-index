@@ -11,6 +11,7 @@
     "undervalued": "Cartes sous-évaluées",
     "gradingRoi": "ROI de gradation",
     "divergence": "Divergences",
+    "liquidity": "Liquidité",
     "live": "Live Market Data",
     "footer": "Données publiques · méthodologie transparente",
     "themeToLight": "Passer en mode clair",
@@ -315,6 +316,30 @@
       "noData": "Pas assez de ventes sur cette période",
       "salesCount": "{count, plural, one {# vente} other {# ventes}}",
       "indexedNote": "(indexé, valeurs réelles au survol)"
+    }
+  },
+  "liquidity": {
+    "title": "Liquidité",
+    "description": "Taux d'écoulement : combien de cette carte s'est vendu récemment (ventes 30j) par rapport à combien en reste encore en vente sur eBay. Pas un carnet d'ordres (eBay n'a que des prix demandés, pas de profondeur d'achat) -- un signal de pression de stock, façon retail/resale.",
+    "methodologyLabel": "Méthodologie :",
+    "methodology": "taux d'écoulement = ventes_30j / (ventes_30j + annonces_actives). Scope actuel : scellé Pokémon EN uniquement, sets récents, et seulement les items ayant à la fois un instantané eBay et au moins une vente sur 90 jours -- ~146 items aujourd'hui.",
+    "count": "{count} cartes",
+    "emptyTitle": "Pas encore de données",
+    "emptyDescription": "Aucun item n'a encore à la fois des annonces eBay actives et des ventes récentes.",
+    "table": {
+      "card": "Carte",
+      "language": "Langue",
+      "tcg": "TCG",
+      "listingCount": "Encore en vente",
+      "sales30d": "Vendues (30j)",
+      "sellThrough": "Taux d'écoulement"
+    },
+    "modal": {
+      "close": "Fermer",
+      "listingCount": "Encore en vente (eBay)",
+      "sales30d": "Vendues (30j)",
+      "sales90d": "Vendues (90j)",
+      "sellThrough": "Taux d'écoulement (30j)"
     }
   },
   "catalog": {

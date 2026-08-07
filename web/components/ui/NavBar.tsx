@@ -19,6 +19,7 @@ export async function NavBar() {
     { href: "/undervalued", label: t("undervalued"), icon: <TrendingUpIcon /> },
     { href: "/grading-roi", label: t("gradingRoi"), icon: <GradingRoiIcon /> },
     { href: "/divergence", label: t("divergence"), icon: <DivergenceIcon /> },
+    { href: "/liquidity", label: t("liquidity"), icon: <LiquidityIcon /> },
     { href: "/live", label: t("live"), icon: <PulseIcon /> },
   ];
 
@@ -204,6 +205,17 @@ function DivergenceIcon() {
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 17c4-9 6-9 9 0" />
       <path d="M12 17c2-5 4-9 9-13" />
+    </svg>
+  );
+}
+function LiquidityIcon() {
+  // Stock (barre pleine, en train de se vider) vs flux (flèche sortante) --
+  // pas une jauge de vitesse, un stock qui s'écoule.
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="7" height="16" rx="1" />
+      <path d="M14 9h7" />
+      <path d="M17 6l4 3-4 3" />
     </svg>
   );
 }

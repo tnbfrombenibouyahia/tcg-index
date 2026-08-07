@@ -11,6 +11,7 @@
     "undervalued": "Cartas infravaloradas",
     "gradingRoi": "ROI de gradación",
     "divergence": "Divergencias",
+    "liquidity": "Liquidez",
     "live": "Live Market Data",
     "footer": "Datos públicos · metodología transparente",
     "themeToLight": "Cambiar a modo claro",
@@ -315,6 +316,30 @@
       "noData": "No hay suficientes ventas en este período",
       "salesCount": "{count, plural, one {# venta} other {# ventas}}",
       "indexedNote": "(indexado, valores reales al pasar el cursor)"
+    }
+  },
+  "liquidity": {
+    "title": "Liquidez",
+    "description": "Tasa de rotación: cuánto se vendió realmente esta carta hace poco (ventas de 30 días) frente a cuánto queda todavía en venta en eBay. No es un libro de órdenes (eBay solo tiene precios de venta, sin profundidad de compra) -- una señal de presión de stock, al estilo retail/reventa.",
+    "methodologyLabel": "Metodología:",
+    "methodology": "tasa de rotación = ventas_30d / (ventas_30d + anuncios_activos). Alcance actual: solo scellé Pokémon EN, sets recientes, y solo items con un instantáneo de eBay Y al menos una venta en los últimos 90 días -- ~146 items hoy.",
+    "count": "{count} cartas",
+    "emptyTitle": "Aún no hay datos",
+    "emptyDescription": "Ningún item tiene todavía a la vez anuncios activos en eBay y ventas recientes.",
+    "table": {
+      "card": "Carta",
+      "language": "Idioma",
+      "tcg": "TCG",
+      "listingCount": "Todavía en venta",
+      "sales30d": "Vendidas (30d)",
+      "sellThrough": "Tasa de rotación"
+    },
+    "modal": {
+      "close": "Cerrar",
+      "listingCount": "Todavía en venta (eBay)",
+      "sales30d": "Vendidas (30d)",
+      "sales90d": "Vendidas (90d)",
+      "sellThrough": "Tasa de rotación (30d)"
     }
   },
   "catalog": {
