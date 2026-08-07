@@ -340,6 +340,10 @@
       "sales30d": "Sold (30d)",
       "sales90d": "Sold (90d)",
       "sellThrough": "Sell-through rate (30d)",
+      "sold30dLabel": "{count, plural, one {# sold (30d)} other {# sold (30d)}}",
+      "stillListedLabel": "{count, plural, one {# still listed} other {# still listed}}",
+      "daysToClear": "At the current pace, it would take about {days, plural, one {# day} other {# days}} to sell through the listed stock.",
+      "noRecentSales": "No sales in the last 30 days -- current stock would be slow to clear at this pace.",
       "chartTitle": "Daily sales",
       "loading": "Loading..."
     }
@@ -396,7 +400,6 @@
     "liquidityDescription": "How much of this card is actually selling (recent sales) versus how much is still sitting on the market (active eBay listings) — not an order book, a sell-through rate.",
     "liquidityListingCount": "Still listed (eBay)",
     "liquiditySales30d": "Sold (30d)",
-    "liquiditySales90d": "Sold (90d)",
-    "liquiditySellThrough": "Sell-through rate (30d)"
+    "liquiditySales90d": "Sold (90d)"
   }
 }

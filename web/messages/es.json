@@ -340,6 +340,10 @@
       "sales30d": "Vendidas (30d)",
       "sales90d": "Vendidas (90d)",
       "sellThrough": "Tasa de rotación (30d)",
+      "sold30dLabel": "{count, plural, one {# vendida (30d)} other {# vendidas (30d)}}",
+      "stillListedLabel": "{count, plural, one {# todavía en venta} other {# todavía en venta}}",
+      "daysToClear": "Al ritmo actual, tardaría unos {days, plural, one {# día} other {# días}} en agotarse el stock listado.",
+      "noRecentSales": "Sin ventas en los últimos 30 días -- el stock actual tardaría en agotarse a este ritmo.",
       "chartTitle": "Ventas diarias",
       "loading": "Cargando..."
     }
@@ -396,7 +400,6 @@
     "liquidityDescription": "Cuánto se vende realmente esta carta (ventas recientes) frente a cuánto queda todavía en venta (anuncios activos en eBay) — no es un libro de órdenes, es una tasa de rotación.",
     "liquidityListingCount": "Todavía en venta (eBay)",
     "liquiditySales30d": "Vendidas (30d)",
-    "liquiditySales90d": "Vendidas (90d)",
-    "liquiditySellThrough": "Tasa de rotación (30d)"
+    "liquiditySales90d": "Vendidas (90d)"
   }
 }

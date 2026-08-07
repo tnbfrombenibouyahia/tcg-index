@@ -6,6 +6,7 @@ import type { DailyTimelinePoint, LiquidityRow } from "@/lib/types";
 import { DIVERGENCE_WINDOWS, type DivergenceWindowDays } from "@/lib/constants";
 import { LanguageFlag } from "@/components/ui/LanguageFlag";
 import { PriceVolumeChart } from "@/components/divergence/PriceVolumeChart";
+import { StockFlowBar } from "./StockFlowBar";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Modale ouverte au clic sur une ligne du classement /liquidity -- même
@@ -118,14 +119,7 @@ export function LiquidityModal({ row, onClose }: { row: LiquidityRow; onClose: (
                 ))}
               </div>
 
-              {row.sellThroughRate30d != null && (
-                <div className="mt-4 flex items-center gap-2 rounded-lg bg-muted/40 px-3 py-2">
-                  <span className="text-xs text-muted-foreground">{t("sellThrough")}</span>
-                  <span className="text-base font-bold tabular-nums">
-                    {(row.sellThroughRate30d * 100).toFixed(0)}%
-                  </span>
-                </div>
-              )}
+              <StockFlowBar listingCount={row.listingCount} salesCount30d={row.salesCount30d} />
             </div>
           </div>
         </div>

@@ -20,6 +20,7 @@ import { ReliabilityBars } from "@/components/sealed-ev/ReliabilityBars";
 import { SalesHistoryChart } from "@/components/undervalued/SalesHistoryChart";
 import { PriceHistoryPanel } from "@/components/catalog/PriceHistoryPanel";
 import { DivergencePanel } from "@/components/catalog/DivergencePanel";
+import { StockFlowBar } from "@/components/liquidity/StockFlowBar";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Fiche carte / "analyse totale" (demande utilisateur) : point d'arrivée de
@@ -351,12 +352,7 @@ function LiquidityBlock({
           </div>
         ))}
       </div>
-      {calc.sellThroughRate30d != null && (
-        <div className="mt-4 flex items-center gap-2 rounded-lg bg-muted/40 px-3 py-2">
-          <span className="text-xs text-muted-foreground">{t("liquiditySellThrough")}</span>
-          <span className="text-base font-bold tabular-nums">{(calc.sellThroughRate30d * 100).toFixed(0)}%</span>
-        </div>
-      )}
+      <StockFlowBar listingCount={calc.listingCount} salesCount30d={calc.salesCount30d} />
     </div>
   );
 }

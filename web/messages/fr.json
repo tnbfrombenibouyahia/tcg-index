@@ -340,6 +340,10 @@
       "sales30d": "Vendues (30j)",
       "sales90d": "Vendues (90j)",
       "sellThrough": "Taux d'écoulement (30j)",
+      "sold30dLabel": "{count, plural, one {# vendue (30j)} other {# vendues (30j)}}",
+      "stillListedLabel": "{count, plural, one {# encore en vente} other {# encore en vente}}",
+      "daysToClear": "Au rythme actuel, il faudrait environ {days, plural, one {# jour} other {# jours}} pour écouler le stock affiché.",
+      "noRecentSales": "Aucune vente sur les 30 derniers jours -- stock actuel difficile à écouler à ce rythme.",
       "chartTitle": "Ventes quotidiennes",
       "loading": "Chargement..."
     }
@@ -396,7 +400,6 @@
     "liquidityDescription": "Combien de cette carte se vend réellement (ventes récentes) par rapport à combien en reste encore en vente (annonces eBay actives) — pas un carnet d'ordres, un taux d'écoulement.",
     "liquidityListingCount": "Encore en vente (eBay)",
     "liquiditySales30d": "Vendues (30j)",
-    "liquiditySales90d": "Vendues (90j)",
-    "liquiditySellThrough": "Taux d'écoulement (30j)"
+    "liquiditySales90d": "Vendues (90j)"
   }
 }
