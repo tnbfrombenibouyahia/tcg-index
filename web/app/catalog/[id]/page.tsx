@@ -11,7 +11,7 @@ import {
   type GradingRoiResult,
 } from "@/lib/gradingRoi";
 import { GRADES, GRADE_LABELS } from "@/lib/constants";
-import type { SealedEvCalc, UndervaluedCalc } from "@/lib/types";
+import type { LiquidityCalc, SealedEvCalc, UndervaluedCalc } from "@/lib/types";
 import { formatDate, formatUsd } from "@/lib/format";
 import { LanguageFlag } from "@/components/ui/LanguageFlag";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -155,6 +155,15 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
       {item.sealedEv && (
         <Section title={t("sealedEvTitle")} link={{ href: "/sealed-ev", label: t("seeMethodology") }}>
           <SealedEvBlock calc={item.sealedEv} t={tSealedEv} />
+        </Section>
+      )}
+
+      {/* Liquidité : stock (annonces eBay actives) vs flux (ventes récentes) --
+          scellé EN uniquement pour l'instant, et seulement si les deux
+          signaux existent (cf. getItemById), pas de section vide affichée. */}
+      {item.liquidity && (
+        <Section title={t("liquidityTitle")}>
+          <LiquidityBlock calc={item.liquidity} t={t} />
         </Section>
       )}
 
@@ -313,6 +322,41 @@ function SealedEvBlock({
         </div>
         <ReliabilityBars score={calc.boxReliabilityScore} salesUsed={calc.boxSalesUsed} />
       </div>
+    </div>
+  );
+}
+
+// ── Liquidité : taux d'écoulement (stock eBay vs ventes récentes) ──────────
+function LiquidityBlock({
+  calc,
+  t,
+}: {
+  calc: LiquidityCalc;
+  t: Awaited<ReturnType<typeof getTranslations>>;
+}) {
+  const stats: { label: string; value: string }[] = [
+    { label: t("liquidityListingCount"), value: String(calc.listingCount) },
+    { label: t("liquiditySales30d"), value: String(calc.salesCount30d) },
+    { label: t("liquiditySales90d"), value: String(calc.salesCount90d) },
+  ];
+
+  return (
+    <div>
+      <p className="mb-4 text-xs text-muted-foreground">{t("liquidityDescription")}</p>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {stats.map((s) => (
+          <div key={s.label}>
+            <p className="text-[11px] text-muted-foreground">{s.label}</p>
+            <p className="text-sm font-semibold tabular-nums">{s.value}</p>
+          </div>
+        ))}
+      </div>
+      {calc.sellThroughRate30d != null && (
+        <div className="mt-4 flex items-center gap-2 rounded-lg bg-muted/40 px-3 py-2">
+          <span className="text-xs text-muted-foreground">{t("liquiditySellThrough")}</span>
+          <span className="text-base font-bold tabular-nums">{(calc.sellThroughRate30d * 100).toFixed(0)}%</span>
+        </div>
+      )}
     </div>
   );
 }

@@ -364,6 +364,12 @@
     "gradingRoiCost": "Coût total",
     "gradingRoiProfit": "Profit net",
     "gradingRoiLabel": "ROI espéré",
-    "seeMethodology": "Voir la méthodologie complète"
+    "seeMethodology": "Voir la méthodologie complète",
+    "liquidityTitle": "Liquidité",
+    "liquidityDescription": "Combien de cette carte se vend réellement (ventes récentes) par rapport à combien en reste encore en vente (annonces eBay actives) — pas un carnet d'ordres, un taux d'écoulement.",
+    "liquidityListingCount": "Encore en vente (eBay)",
+    "liquiditySales30d": "Vendues (30j)",
+    "liquiditySales90d": "Vendues (90j)",
+    "liquiditySellThrough": "Taux d'écoulement (30j)"
   }
 }

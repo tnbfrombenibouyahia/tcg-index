@@ -74,6 +74,16 @@ CREATE TABLE sales (
 CREATE INDEX IF NOT EXISTS idx_sales_grade_date
     ON sales (grade, sale_date) STORING (item_id, price);
 
+-- Requêtes bornées à UN item (fiche produit /catalog/[id] : historique de
+-- ventes + fenêtre 30/90j pour le bloc "Liquidité", cf. mémoire projet
+-- "pokecardex_image_source" § liquidité/sell-through) filtrent par item_id
+-- + sale_date -- aucun des index ci-dessus n'a item_id en tête, donc plein
+-- scan des 1M+ lignes à chaque chargement de fiche (confirmé par EXPLAIN,
+-- 2026-08-07). STORING (price, grade, marketplace) évite le lookup table
+-- principale pour les colonnes déjà affichées par ces deux usages.
+CREATE INDEX IF NOT EXISTS idx_sales_item_date
+    ON sales (item_id, sale_date DESC) STORING (price, grade, marketplace);
+
 -- Supply active (pas un prix/une transaction) : comptage de listings actifs
 -- (auction + fixed-price) par item, proxy de pression vendeuse ("combien de
 -- gens essaient de se débarrasser de l'objet" -- demande utilisateur du

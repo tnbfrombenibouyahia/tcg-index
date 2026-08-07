@@ -208,9 +208,28 @@ export interface SealedEvCalc {
   evRatioTop10: number;
 }
 
+// "Stock vs flux" : combien de cette carte est encore en vente (dernier
+// instantané eBay, active_listings) vs combien s'est réellement vendu
+// récemment (sales) -- PAS un carnet d'ordres (pas de bid/ask, eBay n'a que
+// des prix demandés), plutôt un taux d'écoulement façon retail/resale.
+// N'existe que pour le scellé EN couvert par active_listings ET avec ≥1
+// vente sur 90j (cf. mémoire projet "pokecardex_image_source" §liquidité) --
+// sinon la carte n'a jamais ce champ (null), pas de ligne à zéro trompeuse.
+export interface LiquidityCalc {
+  capturedAt: string;
+  listingCount: number;
+  salesCount30d: number;
+  salesCount90d: number;
+  // ventes30j / (ventes30j + encore en vente) -- borné [0,1], null si les
+  // deux valent 0 (jamais le cas ici vu le gate salesCount90d > 0 en amont,
+  // mais le type reste honnête sur le cas limite).
+  sellThroughRate30d: number | null;
+}
+
 export interface ItemDetail extends ItemSummary {
   releaseDate: string | null;
   latestPrices: ItemPriceEntry[];
   undervalued: UndervaluedCalc | null;
   sealedEv: SealedEvCalc | null;
+  liquidity: LiquidityCalc | null;
 }

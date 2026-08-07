@@ -1,5 +1,5 @@
 import sql from "@/lib/db";
-import type { ItemDetail, ItemPriceEntry, SealedEvCalc, UndervaluedCalc } from "@/lib/types";
+import type { ItemDetail, ItemPriceEntry, LiquidityCalc, SealedEvCalc, UndervaluedCalc } from "@/lib/types";
 import type { Grade, Tcg } from "@/lib/constants";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -25,8 +25,15 @@ interface ItemRow {
   releaseDate: string | null;
 }
 
+interface LiquidityRow {
+  capturedAt: string;
+  listingCount: number;
+  salesCount30d: number;
+  salesCount90d: number;
+}
+
 export async function getItemById(itemId: number): Promise<ItemDetail | null> {
-  const [itemRows, priceRows, undervaluedRows, sealedEvRows] = await Promise.all([
+  const [itemRows, priceRows, undervaluedRows, sealedEvRows, liquidityRows] = await Promise.all([
     sql<ItemRow[]>`
       SELECT
         id::int4 AS id, name, tcg, category,
@@ -80,10 +87,57 @@ export async function getItemById(itemId: number): Promise<ItemDetail | null> {
       ORDER BY captured_at DESC
       LIMIT 1
     `,
+    // Dernier instantané `active_listings` (stock) + comptage `sales` sur
+    // 30j/90j (flux) en un aller-retour -- `latest_listing` n'a une ligne
+    // que si l'item a jamais été synchronisé côté eBay (scellé EN, cf.
+    // ebay.py), donc pas de ligne du tout = pas de bloc Liquidité affiché
+    // (géré ci-dessous, pas ici). `sales_counts` a toujours exactement une
+    // ligne (agrégat avec FILTER), d'où le LEFT JOIN ON true plutôt qu'un
+    // JOIN classique qui perdrait `latest_listing` si aucune vente récente.
+    sql<LiquidityRow[]>`
+      WITH latest_listing AS (
+        SELECT captured_at, listing_count
+        FROM active_listings
+        WHERE item_id = ${itemId}
+        ORDER BY captured_at DESC
+        LIMIT 1
+      ), sales_counts AS (
+        SELECT
+          count(*) FILTER (WHERE sale_date >= current_date - interval '30 days') AS sales_30d,
+          count(*) FILTER (WHERE sale_date >= current_date - interval '90 days') AS sales_90d
+        FROM sales
+        WHERE item_id = ${itemId} AND sale_date >= current_date - interval '90 days'
+      )
+      SELECT
+        latest_listing.captured_at::text AS "capturedAt",
+        latest_listing.listing_count::int4 AS "listingCount",
+        COALESCE(sales_counts.sales_30d, 0)::int4 AS "salesCount30d",
+        COALESCE(sales_counts.sales_90d, 0)::int4 AS "salesCount90d"
+      FROM latest_listing
+      LEFT JOIN sales_counts ON true
+    `,
   ]);
 
   const item = itemRows[0];
   if (!item) return null;
+
+  // Bloc affiché seulement quand les deux signaux existent pour cet item
+  // (stock ET flux) -- sinon un ratio à 0% serait trompeur (pas "personne
+  // n'achète", juste "pas encore mesuré"), cf. discussion feature liquidité.
+  const liquidityRow = liquidityRows[0];
+  const liquidity: LiquidityCalc | null =
+    liquidityRow && liquidityRow.salesCount90d > 0
+      ? {
+          capturedAt: liquidityRow.capturedAt,
+          listingCount: liquidityRow.listingCount,
+          salesCount30d: liquidityRow.salesCount30d,
+          salesCount90d: liquidityRow.salesCount90d,
+          sellThroughRate30d:
+            liquidityRow.salesCount30d + liquidityRow.listingCount > 0
+              ? liquidityRow.salesCount30d / (liquidityRow.salesCount30d + liquidityRow.listingCount)
+              : null,
+        }
+      : null;
 
   return {
     id: item.id,
@@ -99,6 +153,7 @@ export async function getItemById(itemId: number): Promise<ItemDetail | null> {
     latestPrices: priceRows.map((r) => ({ ...r, grade: r.grade as Grade })),
     undervalued: undervaluedRows[0] ?? null,
     sealedEv: sealedEvRows[0] ?? null,
+    liquidity,
   };
 }
 

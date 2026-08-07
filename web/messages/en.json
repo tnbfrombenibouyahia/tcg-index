@@ -364,6 +364,12 @@
     "gradingRoiCost": "Total cost",
     "gradingRoiProfit": "Net profit",
     "gradingRoiLabel": "Expected ROI",
-    "seeMethodology": "See full methodology"
+    "seeMethodology": "See full methodology",
+    "liquidityTitle": "Liquidity",
+    "liquidityDescription": "How much of this card is actually selling (recent sales) versus how much is still sitting on the market (active eBay listings) — not an order book, a sell-through rate.",
+    "liquidityListingCount": "Still listed (eBay)",
+    "liquiditySales30d": "Sold (30d)",
+    "liquiditySales90d": "Sold (90d)",
+    "liquiditySellThrough": "Sell-through rate (30d)"
   }
 }

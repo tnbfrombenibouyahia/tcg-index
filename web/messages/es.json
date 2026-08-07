@@ -364,6 +364,12 @@
     "gradingRoiCost": "Coste total",
     "gradingRoiProfit": "Beneficio neto",
     "gradingRoiLabel": "ROI esperado",
-    "seeMethodology": "Ver la metodología completa"
+    "seeMethodology": "Ver la metodología completa",
+    "liquidityTitle": "Liquidez",
+    "liquidityDescription": "Cuánto se vende realmente esta carta (ventas recientes) frente a cuánto queda todavía en venta (anuncios activos en eBay) — no es un libro de órdenes, es una tasa de rotación.",
+    "liquidityListingCount": "Todavía en venta (eBay)",
+    "liquiditySales30d": "Vendidas (30d)",
+    "liquiditySales90d": "Vendidas (90d)",
+    "liquiditySellThrough": "Tasa de rotación (30d)"
   }
 }
