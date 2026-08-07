@@ -164,6 +164,7 @@ _UPSERT_ACTIVE_LISTINGS_SQL = """
 
 def sync_active_listings_for_tcg(
     tcg: str, category: str = "sealed", since_months: int | None = 18, max_items: int | None = None,
+    language: str = "EN",
 ) -> dict:
     """Comptage de listings actifs par item scellé, alimente `active_listings`.
 
@@ -174,6 +175,12 @@ def sync_active_listings_for_tcg(
     "phased_by_tcg") -- les singles ont pourtant une précision mesurée à 98%
     (probe_ebay.py), mais élargir le scope est une décision à prendre
     explicitement, pas un effet de bord de ce commit.
+
+    `language` : 'EN' par défaut, 'JP' activé pour One Piece le 2026-08-07
+    après validation (`probe_ebay.py --language JP` -- singles 135/136,
+    Booster Box JP échantillonnées toutes non-nulles). Les items JP ont leur
+    propre item_id (nom différent, ex. "... Booster Box [JP]"), donc aucun
+    changement de schéma nécessaire -- juste un filtre `language` de plus.
 
     Pour chaque item, somme CCG Sealed Packs + CCG Sealed Boxes (2 requêtes) :
     impossible de router de façon fiable vers une seule des deux catégories à
@@ -187,8 +194,8 @@ def sync_active_listings_for_tcg(
     conn = get_connection()
     try:
         with conn.cursor() as cur:
-            where = ["tcg = %s", "category = %s", "language = 'EN'"]
-            params: list = [tcg, category]
+            where = ["tcg = %s", "category = %s", "language = %s"]
+            params: list = [tcg, category, language]
             if since_months:
                 where.append("release_date >= (CURRENT_DATE - %s * INTERVAL '1 month')")
                 params.append(since_months)
@@ -200,7 +207,7 @@ def sync_active_listings_for_tcg(
 
         if max_items is not None:
             items = items[:max_items]
-        print(f"{len(items)} item(s) éligibles pour tcg={tcg}, category={category} (max_items={max_items}).")
+        print(f"{len(items)} item(s) éligibles pour tcg={tcg}, category={category}, language={language} (max_items={max_items}).")
 
         today = date.today()
         # Batch vidé après chaque flush (contrairement à un simple compteur
@@ -241,6 +248,7 @@ def sync_active_listings_for_tcg(
     return {
         "tcg": tcg,
         "category": category,
+        "language": language,
         "items_processed": len(items),
         "rows_written": rows_written,
         "errors": errors,
@@ -256,6 +264,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--tcg", default="pokemon")
     parser.add_argument("--category", default="sealed")
+    parser.add_argument("--language", default="EN")
     parser.add_argument("--since-months", type=int, default=18)
     parser.add_argument("--max-items", type=int, default=None)
     args = parser.parse_args()
@@ -263,10 +272,11 @@ def main():
 
     print(
         f"== Sync active_listings pour tcg={args.tcg} "
-        f"(category={args.category}, since_months={since_months}, max_items={args.max_items}) =="
+        f"(category={args.category}, language={args.language}, since_months={since_months}, max_items={args.max_items}) =="
     )
     stats = sync_active_listings_for_tcg(
         args.tcg, category=args.category, since_months=since_months, max_items=args.max_items,
+        language=args.language,
     )
     print(f"\nTerminé : {stats}")
 

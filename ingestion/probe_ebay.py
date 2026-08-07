@@ -28,7 +28,6 @@ from shared.db import get_connection
 load_dotenv()
 
 REPORT_DIR = Path(__file__).parent / "_probe_output"
-REPORT_FILE = REPORT_DIR / "ebay_report.json"
 
 DEFAULT_SAMPLE_SIZE = 15
 # Même fenêtre que le scope JustTCG (cf. mémoire projet "price_sync_scope") --
@@ -36,12 +35,12 @@ DEFAULT_SAMPLE_SIZE = 15
 DEFAULT_SINCE_MONTHS = 18
 
 
-def _sample_items(tcg: str, single: bool, since_months: int | None, sample_size: int) -> list[dict]:
+def _sample_items(tcg: str, single: bool, since_months: int | None, sample_size: int, language: str = "EN") -> list[dict]:
     conn = get_connection()
     try:
         with conn.cursor() as cur:
-            where = ["tcg = %s", "language = 'EN'"]
-            params: list = [tcg]
+            where = ["tcg = %s", "language = %s"]
+            params: list = [tcg, language]
             where.append("category = 'single'" if single else "category != 'single'")
             if since_months:
                 where.append("release_date >= (CURRENT_DATE - %s * INTERVAL '1 month')")
@@ -99,6 +98,7 @@ def _probe_sealed(items: list[dict]) -> list[dict]:
 def _parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--tcg", default="pokemon")
+    parser.add_argument("--language", default="EN", help="EN ou JP -- items.language (cf. mémoire projet jp_sealed/jp_singles_tracking).")
     parser.add_argument("--sample-size", type=int, default=DEFAULT_SAMPLE_SIZE)
     parser.add_argument("--since-months", type=int, default=DEFAULT_SINCE_MONTHS)
     return parser.parse_args()
@@ -108,20 +108,23 @@ def main():
     args = _parse_args()
     REPORT_DIR.mkdir(exist_ok=True)
 
-    print(f"== singles ({args.tcg}, since_months={args.since_months}) ==")
-    singles = _sample_items(args.tcg, single=True, since_months=args.since_months, sample_size=args.sample_size)
+    print(f"== singles ({args.tcg}, language={args.language}, since_months={args.since_months}) ==")
+    singles = _sample_items(args.tcg, single=True, since_months=args.since_months, sample_size=args.sample_size, language=args.language)
     if not singles:
         print("  ! aucun single trouvé pour ce scope")
     singles_results = _probe_singles(singles)
 
-    print(f"\n== scellé ({args.tcg}, since_months={args.since_months}) ==")
-    sealed = _sample_items(args.tcg, single=False, since_months=args.since_months, sample_size=args.sample_size)
+    print(f"\n== scellé ({args.tcg}, language={args.language}, since_months={args.since_months}) ==")
+    sealed = _sample_items(args.tcg, single=False, since_months=args.since_months, sample_size=args.sample_size, language=args.language)
     if not sealed:
         print("  ! aucun scellé trouvé pour ce scope")
     sealed_results = _probe_sealed(sealed)
 
-    report = {"tcg": args.tcg, "singles": singles_results, "sealed": sealed_results}
-    REPORT_FILE.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+    report = {"tcg": args.tcg, "language": args.language, "singles": singles_results, "sealed": sealed_results}
+    # Un fichier par (tcg, language) -- sinon un probe JP écraserait le
+    # rapport EN déjà commité (cf. git log ingestion/_probe_output).
+    report_file = REPORT_DIR / f"ebay_report_{args.tcg}_{args.language.lower()}.json"
+    report_file.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
 
     print("\n=== Synthèse ===")
     with_code = [r for r in singles_results if r["code"]]
@@ -136,7 +139,7 @@ def main():
     if sealed_results:
         zero_total = sum(1 for r in sealed_results if r["total"] == 0)
         print(f"Scellé : {len(sealed_results)} produits testés, {zero_total} avec total=0.")
-    print(f"\nDétail complet : {REPORT_FILE}")
+    print(f"\nDétail complet : {report_file}")
 
 
 if __name__ == "__main__":

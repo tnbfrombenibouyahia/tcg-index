@@ -228,37 +228,55 @@ def run_price_sync(tier: str | None, run_type: str) -> list[dict]:
     return errors
 
 
+
+# (tcg, language, since_months) -- `since_months=None` = pas de filtre
+# d'âge. Pokémon EN garde 18 mois : fenêtre héritée telle quelle du scope
+# JustTCG/price_sync_scope (motivé par un quota qui n'existe pas côté
+# eBay), pas remise en question quand One Piece a été ajouté le 2026-08-07.
+# One Piece EN élargi à tout le catalogue le même jour (627 items scellés
+# EN tous âges = 1254 requêtes, largement sous les 5000/jour ; élargir
+# aussi Pokémon dépasserait le quota en un seul run -- 4737 items = 9474
+# requêtes -- à traiter séparément si demandé, probablement en le
+# découpant plutôt qu'en le retirant complètement). One Piece JP ajouté le
+# même jour après validation (`probe_ebay.py --tcg one-piece --language JP` --
+# singles 135/136, Booster Box JP échantillonnées toutes non-nulles) --
+# Pokémon JP pas demandé, pas ajouté.
+EBAY_SYNC_JOBS: list[tuple[str, str, int | None]] = [
+    ("pokemon", "EN", 18),
+    ("one-piece", "EN", None),
+    ("one-piece", "JP", None),
+]
+
+
 def run_ebay_listings_sync(run_type: str) -> None:
     """Comptage de listings actifs eBay (pression vendeuse, cf. mémoire projet
     "ebay_active_listings" -- nouvelle dimension "supply", pas un prix).
 
     Les deux TCG désormais couverts : Pokémon (v1, 2026-08-06) puis One Piece
-    (2026-08-07, `python -m ingestion.probe_ebay --tcg one-piece` --
-    singles 145/146 titres confirment le numéro demandé, scellé 7/15 avec un
-    total non-nul mais les 8 à zéro sont tous des "DON!! Card (X) (Gold)"
-    (promos, catégorie à part -- pas un raté de matching) ; les vrais
-    produits scellés (Booster Box, Starter Deck, Double Pack Set...)
-    remontent tous un comptage plausible). Scellé + sets récents (même
-    filtre que price_sync_scope/JustTCG). Erreur sur un TCG isolée (cf.
-    `run_items_sync`) : n'empêche pas l'autre de tourner. Ce n'est pas une
-    contrainte de quota (5000 req/jour eBay est large, cf. ebay.py) -- juste
-    la même prudence "valider avant d'élargir" que le reste du projet, cf.
-    mémoire "phased_by_tcg". Appelé séparément du run quotidien/--tier (cf.
-    `main`, flag `--ebay-listings`) : nouvelle source, cadence hebdomadaire,
-    sans lien avec le système de paliers PriceCharting (TIERS ci-dessus,
-    propre à un tout autre coût de requête)."""
+    EN+JP (2026-08-07, cf. `EBAY_SYNC_JOBS` pour le détail des validations
+    -- singles 99%+ de précision de matching des deux côtés, scellé plausible
+    sur les vrais produits, les zéros observés étant des catégories eBay
+    réellement vides plutôt que des ratés de matching, cf.
+    ingestion/_probe_output/ebay_report_*.json). Erreur sur un job isolée
+    (cf. `run_items_sync`) : n'empêche pas les autres de tourner. Ce n'est
+    pas une contrainte de quota (5000 req/jour eBay est large, cf. ebay.py)
+    -- juste la même prudence "valider avant d'élargir" que le reste du
+    projet, cf. mémoire "phased_by_tcg". Appelé séparément du run quotidien/
+    --tier (cf. `main`, flag `--ebay-listings`) : nouvelle source, cadence
+    hebdomadaire, sans lien avec le système de paliers PriceCharting (TIERS
+    ci-dessus, propre à un tout autre coût de requête)."""
     print("\n=== eBay : listings actifs (scellé) ===")
-    for tcg in TCGS:
-        print(f"-- {tcg} --")
+    for tcg, language, since_months in EBAY_SYNC_JOBS:
+        print(f"-- {tcg} / {language} --")
         run_id = start_run(run_type, "active_listings", tcg=tcg)
         try:
-            stats = ebay.sync_active_listings_for_tcg(tcg)
+            stats = ebay.sync_active_listings_for_tcg(tcg, since_months=since_months, language=language)
         except Exception as exc:
             finish_run(run_id, status="error", detail=str(exc))
             print(f"  ! erreur : {exc}")
             continue
         n_errors = len(stats["errors"])
-        detail = f"{stats['items_processed']} item(s), {stats['rows_written']} ligne(s)"
+        detail = f"{language} : {stats['items_processed']} item(s), {stats['rows_written']} ligne(s)"
         if n_errors:
             detail += f", {n_errors} erreur(s)"
         print(f"  {detail}")

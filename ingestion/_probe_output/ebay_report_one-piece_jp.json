@@ -1,0 +1,411 @@
+{
+  "tcg": "one-piece",
+  "language": "JP",
+  "singles": [
+    {
+      "item_id": 235918,
+      "name": "Domino",
+      "code": "OP02-081",
+      "set_code": "one-piece-paramount-war",
+      "total_ungraded": 80,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Domino - OP02-081 - C - Near Mint",
+        "Domino C Paramount War OP02-081 NM",
+        "DOMINO OP02-081 C OP02 ONE PIECE NM/M",
+        "Domino OP02-081",
+        "DOMINO OP02-081 C PARAMOUNT WAR ONE PIECE NM"
+      ]
+    },
+    {
+      "item_id": 235873,
+      "name": "Inuarashi",
+      "code": "OP02-027",
+      "set_code": "one-piece-paramount-war",
+      "total_ungraded": 68,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Inuarashi - OP02-027 - UC - Near Mint",
+        "Inuarashi UC Paramount War OP02-027 NM",
+        "Inuarashi UC Paramount War Pre-Release Cards OP02-027 NM",
+        "Inuarashi OP02-027 UC Paramount War One Piece JPN japanese NM first edition",
+        "Inuarashi - OP02-027 - NM - One Piece TCG English"
+      ]
+    },
+    {
+      "item_id": 237788,
+      "name": "Sanji",
+      "code": "OP06-119",
+      "set_code": "one-piece-wings-of-the-captain",
+      "total_ungraded": 650,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Sanji OP06-119 Wings of the Captain Foil",
+        "Sanji OP06-119 SEC - One Piece TCG - English Card Near-Mint Secret Rare",
+        "One Piece Wings of the Captain Sanji OP06-119 Alternate Alt Art SEC NM",
+        "• Sanji • OP06-119 SEC Premium Booster Holo Foil One Piece TCG NM",
+        "SANJI SP OP06-119 A FIST OF DIVINE SPEED SEC BANDAI ONE PIECE ENGLISH TCG CARD"
+      ]
+    },
+    {
+      "item_id": 237517,
+      "name": "Captain Buggy's Our Savior",
+      "code": "OP16-057",
+      "set_code": "one-piece-the-time-of-battle",
+      "total_ungraded": 9,
+      "sample_size": 9,
+      "sample_confirmed": 9,
+      "sample_titles": [
+        "Captain Buggy's Our Savior!! OP16-057 The Time of Battle One Piece Event NM",
+        "Captain Buggy's Our Savior!! OP16-057 Common The Time of Battle One Piece",
+        "Captain Buggy's Our Savior!! C The Time of Battle OP16-057 NM",
+        "Captain Buggy's Our Savior!! OP16-057 The Time of Battle Common LP One Piece TCG",
+        "Captain Buggy's Our Savior!! C The Time of Battle OP16-057 NM"
+      ]
+    },
+    {
+      "item_id": 204238,
+      "name": "Monkey.D.Luffy [Alternate Art]",
+      "code": "OP01-024",
+      "set_code": "one-piece-romance-dawn",
+      "total_ungraded": 19,
+      "sample_size": 10,
+      "sample_confirmed": 9,
+      "sample_titles": [
+        "Monkey.D.Luffy (OP01-024) (Alternate Art) OP01-024 Premium Booster -The Best-...",
+        "Monkey D Luffy OP01-024 SR☆ Alternate Art Parall PRB01 Premium Booster The Best ",
+        "One Piece TCG Op01-024 Monkey.D.Luffy Alternate Art PRB01 English SR",
+        "One Piece English OP01-024 Monkey D Luffy Alternate Art Super Rare",
+        "2022 One Piece Romance Dawn Monkey D. Luffy Alternate Art #OP01-024"
+      ]
+    },
+    {
+      "item_id": 237065,
+      "name": "Portgas.D.Ace [Alternate Art]",
+      "code": "ST22-010",
+      "set_code": "one-piece-starter-deck-22-ace-newgate",
+      "total_ungraded": 0,
+      "sample_size": 0,
+      "sample_confirmed": 0,
+      "sample_titles": []
+    },
+    {
+      "item_id": 234296,
+      "name": "Usopp",
+      "code": "OP07-099",
+      "set_code": "one-piece-500-years-in-the-future",
+      "total_ungraded": 160,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Usopp [OP07 - OP07-099] Common NM",
+        "x4 Usopp ~ OP07-099 Common One Piece 500 Years in the Future Yellow NM",
+        "Usopp - OP07-099 - 500 Years in the Future - One Piece TCG NM English",
+        "One Piece Usopp OP07-099",
+        "One Piece Usopp (OP07-099/206) OP07 500 Years in the Future NM"
+      ]
+    },
+    {
+      "item_id": 236509,
+      "name": "Brook [PRB-02]",
+      "code": "ST01-011",
+      "set_code": "one-piece-premium-booster-the-best-vol-2",
+      "total_ungraded": 43,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Brook - ST01-011 (Reprint) [PRB-02 - ST01-011] Common NM",
+        "Brook - ST01-011 (Reprint) PRB-02 NM",
+        "One Piece - Brook - ST01-011 (Reprint) - PRB-02 NM/M Condition",
+        "Brook - ST01-011 (Reprint) - (PRB-02) Japanese One Piece TCG",
+        "Brook ST01-011 PREMIUM BOOSTER -ONE PIECE CARD THE BEST vol.2- [PRB-02] LP Holo"
+      ]
+    },
+    {
+      "item_id": 235370,
+      "name": "Nefeltari Vivi [Alternate Art]",
+      "code": "EB03-024",
+      "set_code": "one-piece-extra-booster-one-piece-heroines-edition",
+      "total_ungraded": 38,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Nefeltari Vivi (024) (Alternate Art) EB03-024 Extra Booster: One Piece Heroines",
+        "2026 Nefeltari Vivi (024) (Alternate Art) EB03-024: One Piece Heroines English",
+        "Nefeltari Vivi (024) Alternate Art EB03-024 Extra Booster: One Piece Heroines NM",
+        "Nefeltari Vivi SR (Alternate Art) EB03-024 Extra Booster: One Piece Heroines",
+        "Nefeltari Vivi (024) (Alternate Art) EB03-024 &025 One Piece Tcg"
+      ]
+    },
+    {
+      "item_id": 234674,
+      "name": "Because the Side of Justice Will Be Whichever Side Wins!!",
+      "code": "OP05-037",
+      "set_code": "one-piece-awakening-of-the-new-era",
+      "total_ungraded": 155,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Because the Side of Justice Will Be Whichever Side Wins!! (Winner Pack) OP05-037",
+        "Because the Side of Justice Will Be Whichever Side Wins!! OP05-037 ONE PIECE NM",
+        "Because the Side of Justice Will Be Whichever Side Wins!! OP05-037 ",
+        "Because the Side of Justice Will Be Whichever Side Wins OP05-037 Winner Foil LP",
+        "Because the Side of Justice Will Be Whichever Side Wins!! [OP05 - OP05-037] R..."
+      ]
+    },
+    {
+      "item_id": 235851,
+      "name": "Sengoku",
+      "code": "OP02-103",
+      "set_code": "one-piece-paramount-war",
+      "total_ungraded": 119,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Sengoku OP02-103 Foil NM One Piece",
+        "Sengoku OP02-103 Rare Paramount War One Piece Foil Near Mint",
+        "Sengoku OP02-103 Rare Foil Near Mint",
+        "One Piece Sengoku (OP02-103/258) OP02 Paramount War NM FOIL",
+        "Sengoku [OP02 - OP02-103] Rare NM"
+      ]
+    },
+    {
+      "item_id": 236298,
+      "name": "X.Drake [Alternate Art PRB-02]",
+      "code": "OP10-114",
+      "set_code": "one-piece-premium-booster-the-best-vol-2",
+      "total_ungraded": 7,
+      "sample_size": 7,
+      "sample_confirmed": 7,
+      "sample_titles": [
+        "X.Drake (Alternate Art) - Premium Booster -The Best- Vol. 2 (PRB-02) OP10-114",
+        "X. Drake [Alternate Art PRB-02] OP10-114 One Piece Japanese Premium Booster 2",
+        "X.Drake (Alternate Art) - Premium Booster -The Best- Vol. 2 (PRB-02) OP10-114",
+        "One Piece X.Drake OP10-114 Alternate Art Parallel Foil PRB02 The Best Japanese",
+        "X.Drake [Alternate Art PRB-02] OP10-114 One Piece Japanese Premium Booster 2 Nea"
+      ]
+    },
+    {
+      "item_id": 234447,
+      "name": "Caribou",
+      "code": "OP11-083",
+      "set_code": "one-piece-a-fist-of-divine-speed",
+      "total_ungraded": 240,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Caribou OP11-083 Foil NM One Piece",
+        "Caribou OP11 OP11-083 Rare Foil NM",
+        "One Piece Card Game Caribou OP11-083 A Fist of Divine Speed Near Mint",
+        "Caribou OP11-083 Rare A Fist of Divine Speed One Piece Foil",
+        "Caribou OP11-083 Rare A Fist of Divine Speed One Piece Foil Near Mint"
+      ]
+    },
+    {
+      "item_id": 234746,
+      "name": "Bunny Joe",
+      "code": "OP05-013",
+      "set_code": "one-piece-awakening-of-the-new-era",
+      "total_ungraded": 141,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Bunny Joe - OP05-013 - C - Near Mint",
+        "One Piece Awakening of The New Era Bunny Joe OP05-013",
+        "BUNNY JOE OP05-013 AWAKENING OF THE NEW ERA:",
+        "Bunny Joe OP05-013",
+        "OP05-013 Bunny Joe (C) Awakening of the New Era One Piece CCG x4 Playset NM"
+      ]
+    },
+    {
+      "item_id": 235654,
+      "name": "Lim",
+      "code": "OP09-037",
+      "set_code": "one-piece-legacy-of-the-master",
+      "total_ungraded": 658,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Bandai One Piece CCG Lim OP09-037 SR Alternate Art Foil English 5000",
+        "Lim OP09-037 SR Super Rare One Piece Japanese",
+        "One Piece TCG Lim OP09-037 (SP) Legacy of the Master!",
+        "ONE PIECE Card Lim OP09-037 SP",
+        "One Piece TCG Lim OP09-037 SR Foil English NM"
+      ]
+    }
+  ],
+  "sealed": [
+    {
+      "item_id": 202821,
+      "name": "Starter Deck 15 Red Edwardnewgate Sealed Deck [JP]",
+      "set_code": "one-piece-starter-deck-15-red-edwardnewgate",
+      "total_packs": 0,
+      "total_boxes": 0,
+      "total": 0,
+      "sample_titles": []
+    },
+    {
+      "item_id": 202830,
+      "name": "Starter Deck 9 Yamato Sealed Deck [JP]",
+      "set_code": "one-piece-starter-deck-9-yamato",
+      "total_packs": 0,
+      "total_boxes": 1,
+      "total": 1,
+      "sample_titles": [
+        "One Piece Card Game Start Deck Luffy Yamato SET of 2 ST-08 09 Bandai Sealed JP"
+      ]
+    },
+    {
+      "item_id": 202823,
+      "name": "Starter Deck 2 Worst Generation Sealed Deck [JP]",
+      "set_code": "one-piece-starter-deck-2-worst-generation",
+      "total_packs": 0,
+      "total_boxes": 0,
+      "total": 0,
+      "sample_titles": []
+    },
+    {
+      "item_id": 202846,
+      "name": "Adventure On Kamis Island Booster Pack [JP]",
+      "set_code": "one-piece-adventure-on-kamis-island",
+      "total_packs": 4,
+      "total_boxes": 20,
+      "total": 24,
+      "sample_titles": [
+        "[ENG] 1 Adventure on Kami's Island OP15-EB04 Booster Pack 12 Card",
+        "Adventure on Kami's Island Japanese Booster Packs OP-15",
+        "OP-15 Booster Pack Bundle SEALED Adventure On Kami's Island TCG  ",
+        "PRE-SALE One Piece Adventure on Kami’s Island OP-15 Booster Box JP",
+        "2 BOOSTER BOX - ONE PIECE CARD GAME ADVENTURE ON KAMI'S ISLAND OP15 ASIA ENGLISH"
+      ]
+    },
+    {
+      "item_id": 202711,
+      "name": "A Fist Of Divine Speed Booster Pack [JP]",
+      "set_code": "one-piece-a-fist-of-divine-speed",
+      "total_packs": 6,
+      "total_boxes": 16,
+      "total": 22,
+      "sample_titles": [
+        "One Piece Card Game Booster Pack OP11 A Fist of Divine Speed Japanese 1 Pack JP",
+        "Sealed One Piece TCG Card Game OP-11 A Fist Of Divine Speed Booster Box Case JP",
+        "Sealed One Piece Card TCG Game OP-11 A Fist Of Divine Speed Booster Box Case JP",
+        "One Piece TCG Card Game OP-11 A Fist Of Divine Speed Booster Box Case JP",
+        "One Piece TCG Card Game OP-11 A Fist Of Divine Speed Booster Box Case JP"
+      ]
+    },
+    {
+      "item_id": 202817,
+      "name": "Starter Deck 1 Straw Hat Crew Sealed Deck [JP]",
+      "set_code": "one-piece-starter-deck-1-straw-hat-crew",
+      "total_packs": 0,
+      "total_boxes": 0,
+      "total": 0,
+      "sample_titles": []
+    },
+    {
+      "item_id": 202845,
+      "name": "Adventure On Kamis Island Booster Box [JP]",
+      "set_code": "one-piece-adventure-on-kamis-island",
+      "total_packs": 2,
+      "total_boxes": 20,
+      "total": 22,
+      "sample_titles": [
+        "PRE-SALE One Piece Adventure on Kami’s Island OP-15 Booster Box JP",
+        "ONE PIECE Card Adventure on KAMI’s Island Booster Pack 1ea Japanese *JP Seller",
+        "2 BOOSTER BOX - ONE PIECE CARD GAME ADVENTURE ON KAMI'S ISLAND OP15 ASIA ENGLISH",
+        "One Piece Adventure on Kami’s Island OP-15 Booster Box JP Free Ship",
+        "OP-15 Adventure on KAMI’s Island Booster Box JP Sealed One Piece (Sealed)"
+      ]
+    },
+    {
+      "item_id": 202736,
+      "name": "Paramount War Booster Box [JP]",
+      "set_code": "one-piece-paramount-war",
+      "total_packs": 3,
+      "total_boxes": 56,
+      "total": 59,
+      "sample_titles": [
+        "One Piece Paramount War OP02 Booster Box Acrylic Case UV Resistant",
+        "One Piece Card Game Booster Box Paramount War OP-02 Japanese [ 4 BOXES ]",
+        "One Piece TCG Booster Pack W/ UV Case Japanese Sealed OP-01 - OP-16 & EB-01 - 04",
+        "One Piece Card Game Paramount War Booster Box (OP-02) *New/Sealed",
+        "BANDAI NAMCO PARAMOUNT WAR ONE PIECE CARD GAME BOOSTER BOX SEALED WITH DAMAGE"
+      ]
+    },
+    {
+      "item_id": 202837,
+      "name": "Ultra Deck The Three Captains Sealed Deck [JP]",
+      "set_code": "one-piece-ultra-deck-the-three-captains",
+      "total_packs": 0,
+      "total_boxes": 0,
+      "total": 0,
+      "sample_titles": []
+    },
+    {
+      "item_id": 202839,
+      "name": "Wings Of The Captain Booster Pack [JP]",
+      "set_code": "one-piece-wings-of-the-captain",
+      "total_packs": 3,
+      "total_boxes": 1,
+      "total": 4,
+      "sample_titles": [
+        "Op06 Wings Of The Captain Booster Pack X3",
+        "Op06 Wings Of The Captain Booster Pack X3",
+        "Op06 Wings Of The Captain Booster Pack X2",
+        "One Piece TCG Card Game OP-06 Wings Of The Captain Case JP"
+      ]
+    },
+    {
+      "item_id": 202818,
+      "name": "Starter Deck 11 Uta Sealed Deck [JP]",
+      "set_code": "one-piece-starter-deck-11-uta",
+      "total_packs": 0,
+      "total_boxes": 0,
+      "total": 0,
+      "sample_titles": []
+    },
+    {
+      "item_id": 202824,
+      "name": "Starter Deck 25 Blue Buggy Sealed Deck [JP]",
+      "set_code": "one-piece-starter-deck-25-blue-buggy",
+      "total_packs": 0,
+      "total_boxes": 0,
+      "total": 0,
+      "sample_titles": []
+    },
+    {
+      "item_id": 202789,
+      "name": "Premium Booster The Best  Sealed Storage Box Set [JP]",
+      "set_code": "one-piece-premium-booster-the-best-",
+      "total_packs": 0,
+      "total_boxes": 0,
+      "total": 0,
+      "sample_titles": []
+    },
+    {
+      "item_id": 202820,
+      "name": "Starter Deck 14 3D2Y Sealed Deck [JP]",
+      "set_code": "one-piece-starter-deck-14-3d2y",
+      "total_packs": 0,
+      "total_boxes": 0,
+      "total": 0,
+      "sample_titles": []
+    },
+    {
+      "item_id": 202723,
+      "name": "Emperors In The New World Booster Pack [JP]",
+      "set_code": "one-piece-emperors-in-the-new-world",
+      "total_packs": 1,
+      "total_boxes": 1,
+      "total": 2,
+      "sample_titles": [
+        "ONE PIECE Card Game Emperors in the New World OP-09 Booster Box JP Enough Stock",
+        "One Piece TCG Card Game OP-09 Emperors in the New World Booster Box Case JP"
+      ]
+    }
+  ]
+}
