@@ -339,7 +339,9 @@
       "listingCount": "Todavía en venta (eBay)",
       "sales30d": "Vendidas (30d)",
       "sales90d": "Vendidas (90d)",
-      "sellThrough": "Tasa de rotación (30d)"
+      "sellThrough": "Tasa de rotación (30d)",
+      "chartTitle": "Ventas diarias",
+      "loading": "Cargando..."
     }
   },
   "catalog": {

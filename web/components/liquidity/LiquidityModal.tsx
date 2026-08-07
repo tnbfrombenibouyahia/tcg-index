@@ -1,19 +1,49 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { LiquidityRow } from "@/lib/types";
+import type { DailyTimelinePoint, LiquidityRow } from "@/lib/types";
+import { DIVERGENCE_WINDOWS, type DivergenceWindowDays } from "@/lib/constants";
 import { LanguageFlag } from "@/components/ui/LanguageFlag";
+import { PriceVolumeChart } from "@/components/divergence/PriceVolumeChart";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Modale ouverte au clic sur une ligne du classement /liquidity -- même
 // chrome (verre, portal, Escape) et même taille d'image (256x192, cf.
 // mémoire projet sur l'agrandissement des popups) que CardDetailModal/
 // DivergenceDetailModal/GradingRoiModal.
+//
+// Graphique : réutilise PriceVolumeChart + /api/item-timeline tels quels
+// (déjà utilisés par Divergence -- même endpoint générique itemId+fenêtre,
+// aucune dépendance au reste de la feature Divergence). Ventes/jour +prix
+// moyen, PAS un historique de `active_listings` (le stock n'a qu'UN seul
+// instantané en base pour l'instant, cron hebdo lancé une fois -- une
+// "tendance" sur un point unique n'aurait aucun sens, cf. mémoire projet
+// "liquidity_sell_through" -- reviser une fois plusieurs semaines de cron
+// accumulées si une vraie tendance de stock devient affichable.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function LiquidityModal({ row, onClose }: { row: LiquidityRow; onClose: () => void }) {
   const t = useTranslations("liquidity.modal");
+  const tWindows = useTranslations("divergence.windows");
+
+  const [windowDays, setWindowDays] = useState<DivergenceWindowDays>(30);
+  const [points, setPoints] = useState<DailyTimelinePoint[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/item-timeline?item_id=${row.itemId}&window=${windowDays}`)
+      .then((res) => (res.ok ? res.json() : { points: [] }))
+      .then((data) => {
+        if (!cancelled) setPoints(data.points ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setPoints([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [row.itemId, windowDays]);
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -46,7 +76,7 @@ export function LiquidityModal({ row, onClose }: { row: LiquidityRow; onClose: (
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative p-5">
+        <div className="relative border-b border-border p-5">
           <button
             type="button"
             onClick={onClose}
@@ -98,6 +128,41 @@ export function LiquidityModal({ row, onClose }: { row: LiquidityRow; onClose: (
               )}
             </div>
           </div>
+        </div>
+
+        {/* Historique des ventes (quotidien, ventes+prix moyen indexés sur un
+            axe commun) -- même graphique que Divergence, pas de stock car
+            active_listings n'a qu'un instantané pour l'instant. */}
+        <div className="p-5">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t("chartTitle")}
+            </h3>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {DIVERGENCE_WINDOWS.map((w) => (
+                <button
+                  key={w}
+                  type="button"
+                  onClick={() => setWindowDays(w)}
+                  className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                    w === windowDays
+                      ? "bg-foreground text-background"
+                      : "bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {tWindows(`d${w}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {points === null ? (
+            <div className="flex h-[220px] items-center justify-center text-xs text-muted-foreground">
+              {t("loading")}
+            </div>
+          ) : (
+            <PriceVolumeChart points={points} />
+          )}
         </div>
       </div>
     </div>

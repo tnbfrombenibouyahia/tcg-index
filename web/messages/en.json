@@ -339,7 +339,9 @@
       "listingCount": "Still listed (eBay)",
       "sales30d": "Sold (30d)",
       "sales90d": "Sold (90d)",
-      "sellThrough": "Sell-through rate (30d)"
+      "sellThrough": "Sell-through rate (30d)",
+      "chartTitle": "Daily sales",
+      "loading": "Loading..."
     }
   },
   "catalog": {

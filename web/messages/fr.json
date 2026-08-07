@@ -339,7 +339,9 @@
       "listingCount": "Encore en vente (eBay)",
       "sales30d": "Vendues (30j)",
       "sales90d": "Vendues (90j)",
-      "sellThrough": "Taux d'écoulement (30j)"
+      "sellThrough": "Taux d'écoulement (30j)",
+      "chartTitle": "Ventes quotidiennes",
+      "loading": "Chargement..."
     }
   },
   "catalog": {
