@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination } from "@/components/ui/Pagination";
 import { LiquidityTable } from "@/components/liquidity/LiquidityTable";
+import { SourceBadges } from "@/components/ui/SourceBadge";
 import { getLiquidity, getLiquidityCount, type LiquiditySort } from "@/lib/queries/liquidity";
 import type { Tcg } from "@/lib/constants";
 import { TCGS } from "@/lib/constants";
@@ -60,6 +61,8 @@ export default async function LiquidityPage({
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground leading-relaxed">{t("description")}</p>
       </div>
+
+      <SourceBadges sources={["ebay", "pricecharting"]} />
 
       <div
         className="mb-6 rounded-xl border border-border p-4 text-sm text-muted-foreground"

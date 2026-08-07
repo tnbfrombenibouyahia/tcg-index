@@ -3,6 +3,9 @@
     "title": "TCG Index — Pokémon & One Piece Market Index",
     "description": "Community market index for Pokémon and One Piece — public methodology, transparent data. Track the TCG market's evolution in real time."
   },
+  "common": {
+    "sourceLabel": "Source:"
+  },
   "nav": {
     "home": "Home",
     "catalog": "Catalog",

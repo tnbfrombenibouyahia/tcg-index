@@ -3,6 +3,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination } from "@/components/ui/Pagination";
 import { TransactionFilters } from "@/components/transactions/TransactionFilters";
 import { TransactionsTable } from "@/components/transactions/TransactionsTable";
+import { SourceBadges } from "@/components/ui/SourceBadge";
 import { GRADES } from "@/lib/constants";
 import { getSales, getSalesFilters, type SalesFilterParams } from "@/lib/queries/sales";
 
@@ -58,6 +59,8 @@ export default async function TransactionsPage({
           {t("count", { count: salesResult.totalCount.toLocaleString(locale) })}
         </p>
       </div>
+
+      <SourceBadges sources={["pricecharting"]} />
 
       <div className="mb-6">
         <TransactionFilters sets={filtersResult.sets} grades={filtersResult.grades} rarities={filtersResult.rarities} />

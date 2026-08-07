@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination } from "@/components/ui/Pagination";
 import { UndervaluedTable } from "@/components/undervalued/UndervaluedTable";
+import { SourceBadges } from "@/components/ui/SourceBadge";
 import { getUndervalued, getUndervaluedCount, type UndervaluedSort } from "@/lib/queries/undervalued";
 import type { Tcg } from "@/lib/constants";
 import { TCGS } from "@/lib/constants";
@@ -70,6 +71,8 @@ export default async function UndervaluedPage({
           {t("description")}
         </p>
       </div>
+
+      <SourceBadges sources={["pricecharting"]} />
 
       {/* Methodology callout */}
       <div

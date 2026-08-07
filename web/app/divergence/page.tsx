@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination } from "@/components/ui/Pagination";
 import { DivergenceTable } from "@/components/divergence/DivergenceTable";
+import { SourceBadges } from "@/components/ui/SourceBadge";
 import {
   getDivergence,
   getDivergenceCount,
@@ -90,6 +91,8 @@ export default async function DivergencePage({
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground leading-relaxed">{t("description")}</p>
       </div>
+
+      <SourceBadges sources={["pricecharting"]} />
 
       <div
         className="mb-6 rounded-xl border border-border p-4 text-sm text-muted-foreground"

@@ -4,6 +4,7 @@ import { formatDate, formatUsd } from "@/lib/format";
 import type { SaleRow } from "@/lib/types";
 import { LanguageFlag } from "@/components/ui/LanguageFlag";
 import { SortHeader } from "@/components/ui/SortHeader";
+import { SourceBadge } from "@/components/ui/SourceBadge";
 
 export async function TransactionsTable({
   sales,
@@ -111,7 +112,9 @@ export async function TransactionsTable({
                 )}
               </td>
               <td className="whitespace-nowrap px-4 py-3 font-semibold tabular-nums">{formatUsd(sale.price)}</td>
-              <td className="whitespace-nowrap px-4 py-3 capitalize text-muted-foreground">{sale.marketplace}</td>
+              <td className="whitespace-nowrap px-4 py-3">
+                <SourceBadge source={sale.marketplace} />
+              </td>
             </tr>
           ))}
         </tbody>

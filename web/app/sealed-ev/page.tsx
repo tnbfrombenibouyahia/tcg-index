@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SealedEvTable } from "@/components/sealed-ev/SealedEvTable";
+import { SourceBadges } from "@/components/ui/SourceBadge";
 import { getSealedEv, type SealedEvSort } from "@/lib/queries/sealedEv";
 import type { SealedEvMode } from "@/lib/types";
 
@@ -32,6 +33,8 @@ export default async function SealedEvPage({
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t("description")}</p>
       </div>
+
+      <SourceBadges sources={["pricecharting"]} />
 
       <div className="mb-6 flex items-center gap-2">
         <ModeLink mode="total" active={mode === "total"} searchParams={searchParamsForLinks}>

@@ -21,6 +21,7 @@ import { SalesHistoryChart } from "@/components/undervalued/SalesHistoryChart";
 import { PriceHistoryPanel } from "@/components/catalog/PriceHistoryPanel";
 import { DivergencePanel } from "@/components/catalog/DivergencePanel";
 import { StockFlowBar } from "@/components/liquidity/StockFlowBar";
+import { SourceBadge, SourceBadges } from "@/components/ui/SourceBadge";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Fiche carte / "analyse totale" (demande utilisateur) : point d'arrivée de
@@ -128,7 +129,9 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
                       <td className="py-1.5 pr-4 font-medium">{GRADE_LABELS[p.grade]}</td>
                       <td className="py-1.5 pr-4 tabular-nums font-semibold">{formatUsd(p.price)}</td>
                       <td className="py-1.5 pr-4 text-xs text-muted-foreground">{formatDate(p.capturedAt)}</td>
-                      <td className="py-1.5 text-xs text-muted-foreground">{p.source}</td>
+                      <td className="py-1.5 text-xs text-muted-foreground">
+                        <SourceBadge source={p.source} />
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -147,14 +150,14 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
 
       {/* Undervalued score (singles only) */}
       {item.undervalued && (
-        <Section title={t("undervaluedTitle")} link={{ href: "/undervalued", label: t("seeMethodology") }}>
+        <Section title={t("undervaluedTitle")} link={{ href: "/undervalued", label: t("seeMethodology") }} sources={["pricecharting"]}>
           <UndervaluedBlock calc={item.undervalued} t={tUndervalued} />
         </Section>
       )}
 
       {/* Sealed EV ratio (tracked Booster Box only) */}
       {item.sealedEv && (
-        <Section title={t("sealedEvTitle")} link={{ href: "/sealed-ev", label: t("seeMethodology") }}>
+        <Section title={t("sealedEvTitle")} link={{ href: "/sealed-ev", label: t("seeMethodology") }} sources={["pricecharting"]}>
           <SealedEvBlock calc={item.sealedEv} t={tSealedEv} />
         </Section>
       )}
@@ -163,26 +166,26 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
           scellé EN uniquement pour l'instant, et seulement si les deux
           signaux existent (cf. getItemById), pas de section vide affichée. */}
       {item.liquidity && (
-        <Section title={t("liquidityTitle")}>
+        <Section title={t("liquidityTitle")} sources={["ebay", "pricecharting"]}>
           <LiquidityBlock calc={item.liquidity} t={t} />
         </Section>
       )}
 
       {/* Grading ROI teaser (singles gradables uniquement) */}
       {gradingRoiCandidate && gradingRoiResult && (
-        <Section title={t("gradingRoiTitle")} link={{ href: `/grading-roi/${item.id}`, label: t("openCalculator") }}>
+        <Section title={t("gradingRoiTitle")} link={{ href: `/grading-roi/${item.id}`, label: t("openCalculator") }} sources={["pricecharting"]}>
           <GradingRoiTeaser candidate={gradingRoiCandidate} result={gradingRoiResult} t={t} />
         </Section>
       )}
 
       {/* Volume/Price divergence signal */}
-      <Section title={t("divergenceTitle")} link={{ href: "/divergence", label: t("seeMethodology") }}>
+      <Section title={t("divergenceTitle")} link={{ href: "/divergence", label: t("seeMethodology") }} sources={["pricecharting"]}>
         <p className="mb-4 text-xs text-muted-foreground">{t("divergenceDescription")}</p>
         <DivergencePanel itemId={item.id} />
       </Section>
 
       {/* Sales history */}
-      <Section title={t("salesHistoryTitle")}>
+      <Section title={t("salesHistoryTitle")} sources={["pricecharting"]}>
         {salesResult.sales.length === 0 ? (
           <EmptyState title={tUndervalued("noSales")} />
         ) : (
@@ -197,10 +200,12 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
 function Section({
   title,
   link,
+  sources,
   children,
 }: {
   title: string;
   link?: { href: string; label: string };
+  sources?: string[];
   children: React.ReactNode;
 }) {
   return (
@@ -213,6 +218,7 @@ function Section({
           </Link>
         )}
       </div>
+      {sources && <SourceBadges sources={sources} />}
       {children}
     </div>
   );

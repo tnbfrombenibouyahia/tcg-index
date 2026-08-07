@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination } from "@/components/ui/Pagination";
 import { GradingRoiTable } from "@/components/grading-roi/GradingRoiTable";
+import { SourceBadges } from "@/components/ui/SourceBadge";
 import { getGradingRoiRanking, type GradingRoiSort } from "@/lib/queries/gradingRoi";
 import type { Tcg } from "@/lib/constants";
 import { TCGS } from "@/lib/constants";
@@ -67,6 +68,8 @@ export default async function GradingRoiPage({
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground leading-relaxed">{t("description")}</p>
       </div>
+
+      <SourceBadges sources={["pricecharting"]} />
 
       <div className="mb-6 rounded-xl border border-border p-4 text-sm text-muted-foreground" style={{ background: "var(--border-softer)" }}>
         <p>
