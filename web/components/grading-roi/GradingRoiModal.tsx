@@ -57,17 +57,17 @@ export function GradingRoiModal({ row, onClose }: { row: GradingRoiRow; onClose:
             </svg>
           </button>
 
-          <div className="flex items-center gap-3 pr-8">
+          <div className="flex flex-col gap-5 pr-8 sm:flex-row sm:items-start">
             {row.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- hôtes CDN externes (TCGPlayer/PriceCharting)
               <img
                 src={row.imageUrl}
                 alt={row.name}
-                className="h-16 w-12 flex-shrink-0 rounded-lg object-contain bg-white shadow-sm"
+                className="h-64 w-48 flex-shrink-0 self-center rounded-xl object-contain bg-white shadow-sm sm:self-start"
                 style={{ aspectRatio: "3/4" }}
               />
             ) : (
-              <div className="h-16 w-12 flex-shrink-0 rounded-lg bg-muted" />
+              <div className="h-64 w-48 flex-shrink-0 self-center rounded-xl bg-muted sm:self-start" />
             )}
             <div className="min-w-0">
               <div className="flex items-center gap-2">

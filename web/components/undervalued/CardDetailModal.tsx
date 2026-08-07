@@ -96,11 +96,11 @@ export function CardDetailModal({ row, onClose }: { row: UndervaluedRow; onClose
               <img
                 src={row.imageUrl}
                 alt={row.name}
-                className="h-40 w-[7.5rem] flex-shrink-0 self-center rounded-xl object-contain bg-white shadow-sm sm:self-start"
+                className="h-64 w-48 flex-shrink-0 self-center rounded-xl object-contain bg-white shadow-sm sm:self-start"
                 style={{ aspectRatio: "3/4" }}
               />
             ) : (
-              <div className="h-40 w-[7.5rem] flex-shrink-0 self-center rounded-xl bg-muted sm:self-start" />
+              <div className="h-64 w-48 flex-shrink-0 self-center rounded-xl bg-muted sm:self-start" />
             )}
 
             <div className="min-w-0 flex-1 pr-8">
