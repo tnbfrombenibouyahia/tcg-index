@@ -124,9 +124,12 @@ export async function getItemById(itemId: number): Promise<ItemDetail | null> {
   // Bloc affiché seulement quand les deux signaux existent pour cet item
   // (stock ET flux) -- sinon un ratio à 0% serait trompeur (pas "personne
   // n'achète", juste "pas encore mesuré"), cf. discussion feature liquidité.
+  // listingCount > 0 exigé aussi : sinon un item jamais listé sur eBay dans
+  // les catégories interrogées (ex. One Piece "DON!! Card") produit un faux
+  // 100% d'écoulement plutôt qu'un vrai signal -- cf. lib/queries/liquidity.ts.
   const liquidityRow = liquidityRows[0];
   const liquidity: LiquidityCalc | null =
-    liquidityRow && liquidityRow.salesCount90d > 0
+    liquidityRow && liquidityRow.salesCount90d > 0 && liquidityRow.listingCount > 0
       ? {
           capturedAt: liquidityRow.capturedAt,
           listingCount: liquidityRow.listingCount,

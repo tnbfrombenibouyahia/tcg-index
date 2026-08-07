@@ -232,28 +232,37 @@ def run_ebay_listings_sync(run_type: str) -> None:
     """Comptage de listings actifs eBay (pression vendeuse, cf. mémoire projet
     "ebay_active_listings" -- nouvelle dimension "supply", pas un prix).
 
-    Scope volontairement restreint en v1 : Pokémon seulement (One Piece pas
-    encore validé par une probe dédiée, cf. mémoire "phased_by_tcg"), scellé
-    + sets récents (même filtre que price_sync_scope/JustTCG). Ce n'est PAS
-    une contrainte de quota (5000 req/jour eBay est large, cf. ebay.py) --
-    juste la même prudence "valider avant d'élargir" que le reste du projet.
-    Appelé séparément du run quotidien/--tier (cf. `main`, flag
-    `--ebay-listings`) : nouvelle source, cadence hebdomadaire, sans lien avec
-    le système de paliers PriceCharting (TIERS ci-dessus, propre à un tout
-    autre coût de requête)."""
-    print("\n=== eBay : listings actifs (scellé, Pokémon) ===")
-    run_id = start_run(run_type, "active_listings", tcg="pokemon")
-    try:
-        stats = ebay.sync_active_listings_for_tcg("pokemon")
-    except Exception as exc:
-        finish_run(run_id, status="error", detail=str(exc))
-        raise
-    n_errors = len(stats["errors"])
-    detail = f"{stats['items_processed']} item(s), {stats['rows_written']} ligne(s)"
-    if n_errors:
-        detail += f", {n_errors} erreur(s)"
-    print(f"  {detail}")
-    finish_run(run_id, status="error" if n_errors else "success", rows_written=stats["rows_written"], detail=detail)
+    Les deux TCG désormais couverts : Pokémon (v1, 2026-08-06) puis One Piece
+    (2026-08-07, `python -m ingestion.probe_ebay --tcg one-piece` --
+    singles 145/146 titres confirment le numéro demandé, scellé 7/15 avec un
+    total non-nul mais les 8 à zéro sont tous des "DON!! Card (X) (Gold)"
+    (promos, catégorie à part -- pas un raté de matching) ; les vrais
+    produits scellés (Booster Box, Starter Deck, Double Pack Set...)
+    remontent tous un comptage plausible). Scellé + sets récents (même
+    filtre que price_sync_scope/JustTCG). Erreur sur un TCG isolée (cf.
+    `run_items_sync`) : n'empêche pas l'autre de tourner. Ce n'est pas une
+    contrainte de quota (5000 req/jour eBay est large, cf. ebay.py) -- juste
+    la même prudence "valider avant d'élargir" que le reste du projet, cf.
+    mémoire "phased_by_tcg". Appelé séparément du run quotidien/--tier (cf.
+    `main`, flag `--ebay-listings`) : nouvelle source, cadence hebdomadaire,
+    sans lien avec le système de paliers PriceCharting (TIERS ci-dessus,
+    propre à un tout autre coût de requête)."""
+    print("\n=== eBay : listings actifs (scellé) ===")
+    for tcg in TCGS:
+        print(f"-- {tcg} --")
+        run_id = start_run(run_type, "active_listings", tcg=tcg)
+        try:
+            stats = ebay.sync_active_listings_for_tcg(tcg)
+        except Exception as exc:
+            finish_run(run_id, status="error", detail=str(exc))
+            print(f"  ! erreur : {exc}")
+            continue
+        n_errors = len(stats["errors"])
+        detail = f"{stats['items_processed']} item(s), {stats['rows_written']} ligne(s)"
+        if n_errors:
+            detail += f", {n_errors} erreur(s)"
+        print(f"  {detail}")
+        finish_run(run_id, status="error" if n_errors else "success", rows_written=stats["rows_written"], detail=detail)
 
 
 def run_index_calculation(run_type: str) -> None:

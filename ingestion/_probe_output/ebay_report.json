@@ -1,366 +1,422 @@
 {
-  "tcg": "pokemon",
+  "tcg": "one-piece",
   "singles": [
     {
-      "item_id": 261,
-      "name": "Aegislash",
-      "code": "058/088",
-      "set_code": "pokemon-me03-perfect-order",
-      "total_ungraded": 2428,
-      "sample_size": 10,
-      "sample_confirmed": 9,
+      "item_id": 98324,
+      "name": "Capone\"Gang\"Bege (Nami Deck)",
+      "code": "OP11-048",
+      "set_code": "one-piece-learn-together-deck-set",
+      "total_ungraded": 8,
+      "sample_size": 8,
+      "sample_confirmed": 8,
       "sample_titles": [
-        "Aegislash 058/088 Uncommon Perfect Order Pokemon Reverse Holo Near Mint",
-        "Aegislash 058/088 Me03: Perfect Order - Near Mint",
-        "Aegislash 058/088 Uncommon Perfect Order Pokemon Near Mint",
-        "AEGISLASH 058/088 UC PERFECT ORDER POKEMON NM/M",
-        "Aegislash 058/088 Uncommon Perfect Order Pokemon Near Mint"
+        "Capone\"Gang\"Bege (Nami Deck) OP11-048 Rare Learn Together Deck Set One Piece NM",
+        "Capone\"Gang\"Bege (Nami Deck) #OP11-048 Learn Together Deck Set Rare",
+        "Capone\"Gang\"Bege (Nami Deck) #OP11-048 Learn Together Deck Set Rare",
+        "Capone\"Gang\"Bege (Nami Deck) #OP11-048 Learn Together Deck Set Rare",
+        "Capone\"Gang\"Bege (Nami Deck) #OP11-048 Learn Together Deck Set Rare"
       ]
     },
     {
-      "item_id": 21568,
-      "name": "Pikachu",
-      "code": "015/017",
-      "set_code": "pokemon-pop-series-9",
-      "total_ungraded": 55,
+      "item_id": 98406,
+      "name": "Cavendish (105)",
+      "code": "OP10-105",
+      "set_code": "one-piece-royal-blood",
+      "total_ungraded": 391,
       "sample_size": 10,
       "sample_confirmed": 10,
       "sample_titles": [
-        "Pikachu Common POP #015/017 LP",
-        "Pikachu 015/017 POP Series 9 Regular",
-        "Pikachu [POP - 015/017LP",
-        "POP Series 9 #015/017 Pikachu",
-        "Pikachu 015/017 POP Series 9 LP"
+        "Royal Blood #OP10-105 Cavendish (105) OP32",
+        "Cavendish (105) OP10-105 Royal Blood Regular",
+        "Cavendish - OP10-105 - C - Near Mint",
+        "Cavendish (Pirate Foil) OP10-105 Premium Booster -The Best- Vol. 2 One Piece NM",
+        "Cavendish (105) OP10-105 Royal Blood Release Event Cards NM"
       ]
     },
     {
-      "item_id": 30502,
-      "name": "Vanillite",
-      "code": "027/086",
-      "set_code": "pokemon-sv-white-flare",
+      "item_id": 101235,
+      "name": "Marshall.D.Teach",
+      "code": "OP12-054",
+      "set_code": "one-piece-legacy-of-the-master",
+      "total_ungraded": 206,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Marshall D Teach One Piece Legacy Of The Master OP12-054",
+        "Marshall.D.Teach OP12-054 Legacy of the Master One Piece",
+        "Marshall.D.Teach OP12-054 Legacy of the Master One Piece",
+        "Marshall D Teach OP12-054 One Piece TCG Legacy Of The Master NM",
+        "Marshall.D.Teach OP12-054 C Legacy of the Master One Piece Card Game NM/M"
+      ]
+    },
+    {
+      "item_id": 100288,
+      "name": "Izo",
+      "code": "ST22-002",
+      "set_code": "one-piece-starter-deck-22-ace-newgate",
+      "total_ungraded": 189,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "IZO ST22-002 SR ONE PIECE FOIL LP",
+        "Izo [ST-22 - ST22-002] Super Rare NM",
+        "Izo ST22-002 Super Rare Starter Deck 22: Ace & Newgate One Piece Foil Near Mint",
+        "One Piece TCG: Izo (Parallel) ST22-002 Ace & Newgate Super Rare Foil (Alt Art) B",
+        "Izo ST22-002 Starter Deck 22: Ace & Newgate Foil"
+      ]
+    },
+    {
+      "item_id": 99073,
+      "name": "Diamante",
+      "code": "OP10-068",
+      "set_code": "one-piece-royal-blood-release-event-cards",
+      "total_ungraded": 204,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "One Piece Diamante (OP10-068/162) OP10 Royal Blood NM",
+        "Diamante - OP10-068 - C - Near Mint",
+        "Diamante OP10-068 Royal Blood Common NM One Piece TCG",
+        "DIAMANTE OP10-068 COMMON ONE PIECE LP",
+        "Diamante OP10-068 ONE PIECE CARD GAME Royal Blood TCG CCG (Japanese) New ✨"
+      ]
+    },
+    {
+      "item_id": 99088,
+      "name": "Divine Departure",
+      "code": "OP10-019",
+      "set_code": "one-piece-royal-blood",
+      "total_ungraded": 350,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Divine Departure (Parallel) OP10-019 Rare Royal Blood One Piece Foil Near Mint",
+        "Divine Departure Alt Art OP10-019 OP-10 One Piece TCG JAPANESE NM",
+        "Divine Departure (Parallel) OP10-019 Rare Royal Blood One Piece Foil Near Mint",
+        "Divine Departure OP10-019 Rare Foil Near Mint",
+        "NONHOLO Bandai Nonholo Divine Departure OP10-019 One Piece CCG Event"
+      ]
+    },
+    {
+      "item_id": 99112,
+      "name": "Don Accino",
+      "code": "EB02-004",
+      "set_code": "one-piece-extra-booster-anime-25th-collection",
+      "total_ungraded": 73,
+      "sample_size": 10,
+      "sample_confirmed": 9,
+      "sample_titles": [
+        "Don Accino EB02 004 NM",
+        "Don Accino EB02-004 Common Extra Booster: Anime 25th Collection One Piece NM",
+        "One Piece - Don Accino - C - Extra Booster: Anime 25th Collection EB02-004 - NM",
+        "Don Accino EB02-004 C Common Anime 25th Collection ONE PIECE Card Game Chinese",
+        "DON ACCINO EB02-004 COMMON ONE PIECE LP"
+      ]
+    },
+    {
+      "item_id": 104127,
+      "name": "Trafalgar Law - PRB02-002",
+      "code": "PRB02-002",
+      "set_code": "one-piece-premium-booster-the-best-vol-2",
+      "total_ungraded": 370,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Trafalgar Law - PRB02-002 PRB02-002 Premium Booster -The Best- Vol. 2 Foil JP NM",
+        "Trafalgar Law - PRB02-002 PRB02-002 Premium Booster -The Best- Vol. 2 Foil",
+        "Trafalgar Law - PRB02-002 PRB02-002 Premium Booster -The Best- Vol. 2 Foil",
+        "Trafalgar Law - PRB02-002 - Premium Booster -The Best- Vol. 2 - PRB02-002",
+        "Trafalgar Law [PRB-02 - PRB02-002] Super Rare NM"
+      ]
+    },
+    {
+      "item_id": 97987,
+      "name": "Blue Hole",
+      "code": "OP11-098",
+      "set_code": "one-piece-a-fist-of-divine-speed",
       "total_ungraded": 9,
       "sample_size": 9,
       "sample_confirmed": 9,
       "sample_titles": [
-        "Vanillite - 027/086 - Common - Near Mint",
-        "Vanillite - 027/086 - Common - Reverse Holo - Near Mint",
-        "Vanillite - [WHT - 027/086] - Common - Pokemon - EN",
-        "Vanillite 027/086 Common White Flare Pokemon Near Mint",
-        "Vanillite Reverse Holo Common SV: White Flare 027/086 NM"
+        "Blue Hole OP11-098 - One Piece A Fist of Divine Speed Common Japanese LP",
+        "Blue Hole - OP11-098 - C - Near Mint",
+        "Blue Hole OP11-098 Common A Fist Of Divine Speed One Piece Card Game",
+        "BLUE HOLE OP11-098 COMMON ONE PIECE LP",
+        "BLUE HOLE OP11-098 A FIST OF DIVINE SPEED RELEASE EVENT CARDS LP ONE PIECE"
       ]
     },
     {
-      "item_id": 1179,
-      "name": "Arven's Greedent - 205/182",
-      "code": "205/182",
-      "set_code": "pokemon-sv10-destined-rivals",
-      "total_ungraded": 936,
+      "item_id": 104258,
+      "name": "Usopp",
+      "code": "OP16-043",
+      "set_code": "one-piece-the-time-of-battle-release-event-cards",
+      "total_ungraded": 195,
       "sample_size": 10,
       "sample_confirmed": 10,
       "sample_titles": [
-        "Arven's Greedent 205/182 Illustration Rare Destined Rivals Pokemon Holo NM",
-        "Arven's Greedent DRI 205/182 Holo",
-        "Arven's Greedent 205/182 NM Destined Rivals Illustration Rare Pokemon",
-        "Arven's Greedent 205/182 Destined Rivals Pokemon TCG Holo Illustration Rare NM",
-        "Arven's Greedent 205/182 Illustration Rare Destined Rivals Pokemon Holo NM"
+        "Usopp OP16-043 Uncommon The Time of Battle One Piece",
+        "Usopp OP16-043 UC One Piece OP16 The Time of Battle NM",
+        "One Piece CCG Usopp OP16-043 UC OP16 The Time of Battle NM",
+        "Usopp OP16-043 Uncommon The Time of Battle 2026 One Piece Card Game",
+        "Usopp OP16-043 The Time of Battle NM"
       ]
     },
     {
-      "item_id": 15468,
-      "name": "Landorus - 131/086",
-      "code": "131/086",
-      "set_code": "pokemon-sv-black-bolt",
-      "total_ungraded": 56,
+      "item_id": 102928,
+      "name": "Sabo - PRB02-014 (Alternate Art)",
+      "code": "PRB02-014",
+      "set_code": "one-piece-premium-booster-the-best-vol-2",
+      "total_ungraded": 40,
       "sample_size": 10,
       "sample_confirmed": 10,
       "sample_titles": [
-        "Pokemon BLK Black Bolt Landorus 131/086 Illustration Rare",
-        "Pokémon TCG Landorus SV: Black Bolt 131/086 IR Full Art Holo EN",
-        "2025 Pokemon Black Bolt Landorus IR #131/086 Illustration Rare Full Art NM 🌾💥",
-        "Landorus 131/086 Holo Illustration Rare Black Bolt Pokemon NM/M",
-        "Landorus 131/086 Black Bolt Illustration Rare Pokemon TCG NM"
+        "Sabo - PRB02-014 (Alternate Art) PRB02-014 Premium Booster",
+        "Sabo PRB02-014 Foil Alternate Art Premium Booster the Best Vol.2 Pack Alt Art",
+        "Sabo - PRB02-014 (Alternate Art) PRB02-014 Premium Booster -The Best-Vol. 2 Foil",
+        "Sabo - PRB02-014 (Alternate Art) PRB02-014 Premium Booster The BestVol 2 Foil NM",
+        "Sabo - PRB02-014 (Alternate Art) - Premium Booster -The Best- Vol. 2 (PRB-02)"
       ]
     },
     {
-      "item_id": 24760,
-      "name": "Rotom ex - 126/094",
-      "code": "126/094",
-      "set_code": "pokemon-me02-phantasmal-flames",
-      "total_ungraded": 702,
-      "sample_size": 10,
-      "sample_confirmed": 10,
-      "sample_titles": [
-        "Rotom EX SIR 126/094 Phantasmal Flames Pokémon Tcg",
-        "Rotom ex 126/094 ME02 Phantasmal Flames SAR NM Buy 2+ Save Up To 15%",
-        "Rotom ex 126/094 PFL Phantasmal Flames Special Illustration Rare",
-        "Rotom ex 126/094 Special Illustration Rare Phantasmal Flames Pokemon Holo NM",
-        "Rotom ex 126/094 SIR Holo Me02: Phantasmal Flames English 190 HP Basic"
-      ]
-    },
-    {
-      "item_id": 9846,
-      "name": "Fearow",
-      "code": "103/132",
-      "set_code": "pokemon-me01-mega-evolution",
-      "total_ungraded": 1960,
-      "sample_size": 10,
-      "sample_confirmed": 10,
-      "sample_titles": [
-        "Pokemon TCG ~ Fearow 103/132 ~ Common Reverse Holo English Near Mint",
-        "Fearow #103/132 Me01 Mega Evolution Common Reverse Holo Pokemon TCG NM",
-        "Fearow 103/132 ~ Reverse Holo English Near Mint",
-        "Fearow 103/132 Common Mega Evolution Pokemon NM",
-        "Fearow Reverse Holo Common ME01: Mega Evolution 103/132 NM"
-      ]
-    },
-    {
-      "item_id": 883,
-      "name": "Arcanine",
-      "code": "028/182",
-      "set_code": "pokemon-sv10-destined-rivals",
-      "total_ungraded": 1288,
-      "sample_size": 10,
-      "sample_confirmed": 10,
-      "sample_titles": [
-        "Arcanine 028/182 Uncommon Destined Rivals Pokemon Reverse Holo NM/M",
-        "Arcanine 028/182 Uncommon Destined Rivals Pokemon TCG Reverse Holo Near Mint",
-        "Arcanine 028/182 Uncommon Destined Rivals Pokemon Reverse Holo Near Mint",
-        "Arcanine Reverse Holo Uncommon SV10: Destined Rivals 028/182 NM",
-        "Arcanine - 028/182 - Uncommon - Near Mint"
-      ]
-    },
-    {
-      "item_id": 30365,
-      "name": "Urbain",
-      "code": "214/217",
-      "set_code": "pokemon-me-ascended-heroes",
-      "total_ungraded": 1012,
-      "sample_size": 10,
-      "sample_confirmed": 10,
-      "sample_titles": [
-        "Urbain 214/217 Uncommon Ascended Heroes Pokemon NM/M",
-        "Urbain 214/217 Uncommon Ascended Heroes Pokemon Reverse Holo Near Mint",
-        "Pokémon TCG 4x Urbain 214/217 Ascended Heroes Playset NM",
-        "Urbain 214/217 Uncommon Ascended Heroes Pokemon Near Mint",
-        "URBAIN 214/217 UNCOMMON ASCENDED HEROES POKEMON NM"
-      ]
-    },
-    {
-      "item_id": 23096,
-      "name": "Professor's Research [Professor Magnolia] - 223",
-      "code": "223",
-      "set_code": "pokemon-professor-program-promos",
-      "total_ungraded": 15,
-      "sample_size": 10,
-      "sample_confirmed": 10,
-      "sample_titles": [
-        "Professor's Research [Professor Magnolia] - 223 223/167 Scarlet & Violet Promo C",
-        "Professor's Research [Professor Magnolia] Normal [SVP - 223] Pokemon NM",
-        "Pokemon Professor's Research (Professor Magnolia) 223 SV Promo Holo Trainer",
-        "Pokemon Professor's Research Professor Magnolia 223 Trainer's Toolkit 2025 Promo",
-        "Pokemon Professor's Research Professor Magnolia 223 Trainer's Toolkit 2025 Promo"
-      ]
-    },
-    {
-      "item_id": 16485,
-      "name": "Lt. Surge's Bargain - 185/132",
-      "code": "185/132",
-      "set_code": "pokemon-me01-mega-evolution",
-      "total_ungraded": 321,
-      "sample_size": 10,
+      "item_id": 99981,
+      "name": "Hatchan",
+      "code": "OP14-051",
+      "set_code": "one-piece-the-azure-seas-seven",
+      "total_ungraded": 9,
+      "sample_size": 9,
       "sample_confirmed": 9,
       "sample_titles": [
-        "Lt. Surge's Bargain 185/132 Mega Evolution Pokemon Holo NM",
-        "LT. SURGE'S BARGAIN 185/132 POKEMON MEGA EVOLUTION NM/M",
-        "The Pokémon Company Lt. Surge's Bargain 185/132 ME01 Special Illustration Rare",
-        "Lt. Surge's Bargain - 185/132 [MEG - 185/132]",
-        "Lt. Surge's Bargain ME01: Mega Evolution 185/132 NM Holo"
+        "HATCHAN OP14-051 THE AZURE SEA'S SEVEN RELEASE EVENT CARDS ONE PIECE NM",
+        "HATCHAN OP14-051 THE AZURE SEA'S SEVEN ONE PIECE NM",
+        "HATCHAN OP14-051 THE AZURE SEA'S SEVEN ONE PIECE NM",
+        "Hatchan OP14-051 Common The Azure Sea's Seven One Piece Card Game",
+        "Hatchan OP14-051 C The Azure Sea's Seven English One Piece NM/M"
       ]
     },
     {
-      "item_id": 7046,
-      "name": "Dawn - 118/094",
-      "code": "118/094",
-      "set_code": "pokemon-me02-phantasmal-flames",
-      "total_ungraded": 1515,
+      "item_id": 100001,
+      "name": "Heavenly Warriors",
+      "code": "OP15-068",
+      "set_code": "one-piece-adventure-on-kamis-island",
+      "total_ungraded": 249,
       "sample_size": 10,
       "sample_confirmed": 10,
       "sample_titles": [
-        "Dawn 118/094 Ultra Rare Phantasmal Flames Pokemon Holo Near Mint",
-        "Dawn 118/094 Me02: Phantasmal Flames Holo",
-        "Dawn 118/094 Me02: Phantasmal Flames Holo",
-        "Dawn 118/094 Me02: Phantasmal Flames Holo",
-        "Dawn 118/094 Me02: Phantasmal Flames Holo"
+        "Heavenly Warriors OP15-068 Adventure on Kami's Island Regular One Piece NM",
+        "HEAVENLY WARRIORS OP15-068 ADVENTURE ON KAMI'S ISLAND ONE PIECE NM",
+        "Heavenly Warriors OP15-068 Common Adventure on Kami's Island One Piece Near Mint",
+        "Heavenly Warriors OP15-068 Common Adventure On Kami's Island One Piece Card Game",
+        "Heavenly Warriors OP15-068 Adventure on KAMI’s Island One Piece Japanese NM"
+      ]
+    },
+    {
+      "item_id": 98613,
+      "name": "Charlotte Pudding (SP)",
+      "code": "OP06-047",
+      "set_code": "one-piece-premium-booster-the-best-vol-2",
+      "total_ungraded": 72,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Charlotte Pudding SP | OP06-047 (JP)",
+        "Charlotte Pudding OP06-047 (SP Alt Art) R ONE PIECE Card The Best 2 Japanese",
+        "Charlotte Pudding OP06-047 SP English One Piece TCG",
+        "ONE PIECE Card Charlotte Pudding SP OP06-047",
+        "Charlotte Pudding (SP) [PRB-02 - OP06-047] Rare NM"
+      ]
+    },
+    {
+      "item_id": 103398,
+      "name": "Shiryu (Full Art)",
+      "code": "OP16-108",
+      "set_code": "one-piece-the-time-of-battle",
+      "total_ungraded": 91,
+      "sample_size": 10,
+      "sample_confirmed": 10,
+      "sample_titles": [
+        "Shiryu (Full Art) OP16-108 The Time of Battle Foil",
+        "Shiryu (Full Art) OP16-108 The Time of Battle Foil SR",
+        "SHIRYU (FULL ART) OP16-108 THE TIME OF BATTLE FOIL",
+        "Shiryu (Full Art) OP16-108 The Time of Battle Foil",
+        "Shiryu (Full Art) OP16-108 SR Foil NM One Piece The Time of Battle"
       ]
     }
   ],
   "sealed": [
     {
-      "item_id": 18154,
-      "name": "Mega Forces Tin [Mega Darkrai ex]",
-      "set_code": "pokemon-miscellaneous-cards-products",
-      "total_packs": 2,
-      "total_boxes": 4,
-      "total": 6,
-      "sample_titles": [
-        "Pokemon TCG: Mega Forces Tin (1 of each) Dragonite ex Zeraora ex Darkrai ex 8/28",
-        "Pokemon | Mega Forces Tins: Mega Darkrai ex Tin | ITA",
-        "Pokémon x 3 Mega Forces Dragonite ex & Zeraora ex &  Darkrai ex  Tins Ships 8/28",
-        "Pokémon Mega Forces Dragonite ex Zeraora ex Darkrai ex Tin Case x6 | SHIPS 8/28",
-        "Pokémon x 6 Mega Forces Dragonite ex Zeraora ex Darkrai ex Tin Sealed Case  8/28"
-      ]
-    },
-    {
-      "item_id": 18129,
-      "name": "Mega Evolution Premium Checklane Blister [Tyranitar]",
-      "set_code": "pokemon-me01-mega-evolution",
-      "total_packs": 15,
-      "total_boxes": 0,
-      "total": 15,
-      "sample_titles": [
-        "Mega Evolution Premium Checklane Blister [Tyranitar]",
-        "Pokemon Mega Evolution Premium Checklane Blister Tyranitar Sealed Extremely HTF",
-        "Pokémon Mega Evolution Premium Checklane Booster Blister Pack (Tyranitar) Sealed",
-        "Lot of (3) Pokémon Phantasmal Flames Premium Checklane Blisters",
-        "Pokemon TCG Mega Evolution Premium Checklane ME01 Tyranitar Booster + Promo Card"
-      ]
-    },
-    {
-      "item_id": 4806,
-      "name": "Code Card - Cyclizar ex Box",
-      "set_code": "pokemon-miscellaneous-cards-products",
-      "total_packs": 0,
-      "total_boxes": 2,
-      "total": 2,
-      "sample_titles": [
-        "Pokemon Cyclizar EX Box 4 Boosters - 2 Foils - 1 Jumbo Foil NEW FACTORY SEALED",
-        "Pokemon TCG EX Collection Box | Cyclizar"
-      ]
-    },
-    {
-      "item_id": 3657,
-      "name": "Chaos Rising Booster Bundle",
-      "set_code": "pokemon-me04-chaos-rising",
-      "total_packs": 871,
-      "total_boxes": 1629,
-      "total": 2500,
-      "sample_titles": [
-        "Pokemon Pokmon TCG Mega Evolution Chaos Rising Booster Bundle, 6 Booster Packs,",
-        "Chaos Rising Booster Bundle Unsealed",
-        "Chaos Rising Booster Bundle New Sealed",
-        "Pokemon Chaos Rising Booster Bundle",
-        "Pokemon TCG Chaos Rising Booster Bundle New Sealed"
-      ]
-    },
-    {
-      "item_id": 5195,
-      "name": "Code Card - Mega Moonlit Tin [Mega Gengar ex]",
-      "set_code": "pokemon-miscellaneous-cards-products",
-      "total_packs": 17,
-      "total_boxes": 74,
-      "total": 91,
-      "sample_titles": [
-        "Pokemon TCG Mega Moonlit Mega Gengar ex Tin SEALED Halloween Promo Card NEW",
-        "Pokemon TCG Mega Moonlit Tin Mega Gengar ex Promo New Sealed",
-        "Pokemon TCG: Mega Moonlit Tin Mega Gengar Ex Holo Foil Promo SEALED",
-        "Pokemon TCG: Tin - Mega Moonlit- Mega Gengar ex",
-        "Pokemon TCG: Tin - Mega Moonlit: Mega Gengar ex - SEALED 4 Booster Packs + Promo"
-      ]
-    },
-    {
-      "item_id": 14799,
-      "name": "Kanto Friends Mini Tin [Squirtle]",
-      "set_code": "pokemon-miscellaneous-cards-products",
-      "total_packs": 54,
-      "total_boxes": 11,
-      "total": 65,
-      "sample_titles": [
-        "Pokemon TCG Kanto Friends Mini Tins Complete Art Set Of 5 New Sealed Pikachu D21",
-        "Pokemon TCG Kanto Friends Mini Tin Squirtle D21 New Sealed",
-        "Charmander Pokémon TCG Kanto Friends Mini Tin Set (D22) - Factory Sealed!",
-        "Pokemon TCG Kanto Friends 5 Pack Mini Tin Set with Promos Sealed Brand New",
-        "Pokemon TCG Kanto Freinds Mini Tin H24 [ Squirtle Edition ] NEW"
-      ]
-    },
-    {
-      "item_id": 112,
-      "name": "30th Celebration Tech Sticker Collection [Set of 2]",
-      "set_code": "pokemon-me-30th-celebration",
-      "total_packs": 0,
-      "total_boxes": 1,
-      "total": 1,
-      "sample_titles": [
-        "Sealed 30th Celebration Tech Sticker Collection Set of 2 PRESALE 9-16 Pokemon "
-      ]
-    },
-    {
-      "item_id": 22052,
-      "name": "Poke Ball Tin Display (Q2 2022)",
-      "set_code": "pokemon-miscellaneous-cards-products",
+      "item_id": 98939,
+      "name": "DON!! Card (Nico Robin) (Gold)",
+      "set_code": "one-piece-extra-booster-one-piece-heroines-edition",
       "total_packs": 0,
       "total_boxes": 0,
       "total": 0,
       "sample_titles": []
     },
     {
-      "item_id": 30248,
-      "name": "Unova Mini Tin [Volcarona & Emolga]",
-      "set_code": "pokemon-sv-black-bolt",
-      "total_packs": 13,
-      "total_boxes": 5,
-      "total": 18,
+      "item_id": 98385,
+      "name": "Carrying On His Will Booster Box",
+      "set_code": "one-piece-carrying-on-his-will",
+      "total_packs": 769,
+      "total_boxes": 490,
+      "total": 1259,
       "sample_titles": [
-        "Pokémon TCG: Scarlet & Violet Unova Mini Tin  - Various Characters - Sealed",
-        "Unova Mini Tin [Volcarona & Emolga] - SV: Black Bolt (BLK)",
-        "Pokémon TCG: Unova Mini Tin Feature Volcarona & Emolga - 2 Booster Packs Inside",
-        "BRAND NEW-Pokemon TCG Unova Mini Tin Volcarona & Emolga-Black Bolt White Flare",
-        "Pokemon TCG Mini Tin Unova Scarlet Violet Card Pack Collectible Anime"
+        "One Piece TCG OP-13 Carrying On His Will Booster Box SEALED ENGLISH",
+        "Bandai  One Piece TCG: Carrying On His Will Booster Box English OP-13 Sealed",
+        "Carrying On His Will Booster Pack",
+        "One Piece TCG OP-13 Carrying On His Will Sleeved Booster Pack LOT OF 20 English",
+        "One Piece OP-13 CARRYING ON HIS WILL Sleeved Booster Pack - Heavy - 38g 🔥🔥"
       ]
     },
     {
-      "item_id": 13224,
-      "name": "Hidden Potential Tin [Giratina V]",
-      "set_code": "pokemon-miscellaneous-cards-products",
-      "total_packs": 6,
-      "total_boxes": 8,
-      "total": 14,
-      "sample_titles": [
-        "Pokemon Hidden Potential Giratina V Tin",
-        "Pokémon TCG Hidden Potential Full Art Tin Set Rotom V Gallade V Giratina V - NEW",
-        "POKEMON HIDDEN POTENTIALS ROTOM V  TIN - NEW & SEALED",
-        "Pokémon Hidden Potential Tin – Rotom V (1 Foil Card & 4 Booster Packs) X10",
-        "Pokemon TCG Hidden Potential Sealed 3 Tin Bundle - Giratina V/Rotom V/Gallade V"
-      ]
-    },
-    {
-      "item_id": 21927,
-      "name": "Pitch Black Pokemon Center Elite Trainer Box Case (Exclusive)",
-      "set_code": "pokemon-me05-pitch-black",
-      "total_packs": 4,
-      "total_boxes": 536,
-      "total": 540,
-      "sample_titles": [
-        "Pokemon Center Pitch Black Elite Trainer Box PKC Exclusive ETB SEALED ME05 NEW",
-        "Pokemon Pitch Black (ME05) Elite Trainer Case Brand New Factory Sealed",
-        "Pitch Black Pokemon Center Elite Trainer Box (ETB)",
-        "Pokémon Center Pokémon Pitch Black Elite Trainer Box presale",
-        "Pitch Black POKEMON CENTER Elite Trainer Box PC ETB"
-      ]
-    },
-    {
-      "item_id": 38,
-      "name": "2 Pack Blister [Snorlax, Morpeko & Applin Cards]",
-      "set_code": "pokemon-miscellaneous-cards-products",
-      "total_packs": 15,
+      "item_id": 98862,
+      "name": "DON!! Card (Dracule Mihawk) (Gold)",
+      "set_code": "one-piece-the-azure-seas-seven",
+      "total_packs": 0,
       "total_boxes": 0,
-      "total": 15,
+      "total": 0,
+      "sample_titles": []
+    },
+    {
+      "item_id": 98915,
+      "name": "DON!! Card (Lim)",
+      "set_code": "one-piece-premium-booster-the-best-vol-2",
+      "total_packs": 0,
+      "total_boxes": 0,
+      "total": 0,
+      "sample_titles": []
+    },
+    {
+      "item_id": 103514,
+      "name": "Special DON!! Card Pack DP-11",
+      "set_code": "one-piece-the-time-of-battle",
+      "total_packs": 4,
+      "total_boxes": 0,
+      "total": 4,
       "sample_titles": [
-        "MORPEKO SNORLAX APPLIN Pokemon Promo 2 Pack Blister with coin  SEALED",
-        "Morpeko Snorlax Applin Pokémon Promo 2 Pack Blister Coin Darkeness Ablaze Battle",
-        "Morpeko Snorlax Applin Pokémon Promo 2 Pack Blister Coin Darkeness Ablaze Battle",
-        "Pokémon TCG Snorlax Morpeko Applin 2 Pack Blister Sword & Shield SEALED",
-        "MORPEKO SNORLAX APPLIN Pokemon Promo 2 Pack Blister with coin SEALED"
+        "One Piece Card Game Special DON!! DP-11 Promo Pack English Lot of 4 SEALED",
+        "Special DON!! Card Pack DP-07 Unopened",
+        "Op-16 Special Don Card Pack DP-11 One Piece Card Sealed",
+        "One Piece Special Don!! Card Pack Booster DP-11- SEALED - OP-16 x3"
       ]
+    },
+    {
+      "item_id": 98989,
+      "name": "DON!! Card (Sugar) (Gold)",
+      "set_code": "one-piece-premium-booster-the-best-vol-2",
+      "total_packs": 0,
+      "total_boxes": 0,
+      "total": 0,
+      "sample_titles": []
+    },
+    {
+      "item_id": 98850,
+      "name": "DON!! Card (Chopper) (Gold)",
+      "set_code": "one-piece-premium-booster-the-best-vol-2",
+      "total_packs": 0,
+      "total_boxes": 0,
+      "total": 0,
+      "sample_titles": []
+    },
+    {
+      "item_id": 98876,
+      "name": "DON!! Card (GEAR5 Luffy)",
+      "set_code": "one-piece-premium-booster-the-best-vol-2",
+      "total_packs": 0,
+      "total_boxes": 0,
+      "total": 0,
+      "sample_titles": []
+    },
+    {
+      "item_id": 103611,
+      "name": "Starter Deck 29: Egghead Display",
+      "set_code": "one-piece-starter-deck-29-egghead",
+      "total_packs": 0,
+      "total_boxes": 4,
+      "total": 4,
+      "sample_titles": [
+        "ST29 Egghead Starter Deck [ST-29] Display Case [One Piece] New - Sealed",
+        "One Piece Egghead Starter Deck [ST-29] Display Case New Sealed USA Seller",
+        "One Piece Egghead Starter Deck [ST-29] Display Case New Sealed English",
+        "One Piece TCG - Yellow Egghead ST-29 (ENG) - Single or Display - New & Sealed🧾✅"
+      ]
+    },
+    {
+      "item_id": 98987,
+      "name": "DON!! Card (Smoker) (Gold)",
+      "set_code": "one-piece-premium-booster-the-best-vol-2",
+      "total_packs": 0,
+      "total_boxes": 0,
+      "total": 0,
+      "sample_titles": []
+    },
+    {
+      "item_id": 103614,
+      "name": "Starter Deck 31: RED Monkey.D.Luffy",
+      "set_code": "one-piece-starter-deck-31-red-monkeydluffy",
+      "total_packs": 4,
+      "total_boxes": 16,
+      "total": 20,
+      "sample_titles": [
+        "Bandai One Piece Card Game Starter Deck ST-31 Red Monkey D. Luffy",
+        "One Piece Card Game ST-31 Starter Deck Monkey D Luffy Red Gear 5 Lot 2 OP-16",
+        "One Piece Card Game Starter Deck ST-31 Red Monkey D Luffy Gear 5 Japanese Sealed",
+        "One Piece : TCG | Starter Deck: RED Monkey.D.Luffy (ST-31)",
+        "Bandai One Piece Card Game Starter Deck ST-31 Red Monkey D. Luffy "
+      ]
+    },
+    {
+      "item_id": 102826,
+      "name": "Royal Blood - Release Event Pack",
+      "set_code": "one-piece-royal-blood-release-event-cards",
+      "total_packs": 5,
+      "total_boxes": 0,
+      "total": 5,
+      "sample_titles": [
+        "One Piece Card Game Royal Blood OP-10 Release Event Pack English",
+        "Bandai One Piece Royal Blood OP-10 Release Event Promo Pack Lot (12) English",
+        "One Piece OP10 Release Event Promo Pack- Royal Blood - Promo Law, Buggy, Luffy",
+        "One Piece TCG: Various Promo Packs - Sealed Eng",
+        "Royal Blood [OP-10] Release Event Pack!!! NEW FACTORY SEALED.  ENGLISH!"
+      ]
+    },
+    {
+      "item_id": 101030,
+      "name": "Learn Together Deck Set",
+      "set_code": "one-piece-learn-together-deck-set",
+      "total_packs": 1,
+      "total_boxes": 8,
+      "total": 9,
+      "sample_titles": [
+        "One Piece : Learn Together Deck Set [LT-01] | ENG",
+        "ONE PIECE CARD GAME: Learn Together Deck Set LT-01 English Version",
+        "ONE PIECE CARD GAME: Learn Together Deck Set LT-01 English Version [Brand New]",
+        "One Piece English TCG Learn TogeTher Deck Set LT-01",
+        "14X EMPTY ONE PIECE CARD GAME: Learn Together Deck Set DECK BOX ONLY"
+      ]
+    },
+    {
+      "item_id": 103597,
+      "name": "Starter Deck 23: RED Shanks",
+      "set_code": "one-piece-starter-deck-23-red-shanks",
+      "total_packs": 1,
+      "total_boxes": 4,
+      "total": 5,
+      "sample_titles": [
+        "One Piece Card Game STK-23 Starter Deck Red Shanks Korean Version Sealed",
+        "Bandai One Piece Card Game RED Starter Deck Shanks ST-23 Box English 2023",
+        "BANDAI ONE PIECE Card Game Start Deck Red Shanks ST-23 Japanese from Japan",
+        "BANDAI ONE PIECE Card Game Start Deck Red Shanks ST-23 Japanese",
+        "BANDAI ONE PIECE Card Game Starter Deck Red Shanks [ST-23] Ages 9+"
+      ]
+    },
+    {
+      "item_id": 98836,
+      "name": "DON!! Card (Boa Hancock) (Gold)",
+      "set_code": "one-piece-extra-booster-one-piece-heroines-edition",
+      "total_packs": 0,
+      "total_boxes": 0,
+      "total": 0,
+      "sample_titles": []
     }
   ]
 }

@@ -69,6 +69,14 @@ const BASE_CTE = sql`
       sc.sales_30d::float8 / NULLIF(sc.sales_30d + ll.listing_count, 0)::float8 AS sell_through
     FROM latest_listing ll
     JOIN sales_counts sc ON sc.item_id = ll.item_id AND sc.sales_90d > 0
+    -- listing_count = 0 n'est pas "tout vendu", c'est "eBay n'a jamais eu
+    -- d'annonce pour ce type de produit dans les catégories Sealed Packs/
+    -- Boxes interrogées" (ex. One Piece "DON!! Card" -- 53% des items OP
+    -- éligibles avant ce filtre, tous à 0 stock). Sans ce garde, ça produit
+    -- un faux 100% d'écoulement qui noie les vrais résultats en tête de
+    -- classement (sort par défaut = taux décroissant). Vérifié via
+    -- ingestion/probe_ebay.py --tcg one-piece le 2026-08-07.
+    WHERE ll.listing_count > 0
   )
 `;
 
