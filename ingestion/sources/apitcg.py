@@ -237,7 +237,15 @@ _UPSERT_ITEMS_SQL = """
         set_code      = EXCLUDED.set_code,
         release_date  = EXCLUDED.release_date,
         code          = EXCLUDED.code,
-        image_url     = EXCLUDED.image_url,
+        -- Ne pas écraser une image PokéCardex déjà backfillée (résolution
+        -- meilleure que TCGPlayer sur les quelques sets de
+        -- pokecardex.POKECARDEX_IMAGE_SETS, vérifié à la main) -- sans ce
+        -- garde, le sync incrémental quotidien reviendrait dessus au
+        -- prochain passage sur ces produits, cf. pokecardex.sync_mapped_items.
+        image_url     = CASE
+            WHEN items.image_url LIKE 'https://pokecardex-scans.b-cdn.net/%%' THEN items.image_url
+            ELSE EXCLUDED.image_url
+        END,
         language      = EXCLUDED.language,
         name          = EXCLUDED.name,
         rarity        = EXCLUDED.rarity

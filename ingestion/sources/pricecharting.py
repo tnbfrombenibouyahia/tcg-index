@@ -1908,7 +1908,16 @@ _UPSERT_JP_SINGLE_ITEMS_SQL = """
     ON CONFLICT (source, external_id) DO UPDATE SET
         name      = EXCLUDED.name,
         code      = EXCLUDED.code,
-        image_url = EXCLUDED.image_url
+        -- Ne pas écraser une image PokéCardex déjà backfillée (résolution
+        -- meilleure que PriceCharting sur les quelques sets de
+        -- pokecardex.POKECARDEX_IMAGE_SETS, vérifié à la main) -- sans ce
+        -- garde, le sync JP singles quotidien (non tiéré, tourne sur tout
+        -- PRICECHARTING_JP_ALL_SLUGS chaque jour) reviendrait dessus au
+        -- prochain run, cf. pokecardex.sync_mapped_items.
+        image_url = CASE
+            WHEN items.image_url LIKE 'https://pokecardex-scans.b-cdn.net/%%' THEN items.image_url
+            ELSE EXCLUDED.image_url
+        END
 """
 
 
