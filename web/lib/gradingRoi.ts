@@ -203,3 +203,15 @@ export function computeGradingRoi(
     breakdown,
   };
 }
+
+// Meilleur prix gradé réellement connu pour la carte (gradePrices est
+// partiel -- souvent pas de psa10). Partagé entre GradingRoiTableBody
+// (colonne "meilleur gradé"), GradingRoiWidget (dashboard) et la landing
+// page (carte animée du hero) -- une seule source de vérité pour "quel
+// grade afficher" plutôt que trois copies de TIERS_HIGH_TO_LOW.
+const TIERS_HIGH_TO_LOW: GradedTier[] = ["psa10", "psa9.5", "psa9", "psa8", "psa7"];
+
+export function bestGradedPrice(candidate: GradingRoiCandidate): number | null {
+  const grade = TIERS_HIGH_TO_LOW.find((g) => candidate.gradePrices[g] != null);
+  return grade ? candidate.gradePrices[grade]! : null;
+}

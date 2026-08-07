@@ -2,17 +2,22 @@ import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { LanguageSelector } from "@/components/ui/LanguageSelector";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { UniverseSelector } from "@/components/ui/UniverseSelector";
+import { getUniverse } from "@/lib/universe";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SideBar — Fixed left navigation, "Quiet Luxury / White Mode"
+// SideBar — Fixed left navigation, "Terminal" design system (verre sombre,
+// cf. app/globals.css) -- même ossature qu'avant, recolorée via les tokens
+// CSS existants + sélecteur d'univers ajouté en pied de colonne.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function NavBar() {
   const t = await getTranslations("nav");
   const locale = await getLocale();
+  const universe = await getUniverse();
 
   const PRIMARY_NAV = [
-    { href: "/", label: t("home"), icon: <HomeIcon /> },
+    { href: "/dashboard", label: t("home"), icon: <HomeIcon /> },
     { href: "/catalog", label: t("catalog"), icon: <SearchIcon /> },
     { href: "/transactions", label: t("transactions"), icon: <TransactionsIcon /> },
     { href: "/sealed-ev", label: t("sealedEv"), icon: <BoxIcon /> },
@@ -29,7 +34,9 @@ export async function NavBar() {
       style={{
         width: "192px",
         minWidth: "192px",
-        background: "var(--surface-solid)",
+        background: "var(--surface)",
+        backdropFilter: "var(--glass-blur)",
+        WebkitBackdropFilter: "var(--glass-blur)",
         borderRight: "1px solid var(--border-soft)",
         display: "flex",
         flexDirection: "column",
@@ -44,7 +51,7 @@ export async function NavBar() {
       {/* Brand */}
       <div style={{ paddingLeft: "24px", paddingRight: "24px", marginBottom: "32px" }}>
         <Link
-          href="/"
+          href="/dashboard"
           style={{
             display: "flex",
             alignItems: "center",
@@ -99,6 +106,7 @@ export async function NavBar() {
           gap: "12px",
         }}
       >
+        <UniverseSelector current={universe} />
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <LanguageSelector current={locale} />
           <ThemeToggle />

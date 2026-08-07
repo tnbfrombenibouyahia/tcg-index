@@ -1,69 +1,53 @@
-import { getTranslations } from "next-intl/server";
-import { LastUpdatedBadge } from "@/components/ui/LastUpdatedBadge";
-import { HeadlineSection } from "@/components/homepage/HeadlineSection";
-import { SubIndexGrid } from "@/components/homepage/SubIndexGrid";
-import { DailyExchangeSection } from "@/components/homepage/DailyExchangeSection";
-import { getAllIndices } from "@/lib/queries/indices";
+import { getLocale } from "next-intl/server";
+import { LandingPage } from "@/components/landing/LandingPage";
+import { getGradingRoiRanking } from "@/lib/queries/gradingRoi";
+import { getLandingStats } from "@/lib/queries/landingStats";
+import { bestGradedPrice, type GradingRoiRow } from "@/lib/gradingRoi";
+import type { LandingCard } from "@/lib/landing";
+import { getUniverse } from "@/lib/universe";
 
-export default async function HomePage() {
-  const { asOf, indices } = await getAllIndices(180);
-  const tNav = await getTranslations("nav");
-  const tHome = await getTranslations("home");
+// ─────────────────────────────────────────────────────────────────────────────
+// Landing page = nouvelle racine "/" (décision utilisateur du 2026-08-07,
+// cf. mémoire projet "project_terminal_redesign") -- le dashboard applicatif
+// a déménagé sur /dashboard (cf. app/(app)/dashboard/page.tsx). Toutes les
+// données du hero viennent des mêmes requêtes que le reste du site.
+// ─────────────────────────────────────────────────────────────────────────────
 
-  const headline = indices.filter((i) => i.kind === "global");
-  const detail = indices.filter((i) => i.kind !== "global");
+function toLandingCard(row: GradingRoiRow): LandingCard | null {
+  const sellPrice = bestGradedPrice(row);
+  if (sellPrice == null) return null;
+  return {
+    itemId: row.itemId,
+    name: row.name,
+    imageUrl: row.imageUrl,
+    tcg: row.tcg,
+    buyPrice: row.ungradedPrice,
+    sellPrice,
+    roiPct: row.defaultResult.roiPct,
+  };
+}
+
+export default async function LandingRoute() {
+  const locale = await getLocale();
+  const universe = await getUniverse();
+
+  const [pokemonRoi, onePieceRoi, stats] = await Promise.all([
+    getGradingRoiRanking({ tcg: "pokemon", sort: "roi_desc", limit: 6 }),
+    getGradingRoiRanking({ tcg: "one-piece", sort: "roi_desc", limit: 6 }),
+    getLandingStats(),
+  ]);
+
+  const pokemonCards = pokemonRoi.rows.map(toLandingCard).filter((c): c is LandingCard => c !== null);
+  const onePieceCards = onePieceRoi.rows.map(toLandingCard).filter((c): c is LandingCard => c !== null);
 
   return (
-    <div style={{ padding: "0 32px 40px" }}>
-      {/* ── Breadcrumbs ────────────────────────────────────────────────────── */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          padding: "24px 0 20px",
-        }}
-      >
-        <span
-          style={{
-            fontSize: "14px",
-            color: "var(--foreground-muted)",
-            fontWeight: 500,
-            cursor: "pointer",
-          }}
-        >
-          {tNav("home")}
-        </span>
-        <span style={{ fontSize: "14px", color: "var(--foreground-subtle)" }}>/</span>
-        <span
-          style={{
-            fontSize: "14px",
-            fontWeight: 700,
-            color: "var(--foreground)",
-            letterSpacing: "-0.01em",
-          }}
-        >
-          {tHome("breadcrumbCurrent")}
-        </span>
-
-        {/* Spacer */}
-        <div style={{ flex: 1 }} />
-
-        {/* Last updated badge */}
-        <LastUpdatedBadge asOf={asOf} />
-      </div>
-
-      {/* ── Main content ─────────────────────────────────────────────────────── */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-        {/* Headline card */}
-        <HeadlineSection indices={headline} />
-
-        {/* Sub-index tiles */}
-        <SubIndexGrid indices={detail} />
-
-        {/* Daily exchange volume */}
-        <DailyExchangeSection indices={headline} />
-      </div>
-    </div>
+    <LandingPage
+      pokemonCards={pokemonCards}
+      onePieceCards={onePieceCards}
+      itemCount={stats.itemCount}
+      saleCount={stats.saleCount}
+      locale={locale}
+      initialUniverse={universe}
+    />
   );
 }

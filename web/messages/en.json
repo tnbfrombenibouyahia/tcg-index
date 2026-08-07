@@ -405,5 +405,107 @@
     "liquidityListingCount": "Still listed (eBay)",
     "liquiditySales30d": "Sold (30d)",
     "liquiditySales90d": "Sold (90d)"
+  },
+  "dashboard": {
+    "widgets": {
+      "catalogue": { "title": "Catalogue", "subtitle": "Search any card, all languages" },
+      "live": { "title": "Live Market", "subtitle": "Real-time market index" },
+      "tx": { "title": "Transactions", "subtitle": "Recently recorded sales" },
+      "under": { "title": "Undervalued", "subtitle": "Gaps between price and fair value" },
+      "div": { "title": "Divergences", "subtitle": "Price vs volume gap, ungraded sales only" },
+      "grade": { "title": "Grading ROI", "subtitle": "Profitability of sending a card to grading" }
+    },
+    "catalogue": {
+      "searchPlaceholder": "Search a card...",
+      "noResults": "No matching card",
+      "empty": "Type at least 2 characters to search"
+    },
+    "live": {
+      "topMovers": "TOP MOVERS",
+      "noMovers": "Not enough recent sales to rank movers",
+      "noHistory": "Not enough history yet"
+    },
+    "transactions": {
+      "colName": "Card",
+      "colPlatform": "Platform",
+      "colGrade": "Grade",
+      "colPrice": "Price",
+      "colDate": "Date",
+      "empty": "No recent transaction"
+    },
+    "undervalued": {
+      "colCurrent": "Current",
+      "colFair": "Fair val.",
+      "empty": "No data yet"
+    },
+    "divergences": {
+      "colName": "Card",
+      "colPriceChg": "Δ Price",
+      "colVolChg": "Δ Volume",
+      "colDivergence": "Divergence",
+      "empty": "No data yet",
+      "footnote": "Divergence = price change (%) − volume change (%) over two equal windows. Ungraded cards with ≥3 sales per window only."
+    },
+    "gradingRoi": {
+      "colName": "Card",
+      "colRaw": "Raw",
+      "colBestGraded": "Best graded",
+      "colRoi": "Net ROI",
+      "colVerdict": "Verdict",
+      "verdictGrade": "Grade it",
+      "verdictWait": "Wait",
+      "empty": "No data yet"
+    },
+    "auth": {
+      "openLabel": "Account",
+      "close": "Close",
+      "login": "Log in",
+      "signup": "Sign up",
+      "loginHeading": "Welcome back",
+      "signupHeading": "Create your account",
+      "continueWithGoogle": "Continue with Google",
+      "or": "OR",
+      "email": "Email address",
+      "password": "Password",
+      "submitLogin": "Log in",
+      "submitSignup": "Create my account",
+      "disclaimer": "Accounts aren't live yet — this is a preview of what's coming."
+    }
+  },
+  "landing": {
+    "kicker": "FOR COLLECTORS AND INVESTORS",
+    "h1Line1": "Card arbitrage,",
+    "h1Line2": "with the rigor of a trading desk.",
+    "heroSub": "Real-time price tracking, divergence detection, and grading ROI for Pokémon and One Piece — in a single platform.",
+    "heroSubNote": "Sealed and singles · graded and ungraded · vintage and new sets.",
+    "ctaSignup": "Create a free account",
+    "ctaLogin": "I already have an account",
+    "navFeatures": "Features",
+    "navLogin": "Log in",
+    "navSignup": "Create an account",
+    "statCards": "Cards tracked",
+    "statSales": "Sales recorded",
+    "statRealtime": "Real-time feed",
+    "statUniversesValue": "2 universes",
+    "statUniversesLabel": "Pokémon · One Piece",
+    "markerBlue": "Divergence detected · opportunity flagged",
+    "markerRed": "Optimal timing: sell here · ROI +{roi}%",
+    "ticketPending": "Pending…",
+    "ticketBuy": "Buy: {price}",
+    "ticketSell": "Sell: {price}",
+    "profitRow": "Potential profit: +{roi}% ({amount})",
+    "heroEmpty": "Not enough graded data yet to preview the demo.",
+    "featuresKicker": "KEY FEATURES",
+    "featuresTitle": "Six modules, one terminal.",
+    "featuresSub": "Everything you need to run a card portfolio like a trading book — without juggling ten tabs.",
+    "features": {
+      "catalogue": { "title": "Catalogue", "desc": "Instant search across the whole Pokémon and One Piece market, live quotes." },
+      "transactions": { "title": "Transactions", "desc": "Full history of your buys and sells, net margin computed automatically." },
+      "undervalued": { "title": "Undervalued cards", "desc": "Algorithmic detection of gaps between quoted price and real market value." },
+      "divergences": { "title": "Divergences", "desc": "Alerts on price/volume decorrelations before they close back up." },
+      "live": { "title": "Live Market", "desc": "Real-time data feed from the main trading venues." },
+      "grading": { "title": "Grading ROI", "desc": "Simulate the profitability of a PSA/BGS submission before paying the fees." }
+    },
+    "footer": "© 2026 TCG Terminal. Market data provided for informational purposes."
   }
 }
