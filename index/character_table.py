@@ -40,6 +40,8 @@ _POKEMON_SCORES: dict[str, int] = {
     "Togekiss":    9, "Mimikyu":    9, "Scizor":    9, "Tyranitar":  9,
     "Dragonair":   9, "Dratini":    9, "Flygon":    9, "Salamence":  9,
     "Latias":      9, "Latios":     9, "Jirachi":   9, "Deoxys":     9,
+    "Dialga":      9, "Palkia":     9, "Giratina":  9, "Groudon":    9,
+    "Kyogre":      9,
     "Darkrai":     9, "Shaymin":    9, "Arceus":    9, "Zekrom":     9,
     "Reshiram":    9, "Kyurem":     9, "Xerneas":   9, "Yveltal":    9,
     "Solgaleo":    9, "Lunala":     9, "Necrozma":  9, "Cosmog":     9,
