@@ -976,6 +976,15 @@ def main():
         )
         result["total"] += inherit_result["inherited"] + inherit_result["promo_tagged"]
 
+        print("\n== Backfill rareté Pokémon JP -- Bulbapedia (vintage hors couverture LimitlessTCG) ==")
+        from ingestion.sources import bulbapedia
+
+        bulba_result = bulbapedia.sync_all_jp_rarities()
+        print(f"  {bulba_result['total']} carte(s) traitée(s)")
+        result["total"] += bulba_result["total"]
+        result["skipped"] += bulba_result["skipped"]
+        result["errors"] += bulba_result["errors"]
+
     print(f"\nTerminé : {result['total']} traité(s) au total.")
     if result["skipped"]:
         print(f"Ignorés (aucune rareté trouvée) : {', '.join(result['skipped'])}")

@@ -1,18 +1,25 @@
 name: Rarity backfill sync
 
-# Backfill `items.rarity` via LimitlessTCG (Pokémon EN+JP, One Piece + promos),
-# cf. ingestion/sources/limitlesstcg.py et ingestion/orchestrator.py
-# (run_rarity_backfill_sync). Scraping d'appoint tant que le quota API TCG ne
-# fournit pas attributes.Rarity sur tout le catalogue (cf. mémoire projet
-# "apitcg_quota_1000_incremental_sync" / "limitlesstcg_rarity_backfill").
-# Idempotent (UPDATE) : chaque run récupère la rareté des nouveaux sets sortis
-# depuis le dernier passage, sans quoi la couverture se fige comme le premier
-# run manuel du 2026-08-02.
+# Backfill `items.rarity` via LimitlessTCG (Pokémon EN+JP, One Piece + promos)
+# et Bulbapedia (Pokémon JP vintage, hors couverture LimitlessTCG), cf.
+# ingestion/sources/limitlesstcg.py, ingestion/sources/bulbapedia.py et
+# ingestion/orchestrator.py (run_rarity_backfill_sync). Scraping d'appoint
+# tant que le quota API TCG ne fournit pas attributes.Rarity sur tout le
+# catalogue (cf. mémoire projet "apitcg_quota_1000_incremental_sync" /
+# "limitlesstcg_rarity_backfill"). Idempotent (UPDATE) : chaque run récupère
+# la rareté des nouveaux sets sortis depuis le dernier passage, sans quoi la
+# couverture se fige comme le premier run manuel du 2026-08-02.
 #
 # Cadence hebdomadaire (pas quotidienne) : un nouveau set ne sort pas assez
 # souvent pour justifier plus, même logique que ebay-listings-sync.yml. Créneau
 # horaire non rond pour éviter la file d'attente GitHub Actions aux horaires
 # pile (cf. les deux autres workflows).
+#
+# timeout-minutes: 90 (pas 60 comme les deux autres workflows) : Bulbapedia
+# respecte son Crawl-delay: 5 sur ~340 set_codes JP au premier run
+# (~28-30 min à lui seul, cf. mémoire projet) -- les runs suivants ne
+# retraitent que les set_codes encore sans rareté donc beaucoup plus courts,
+# mais la marge reste utile tant que le gisement encore ouvert est large.
 on:
   schedule:
     - cron: "19 3 * * 5"  # vendredi, ~05:19 heure locale FR/SE (été)
@@ -21,7 +28,7 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
