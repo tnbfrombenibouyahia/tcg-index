@@ -985,6 +985,15 @@ def main():
         result["skipped"] += bulba_result["skipped"]
         result["errors"] += bulba_result["errors"]
 
+        print("\n== Backfill rareté Pokémon JP -- TCGdex (reliquat hors couverture Bulbapedia) ==")
+        from ingestion.sources import tcgdex
+
+        tcgdex_result = tcgdex.sync_all_remaining_jp_rarities()
+        print(f"  {tcgdex_result['total']} carte(s) traitée(s)")
+        result["total"] += tcgdex_result["total"]
+        result["skipped"] += tcgdex_result["skipped"]
+        result["errors"] += tcgdex_result["errors"]
+
     print(f"\nTerminé : {result['total']} traité(s) au total.")
     if result["skipped"]:
         print(f"Ignorés (aucune rareté trouvée) : {', '.join(result['skipped'])}")

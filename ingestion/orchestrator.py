@@ -54,7 +54,7 @@ from index import undervalued as index_undervalued
 from index import volume as index_volume
 from index.methodology import INDEX_DEFINITIONS
 from ingestion import rarity_inherit
-from ingestion.sources import apitcg, bulbapedia, ebay, limitlesstcg, pricecharting
+from ingestion.sources import apitcg, bulbapedia, ebay, limitlesstcg, pricecharting, tcgdex
 from shared.db import get_connection
 from shared.sync_log import finish_run, start_run
 
@@ -313,14 +313,16 @@ def run_rarity_backfill_sync(run_type: str) -> None:
                 )
                 inherit_result = rarity_inherit.sync_rarity_inheritance()
                 bulba_result = bulbapedia.sync_all_jp_rarities()
+                tcgdex_result = tcgdex.sync_all_remaining_jp_rarities()
                 jp_result = {
                     **jp_result,
                     "total": (
                         jp_result["total"] + n_promo + inherit_result["inherited"]
                         + inherit_result["promo_tagged"] + bulba_result["total"]
+                        + tcgdex_result["total"]
                     ),
-                    "skipped": jp_result["skipped"] + bulba_result["skipped"],
-                    "errors": jp_result["errors"] + bulba_result["errors"],
+                    "skipped": jp_result["skipped"] + bulba_result["skipped"] + tcgdex_result["skipped"],
+                    "errors": jp_result["errors"] + bulba_result["errors"] + tcgdex_result["errors"],
                 }
             else:
                 en_result = limitlesstcg.sync_all_one_piece_rarities()
