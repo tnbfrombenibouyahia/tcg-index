@@ -53,7 +53,7 @@ from index import sealed_ev as index_sealed_ev
 from index import undervalued as index_undervalued
 from index import volume as index_volume
 from index.methodology import INDEX_DEFINITIONS
-from ingestion.sources import apitcg, ebay, pricecharting
+from ingestion.sources import apitcg, ebay, limitlesstcg, pricecharting
 from shared.db import get_connection
 from shared.sync_log import finish_run, start_run
 
@@ -283,6 +283,54 @@ def run_ebay_listings_sync(run_type: str) -> None:
         finish_run(run_id, status="error" if n_errors else "success", rows_written=stats["rows_written"], detail=detail)
 
 
+def run_rarity_backfill_sync(run_type: str) -> None:
+    """Backfill `items.rarity` via LimitlessTCG (cf. ingestion/sources/limitlesstcg.py
+    -- scraping d'appoint tant que le quota API TCG ne fournit pas
+    `attributes.Rarity` sur tout le catalogue). Idempotent (UPDATE), donc sûr à
+    rejouer périodiquement -- c'est justement le but : récupérer la rareté des
+    cartes des nouveaux sets sortis depuis le dernier passage (Pokémon EN+JP,
+    One Piece + promos individuels), sans quoi la couverture se fige comme le
+    run manuel ponctuel du 2026-08-02 (cf. mémoire projet
+    "limitlesstcg_rarity_backfill"). Cadence hebdomadaire (comme eBay listings,
+    cf. `run_ebay_listings_sync`) : un nouveau set ne sort pas assez souvent
+    pour justifier plus, cf. `--rarity-backfill` /
+    .github/workflows/rarity-backfill-sync.yml. Erreur sur un TCG isolée (même
+    prudence que `run_items_sync`/`run_ebay_listings_sync`) : n'empêche pas
+    l'autre de tourner."""
+    print("\n=== Rareté : backfill LimitlessTCG ===")
+    for tcg in TCGS:
+        print(f"-- {tcg} --")
+        run_id = start_run(run_type, "rarity_backfill", tcg=tcg)
+        try:
+            if tcg == "pokemon":
+                en_result = limitlesstcg.sync_all_pokemon_rarities()
+                jp_result = limitlesstcg.sync_all_pokemon_jp_rarities()
+                n_promo = limitlesstcg.sync_promo_rarities(
+                    "pokemon", "EN", limitlesstcg.EN_PROMO_SET_CODES
+                ) + limitlesstcg.sync_promo_rarities(
+                    "pokemon", "JP", limitlesstcg.JP_PROMO_SET_CODES
+                )
+                jp_result = {**jp_result, "total": jp_result["total"] + n_promo}
+            else:
+                en_result = limitlesstcg.sync_all_one_piece_rarities()
+                jp_result = limitlesstcg.sync_all_one_piece_promos()
+            result = {
+                "total": en_result["total"] + jp_result["total"],
+                "skipped": en_result["skipped"] + jp_result["skipped"],
+                "errors": en_result["errors"] + jp_result["errors"],
+            }
+        except Exception as exc:
+            finish_run(run_id, status="error", detail=str(exc))
+            print(f"  ! erreur : {exc}")
+            continue
+        n_errors = len(result["errors"])
+        detail = f"{result['total']} carte(s) traitée(s), {len(result['skipped'])} set(s)/slug(s) ignoré(s)"
+        if n_errors:
+            detail += f", {n_errors} erreur(s)"
+        print(f"  {detail}")
+        finish_run(run_id, status="error" if n_errors else "success", rows_written=result["total"], detail=detail)
+
+
 def run_index_calculation(run_type: str) -> None:
     """Recalcule tous les indices de prix (cf. index/methodology.py) à partir
     des prix qu'on vient de synchroniser. Tourne à chaque run (quotidien et
@@ -426,6 +474,14 @@ def main() -> int:
             "hebdomadaire (cf. .github/workflows/ebay-listings-sync.yml)."
         ),
     )
+    parser.add_argument(
+        "--rarity-backfill", action="store_true",
+        help=(
+            "Lance UNIQUEMENT le backfill rareté LimitlessTCG (cf. run_rarity_backfill_sync) et sort -- "
+            "n'entre pas dans le pipeline prix/index quotidien, nouvelle source indépendante à cadence "
+            "hebdomadaire (cf. .github/workflows/rarity-backfill-sync.yml)."
+        ),
+    )
     args = parser.parse_args()
 
     if args.ebay_listings:
@@ -436,6 +492,18 @@ def main() -> int:
         except Exception as exc:
             had_errors = True
             print(f"\n!! Erreur pendant la sync eBay active listings : {exc}")
+        elapsed = time.monotonic() - started
+        print(f"\n=== Terminé en {elapsed / 60:.1f} min ({'avec erreurs' if had_errors else 'OK'}) ===")
+        return 1 if had_errors else 0
+
+    if args.rarity_backfill:
+        started = time.monotonic()
+        had_errors = False
+        try:
+            run_rarity_backfill_sync("weekly")
+        except Exception as exc:
+            had_errors = True
+            print(f"\n!! Erreur pendant le backfill rareté : {exc}")
         elapsed = time.monotonic() - started
         print(f"\n=== Terminé en {elapsed / 60:.1f} min ({'avec erreurs' if had_errors else 'OK'}) ===")
         return 1 if had_errors else 0
