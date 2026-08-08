@@ -50,6 +50,7 @@ from dotenv import load_dotenv
 from index import calculate as index_calculate
 from index import grading_roi_inputs as index_grading_roi_inputs
 from index import sealed_ev as index_sealed_ev
+from index import sync_interest_tier
 from index import undervalued as index_undervalued
 from index import volume as index_volume
 from index.methodology import INDEX_DEFINITIONS
@@ -324,6 +325,11 @@ def run_rarity_backfill_sync(run_type: str) -> None:
                     "skipped": jp_result["skipped"] + bulba_result["skipped"] + tcgdex_result["skipped"],
                     "errors": jp_result["errors"] + bulba_result["errors"] + tcgdex_result["errors"],
                 }
+                # Tiers d'intérêt (SIR/IR/FA/Secret/chase, cf.
+                # index/interest_tier.py) dérivés de rarity+name -- recalculés
+                # ici, juste après que ce run vient de backfiller de nouvelles
+                # rarités, pour que le tier reste à jour au même rythme.
+                sync_interest_tier.sync_interest_tiers()
             else:
                 en_result = limitlesstcg.sync_all_one_piece_rarities()
                 jp_result = limitlesstcg.sync_all_one_piece_promos()
