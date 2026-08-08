@@ -39,6 +39,7 @@ export interface ItemSummary {
   imageUrl: string | null;
   language: string;
   rarity: string | null;
+  interestTier: string | null;
 }
 
 export interface SaleRow {

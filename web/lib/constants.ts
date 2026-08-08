@@ -42,6 +42,24 @@ export const TCGS: { value: Tcg; label: string }[] = [
   { value: "one-piece", label: "One Piece" },
 ];
 
+// Miroir de index/interest_tier.py (Python, côté ingestion) -- tiers
+// "cartes d'intérêt" Pokémon uniquement (cf. mémoire projet, One Piece n'a
+// pas cette colonne calculée). Rendus tels quels comme la rareté (pas
+// traduits, cf. GRADE_LABELS -- même principe : vocabulaire de
+// collectionneur, pas de la copie UI), sauf le libellé "chase" lui-même qui
+// n'est pas un terme de rareté officiel côté source (contrairement à
+// sir/ir/fa/secret qui reprennent le jargon TCG tel quel) donc traduit.
+export const INTEREST_TIERS = ["sir", "ir", "fa", "secret", "chase"] as const;
+export type InterestTier = (typeof INTEREST_TIERS)[number];
+
+export const INTEREST_TIER_LABELS: Record<InterestTier, string> = {
+  sir: "SIR",
+  ir: "IR",
+  fa: "FA",
+  secret: "Secret Rare",
+  chase: "Chase",
+};
+
 // Fenêtres de temps du détecteur de divergence volume/prix (cf.
 // lib/queries/divergence.ts). Vivent ici (fichier de constantes pures, sans
 // import serveur) et non dans divergence.ts car des Client Components

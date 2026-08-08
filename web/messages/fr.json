@@ -125,6 +125,7 @@
       "set": "Set",
       "grade": "Grade",
       "rarity": "Rareté",
+      "interestTier": "Tier",
       "all": "Tous",
       "allSets": "Tous les sets",
       "chooseTcgFirst": "Choisir un TCG d'abord"

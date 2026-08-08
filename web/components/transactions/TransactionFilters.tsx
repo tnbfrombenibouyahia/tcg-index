@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { GRADE_LABELS, TCGS, type Grade } from "@/lib/constants";
+import { GRADE_LABELS, INTEREST_TIERS, INTEREST_TIER_LABELS, TCGS, type Grade } from "@/lib/constants";
 import type { SetOption } from "@/lib/types";
 import { CardSearchCombobox } from "./CardSearchCombobox";
 
@@ -21,6 +21,7 @@ export function TransactionFilters({ sets, grades, rarities }: TransactionFilter
   const setCode = searchParams.get("set_code") ?? "";
   const grade = searchParams.get("grade") ?? "";
   const rarity = searchParams.get("rarity") ?? "";
+  const interestTier = searchParams.get("interest_tier") ?? "";
 
   function updateParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -40,7 +41,7 @@ export function TransactionFilters({ sets, grades, rarities }: TransactionFilter
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
       <div>
         <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("tcg")}</label>
         <select
@@ -104,6 +105,22 @@ export function TransactionFilters({ sets, grades, rarities }: TransactionFilter
           {rarities.map((r) => (
             <option key={r} value={r}>
               {r}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("interestTier")}</label>
+        <select
+          value={interestTier}
+          onChange={(e) => updateParam("interest_tier", e.target.value)}
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+        >
+          <option value="">{t("all")}</option>
+          {INTEREST_TIERS.map((tier) => (
+            <option key={tier} value={tier}>
+              {INTEREST_TIER_LABELS[tier]}
             </option>
           ))}
         </select>

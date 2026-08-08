@@ -13,6 +13,7 @@ import {
 import { GRADES, GRADE_LABELS } from "@/lib/constants";
 import type { LiquidityCalc, SealedEvCalc, UndervaluedCalc } from "@/lib/types";
 import { formatDate, formatUsd } from "@/lib/format";
+import { InterestTierBadge } from "@/components/ui/InterestTierBadge";
 import { LanguageFlag } from "@/components/ui/LanguageFlag";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { StatDelta } from "@/components/ui/StatDelta";
@@ -104,6 +105,7 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
                 {item.rarity}
               </span>
             )}
+            <InterestTierBadge tier={item.interestTier} />
           </div>
 
           {/* Current price by grade */}
