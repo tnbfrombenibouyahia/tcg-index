@@ -1,0 +1,49 @@
+name: Rarity backfill sync
+
+# Backfill `items.rarity` via LimitlessTCG (Pokémon EN+JP, One Piece +
+# promos), Bulbapedia (Pokémon JP vintage, hors couverture LimitlessTCG) et
+# TCGdex (reliquat JP hors couverture Bulbapedia), cf.
+# ingestion/sources/limitlesstcg.py, ingestion/sources/bulbapedia.py,
+# ingestion/sources/tcgdex.py et ingestion/orchestrator.py
+# (run_rarity_backfill_sync). Scraping d'appoint tant que le quota API TCG
+# ne fournit pas attributes.Rarity sur tout le catalogue (cf. mémoire projet
+# "apitcg_quota_1000_incremental_sync" / "limitlesstcg_rarity_backfill").
+# Idempotent (UPDATE) : chaque run récupère la rareté des nouveaux sets
+# sortis depuis le dernier passage, sans quoi la couverture se fige comme
+# le premier run manuel du 2026-08-02.
+#
+# Cadence hebdomadaire (pas quotidienne) : un nouveau set ne sort pas assez
+# souvent pour justifier plus, même logique que ebay-listings-sync.yml. Créneau
+# horaire non rond pour éviter la file d'attente GitHub Actions aux horaires
+# pile (cf. les deux autres workflows).
+#
+# timeout-minutes: 120 (pas 60 comme les deux autres workflows) : Bulbapedia
+# ET TCGdex bouclent chacun sur les mêmes ~300 set_codes JP encore sans
+# rareté avec le même Crawl-delay: 5 (TCGdex a besoin d'un fetch Bulbapedia
+# par set_code pour trouver le nom JP natif, cf. son docstring module -- pas
+# de cache partagé entre les deux boucles pour l'instant) -- double le
+# temps de cette étape par rapport à avant l'ajout de TCGdex (~28-30 min à
+# lui seul devient ~55-60 min pour les deux). Les runs suivants ne
+# retraitent que les set_codes encore sans rareté donc beaucoup plus courts,
+# mais la marge reste utile tant que le gisement encore ouvert est large.
+on:
+  schedule:
+    - cron: "19 3 * * 5"  # vendredi, ~05:19 heure locale FR/SE (été)
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - run: python -m ingestion.orchestrator --rarity-backfill
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

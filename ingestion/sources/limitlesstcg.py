@@ -330,7 +330,16 @@ def sync_all_one_piece_promos(releases: dict[str, str] | None = None) -> dict:
 # (contrairement à une v1 de ce module) : un retrait complet de "promo"
 # faisait matcher "Mega Evolution" et "Mega Evolution Promo" comme
 # identiques, un faux positif -- cf. mémoire projet.
-_PLURAL_NORMALIZE = {"promos": "promo", "energies": "energy", "cards": "card"}
+_PLURAL_NORMALIZE = {"promos": "promo", "energies": "energy", "cards": "card", "fighters": "fighter"}
+# `\d*` (pas `\d+`) -- redonne bien un tel token nu quand il n'y a pas de
+# chiffre ("xy", "sm"...), volontairement : "pokemon-xy-evolutions" doit
+# pouvoir matcher le nom LimitlessTCG "Evolutions" (qui n'a PAS "XY" dans son
+# propre nom) une fois "xy" strippé de notre côté. cf. commentaire de
+# `_best_match_with_tiebreak` pour comment la collision "SM Promos"/
+# "XY Promos" (qui se réduisent alors toutes deux à {"promo"}) est gérée
+# SANS perdre ce cas -- pas en touchant ce regex (essayé, cassait
+# xy-evolutions et probablement d'autres, cf. mémoire projet
+# "limitlesstcg_rarity_backfill"), mais en détectant l'égalité de score.
 _GEN_CODE_RE = re.compile(r"^(sv|swsh|sm|xy|bw|dp|ex|hgss|me)\d*$")
 
 
@@ -367,6 +376,150 @@ def fetch_pokemon_set_list() -> dict[str, str]:
     return sets
 
 
+# Table manuelle vérifiée à la main (nom officiel du set, pas juste un score
+# de tokens) pour les `set_code` que `build_pokemon_set_mapping` ne peut pas
+# résoudre seul -- soit parce que LimitlessTCG nomme le set sans le suffixe
+# descriptif que porte notre set_code ("Scarlet & Violet" vs
+# "scarlet-violet-base-set"), soit parce que c'est une sous-collection dont
+# le nom diverge trop du set parent pour un score de Jaccard fiable
+# ("Shiny Vault" au sein de "Hidden Fates"). Découvert en creusant l'écart de
+# couverture EN, cf. mémoire projet "limitlesstcg_rarity_backfill" -- chaque
+# entrée vérifiée individuellement contre le nom officiel du set, PAS un
+# score de similarité automatique (trop de faux positifs à ce niveau de
+# rapprochement, ex. "Base Set" matcherait n'importe quel set contenant
+# "base"+"set"). A priorité sur le matching automatique (cf. usage dans
+# `build_pokemon_set_mapping`).
+EN_SET_CODE_OVERRIDES: dict[str, str] = {
+    "pokemon-sv01-scarlet-violet-base-set": "SVI",
+    "pokemon-sv-scarlet-violet-151": "MEW",
+    "pokemon-swsh01-sword-shield-base-set": "SSH",
+    "pokemon-sm-base-set": "SUM",
+    "pokemon-heartgold-soulsilver": "HS",
+    "pokemon-firered-leafgreen": "RG",
+    "pokemon-base-set-shadowless": "BS",
+    "pokemon-hidden-fates-shiny-vault": "HIF",
+    "pokemon-legendary-treasures-radiant-collection": "LTR",
+    "pokemon-swsh10-astral-radiance-trainer-gallery": "ASR",
+}
+# Élagué le 2026-08-08 après un run réel : 11 entrées d'origine (SVP, SVE,
+# SP, SMP, HSP, BWP, DPP, NP, WP, RM, MEE) pointaient vers de vraies pages
+# LimitlessTCG (pas d'erreur 404) mais 0 rareté extraite -- confirmé que ces
+# pages "Promos"/produit promotionnel dédié n'ont structurellement pas de
+# palier de rareté par carte. Retirées d'ici (inutile de refaire la requête
+# à chaque run) ; les `set_code` concernés sont soit dans
+# EN_PROMO_SET_CODES (tag direct 'Promo'), soit volontairement laissés NULL
+# (pokemon-rumble -- cf. commentaire sous EN_PROMO_SET_CODES).
+
+# `set_code` reconnus comme des produits promotionnels purs (pas de palier de
+# rareté compétitif -- prime McDonald's/Burger King, deck de récompense de
+# championnat, carte jumbo...) : LimitlessTCG n'aura jamais de page dédiée
+# pour ces buckets (comme les autres `EN_PROMO_SET_CODES`, ce sont des
+# regroupements produit, pas des vrais sets numérotés) -- inutile de les
+# chercher, cf. `sync_promo_rarities`. Volontairement conservateur : exclut
+# tout bucket ambigu (ex. "miscellaneous-cards-products", "jumbo-cards",
+# trainer kits...) qui pourrait contenir des réimpressions dont la vraie
+# rareté existe mais n'est pas connue -- mieux vaut NULL (non trié) que
+# "Promo" appliqué à tort.
+EN_PROMO_SET_CODES: frozenset[str] = frozenset({
+    "pokemon-mcdonalds-promos-2011", "pokemon-mcdonalds-promos-2012",
+    "pokemon-mcdonalds-promos-2014", "pokemon-mcdonalds-promos-2015",
+    "pokemon-mcdonalds-promos-2016", "pokemon-mcdonalds-promos-2017",
+    "pokemon-mcdonalds-promos-2018", "pokemon-mcdonalds-promos-2019",
+    "pokemon-mcdonalds-promos-2022", "pokemon-mcdonalds-promos-2023",
+    "pokemon-mcdonalds-promos-2024", "pokemon-mcdonalds-25th-anniversary-promos",
+    "pokemon-burger-king-promos", "pokemon-kids-wb-promos",
+    "pokemon-professor-program-promos", "pokemon-alternate-art-promos",
+    "pokemon-me-mega-evolution-promo", "pokemon-pikachu-world-collection-promos",
+    "pokemon-countdown-calendar-promos", "pokemon-best-of-promos",
+    "pokemon-league-championship-cards", "pokemon-world-championship-decks",
+    "pokemon-prize-pack-series-cards",
+    # Ajoutés après vérification empirique : ces `set_code` avaient une
+    # entrée dans EN_SET_CODE_OVERRIDES pointant vers une vraie page
+    # LimitlessTCG (slug correct, pas d'erreur 404), mais la page renvoie 0
+    # rareté extraite -- les pages "Promos"/produit promotionnel dédié de
+    # LimitlessTCG ne portent structurellement pas de palier de rareté par
+    # carte (logique : un promo n'a qu'une seule "rareté", "Promo" lui-même).
+    # Confirmé pour chacun avant ajout (pas une supposition) via le run du
+    # 2026-08-08, cf. mémoire projet "limitlesstcg_rarity_backfill".
+    "pokemon-swsh-sword-shield-promo-cards", "pokemon-sm-promos",
+    "pokemon-sv-scarlet-violet-promo-cards", "pokemon-xy-promos",
+    "pokemon-black-and-white-promos", "pokemon-nintendo-promos",
+    "pokemon-wotc-promo", "pokemon-diamond-and-pearl-promos",
+    "pokemon-hgss-promos", "pokemon-kalos-starter-set",
+    "pokemon-first-partner-pack", "pokemon-sve-scarlet-violet-energies",
+    "pokemon-mee-mega-evolution-energies",
+    # Format physique intrinsèquement non-standard (oversize/saisonnier),
+    # peu importe le personnage représenté -- jamais une carte "légale
+    # tournoi" avec sa propre rareté compétitive, cf. échantillon vérifié
+    # (jumbo = toujours une réimpression oversize promotionnelle).
+    "pokemon-jumbo-cards",
+    "pokemon-trick-or-trade-booster-bundle",
+    "pokemon-trick-or-trade-booster-bundle-2023",
+    "pokemon-trick-or-trade-booster-bundle-2024",
+})
+
+# `set_code` volontairement PAS dans EN_PROMO_SET_CODES malgré une couverture
+# nulle, après échantillonnage réel du contenu (cf. mémoire projet) : ce sont
+# des réimpressions de vraies cartes d'autres sets numérotés (le nom cite le
+# set d'origine et le numéro réel, ex. "Scrafty - 74/99 (Next Destinies)"),
+# PAS des promos pures -- leur vraie rareté existe (celle du set cité) mais
+# n'est pas reliée ici. Un futur backfill par extraction du set/numéro cité
+# dans `name` serait la bonne approche, pas un tag "Promo" qui serait faux :
+# pokemon-miscellaneous-cards-products, pokemon-deck-exclusives,
+# pokemon-blister-exclusives, pokemon-battle-academy(-2022/-2024),
+# pokemon-*-trainer-kit-*, pokemon-ex-trainer-kit-*, pokemon-dp-trainer-kit-*,
+# pokemon-me-30th-celebration (mélange en plus de produits scellés mal
+# catégorisés côté source), pokemon-trading-card-game-classic,
+# pokemon-ex-battle-stadium, pokemon-southern-islands.
+# pokemon-rumble : tenté via LimitlessTCG (slug RM existe bien) mais 0
+# rareté extraite -- pas un catch-all "Promo" légitime pour autant (spin-off
+# avec ses propres paliers Common/Rare historiques, juste non capturés par
+# cette page), laissé NULL plutôt que mal étiqueté.
+
+
+def sync_promo_rarities(tcg: str, language: str, promo_set_codes: frozenset[str]) -> int:
+    """Assigne rarity='Promo' directement (sans passer par LimitlessTCG) aux
+    `set_code` reconnus comme des buckets promotionnels purs (cf.
+    `EN_PROMO_SET_CODES`/`JP_PROMO_SET_CODES`). `WHERE rarity IS NULL` --
+    n'écrase jamais une valeur déjà connue (ex. si l'API TCG l'avait déjà
+    fournie)."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE items SET rarity = 'Promo'
+                   WHERE tcg = %s AND language = %s AND category = 'single'
+                     AND rarity IS NULL AND set_code = ANY(%s)""",
+                (tcg, language, list(promo_set_codes)),
+            )
+            n = cur.rowcount
+        conn.commit()
+        return n
+    finally:
+        conn.close()
+
+
+def _best_match_with_tiebreak(target_toks: set[str], candidates: dict[str, set[str]]) -> str | None:
+    """Meilleur candidat par score de Jaccard, `None` si égalité entre au
+    moins deux candidats au meilleur score -- plutôt que trancher au hasard
+    selon l'ordre d'itération (silencieux, découvert sur la collision "SM
+    Promos"/"XY Promos" qui se réduisent toutes deux à {"promo"} une fois le
+    token de génération strippé, cf. commentaire sous `_PLURAL_NORMALIZE` :
+    un seul des deux gagnait le match, l'autre restait bloqué à 0% de
+    rareté sans qu'aucune erreur ne le signale)."""
+    best_key, best_score, tie = None, 0.0, False
+    for key, toks in candidates.items():
+        if not toks:
+            continue
+        union = target_toks | toks
+        s = len(target_toks & toks) / len(union) if union else 0.0
+        if s > best_score:
+            best_score, best_key, tie = s, key, False
+        elif s == best_score and s > 0:
+            tie = True
+    return None if tie else best_key
+
+
 def build_pokemon_set_mapping() -> dict[str, str]:
     """slug LimitlessTCG -> notre `set_code`, par recouvrement de tokens de
     nom (cf. docstring module -- pas de raccourci direct comme pour One
@@ -401,21 +554,23 @@ def build_pokemon_set_mapping() -> dict[str, str]:
         ltoks = _set_name_tokens(name)
         if not ltoks:
             continue
-        best_code, best_score = None, 0.0
-        for code, otoks in our_tokens.items():
-            if not otoks:
-                continue
-            union = ltoks | otoks
-            s = len(ltoks & otoks) / len(union) if union else 0.0
-            if s > best_score:
-                best_score, best_code = s, code
-        if best_score >= 1.0:
+        best_code = _best_match_with_tiebreak(ltoks, our_tokens)
+        if best_code and ltoks == our_tokens[best_code]:  # score == 1.0
             raw_matches[slug] = best_code
 
     by_code: dict[str, list[str]] = {}
     for slug, code in raw_matches.items():
         by_code.setdefault(code, []).append(slug)
-    return {slug: code for slug, code in raw_matches.items() if len(by_code[code]) == 1}
+    mapping = {slug: code for slug, code in raw_matches.items() if len(by_code[code]) == 1}
+
+    # La table manuelle (EN_SET_CODE_OVERRIDES) a priorité sur le matching
+    # automatique -- retire d'abord tout auto-match qui pointerait déjà vers
+    # un `set_code` qu'on override, pour ne pas le traiter deux fois avec
+    # deux slugs différents.
+    mapping = {slug: code for slug, code in mapping.items() if code not in EN_SET_CODE_OVERRIDES}
+    for code, slug in EN_SET_CODE_OVERRIDES.items():
+        mapping[slug] = code
+    return mapping
 
 
 def fetch_pokemon_set_page(slug: str) -> str:
@@ -538,7 +693,68 @@ def sync_all_pokemon_rarities(mapping: dict[str, str] | None = None) -> dict:
 # traduit -- il matche très bien par recouvrement de tokens contre les noms
 # de sets JP de LimitlessTCG (131 matchs propres sur 262, zéro collision,
 # testé avant d'écrire quoi que ce soit).
+#
+# PLAFOND STRUCTUREL découvert en creusant l'écart de couverture JP (25-26%
+# de stagnation malgré plusieurs runs, cf. mémoire projet
+# "limitlesstcg_rarity_backfill") : la section JP de LimitlessTCG ne remonte
+# QUE jusqu'à Black & White (~2011, cf. `BW1b`/`BW1w` = les slugs les plus
+# anciens de `fetch_pokemon_jp_set_list`). Tout le JP vintage (Carddass avant
+# 1996, Topsun, Vending, e-Card/Expedition, ère Neo/Diamond & Pearl...) n'a
+# donc AUCUNE page équivalente là-bas -- ce n'est pas un problème de matching
+# de noms, ces sets ne sont juste pas dans leur base. `JP_SET_CODE_OVERRIDES`
+# / `JP_PROMO_SET_CODES` ci-dessous couvrent ce qui est post-BW et
+# récupérable ; le vintage pré-2011 reste `NULL` (pas de source gratuite
+# connue à ce jour -- cf. mémoire "psa_pop_report_blocked" pour un autre
+# exemple de source bloquée sur ce projet).
 # ─────────────────────────────────────────────────────────────────────────
+
+# Même principe que EN_SET_CODE_OVERRIDES (cf. son docstring) : vérifié nom
+# par nom contre le catalogue JP LimitlessTCG (`fetch_pokemon_jp_set_list`),
+# pas un score automatique. Se limite volontairement aux cas où le nom
+# officiel du produit correspond sans ambiguïté (Pokémon + type de produit
+# identiques des deux côtés) -- beaucoup de "half deck"/"starter deck" JP
+# restent non mappés faute de certitude suffisante (score de Jaccard élevé
+# mais sur un Pokémon différent = collision, pas un match, cf. commentaire
+# dans le module de diagnostic ayant servi à construire cette table).
+JP_SET_CODE_OVERRIDES: dict[str, str] = {
+    "pokemon-jp-terastal-festival": "SV8a",
+    "pokemon-jp-go": "S10b",
+    "pokemon-jp-matchless-fighter": "S5a",
+}
+# Élagué le 2026-08-08 après un run réel : 39 autres entrées vérifiées à la
+# main (start-deck-100*, tous les *-starter-deck/-half-deck/-battle-strength-
+# deck/-high-class, best-of-xy, v-union-special-set, trainer-battle-decks...)
+# pointaient vers de vraies pages LimitlessTCG (bon slug, pas de 404) mais 0
+# rareté extraite -- confirmation que LimitlessTCG JP n'a de palier de
+# rareté que pour les sets boostérisés classiques, jamais pour les produits
+# préconstruits (structure deck / half deck / starter set / high-class
+# deck), quelle que soit la langue (même constat côté EN, cf. le commentaire
+# d'élagage sous EN_SET_CODE_OVERRIDES). Contrairement aux buckets promo EN,
+# PAS reclassées "Promo" : contenu échantillonné (cf. mémoire projet) sans
+# citation d'un autre set d'origine dans `name`, mais aussi sans certitude
+# que "Promo" soit la bonne étiquette plutôt que NULL -- laissées NULL par
+# prudence plutôt que mal étiquetées.
+
+# Cf. EN_PROMO_SET_CODES pour la logique -- buckets promo purs identifiés
+# sans ambiguïté (glossaires magazine, tie-ins film/marque, cartes cadeaux).
+# Volontairement PAS "Promo" : `pokemon-jp-old-maid`/`-hanafuda`/`-family`
+# (jeux différents du vrai TCG, aucune notion de rareté n'a de sens ici,
+# "Promo" serait tout aussi faux que NULL) -- laissés NULL en connaissance
+# de cause.
+JP_PROMO_SET_CODES: frozenset[str] = frozenset({
+    "pokemon-jp-promo",
+    "pokemon-jp-meiji-promo",
+    "pokemon-jp-cd-promo",
+    "pokemon-jp-movie-commemoration-random",
+    "pokemon-jp-movie-commemoration-vs-pack",
+    "pokemon-jp-10th-movie-commemoration-promo",
+    "pokemon-jp-11th-movie-commemoration-promo",
+    "pokemon-jp-world-hobby-fair",
+    "pokemon-jp-ana-gold-boarding-pass",
+    "pokemon-jp-amada-super-dx",
+    "pokemon-jp-25th-anniversary-promo",
+    "pokemon-jp-trainers-magazine",
+})
 
 
 def fetch_pokemon_jp_set_list() -> dict[str, str]:
@@ -599,21 +815,21 @@ def build_pokemon_jp_set_mapping() -> dict[str, str]:
         ltoks = jp_tokens(name)
         if not ltoks:
             continue
-        best_code, best_score = None, 0.0
-        for code, otoks in our_tokens.items():
-            if not otoks:
-                continue
-            union = ltoks | otoks
-            s = len(ltoks & otoks) / len(union) if union else 0.0
-            if s > best_score:
-                best_score, best_code = s, code
-        if best_score >= 1.0:
+        best_code = _best_match_with_tiebreak(ltoks, our_tokens)
+        if best_code and ltoks == our_tokens[best_code]:  # score == 1.0
             raw_matches[slug] = best_code
 
     by_code: dict[str, list[str]] = {}
     for slug, code in raw_matches.items():
         by_code.setdefault(code, []).append(slug)
-    return {slug: code for slug, code in raw_matches.items() if len(by_code[code]) == 1}
+    mapping = {slug: code for slug, code in raw_matches.items() if len(by_code[code]) == 1}
+
+    # JP_SET_CODE_OVERRIDES a priorité sur le matching automatique -- même
+    # logique que build_pokemon_set_mapping (cf. son commentaire).
+    mapping = {slug: code for slug, code in mapping.items() if code not in JP_SET_CODE_OVERRIDES}
+    for code, slug in JP_SET_CODE_OVERRIDES.items():
+        mapping[slug] = code
+    return mapping
 
 
 def fetch_pokemon_jp_set_page(slug: str) -> str:
@@ -741,6 +957,42 @@ def main():
             "skipped": result["skipped"] + jp_result["skipped"],
             "errors": result["errors"] + jp_result["errors"],
         }
+
+        print("\n== Backfill rareté Pokémon -- buckets promo purs (sans LimitlessTCG) ==")
+        n_promo_en = sync_promo_rarities("pokemon", "EN", EN_PROMO_SET_CODES)
+        n_promo_jp = sync_promo_rarities("pokemon", "JP", JP_PROMO_SET_CODES)
+        print(f"  EN : {n_promo_en} carte(s) -> 'Promo'")
+        print(f"  JP : {n_promo_jp} carte(s) -> 'Promo'")
+        result["total"] += n_promo_en + n_promo_jp
+
+        print("\n== Backfill rareté Pokémon -- héritage depuis le set d'origine cité ==")
+        from ingestion.rarity_inherit import sync_rarity_inheritance
+
+        inherit_result = sync_rarity_inheritance()
+        print(
+            f"  {inherit_result['inherited']} héritée(s), "
+            f"{inherit_result['promo_tagged']} 'Promo', "
+            f"{inherit_result['unresolved']} non résolue(s)"
+        )
+        result["total"] += inherit_result["inherited"] + inherit_result["promo_tagged"]
+
+        print("\n== Backfill rareté Pokémon JP -- Bulbapedia (vintage hors couverture LimitlessTCG) ==")
+        from ingestion.sources import bulbapedia
+
+        bulba_result = bulbapedia.sync_all_jp_rarities()
+        print(f"  {bulba_result['total']} carte(s) traitée(s)")
+        result["total"] += bulba_result["total"]
+        result["skipped"] += bulba_result["skipped"]
+        result["errors"] += bulba_result["errors"]
+
+        print("\n== Backfill rareté Pokémon JP -- TCGdex (reliquat hors couverture Bulbapedia) ==")
+        from ingestion.sources import tcgdex
+
+        tcgdex_result = tcgdex.sync_all_remaining_jp_rarities()
+        print(f"  {tcgdex_result['total']} carte(s) traitée(s)")
+        result["total"] += tcgdex_result["total"]
+        result["skipped"] += tcgdex_result["skipped"]
+        result["errors"] += tcgdex_result["errors"]
 
     print(f"\nTerminé : {result['total']} traité(s) au total.")
     if result["skipped"]:
