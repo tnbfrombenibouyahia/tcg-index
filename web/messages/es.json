@@ -83,7 +83,8 @@
       "sealed_ev": "Ratio EV de sellados",
       "undervalued": "Puntuaciones de infravaloración",
       "grading_roi": "Datos de ROI de gradación",
-      "volume": "Volumen de ventas"
+      "volume": "Volumen de ventas",
+      "active_listings": "Anuncios activos eBay"
     },
     "tiers": {
       "hot": "Hot (< 6 meses)",

@@ -1,53 +1,99 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { WIDGET_IDS, type WidgetId } from "@/lib/dashboard/types";
+import type { WidgetId } from "@/lib/dashboard/types";
+import {
+  GridIcon,
+  SearchIcon,
+  PulseIcon,
+  TransactionsIcon,
+  BoxIcon,
+  TrendingUpIcon,
+  GradingRoiIcon,
+  DivergenceIcon,
+  LiquidityIcon,
+} from "@/components/ui/icons";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Dock flottant du dashboard -- porté du "nav" bas de TCG Terminal.dc.html :
-// pilule fixe en bas d'écran, verre liquide (mêmes tokens --glass-widget-*
-// que les widgets), se déplie au survol (46px -> 60px, les libellés
-// apparaissent). Un bouton "vue grille" + un raccourci par widget, chacun
-// AGRANDIT directement ce widget (même geste que le ⤢ dans son en-tête,
-// juste accessible sans avoir à le retrouver dans la grille) -- reflète
-// TerminalDashboard.layout.expanded, ne duplique pas l'état.
+// Dock flottant -- navigation UNIQUE du site (la sidebar a été retirée, cf.
+// mémoire projet "project_terminal_redesign"), porté du "nav" bas de TCG
+// Terminal.dc.html : pilule fixe en bas d'écran, verre liquide, se déplie au
+// survol. Couvre les 9 destinations de l'ancienne sidebar -- 6 ont un widget
+// équivalent sur /dashboard (Catalogue, Live Market, Transactions,
+// Sous-évalué, Divergences, ROI Gradation), 2 n'en ont pas (Scellés
+// sous-évalués, Liquidité) et naviguent toujours vers leur page dédiée.
+//
+// Double comportement au clic, résolu ici plutôt que dans deux composants
+// séparés :
+// - Sur /dashboard, avec `expanded`/`onSelect` fournis (par TerminalDashboard) :
+//   les 6 items à widget AGRANDISSENT ce widget en place (même geste que le
+//   ⤢ de son en-tête). Les 2 sans widget naviguent quand même (rien à
+//   agrandir sur place).
+// - Partout ailleurs (GlobalDock.tsx, sans `expanded`/`onSelect`) : tous les
+//   items naviguent vers leur route, comme l'ancienne sidebar.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const SHAPES: Record<WidgetId, React.CSSProperties[]> = {
-  catalogue: [
-    { position: "absolute", left: "5px", top: "5px", width: "9px", height: "9px", borderRadius: "50%", border: "2px solid var(--foreground)" },
-    { position: "absolute", left: "13px", top: "13px", width: "6px", height: "2px", background: "var(--foreground)", transform: "rotate(45deg)" },
-  ],
-  live: [
-    { position: "absolute", left: "3px", bottom: "3px", width: "3px", height: "7px", background: "var(--foreground)", opacity: 0.55 },
-    { position: "absolute", left: "9px", bottom: "3px", width: "3px", height: "13px", background: "var(--foreground)" },
-    { position: "absolute", left: "15px", bottom: "3px", width: "3px", height: "10px", background: "var(--foreground)", opacity: 0.8 },
-  ],
-  tx: [
-    { position: "absolute", left: "4px", top: "3px", width: 0, height: 0, borderLeft: "4px solid transparent", borderRight: "4px solid transparent", borderBottom: "6px solid var(--foreground)" },
-    { position: "absolute", right: "4px", bottom: "3px", width: 0, height: 0, borderLeft: "4px solid transparent", borderRight: "4px solid transparent", borderTop: "6px solid var(--foreground)", opacity: 0.7 },
-  ],
-  under: [
-    { position: "absolute", left: "3px", top: "3px", width: "16px", height: "16px", borderRadius: "50%", border: "2px solid var(--foreground)", opacity: 0.5 },
-    { position: "absolute", left: "8px", top: "8px", width: 0, height: 0, borderLeft: "3.5px solid transparent", borderRight: "3.5px solid transparent", borderTop: "5.5px solid var(--foreground)" },
-  ],
-  div: [
-    { position: "absolute", left: "10px", top: "3px", width: "2px", height: "12px", background: "var(--foreground)", transform: "rotate(20deg)", transformOrigin: "bottom" },
-    { position: "absolute", left: "10px", top: "3px", width: "2px", height: "12px", background: "var(--foreground)", opacity: 0.6, transform: "rotate(-20deg)", transformOrigin: "bottom" },
-  ],
-  grade: [
-    { position: "absolute", left: "5px", top: "5px", width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderBottom: "10px solid var(--foreground)" },
-  ],
-};
+interface DockItem {
+  id: WidgetId | "sealedEv" | "liquidity";
+  href: string;
+  labelKey: string;
+  Icon: (props: { size?: number }) => React.ReactElement;
+  hasWidget: boolean;
+}
 
-export function WidgetDock({ expanded, onSelect }: { expanded: WidgetId | null; onSelect: (id: WidgetId | null) => void }) {
-  const t = useTranslations("dashboard.widgets");
+const ITEMS: DockItem[] = [
+  { id: "catalogue", href: "/catalog", labelKey: "catalog", Icon: SearchIcon, hasWidget: true },
+  { id: "live", href: "/live", labelKey: "live", Icon: PulseIcon, hasWidget: true },
+  { id: "tx", href: "/transactions", labelKey: "transactions", Icon: TransactionsIcon, hasWidget: true },
+  { id: "sealedEv", href: "/sealed-ev", labelKey: "sealedEv", Icon: BoxIcon, hasWidget: false },
+  { id: "under", href: "/undervalued", labelKey: "undervalued", Icon: TrendingUpIcon, hasWidget: true },
+  { id: "grade", href: "/grading-roi", labelKey: "gradingRoi", Icon: GradingRoiIcon, hasWidget: true },
+  { id: "div", href: "/divergence", labelKey: "divergence", Icon: DivergenceIcon, hasWidget: true },
+  { id: "liquidity", href: "/liquidity", labelKey: "liquidity", Icon: LiquidityIcon, hasWidget: false },
+];
+
+export function WidgetDock({
+  expanded,
+  onSelect,
+}: {
+  /** Fournis uniquement par TerminalDashboard (rendu sur /dashboard) -- leur
+   *  absence signale le mode "navigation pure" (GlobalDock, autres pages). */
+  expanded?: WidgetId | null;
+  onSelect?: (id: WidgetId | null) => void;
+}) {
+  const t = useTranslations("nav");
+  const pathname = usePathname();
+  const router = useRouter();
   const [hover, setHover] = useState(false);
+
+  const isDashboard = pathname === "/dashboard";
+  const canExpand = isDashboard && !!onSelect;
+
+  function goHome() {
+    if (canExpand) onSelect!(null);
+    else router.push("/dashboard");
+  }
+
+  function goItem(item: DockItem) {
+    if (canExpand && item.hasWidget) onSelect!(item.id as WidgetId);
+    else router.push(item.href);
+  }
+
+  function homeActive() {
+    return canExpand ? expanded == null : pathname === "/dashboard";
+  }
+
+  function itemActive(item: DockItem) {
+    if (canExpand && item.hasWidget) return expanded === item.id;
+    if (isDashboard) return false; // sans widget, jamais "sur place" depuis le dashboard
+    return pathname.startsWith(item.href);
+  }
 
   return (
     <nav
-      aria-label={t("gridView")}
+      aria-label={t("home")}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
@@ -70,96 +116,92 @@ export function WidgetDock({ expanded, onSelect }: { expanded: WidgetId | null; 
         boxShadow: "var(--glass-widget-shadow)",
         transition: "all 0.35s cubic-bezier(.4,0,.2,1)",
         overflow: "hidden",
+        maxWidth: "calc(100vw - 24px)",
       }}
     >
       <button
         type="button"
-        onClick={() => onSelect(null)}
-        aria-label={t("gridView")}
-        aria-pressed={expanded === null}
-        title={t("gridView")}
+        onClick={goHome}
+        aria-label={t("home")}
+        aria-pressed={homeActive()}
+        title={t("home")}
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
-          width: hover ? "34px" : "26px",
-          height: hover ? "34px" : "26px",
-          flexShrink: 0,
-          marginRight: "10px",
-          borderRadius: "10px",
+          gap: hover ? "13px" : "0px",
+          padding: hover ? "10px 16px" : "6px",
+          marginRight: hover ? "4px" : "8px",
+          borderRadius: "14px",
           cursor: "pointer",
           border: "none",
-          background: expanded === null ? "var(--accent)" : "transparent",
-          boxShadow: expanded === null ? "0 0 12px color-mix(in srgb, var(--accent) 55%, transparent)" : "none",
+          flexShrink: 0,
+          background: homeActive() ? "var(--accent)" : "transparent",
+          boxShadow: homeActive() ? "0 0 12px color-mix(in srgb, var(--accent) 55%, transparent)" : "none",
           transition: "all 0.3s cubic-bezier(.4,0,.2,1)",
         }}
       >
-        <div
+        <span style={{ display: "flex", color: homeActive() ? "#fff" : "var(--foreground)", flexShrink: 0 }}>
+          <GridIcon size={hover ? 16 : 14} />
+        </span>
+        <span
           style={{
-            width: hover ? "14px" : "11px",
-            height: hover ? "14px" : "11px",
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gridTemplateRows: "1fr 1fr",
-            gap: hover ? "3px" : "2px",
-            transition: "all 0.3s cubic-bezier(.4,0,.2,1)",
+            color: "#fff",
+            fontSize: "12.5px",
+            fontWeight: 700,
+            whiteSpace: "nowrap",
+            opacity: hover ? 1 : 0,
+            maxWidth: hover ? "140px" : "0px",
+            overflow: "hidden",
+            transition: "opacity 0.2s, max-width 0.3s",
           }}
         >
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} style={{ width: "100%", height: "100%", borderRadius: "2px", background: expanded === null ? "#fff" : "var(--foreground)" }} />
-          ))}
-        </div>
+          {t("home")}
+        </span>
       </button>
 
-      {WIDGET_IDS.map((id) => (
-        <button
-          key={id}
-          type="button"
-          onClick={() => onSelect(id)}
-          aria-pressed={expanded === id}
-          title={t(`${id}.title`)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: hover ? "13px" : "0px",
-            padding: hover ? "10px 18px" : "6px",
-            margin: hover ? "0 8px" : "0 2px",
-            borderRadius: "14px",
-            cursor: "pointer",
-            border: "none",
-            background: expanded === id ? "var(--tint-neutral-strong)" : "transparent",
-            transition: "all 0.3s cubic-bezier(.4,0,.2,1)",
-          }}
-        >
-          <div
+      {ITEMS.map((item) => {
+        const active = itemActive(item);
+        return (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => goItem(item)}
+            aria-pressed={active}
+            title={t(item.labelKey)}
             style={{
-              position: "relative",
-              width: hover ? "22px" : "16px",
-              height: hover ? "22px" : "16px",
+              display: "flex",
+              alignItems: "center",
+              gap: hover ? "13px" : "0px",
+              padding: hover ? "10px 16px" : "6px",
+              margin: hover ? "0 4px" : "0 2px",
+              borderRadius: "14px",
+              cursor: "pointer",
+              border: "none",
               flexShrink: 0,
+              background: active ? "var(--tint-neutral-strong)" : "transparent",
               transition: "all 0.3s cubic-bezier(.4,0,.2,1)",
             }}
           >
-            {SHAPES[id].map((s, i) => (
-              <div key={i} style={s} />
-            ))}
-          </div>
-          <span
-            style={{
-              color: "var(--foreground)",
-              fontSize: "12.5px",
-              fontWeight: 700,
-              whiteSpace: "nowrap",
-              opacity: hover ? 1 : 0,
-              maxWidth: hover ? "140px" : "0px",
-              overflow: "hidden",
-              transition: "opacity 0.2s, max-width 0.3s",
-            }}
-          >
-            {t(`${id}.title`)}
-          </span>
-        </button>
-      ))}
+            <span style={{ display: "flex", color: "var(--foreground)", flexShrink: 0 }}>
+              <item.Icon size={hover ? 16 : 14} />
+            </span>
+            <span
+              style={{
+                color: "var(--foreground)",
+                fontSize: "12.5px",
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+                opacity: hover ? 1 : 0,
+                maxWidth: hover ? "140px" : "0px",
+                overflow: "hidden",
+                transition: "opacity 0.2s, max-width 0.3s",
+              }}
+            >
+              {t(item.labelKey)}
+            </span>
+          </button>
+        );
+      })}
     </nav>
   );
 }

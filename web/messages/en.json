@@ -83,7 +83,8 @@
       "sealed_ev": "Sealed EV ratio",
       "undervalued": "Undervalued scores",
       "grading_roi": "Grading ROI inputs",
-      "volume": "Sales volume"
+      "volume": "Sales volume",
+      "active_listings": "eBay active listings"
     },
     "tiers": {
       "hot": "Hot (< 6 months)",

@@ -3,6 +3,7 @@ import { LastUpdatedBadge } from "@/components/ui/LastUpdatedBadge";
 import { HeadlineSection } from "@/components/homepage/HeadlineSection";
 import { SubIndexGrid } from "@/components/homepage/SubIndexGrid";
 import { DailyExchangeSection } from "@/components/homepage/DailyExchangeSection";
+import { LiveDashboard } from "@/components/live/LiveDashboard";
 import { TerminalDashboard } from "@/components/dashboard/TerminalDashboard";
 import { getAllIndices } from "@/lib/queries/indices";
 import { searchItems } from "@/lib/queries/items";
@@ -10,6 +11,7 @@ import { getDivergence } from "@/lib/queries/divergence";
 import { getSales } from "@/lib/queries/sales";
 import { getUndervalued } from "@/lib/queries/undervalued";
 import { getGradingRoiRanking } from "@/lib/queries/gradingRoi";
+import { getSyncStatus } from "@/lib/queries/syncStatus";
 import { getUniverse } from "@/lib/universe";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -27,7 +29,7 @@ export default async function HomePage() {
   const tNav = await getTranslations("nav");
   const tHome = await getTranslations("home");
 
-  const [{ asOf, indices }, catalogueInitialItems, liveMovers, salesResponse, undervalued, divergences, gradingRoiRanking] =
+  const [{ asOf, indices }, catalogueInitialItems, liveMovers, salesResponse, undervalued, divergences, gradingRoiRanking, syncStatus] =
     await Promise.all([
       getAllIndices(400), // 400j : couvre la fenêtre 1Y du widget Live Market + marge
       searchItems({ q: "", tcg, limit: 6 }),
@@ -39,6 +41,7 @@ export default async function HomePage() {
       getUndervalued({ tcg, minMarketPrice: 2, sort: "score_desc", limit: 6 }),
       getDivergence({ tcg, grade: "ungraded", windowDays: 30, minPrice: 5, sort: "divergence_desc", limit: 6 }),
       getGradingRoiRanking({ tcg, sort: "roi_desc", limit: 6 }), // minUngradedPrice par défaut (2) déjà aligné avec /grading-roi
+      getSyncStatus(), // fusionné dans le widget Live Market agrandi, cf. /live
     ]);
 
   const universeIndices = indices.filter((i) => i.tcg === tcg);
@@ -74,6 +77,11 @@ export default async function HomePage() {
             <HeadlineSection indices={headline} />
             <SubIndexGrid indices={detail} />
             <DailyExchangeSection indices={headline} />
+            {/* Statut de synchro -- fusionné ici (demande utilisateur du
+                2026-08-08) : "Live Market" (widget) et "Live Market Data"
+                (page dédiée /live) sont maintenant le même contenu, juste
+                compact ici / plein écran là-bas. */}
+            <LiveDashboard initialData={syncStatus} />
           </div>
         }
         sales={salesResponse.sales}

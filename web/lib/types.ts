@@ -72,7 +72,16 @@ export interface SalesFiltersResponse {
   rarities: string[];
 }
 
-export type SyncStep = "items" | "prices" | "grades_sales" | "index" | "sealed_ev" | "volume" | "undervalued" | "grading_roi";
+export type SyncStep =
+  | "items"
+  | "prices"
+  | "grades_sales"
+  | "index"
+  | "sealed_ev"
+  | "volume"
+  | "undervalued"
+  | "grading_roi"
+  | "active_listings";
 export type SyncRunStatus = "running" | "success" | "error";
 
 export interface SyncRun {
