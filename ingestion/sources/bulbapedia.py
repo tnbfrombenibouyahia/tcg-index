@@ -208,6 +208,71 @@ JP_BULBAPEDIA_TITLE_OVERRIDES: dict[str, str] = {
     "pokemon-jp-wild-blaze": "Flashfire (TCG)",
     "pokemon-jp-wind-from-the-sea": "Aquapolis (TCG)",
     "pokemon-jp-world-champions-pack": "EX Power Keepers (TCG)",
+
+    # Deuxième vague (toujours via opensearch) : titres écartés du premier
+    # lot car leur ratio de taille (plus grand numérateur page vs plus
+    # grand `code` connu chez nous) tombait hors de [0.5, 2.0] -- creusé
+    # cas par cas plutôt que jeté, deux schémas légitimes identifiés :
+    # 1. Ratio < 0.5 : notre propre `code` est contaminé par des numéros de
+    #    Pokédex national pour ces sets vintage (ex. "Deoxys"|445, "Lugia"|
+    #    299 -- vérifié en échantillonnant, même défaut que
+    #    `pokemon-jp-secret-of-the-lakes`, cf. plus haut) -- le titre est
+    #    probablement correct, c'est notre décompte qui fausse le ratio.
+    # 2. Ratio ~2.0-2.8, cohérent sur de nombreuses paires DIFFÉRENTES (pas
+    #    du bruit aléatoire) : deux sets JP fusionnés en un seul set EN plus
+    #    gros est une pratique connue et documentée du TCG (ex. Jet-Black
+    #    Spirit + Silver Lance JP -> Chilling Reign EN) -- explique
+    #    mécaniquement un ratio ~2x, pas un mauvais match.
+    # Dans les deux cas, le plafond de vraisemblance PAR CARTE dans
+    # `sync_set_rarities` protège contre l'écriture d'une rareté pour un
+    # `code` hors de portée plausible, même si l'un de ces titres s'avérait
+    # in fine incorrect pour tel ou tel set_code.
+    "pokemon-jp-expedition-expansion-pack": "Base Expansion Pack (TCG)",
+    "pokemon-jp-secret-of-the-lakes": "Mysterious Treasures (TCG)",
+    "pokemon-jp-shining-darkness": "Secret Wonders (TCG)",
+    "pokemon-jp-temple-of-anger": "Legends Awakened (TCG)",
+    "pokemon-jp-cry-from-the-mysterious": "Legends Awakened (TCG)",
+    "pokemon-jp-darkness-that-consumes-light": "Burning Shadows (TCG)",
+    "pokemon-jp-awakening-legends": "Neo Revelation (TCG)",
+    "pokemon-jp-mystery-of-the-fossils": "Fossil (TCG)",
+    "pokemon-jp-legendary-shine-collection": "Legendary Shine Collection (TCG)",
+    "pokemon-jp-jungle": "Jungle (TCG)",
+    "pokemon-jp-jet-black-spirit": "Chilling Reign (TCG)",
+    "pokemon-jp-blue-shock": "BREAKthrough (TCG)",
+    "pokemon-jp-rapid-strike-master": "Battle Styles (TCG)",
+    "pokemon-jp-skyscraping-perfection": "Evolving Skies (TCG)",
+    "pokemon-jp-single-strike-master": "Battle Styles (TCG)",
+    "pokemon-jp-super-burst-impact": "Lost Thunder (TCG)",
+    "pokemon-jp-blue-sky-stream": "Evolving Skies (TCG)",
+    "pokemon-jp-red-flash": "BREAKthrough (TCG)",
+    "pokemon-jp-tidal-storm": "Primal Clash (TCG)",
+    "pokemon-jp-collection-x": "XY (TCG)",
+    "pokemon-jp-cyber-judge": "Temporal Forces (TCG)",
+    "pokemon-jp-wild-force": "Temporal Forces (TCG)",
+    "pokemon-jp-alolan-moonlight": "Guardians Rising (TCG)",
+    "pokemon-jp-scarlet-ex": "Scarlet & Violet (TCG)",
+    "pokemon-jp-clay-burst": "Paldea Evolved (TCG)",
+    "pokemon-jp-awakened-heroes": "Crimson Invasion (TCG)",
+    "pokemon-jp-thunder-knuckle": "Plasma Freeze (TCG)",
+    "pokemon-jp-collection-sun": "Sun & Moon (TCG)",
+    "pokemon-jp-alter-genesis": "Cosmic Eclipse (TCG)",
+    "pokemon-jp-dragon-blast": "Dragons Exalted (TCG)",
+    "pokemon-jp-violet-ex": "Scarlet & Violet (TCG)",
+    "pokemon-jp-ultra-moon": "Ultra Prism (TCG)",
+    "pokemon-jp-islands-await-you": "Guardians Rising (TCG)",
+    "pokemon-jp-ultradimensional-beasts": "Crimson Invasion (TCG)",
+    "pokemon-jp-double-blaze": "Unbroken Bonds (TCG)",
+    "pokemon-jp-spiral-force": "Plasma Freeze (TCG)",
+    "pokemon-jp-space-juggler": "Astral Radiance (TCG)",
+    "pokemon-jp-snow-hazard": "Paldea Evolved (TCG)",
+    "pokemon-jp-future-flash": "Paradox Rift (TCG)",
+    "pokemon-jp-ancient-roar": "Paradox Rift (TCG)",
+    "pokemon-jp-collection-moon": "Sun & Moon (TCG)",
+    # 503/timeout transitoires lors du premier passage -- titres déjà
+    # trouvés via opensearch, juste pas encore fetchés avec succès.
+    "pokemon-jp-master-kit": "Master Kit (TCG)",
+    "pokemon-jp-leafeon-vs-metagross-expert-deck": "Leafeon vs Metagross Expert Deck (TCG)",
+    "pokemon-jp-silver-lance": "Silver Lance & Jet-Black Spirit Jumbo Pack Set (TCG)",
 }
 
 
