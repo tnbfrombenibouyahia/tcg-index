@@ -1366,6 +1366,28 @@ _UPSERT_SALES_SQL = """
     ON CONFLICT (marketplace, external_sale_id) DO NOTHING
 """
 
+# Items admissibles à la capture de prix pour un set donné -- filtre
+# "cartes d'intérêt" (cf. mémoire projet, index/interest_tier.py) : une
+# fois `interest_tier` calculé et confirmé NULL (donc `rarity` déjà connue
+# -- sinon la carte n'a simplement pas encore été classée), on arrête de
+# recapturer son prix, cohérent avec la purge d'historique du 2026-08-08
+# (price_snapshots/sales/undervalued_scores/grading_roi_inputs déjà purgés
+# pour ces ~51k cartes). Scellé et One Piece jamais concernés (`category
+# = 'single'`/`tcg = 'pokemon'` explicites dans l'exclusion, pas juste
+# `interest_tier IS NULL` seul -- One Piece n'a jamais de interest_tier
+# calculé du tout, un filtre plus large l'aurait coupé par erreur en
+# entier). `rarity IS NULL` reste ADMIS volontairement -- une carte tout
+# juste sortie n'a pas encore de rareté connue (backfill hebdo, cf.
+# [[project_limitlesstcg_rarity_backfill]]) donc pas encore de tier :
+# la couper immédiatement l'empêcherait à jamais d'être capturée avant
+# même d'avoir eu la chance d'être classée comme "carte d'intérêt".
+_ITEMS_FOR_SET_SQL = """
+    SELECT id, category, code, name FROM items
+    WHERE tcg = %s AND set_code = %s
+      AND NOT (tcg = 'pokemon' AND category = 'single'
+               AND rarity IS NOT NULL AND interest_tier IS NULL)
+"""
+
 
 def sync_price_snapshots_for_set(
     set_code: str, tcg: str, fetch_grades: bool = False, max_cards: int | None = None,
@@ -1398,10 +1420,7 @@ def sync_price_snapshots_for_set(
     conn = get_connection()
     try:
         with conn.cursor() as cur:
-            cur.execute(
-                "SELECT id, category, code, name FROM items WHERE tcg = %s AND set_code = %s",
-                (tcg, set_code),
-            )
+            cur.execute(_ITEMS_FOR_SET_SQL, (tcg, set_code))
             items = [
                 {"id": r[0], "category": r[1], "code": r[2], "name": r[3]}
                 for r in cur.fetchall()
@@ -1958,7 +1977,8 @@ def sync_jp_singles_items_for_set(set_code: str, tcg: str, fetch_grades: bool = 
             cur.execute(
                 "SELECT id, external_id FROM items "
                 "WHERE source = 'pricecharting' AND tcg = %s AND set_code = %s "
-                "AND language = 'JP' AND category = 'single'",
+                "AND language = 'JP' AND category = 'single' "
+                "AND NOT (tcg = 'pokemon' AND rarity IS NOT NULL AND interest_tier IS NULL)",
                 (tcg, set_code),
             )
             id_by_external = {ext: item_id for item_id, ext in cur.fetchall()}

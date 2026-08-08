@@ -14,9 +14,11 @@ CREATE TABLE items (
   language      TEXT NOT NULL,        -- 'EN', 'JP', 'FR'
   name          TEXT NOT NULL,
   rarity        TEXT,                 -- valeur brute de API TCG attributes.Rarity ; NULL pour le scellé et tant que non backfillé
+  interest_tier TEXT,                 -- 'sir'|'ir'|'fa'|'secret'|'chase'|NULL, dérivé de rarity+name (cf. index/interest_tier.py), Pokémon uniquement pour l'instant
   created_at    TIMESTAMPTZ DEFAULT now(),
   UNIQUE (source, external_id)
 );
+CREATE INDEX IF NOT EXISTS idx_items_interest_tier ON items (interest_tier) WHERE interest_tier IS NOT NULL;
 
 -- Prix bruts : append-only, jamais d'UPDATE
 CREATE TABLE price_snapshots (
