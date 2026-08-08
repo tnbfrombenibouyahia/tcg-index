@@ -2,6 +2,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { GRADE_LABELS, type Grade } from "@/lib/constants";
 import { formatDate, formatUsd } from "@/lib/format";
 import type { SaleRow } from "@/lib/types";
+import { InterestTierBadge } from "@/components/ui/InterestTierBadge";
 import { LanguageFlag } from "@/components/ui/LanguageFlag";
 import { SortHeader } from "@/components/ui/SortHeader";
 import { SourceBadge } from "@/components/ui/SourceBadge";
@@ -104,9 +105,12 @@ export async function TransactionsTable({
               </td>
               <td className="px-4 py-3">
                 {sale.item.rarity ? (
-                  <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
-                    {sale.item.rarity}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-1">
+                    <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+                      {sale.item.rarity}
+                    </span>
+                    <InterestTierBadge tier={sale.item.interestTier} />
+                  </div>
                 ) : (
                   <span className="text-xs text-muted-foreground">—</span>
                 )}

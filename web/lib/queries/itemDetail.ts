@@ -22,6 +22,7 @@ interface ItemRow {
   imageUrl: string | null;
   language: string;
   rarity: string | null;
+  interestTier: string | null;
   releaseDate: string | null;
 }
 
@@ -38,6 +39,7 @@ export async function getItemById(itemId: number): Promise<ItemDetail | null> {
       SELECT
         id::int4 AS id, name, tcg, category,
         set_code AS "setCode", code, image_url AS "imageUrl", language, rarity,
+        interest_tier AS "interestTier",
         release_date::text AS "releaseDate"
       FROM items
       WHERE id = ${itemId}
@@ -156,6 +158,7 @@ export async function getItemById(itemId: number): Promise<ItemDetail | null> {
     imageUrl: item.imageUrl,
     language: item.language,
     rarity: item.rarity,
+    interestTier: item.interestTier,
     releaseDate: item.releaseDate,
     latestPrices: priceRows.map((r) => ({ ...r, grade: r.grade as Grade })),
     undervalued: undervaluedRows[0] ?? null,

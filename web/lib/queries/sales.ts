@@ -8,6 +8,7 @@ export interface SalesFilterParams {
   itemId?: number;
   grade?: string;
   rarity?: string;
+  interestTier?: string;
   sort?:
     | "date_desc"
     | "date_asc"
@@ -34,6 +35,7 @@ function whereFragment(f: SalesFilterParams) {
     ${f.itemId ? sql`AND s.item_id = ${f.itemId}` : sql``}
     ${f.grade ? sql`AND s.grade = ${f.grade}` : sql``}
     ${f.rarity ? sql`AND i.rarity = ${f.rarity}` : sql``}
+    ${f.interestTier ? sql`AND i.interest_tier = ${f.interestTier}` : sql``}
   `;
 }
 
@@ -79,6 +81,7 @@ interface SaleQueryRow {
   itemImageUrl: string | null;
   itemLanguage: string;
   itemRarity: string | null;
+  itemInterestTier: string | null;
 }
 
 export async function getSales(filters: SalesFilterParams): Promise<SalesResponse> {
@@ -107,7 +110,8 @@ export async function getSales(filters: SalesFilterParams): Promise<SalesRespons
         i.code AS "itemCode",
         i.image_url AS "itemImageUrl",
         i.language AS "itemLanguage",
-        i.rarity AS "itemRarity"
+        i.rarity AS "itemRarity",
+        i.interest_tier AS "itemInterestTier"
       FROM sales s
       JOIN items i ON i.id = s.item_id
       ${where}
@@ -142,6 +146,7 @@ export async function getSales(filters: SalesFilterParams): Promise<SalesRespons
       imageUrl: r.itemImageUrl,
       language: r.itemLanguage,
       rarity: r.itemRarity,
+      interestTier: r.itemInterestTier,
     },
   }));
 

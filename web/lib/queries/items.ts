@@ -21,7 +21,8 @@ export async function searchItems(params: ItemSearchParams): Promise<ItemSummary
   const rows = await sql<ItemSummary[]>`
     SELECT
       id::int4 AS id, name, tcg, category,
-      set_code AS "setCode", code, image_url AS "imageUrl", language, rarity
+      set_code AS "setCode", code, image_url AS "imageUrl", language, rarity,
+      interest_tier AS "interestTier"
     FROM items
     WHERE (name ILIKE ${pattern} OR code ILIKE ${pattern})
       ${params.tcg ? sql`AND tcg = ${params.tcg}` : sql``}
