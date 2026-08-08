@@ -154,19 +154,24 @@ def _split_template_params(inner: str) -> list[str]:
     """Découpe les paramètres d'un appel de template MediaWiki sur les '|'
     de premier niveau seulement -- ignore ceux à l'intérieur d'un
     sous-template imbriqué (ex. `{{TCG ID|Set|Carte|Num}}` a ses propres
-    '|' qui ne doivent pas fragmenter le split)."""
+    '|' qui ne doivent pas fragmenter le split) OU d'un lien wiki
+    (`[[Carte (Set N)|Carte]]` -- trouvé en creusant les cartes Tag Team/
+    Prism Star, qui utilisent ce format plutôt que `{{TCG ID}}` : sans
+    protéger aussi `[[`/`]]`, son propre '|' interne fragmentait le nom en
+    deux "paramètres" distincts, décalant tout le reste -- cf. mémoire
+    projet "limitlesstcg_rarity_backfill")."""
     params: list[str] = []
     depth = 0
     current: list[str] = []
     i = 0
     while i < len(inner):
         two = inner[i:i + 2]
-        if two == "{{":
+        if two in ("{{", "[["):
             depth += 1
             current.append(two)
             i += 2
             continue
-        if two == "}}":
+        if two in ("}}", "]]"):
             depth -= 1
             current.append(two)
             i += 2
@@ -239,13 +244,47 @@ KNOWN_RARITIES: frozenset[str] = frozenset({
     # assigner quoi que ce soit (cf. son docstring module).
 })
 
+# Les sets ère SV/JP récents (Setlist/entry, pas Setlist/nmentry) codent la
+# rareté en abréviation plutôt qu'en mot complet -- découvert sur
+# "Terastal Fest ex (TCG)" (0 rareté extraite alors que la page est la bonne,
+# cf. mémoire projet). Chaque entrée vérifiée à la main contre un exemple
+# réel avant d'être ajoutée (cf. `pokemon-jp-tag-all-stars`, "PR" confirmé
+# = Prism Star sur une carte Prism Star réelle) -- PAS une simple
+# supposition d'abréviation. Les libellés complets choisis correspondent à
+# des valeurs déjà présentes dans `items.rarity` côté EN (ex. "Special Art
+# Rare"/"Ultra Rare" via API TCG, cf. mémoire projet "rarity_tracking") --
+# vocabulaire cohérent entre EN et JP pour ces mêmes paliers modernes.
+# "-"/"None" (majorité des lignes, cartes de base sans palier spécial)
+# volontairement absents, même logique que `KNOWN_RARITIES` ci-dessus.
+ABBREVIATED_RARITIES: dict[str, str] = {
+    "RR": "Double Rare",
+    "RRR": "Triple Rare",
+    "AR": "Art Rare",
+    "SAR": "Special Art Rare",
+    "SR": "Super Rare",
+    "UR": "Ultra Rare",
+    "ACE": "ACE SPEC Rare",
+    "PR": "Rare Prism Star",
+}
+
 
 def parse_setlist_rarities(wikitext: str) -> tuple[dict[str, str], dict[str, str]]:
     """(numérateur -> rareté, nom de carte normalisé -> rareté) depuis tous
     les blocs `Setlist/*entry` de la page. `numérateur` est la partie avant
-    le "/" du premier paramètre positionnel (ex. "1" pour "1/102"). Le nom
-    de carte vient du 2e paramètre positionnel (`{{TCG ID|Set|Carte|Num}}`),
-    normalisé (minuscule, sans variante d'édition) pour le repli par nom.
+    le "/" du premier paramètre positionnel (ex. "1" pour "1/102").
+
+    Rareté et nom de carte sont cherchés dans TOUS les paramètres plutôt
+    qu'à une position fixe -- découvert que la position varie selon la
+    variante de template : `Setlist/entry` (sets ère SV récents) insère un
+    paramètre marqueur d'impression ("H"/"G"/"C"/"B"...) entre le numérateur
+    et la carte, ce que `Setlist/nmentry` (vintage) n'a pas -- une position
+    fixe aurait mal lu la rareté sur les deux tiers des sets modernes
+    testés (cf. mémoire projet "limitlesstcg_rarity_backfill"). Le nom de
+    carte est normalement `{{TCG ID|Set|Carte|Num}}`, mais les cartes Tag
+    Team/Prism Star utilisent plutôt un lien wiki `[[Carte (Set N)|Carte]]`
+    -- non extrait ici (repli par nom simplement absent pour ces cartes-là,
+    pas une erreur).
+
     Une carte présente en double dans un même set (formes multiples type
     Unown) est retirée du dict par nom -- ambiguë, pas de faux match."""
     by_numerator: dict[str, str] = {}
@@ -259,17 +298,34 @@ def parse_setlist_rarities(wikitext: str) -> tuple[dict[str, str], dict[str, str
                 continue
             numerator_field = params[1].strip()
             numerator = numerator_field.split("/")[0].strip()
-            if not numerator.isdigit():
+            if numerator.isdigit():
+                # Normalisation du padding ICI, pas côté appelant -- les
+                # sets ère SV récents (Setlist/entry) zero-paddent leur
+                # numérateur ("003"), le vintage (Setlist/nmentry) non
+                # ("3") : sans strip commun, les clés de `by_numerator` ne
+                # seraient pas comparables entre les deux formats, ni avec
+                # `items.code` côté appelant qui n'est jamais paddé (cf.
+                # mémoire projet "jp_singles_tracking").
+                numerator = numerator.lstrip("0") or "0"
+            else:
                 numerator = None
 
-            rarity = next((p.strip() for p in params[3:] if p.strip() in KNOWN_RARITIES), None)
+            rarity = None
+            for p in params[2:]:
+                p = p.strip()
+                if p in KNOWN_RARITIES:
+                    rarity = p
+                    break
+                if p in ABBREVIATED_RARITIES:
+                    rarity = ABBREVIATED_RARITIES[p]
+                    break
             if not rarity:
                 continue
 
             if numerator:
                 by_numerator.setdefault(numerator, rarity)
 
-            tcg_id_match = re.search(r"\{\{TCG ID\|[^|}]*\|([^|}]+)", params[2])
+            tcg_id_match = re.search(r"\{\{TCG ID\|[^|}]*\|([^|}]+)", block)
             if tcg_id_match:
                 card_name = tcg_id_match.group(1).strip().lower()
                 name_counts[card_name] = name_counts.get(card_name, 0) + 1
