@@ -131,6 +131,83 @@ JP_BULBAPEDIA_TITLE_OVERRIDES: dict[str, str] = {
     # différent du titre anglais officiel de l'article combiné EN+JP).
     "pokemon-jp-heartgold-collection": "HeartGold & SoulSilver (TCG)",
     "pokemon-jp-soulsilver-collection": "HeartGold & SoulSilver (TCG)",
+
+    # Trouvées via l'API opensearch de Bulbapedia (recherche floue
+    # officielle sur le nom JP, PAS une devinette manuelle -- cf. mémoire
+    # projet "limitlesstcg_rarity_backfill") le 2026-08-08, puis vérifiées
+    # une à une par plausibilité de taille (plus grand numérateur trouvé
+    # sur la page vs plus grand `code` connu chez nous pour ce set_code).
+    # Les 8 premières ont un ratio EXACTEMENT 1.0 sur des tailles non
+    # triviales (250-360 cartes) -- confiance quasi certaine, l'article
+    # combiné EN+JP documente bien la numérotation JP étendue malgré un nom
+    # EN qui semble à tort ne désigner qu'un sous-ensemble plus petit
+    # (ex. "Shiny Treasure ex" JP vs "Paldean Fates" EN). Les suivantes ont
+    # un ratio moins net (petits reliquats de quelques cartes, où le titre
+    # est correct mais notre propre décompte diverge légèrement) --
+    # protégées par le plafond de vraisemblance PAR CARTE dans
+    # `sync_set_rarities` (page_max*1.5) qui empêche d'écrire une rareté
+    # pour un `code` hors de portée plausible même si le set entier a été
+    # mal identifié.
+    "pokemon-jp-shiny-treasure-ex": "Paldean Fates (TCG)",
+    "pokemon-jp-shiny-star-v": "Shining Fates (TCG)",
+    "pokemon-jp-vstar-universe": "Crown Zenith (TCG)",
+    "pokemon-jp-gx-ultra-shiny": "Hidden Fates (TCG)",
+    "pokemon-jp-25th-anniversary-collection": "Celebrations (TCG)",
+    "pokemon-jp-mega-dream-ex": "MEGA Dream ex (TCG)",
+    "pokemon-jp-vmax-climax": "VMAX Climax (TCG)",
+    "pokemon-jp-tag-all-stars": "Tag All Stars (TCG)",
+    "pokemon-jp-bandit-ring": "Ancient Origins (TCG)",
+    "pokemon-jp-amazing-volt-tackle": "Vivid Voltage (TCG)",
+    "pokemon-jp-awakening-psychic-king": "Fates Collide (TCG)",
+    "pokemon-jp-challenge-from-the-darkness": "Gym Challenge (TCG)",
+    "pokemon-jp-champion-road": "Champion Road (TCG)",
+    "pokemon-jp-crimson-haze": "Crimson Haze (TCG)",
+    "pokemon-jp-dark-order": "Dark Order (TCG)",
+    "pokemon-jp-double-crisis": "Double Crisis (TCG)",
+    "pokemon-jp-dragon-storm": "Dragon Majesty (TCG)",
+    "pokemon-jp-eevee-heroes": "Eevee Heroes (TCG)",
+    "pokemon-jp-emerald-break": "Roaring Skies (TCG)",
+    "pokemon-jp-ex-battle-boost": "Legendary Treasures (TCG)",
+    "pokemon-jp-expansion-pack": "Base Set (TCG)",
+    "pokemon-jp-explosive-walker": "Explosive Walker (TCG)",
+    "pokemon-jp-facing-a-new-trial": "Facing a New Trial (TCG)",
+    "pokemon-jp-fairy-rise": "Fairy Rise (TCG)",
+    "pokemon-jp-fever-burst-fighter": "Steam Siege (TCG)",
+    "pokemon-jp-full-metal-wall": "Full Metal Wall (TCG)",
+    "pokemon-jp-gg-end": "GG End (TCG)",
+    "pokemon-jp-gx-battle-boost": "GX Battle Boost (TCG)",
+    "pokemon-jp-hail-blizzard": "Next Destinies (TCG)",
+    "pokemon-jp-infinity-zone": "Darkness Ablaze (TCG)",
+    "pokemon-jp-legendary-heartbeat": "Legendary Heartbeat (TCG)",
+    "pokemon-jp-lost-link": "Lost Link (TCG)",
+    "pokemon-jp-matchless-fighter": "Peerless Fighters (TCG)",
+    "pokemon-jp-megalo-cannon": "Plasma Blast (TCG)",
+    "pokemon-jp-night-unison": "Night Unison (TCG)",
+    "pokemon-jp-night-wanderer": "Shrouded Fable (TCG)",
+    "pokemon-jp-nihil-zero": "Nihil Zero (TCG)",
+    "pokemon-jp-paradise-dragona": "Paradise Dragona (TCG)",
+    "pokemon-jp-phantom-gate": "Phantom Forces (TCG)",
+    "pokemon-jp-plasma-gale": "Plasma Storm (TCG)",
+    "pokemon-jp-psycho-drive": "Next Destinies (TCG)",
+    "pokemon-jp-rage-of-the-broken-heavens": "BREAKpoint (TCG)",
+    "pokemon-jp-rebel-clash": "Rebel Clash (TCG)",
+    "pokemon-jp-remix-bout": "Remix Bout (TCG)",
+    "pokemon-jp-rising-fist": "Furious Fists (TCG)",
+    "pokemon-jp-rocket-gang": "Team Rocket (TCG)",
+    "pokemon-jp-shining-legends": "Shining Legends (TCG)",
+    "pokemon-jp-shiny-collection": "Shiny Collection (TCG)",
+    "pokemon-jp-sky-legend": "Sky Legend (TCG)",
+    "pokemon-jp-storm-emeralda": "Storm Emeralda (TCG)",
+    "pokemon-jp-super-electric-breaker": "Super Electric Breaker (TCG)",
+    "pokemon-jp-tag-bolt": "Team Up (TCG)",
+    "pokemon-jp-the-town-on-no-map": "Aquapolis (TCG)",
+    "pokemon-jp-thunderclap-spark": "Thunderclap Spark (TCG)",
+    "pokemon-jp-triplet-beat": "Triplet Beat (TCG)",
+    "pokemon-jp-ultra-force": "Ultra Force (TCG)",
+    "pokemon-jp-vmax-rising": "VMAX Rising (TCG)",
+    "pokemon-jp-wild-blaze": "Flashfire (TCG)",
+    "pokemon-jp-wind-from-the-sea": "Aquapolis (TCG)",
+    "pokemon-jp-world-champions-pack": "EX Power Keepers (TCG)",
 }
 
 
