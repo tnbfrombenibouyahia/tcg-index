@@ -1,28 +1,20 @@
-import { NavBar } from "@/components/ui/NavBar";
 import { TopHeader } from "@/components/ui/TopHeader";
+import { GlobalDock } from "@/components/dashboard/GlobalDock";
 
 // Coquille des pages "produit" (dashboard, catalog, transactions, ...) --
-// sidebar fixe + header global + zone de contenu scrollable. Extrait de
-// l'ancien app/layout.tsx (racine) pour que la landing page (app/page.tsx,
-// hors de ce groupe de routes) puisse avoir sa propre mise en page plein
-// écran sans sidebar ni header produit. Un route group ((app)) n'apparaît
-// pas dans l'URL : /dashboard, /catalog etc. restent inchangés.
+// header global + contenu. La sidebar fixe a été retirée (demande
+// utilisateur du 2026-08-08, cf. mémoire projet "project_terminal_redesign") :
+// la navigation vit désormais entièrement dans le dock flottant du bas
+// (GlobalDock -> WidgetDock, verre liquide, mêmes 9 destinations qu'avant).
+// `paddingBottom` sur <main> réserve la place pour que le dock (position
+// fixed) ne recouvre jamais le bas du contenu. Un route group ((app))
+// n'apparaît pas dans l'URL : /dashboard, /catalog etc. restent inchangés.
 export default function AppShellLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", flexDirection: "row", minHeight: "100dvh" }}>
-      <NavBar />
-      <div
-        style={{
-          flex: 1,
-          minWidth: 0,
-          display: "flex",
-          flexDirection: "column",
-          background: "var(--bg-from)",
-        }}
-      >
-        <TopHeader />
-        <main style={{ flex: 1, overflowY: "auto" }}>{children}</main>
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100dvh", background: "var(--bg-from)" }}>
+      <TopHeader />
+      <main style={{ flex: 1, paddingBottom: "100px" }}>{children}</main>
+      <GlobalDock />
     </div>
   );
 }

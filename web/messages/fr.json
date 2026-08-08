@@ -83,7 +83,8 @@
       "sealed_ev": "Ratio EV scellés",
       "undervalued": "Scores de sous-évaluation",
       "grading_roi": "Données ROI de gradation",
-      "volume": "Volume de ventes"
+      "volume": "Volume de ventes",
+      "active_listings": "Annonces actives eBay"
     },
     "tiers": {
       "hot": "Hot (< 6 mois)",
