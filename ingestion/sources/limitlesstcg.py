@@ -331,15 +331,16 @@ def sync_all_one_piece_promos(releases: dict[str, str] | None = None) -> dict:
 # faisait matcher "Mega Evolution" et "Mega Evolution Promo" comme
 # identiques, un faux positif -- cf. mémoire projet.
 _PLURAL_NORMALIZE = {"promos": "promo", "energies": "energy", "cards": "card", "fighters": "fighter"}
-# `\d+` (pas `\d*`) -- exiger au moins un chiffre. Trouvé en creusant l'écart
-# de couverture EN (mémoire projet "limitlesstcg_rarity_backfill") : avec
-# `\d*`, un token de génération SEUL sans chiffre ("sv", "sm", "xy"...) était
-# aussi strippé, donc "SM Promos" et "XY Promos" se réduisaient tous les deux
-# au même token nu {"promo"} -- collision de score 1.0 entre deux sets bien
-# distincts (un seul des deux gagnait le match, l'autre restait à 0% de
-# rareté). Le cas visé à l'origine ("sv02", "swsh01"...) a toujours un
-# chiffre donc reste bien strippé.
-_GEN_CODE_RE = re.compile(r"^(sv|swsh|sm|xy|bw|dp|ex|hgss|me)\d+$")
+# `\d*` (pas `\d+`) -- redonne bien un tel token nu quand il n'y a pas de
+# chiffre ("xy", "sm"...), volontairement : "pokemon-xy-evolutions" doit
+# pouvoir matcher le nom LimitlessTCG "Evolutions" (qui n'a PAS "XY" dans son
+# propre nom) une fois "xy" strippé de notre côté. cf. commentaire de
+# `_best_match_with_tiebreak` pour comment la collision "SM Promos"/
+# "XY Promos" (qui se réduisent alors toutes deux à {"promo"}) est gérée
+# SANS perdre ce cas -- pas en touchant ce regex (essayé, cassait
+# xy-evolutions et probablement d'autres, cf. mémoire projet
+# "limitlesstcg_rarity_backfill"), mais en détectant l'égalité de score.
+_GEN_CODE_RE = re.compile(r"^(sv|swsh|sm|xy|bw|dp|ex|hgss|me)\d*$")
 
 
 def _set_name_tokens(s: str) -> set[str]:
@@ -498,6 +499,27 @@ def sync_promo_rarities(tcg: str, language: str, promo_set_codes: frozenset[str]
         conn.close()
 
 
+def _best_match_with_tiebreak(target_toks: set[str], candidates: dict[str, set[str]]) -> str | None:
+    """Meilleur candidat par score de Jaccard, `None` si égalité entre au
+    moins deux candidats au meilleur score -- plutôt que trancher au hasard
+    selon l'ordre d'itération (silencieux, découvert sur la collision "SM
+    Promos"/"XY Promos" qui se réduisent toutes deux à {"promo"} une fois le
+    token de génération strippé, cf. commentaire sous `_PLURAL_NORMALIZE` :
+    un seul des deux gagnait le match, l'autre restait bloqué à 0% de
+    rareté sans qu'aucune erreur ne le signale)."""
+    best_key, best_score, tie = None, 0.0, False
+    for key, toks in candidates.items():
+        if not toks:
+            continue
+        union = target_toks | toks
+        s = len(target_toks & toks) / len(union) if union else 0.0
+        if s > best_score:
+            best_score, best_key, tie = s, key, False
+        elif s == best_score and s > 0:
+            tie = True
+    return None if tie else best_key
+
+
 def build_pokemon_set_mapping() -> dict[str, str]:
     """slug LimitlessTCG -> notre `set_code`, par recouvrement de tokens de
     nom (cf. docstring module -- pas de raccourci direct comme pour One
@@ -532,15 +554,8 @@ def build_pokemon_set_mapping() -> dict[str, str]:
         ltoks = _set_name_tokens(name)
         if not ltoks:
             continue
-        best_code, best_score = None, 0.0
-        for code, otoks in our_tokens.items():
-            if not otoks:
-                continue
-            union = ltoks | otoks
-            s = len(ltoks & otoks) / len(union) if union else 0.0
-            if s > best_score:
-                best_score, best_code = s, code
-        if best_score >= 1.0:
+        best_code = _best_match_with_tiebreak(ltoks, our_tokens)
+        if best_code and ltoks == our_tokens[best_code]:  # score == 1.0
             raw_matches[slug] = best_code
 
     by_code: dict[str, list[str]] = {}
@@ -800,15 +815,8 @@ def build_pokemon_jp_set_mapping() -> dict[str, str]:
         ltoks = jp_tokens(name)
         if not ltoks:
             continue
-        best_code, best_score = None, 0.0
-        for code, otoks in our_tokens.items():
-            if not otoks:
-                continue
-            union = ltoks | otoks
-            s = len(ltoks & otoks) / len(union) if union else 0.0
-            if s > best_score:
-                best_score, best_code = s, code
-        if best_score >= 1.0:
+        best_code = _best_match_with_tiebreak(ltoks, our_tokens)
+        if best_code and ltoks == our_tokens[best_code]:  # score == 1.0
             raw_matches[slug] = best_code
 
     by_code: dict[str, list[str]] = {}
@@ -956,6 +964,17 @@ def main():
         print(f"  EN : {n_promo_en} carte(s) -> 'Promo'")
         print(f"  JP : {n_promo_jp} carte(s) -> 'Promo'")
         result["total"] += n_promo_en + n_promo_jp
+
+        print("\n== Backfill rareté Pokémon -- héritage depuis le set d'origine cité ==")
+        from ingestion.rarity_inherit import sync_rarity_inheritance
+
+        inherit_result = sync_rarity_inheritance()
+        print(
+            f"  {inherit_result['inherited']} héritée(s), "
+            f"{inherit_result['promo_tagged']} 'Promo', "
+            f"{inherit_result['unresolved']} non résolue(s)"
+        )
+        result["total"] += inherit_result["inherited"] + inherit_result["promo_tagged"]
 
     print(f"\nTerminé : {result['total']} traité(s) au total.")
     if result["skipped"]:

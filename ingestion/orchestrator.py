@@ -53,6 +53,7 @@ from index import sealed_ev as index_sealed_ev
 from index import undervalued as index_undervalued
 from index import volume as index_volume
 from index.methodology import INDEX_DEFINITIONS
+from ingestion import rarity_inherit
 from ingestion.sources import apitcg, ebay, limitlesstcg, pricecharting
 from shared.db import get_connection
 from shared.sync_log import finish_run, start_run
@@ -310,7 +311,11 @@ def run_rarity_backfill_sync(run_type: str) -> None:
                 ) + limitlesstcg.sync_promo_rarities(
                     "pokemon", "JP", limitlesstcg.JP_PROMO_SET_CODES
                 )
-                jp_result = {**jp_result, "total": jp_result["total"] + n_promo}
+                inherit_result = rarity_inherit.sync_rarity_inheritance()
+                jp_result = {
+                    **jp_result,
+                    "total": jp_result["total"] + n_promo + inherit_result["inherited"] + inherit_result["promo_tagged"],
+                }
             else:
                 en_result = limitlesstcg.sync_all_one_piece_rarities()
                 jp_result = limitlesstcg.sync_all_one_piece_promos()
