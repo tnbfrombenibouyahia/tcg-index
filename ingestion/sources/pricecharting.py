@@ -1313,7 +1313,21 @@ def _match_sealed_item(pc_title: str, candidates: list[dict]) -> dict | None:
     côté catalogue), pour absorber les variations de formulation entre les deux
     sources (ex. 'Sealed Poster Collection' vs notre '151 Poster Collection',
     ou 'Elite Trainer Box [Pokemon Center]' vs notre '... Pokemon Center Elite
-    Trainer Box...' où l'ordre des mots diffère)."""
+    Trainer Box...' où l'ordre des mots diffère).
+
+    Plusieurs candidats peuvent satisfaire le "contains" (ex. vintage
+    '[1st Edition]' vs '[Unlimited Edition]' -- les deux contiennent 'booster'
+    + 'box'). Ancien comportement : `min(..., key=len)` -- devinait le nom le
+    plus court, sans rapport avec la vraie édition. Bug constaté en prod le
+    2026-08-09 : 'Booster Box [1st Edition]' ET 'Booster Box' (PriceCharting,
+    Unlimited implicite) matchaient tous les deux sur '[1st Edition]' chez
+    nous (plus court que '[Unlimited Edition]') -- prix Unlimited stocké sous
+    l'item 1st Edition selon le jour (~30% d'écart, Fossil : $10 788 affiché
+    vs ~$15 626 réel), item Unlimited jamais pricé. Départage maintenant par
+    `_best_single_match` (même logique que les singles : similarité du
+    contenu des qualificatifs entre crochets, seuil de confiance, None si
+    toujours ambigu après départage) au lieu de deviner sur la longueur du
+    nom -- un contains() à trous vaut mieux qu'un prix faux."""
     pc_tokens = set(_normalize_name(pc_title).split()) - _SEALED_NOISE_WORDS
     exact = [c for c in candidates if set(_normalize_name(c["name"]).split()) == pc_tokens]
     if len(exact) == 1:
@@ -1322,7 +1336,7 @@ def _match_sealed_item(pc_title: str, candidates: list[dict]) -> dict | None:
     if len(contains) == 1:
         return contains[0]
     if len(contains) > 1:
-        return min(contains, key=lambda c: len(c["name"]))
+        return _best_single_match(pc_title, contains)
     return None
 
 
