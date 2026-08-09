@@ -16,7 +16,10 @@ const VALID_SORTS = new Set<string>([
   "language_asc", "language_desc",
 ]);
 
-const MIN_MARKET_PRICES = [1, 2, 5, 10, 25] as const;
+// Plancher $5 -- demande utilisateur 2026-08-09 ("en dessous de ça on
+// comptabilise pas") : $1/$2 retirés des choix, plus juste un défaut plus
+// haut -- en dessous de $5 n'est plus sélectionnable du tout.
+const MIN_MARKET_PRICES = [5, 10, 25] as const;
 type MinMarketPrice = (typeof MIN_MARKET_PRICES)[number];
 
 export default async function UndervaluedPage({
@@ -39,7 +42,7 @@ export default async function UndervaluedPage({
   const minRaw = Number(Array.isArray(raw.min) ? raw.min[0] : raw.min);
   const minMarketPrice: MinMarketPrice = (MIN_MARKET_PRICES as readonly number[]).includes(minRaw)
     ? (minRaw as MinMarketPrice)
-    : 2;
+    : 5;
 
   const pageRaw = Number(Array.isArray(raw.page) ? raw.page[0] : raw.page);
   const page = Number.isInteger(pageRaw) && pageRaw >= 1 ? pageRaw : 1;

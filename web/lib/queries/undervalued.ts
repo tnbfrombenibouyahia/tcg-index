@@ -56,6 +56,12 @@ export interface UndervaluedParams {
 // Filtre partagé entre getUndervalued et getUndervaluedCount (page + count
 // exécutées en parallèle depuis app/undervalued/page.tsx, même pattern que
 // lib/queries/sales.ts) -- évite que les deux divergent silencieusement.
+//
+// Plancher $5 (demande utilisateur 2026-08-09, "en dessous de ça on
+// comptabilise pas") -- même défaut partout où ce filtre s'applique (ici,
+// app/(app)/undervalued/page.tsx, app/(app)/dashboard/page.tsx), aligné sur
+// le plancher déjà en place pour /divergence (minPrice: 5) : sous $5, le
+// bruit sur des cartes quasi sans valeur dominait le classement.
 function whereFragment(tcg: Tcg | undefined, minMarketPrice: number) {
   return sql`
     WHERE l.market_price >= ${minMarketPrice}
@@ -65,7 +71,7 @@ function whereFragment(tcg: Tcg | undefined, minMarketPrice: number) {
 
 export async function getUndervalued({
   tcg,
-  minMarketPrice = 1.0,
+  minMarketPrice = 5,
   limit = 50,
   page = 1,
   sort,
@@ -139,7 +145,7 @@ export async function getUndervalued({
 // travail), mais sans le JOIN items ni le tri -- reste rapide.
 export async function getUndervaluedCount({
   tcg,
-  minMarketPrice = 1.0,
+  minMarketPrice = 5,
 }: Pick<UndervaluedParams, "tcg" | "minMarketPrice">): Promise<number> {
   const where = whereFragment(tcg, minMarketPrice);
 

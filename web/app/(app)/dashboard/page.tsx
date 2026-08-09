@@ -34,8 +34,9 @@ export default async function HomePage() {
       getAllIndices(2), // profondeur minimale -- seul "asOf" (fraîcheur) sert ici
       searchItems({ q: "", tcg, limit: 6 }),
       getSales({ tcg, sort: "date_desc", pageSize: 6 }),
-      // minMarketPrice: 2 -- même défaut que /undervalued.
-      getUndervalued({ tcg, minMarketPrice: 2, sort: "score_desc", limit: 6 }),
+      // minMarketPrice: 5 -- même plancher que /undervalued (cf. commentaire
+      // lib/queries/undervalued.ts).
+      getUndervalued({ tcg, minMarketPrice: 5, sort: "score_desc", limit: 6 }),
       getDivergence({ tcg, grade: "ungraded", windowDays: 30, minPrice: 5, sort: "divergence_desc", limit: 6 }),
       getGradingRoiRanking({ tcg, sort: "roi_desc", limit: 6 }), // minUngradedPrice par défaut (2) déjà aligné avec /grading-roi
     ]);
