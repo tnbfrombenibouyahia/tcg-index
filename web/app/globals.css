@@ -86,57 +86,10 @@
   --muted-foreground:   var(--foreground-muted);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   Dark mode — l'ambiance "par défaut" du Terminal (quasi-noir #050505, verre
-   sombre). Activé via [data-theme="dark"] sur <html> (cf. ThemeScript dans
-   layout.tsx), indépendant de data-universe.
-   ───────────────────────────────────────────────────────────────────────────── */
-:root[data-theme="dark"] {
-  --bg-from: #050505;
-  --bg-to:   #050505;
-
-  --surface:          rgba(14, 14, 16, 0.88);
-  --surface-solid:    #0E0E10;
-  --surface-alt:      #131315;
-
-  --foreground:          #F4F5F7;
-  --foreground-muted:    #8D94A1;
-  --foreground-subtle:   #5B6270;
-
-  --border:        rgba(255, 255, 255, 0.09);
-  --border-soft:   rgba(255, 255, 255, 0.07);
-  --border-softer: rgba(255, 255, 255, 0.045);
-  --shadow-card:   0 1px 3px rgba(0,0,0,0.3), 0 8px 32px rgba(0,0,0,0.4);
-  --shadow-tile:   0 1px 2px rgba(0,0,0,0.25), 0 4px 16px rgba(0,0,0,0.35);
-  --shadow-lift:   0 2px 8px rgba(0,0,0,0.35), 0 16px 48px rgba(0,0,0,0.45);
-
-  --glass-widget-bg:     linear-gradient(165deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-  --glass-widget-border: rgba(255, 255, 255, 0.10);
-  --glass-widget-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
-
-  --ink:           #F4F5F7;
-  --ink-text:      #0B0B0C;
-
-  --positive:      #22C55E;
-  --negative:      #EF4444;
-  --chart-line:    var(--accent);
-  --chart-fill:    color-mix(in srgb, var(--accent) 16%, transparent);
-  --chart-grid:    rgba(255, 255, 255, 0.07);
-  --chart-muted:   #8D94A1;
-  --chart-axis:    #5B6270;
-  --bar-muted:     rgba(255, 255, 255, 0.35);
-
-  --tint-neutral:        rgba(255, 255, 255, 0.07);
-  --tint-neutral-strong: rgba(255, 255, 255, 0.14);
-
-  --overlay-scrim: rgba(0, 0, 0, 0.65);
-
-  --tooltip-bg:      #F4F5F7;
-  --tooltip-text:    #0B0B0C;
-  --tooltip-divider: rgba(0, 0, 0, 0.15);
-
-  --muted:              rgba(255, 255, 255, 0.06);
-}
+/* Dark mode retiré (demande utilisateur 2026-08-09) -- le site reste en
+   thème clair unique désormais, cf. commentaire RootLayout dans
+   app/layout.tsx pour le détail de ce qui a été retiré avec lui
+   (ThemeToggle, THEME_INIT_SCRIPT). */
 
 /* Univers actif — bascule uniquement l'accent (posé côté serveur sur <html>
    via le cookie "universe", cf. app/actions/universe.ts -- pas de flash,

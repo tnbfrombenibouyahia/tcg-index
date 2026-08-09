@@ -177,7 +177,11 @@ export function TerminalDashboard({
         paddingBottom: "90px",
       }}
     >
-      <WidgetDock expanded={layout.expanded} onSelect={(id) => setLayout((s) => ({ ...s, expanded: id }))} />
+      <WidgetDock
+        universe={tcg}
+        expanded={layout.expanded}
+        onSelect={(id) => setLayout((s) => ({ ...s, expanded: id }))}
+      />
       {WIDGET_IDS.map((id) => (
         <WidgetShell
           key={id}

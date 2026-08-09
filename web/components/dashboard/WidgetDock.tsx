@@ -2,8 +2,12 @@
 
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import type { WidgetId } from "@/lib/dashboard/types";
+import type { Tcg } from "@/lib/constants";
+import { UniverseSelector } from "@/components/ui/UniverseSelector";
+import { LanguageSelector } from "@/components/ui/LanguageSelector";
+import { AuthTrigger } from "@/components/dashboard/AuthTrigger";
 import {
   GridIcon,
   SearchIcon,
@@ -40,7 +44,33 @@ import {
 //   agrandir sur place).
 // - Partout ailleurs (GlobalDock.tsx, sans `expanded`/`onSelect`) : tous les
 //   items naviguent vers leur route, comme l'ancienne sidebar.
+//
+// Contrôles globaux (demande utilisateur 2026-08-09) -- l'ex-TopHeader (bar
+// du haut, retirée avec son emblème/tagline) a versé ses commandes ici plutôt
+// que de rester un bandeau à part : univers TOUT À GAUCHE (délimité par un
+// divider), compte + langue TOUT À DROITE (langue en dernier, la plus à
+// droite de toutes). Contrairement aux items de nav, ces contrôles ne
+// participent pas à l'animation hover (taille fixe, pas de libellé à
+// déplier) -- ils gardent l'apparence compacte qu'ils avaient dans le header.
+// Le ThemeToggle qui vivait aussi là n'a pas de nouvel emplacement : le site
+// est passé en thème clair unique (cf. app/layout.tsx), il n'y a plus rien à
+// basculer.
 // ─────────────────────────────────────────────────────────────────────────────
+
+function DockDivider() {
+  return (
+    <div
+      aria-hidden
+      style={{
+        alignSelf: "stretch",
+        width: "1px",
+        margin: "9px 3px",
+        background: "var(--border)",
+        flexShrink: 0,
+      }}
+    />
+  );
+}
 
 interface DockItem {
   id: WidgetId | "sealedEv" | "liquidity" | "live";
@@ -62,15 +92,20 @@ const ITEMS: DockItem[] = [
 ];
 
 export function WidgetDock({
+  universe,
   expanded,
   onSelect,
 }: {
+  /** Univers actif (cookie, cf. lib/universe.ts) -- pilote le sélecteur
+   *  Pokémon/One Piece tout à gauche du dock. */
+  universe: Tcg;
   /** Fournis uniquement par TerminalDashboard (rendu sur /dashboard) -- leur
    *  absence signale le mode "navigation pure" (GlobalDock, autres pages). */
   expanded?: WidgetId | null;
   onSelect?: (id: WidgetId | null) => void;
 }) {
   const t = useTranslations("nav");
+  const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
   const [hover, setHover] = useState(false);
@@ -126,6 +161,11 @@ export function WidgetDock({
         maxWidth: "calc(100vw - 24px)",
       }}
     >
+      <div style={{ width: "70px", flexShrink: 0 }}>
+        <UniverseSelector current={universe} />
+      </div>
+      <DockDivider />
+
       <button
         type="button"
         onClick={goHome}
@@ -209,6 +249,12 @@ export function WidgetDock({
           </button>
         );
       })}
+
+      <DockDivider />
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+        <AuthTrigger />
+        <LanguageSelector current={locale} />
+      </div>
     </nav>
   );
 }

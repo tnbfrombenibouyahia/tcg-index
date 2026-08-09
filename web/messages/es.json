@@ -16,9 +16,7 @@
     "divergence": "Divergencias",
     "liquidity": "Liquidez",
     "live": "Live Synchronisation",
-    "footer": "Datos públicos · metodología transparente",
-    "themeToLight": "Cambiar a modo claro",
-    "themeToDark": "Cambiar a modo oscuro"
+    "footer": "Datos públicos · metodología transparente"
   },
   "home": {
     "breadcrumbCurrent": "Mercado TCG",
@@ -429,9 +427,6 @@
     "liquiditySales90d": "Vendidas (90d)"
   },
   "dashboard": {
-    "header": {
-      "tagline": "Inteligencia de mercado TCG"
-    },
     "widgets": {
       "gridView": "Vista de cuadrícula",
       "catalogue": { "title": "Catálogo", "subtitle": "Buscar cualquier carta, todos los idiomas" },
