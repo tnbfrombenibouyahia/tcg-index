@@ -61,6 +61,7 @@
     "breadcrumbCurrent": "Live Market Data",
     "description": "Ce qui tourne en ce moment côté ingestion, et la fraîcheur des données par TCG — référentiel, prix, gradation.",
     "liveStatus": "Live",
+    "seeAll": "Tout voir",
     "disconnected": "Connexion perdue",
     "refreshed": "actualisé {time}",
     "freshnessTitle": "Fraîcheur des données par TCG",
