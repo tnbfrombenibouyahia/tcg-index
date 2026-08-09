@@ -235,12 +235,13 @@ export function LandingPage({
   const lastY = 90 - chartPoints[chartPoints.length - 1] * 0.85;
   const chartLabelTopPct = Math.max(6, Math.min(88, (lastY / 90) * 100));
 
+  // "live" (Live Market) retiré -- demande utilisateur du 2026-08-09,
+  // le widget/la page correspondants n'existent plus côté produit.
   const features = [
     { key: "catalogue", shape: "ring" as const },
     { key: "transactions", shape: "hands" as const },
     { key: "undervalued", shape: "arrow" as const },
     { key: "divergences", shape: "delta" as const },
-    { key: "live", shape: "dot" as const },
     { key: "grading", shape: "card" as const },
   ];
 

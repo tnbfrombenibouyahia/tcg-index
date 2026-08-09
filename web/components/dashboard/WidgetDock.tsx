@@ -7,7 +7,6 @@ import type { WidgetId } from "@/lib/dashboard/types";
 import {
   GridIcon,
   SearchIcon,
-  PulseIcon,
   TransactionsIcon,
   BoxIcon,
   TrendingUpIcon,
@@ -20,15 +19,19 @@ import {
 // Dock flottant -- navigation UNIQUE du site (la sidebar a été retirée, cf.
 // mémoire projet "project_terminal_redesign"), porté du "nav" bas de TCG
 // Terminal.dc.html : pilule fixe en bas d'écran, verre liquide, se déplie au
-// survol. Couvre les 9 destinations de l'ancienne sidebar -- 6 ont un widget
-// équivalent sur /dashboard (Catalogue, Live Market, Transactions,
-// Sous-évalué, Divergences, ROI Gradation), 2 n'en ont pas (Scellés
-// sous-évalués, Liquidité) et naviguent toujours vers leur page dédiée.
+// survol. Couvre les destinations de l'ancienne sidebar -- 5 ont un widget
+// équivalent sur /dashboard (Catalogue, Transactions, Sous-évalué,
+// Divergences, ROI Gradation), 2 n'en ont pas (Scellés sous-évalués,
+// Liquidité) et naviguent toujours vers leur page dédiée.
+//
+// "live" (Live Market Data) retiré du front entièrement -- demande
+// utilisateur du 2026-08-09 : plus de widget, plus de page /live, donc plus
+// de point d'entrée nav ici non plus (cf. lib/dashboard/types.ts).
 //
 // Double comportement au clic, résolu ici plutôt que dans deux composants
 // séparés :
 // - Sur /dashboard, avec `expanded`/`onSelect` fournis (par TerminalDashboard) :
-//   les 6 items à widget AGRANDISSENT ce widget en place (même geste que le
+//   les items à widget AGRANDISSENT ce widget en place (même geste que le
 //   ⤢ de son en-tête). Les 2 sans widget naviguent quand même (rien à
 //   agrandir sur place).
 // - Partout ailleurs (GlobalDock.tsx, sans `expanded`/`onSelect`) : tous les
@@ -45,7 +48,6 @@ interface DockItem {
 
 const ITEMS: DockItem[] = [
   { id: "catalogue", href: "/catalog", labelKey: "catalog", Icon: SearchIcon, hasWidget: true },
-  { id: "live", href: "/live", labelKey: "live", Icon: PulseIcon, hasWidget: true },
   { id: "tx", href: "/transactions", labelKey: "transactions", Icon: TransactionsIcon, hasWidget: true },
   { id: "sealedEv", href: "/sealed-ev", labelKey: "sealedEv", Icon: BoxIcon, hasWidget: false },
   { id: "under", href: "/undervalued", labelKey: "undervalued", Icon: TrendingUpIcon, hasWidget: true },

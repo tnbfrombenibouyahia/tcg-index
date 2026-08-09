@@ -15,7 +15,6 @@
     "gradingRoi": "Grading ROI",
     "divergence": "Divergence",
     "liquidity": "Liquidity",
-    "live": "Live Market Data",
     "footer": "Public data · transparent methodology",
     "themeToLight": "Switch to light mode",
     "themeToDark": "Switch to dark mode"
@@ -56,56 +55,6 @@
     "updatedValue": "Real-time",
     "source": "Source",
     "sourceValue": "TCG Community"
-  },
-  "live": {
-    "breadcrumbCurrent": "Live Market Data",
-    "description": "What's running right now on the ingestion side, and data freshness per TCG — catalog, prices, grading.",
-    "liveStatus": "Live",
-    "seeAll": "See all",
-    "disconnected": "Connection lost",
-    "refreshed": "refreshed {time}",
-    "freshnessTitle": "Data freshness by TCG",
-    "tracked": "{count} tracked",
-    "noData": "no data",
-    "runningTitle": "Sync in progress",
-    "noRunningTitle": "No sync in progress",
-    "bothTcgs": "Pokémon & One Piece",
-    "startedAt": "started {time}",
-    "scheduleIntro": "The pipeline runs on a GitHub Actions cron, not continuously — here's the next scheduled window.",
-    "historyTitle": "Run history",
-    "emptyRunsTitle": "No run recorded yet",
-    "emptyRunsDescription": "The log starts with the next scheduled sync (catalog + prices at 06:00 UTC). Nothing to do on your end — it accumulates on its own.",
-    "inProgress": "in progress…",
-    "steps": {
-      "items": "Catalog",
-      "prices": "Prices — sealed & cards",
-      "grades_sales": "PSA grading & sales",
-      "index": "Index calculation",
-      "sealed_ev": "Sealed EV ratio",
-      "undervalued": "Undervalued scores",
-      "grading_roi": "Grading ROI inputs",
-      "volume": "Sales volume",
-      "active_listings": "eBay active listings"
-    },
-    "tiers": {
-      "hot": "Hot (< 6 months)",
-      "recent": "Recent (6–18 months)",
-      "established": "Established (18–36 months)",
-      "vintage": "Vintage (36+ months)"
-    },
-    "segments": {
-      "items": "Catalog",
-      "sealed": "Sealed (display)",
-      "single": "Cards (singles)",
-      "grading": "PSA grading"
-    },
-    "schedule": {
-      "itemsPrices": { "label": "Catalog + prices", "cron": "daily, 06:00 UTC" },
-      "hot": { "label": "Grading & sales — hot", "cron": "daily, 04:00 UTC" },
-      "recent": { "label": "Grading & sales — recent", "cron": "Mon/Wed/Fri, 03:00 UTC" },
-      "established": { "label": "Grading & sales — established", "cron": "Sunday, 03:00 UTC" },
-      "vintage": { "label": "Grading & sales — vintage", "cron": "Saturday, 03:00 UTC" }
-    }
   },
   "transactions": {
     "title": "Recent transactions",
@@ -416,7 +365,6 @@
     "widgets": {
       "gridView": "Grid view",
       "catalogue": { "title": "Catalogue", "subtitle": "Search any card, all languages" },
-      "live": { "title": "Live Market", "subtitle": "Real-time market index" },
       "tx": { "title": "Transactions", "subtitle": "Recently recorded sales" },
       "under": { "title": "Undervalued", "subtitle": "Gaps between price and fair value" },
       "div": { "title": "Divergences", "subtitle": "Price vs volume gap, ungraded sales only" },
@@ -426,11 +374,6 @@
       "searchPlaceholder": "Search a card...",
       "noResults": "No matching card",
       "empty": "Type at least 2 characters to search"
-    },
-    "live": {
-      "topMovers": "TOP MOVERS",
-      "noMovers": "Not enough recent sales to rank movers",
-      "noHistory": "Not enough history yet"
     },
     "transactions": {
       "colName": "Card",
@@ -503,14 +446,13 @@
     "profitRow": "Potential profit: +{roi}% ({amount})",
     "heroEmpty": "Not enough graded data yet to preview the demo.",
     "featuresKicker": "KEY FEATURES",
-    "featuresTitle": "Six modules, one terminal.",
+    "featuresTitle": "Five modules, one terminal.",
     "featuresSub": "Everything you need to run a card portfolio like a trading book — without juggling ten tabs.",
     "features": {
       "catalogue": { "title": "Catalogue", "desc": "Instant search across the whole Pokémon and One Piece market, live quotes." },
       "transactions": { "title": "Transactions", "desc": "Full history of your buys and sells, net margin computed automatically." },
       "undervalued": { "title": "Undervalued cards", "desc": "Algorithmic detection of gaps between quoted price and real market value." },
       "divergences": { "title": "Divergences", "desc": "Alerts on price/volume decorrelations before they close back up." },
-      "live": { "title": "Live Market", "desc": "Real-time data feed from the main trading venues." },
       "grading": { "title": "Grading ROI", "desc": "Simulate the profitability of a PSA/BGS submission before paying the fees." }
     },
     "footer": "© 2026 TCG Terminal. Market data provided for informational purposes."

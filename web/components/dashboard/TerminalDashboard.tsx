@@ -5,7 +5,6 @@ import { useTranslations } from "next-intl";
 import type { Tcg } from "@/lib/constants";
 import type { DivergenceRow, ItemSummary, SaleRow, UndervaluedRow } from "@/lib/types";
 import type { GradingRoiRow } from "@/lib/gradingRoi";
-import type { IndexSummary } from "@/lib/types";
 import {
   DEFAULT_LAYOUT,
   LAYOUT_STORAGE_KEY,
@@ -18,7 +17,6 @@ import {
 import { WidgetShell } from "@/components/dashboard/WidgetShell";
 import { WidgetDock } from "@/components/dashboard/WidgetDock";
 import { CatalogueWidget } from "@/components/dashboard/widgets/CatalogueWidget";
-import { LiveMarketWidget } from "@/components/dashboard/widgets/LiveMarketWidget";
 import { TransactionsWidget } from "@/components/dashboard/widgets/TransactionsWidget";
 import { UndervaluedWidget } from "@/components/dashboard/widgets/UndervaluedWidget";
 import { DivergencesWidget } from "@/components/dashboard/widgets/DivergencesWidget";
@@ -37,9 +35,6 @@ import { GradingRoiWidget } from "@/components/dashboard/widgets/GradingRoiWidge
 export function TerminalDashboard({
   tcg,
   catalogueInitialItems,
-  liveIndex,
-  liveMovers,
-  liveExpandedContent,
   sales,
   undervalued,
   divergences,
@@ -47,9 +42,6 @@ export function TerminalDashboard({
 }: {
   tcg: Tcg;
   catalogueInitialItems: ItemSummary[];
-  liveIndex: IndexSummary | null;
-  liveMovers: DivergenceRow[];
-  liveExpandedContent: ReactNode;
   sales: SaleRow[];
   undervalued: UndervaluedRow[];
   divergences: DivergenceRow[];
@@ -67,7 +59,19 @@ export function TerminalDashboard({
       const raw = window.localStorage.getItem(LAYOUT_STORAGE_KEY);
       if (raw) {
         const saved = JSON.parse(raw) as Partial<DashboardLayoutState>;
-        setLayout((prev) => ({ ...prev, ...saved, sizes: { ...prev.sizes, ...saved.sizes } }));
+        // Filtre les ids obsolètes (ex. "live", retiré le 2026-08-09) qu'un
+        // layout enregistré avant ce retrait pourrait encore contenir --
+        // sinon un widget fantôme resterait "expanded" sans contenu à afficher.
+        const knownOrder = saved.order?.filter((id) => (WIDGET_IDS as readonly string[]).includes(id));
+        const knownExpanded =
+          saved.expanded && (WIDGET_IDS as readonly string[]).includes(saved.expanded) ? saved.expanded : null;
+        setLayout((prev) => ({
+          ...prev,
+          ...saved,
+          order: knownOrder?.length ? knownOrder : prev.order,
+          expanded: knownExpanded,
+          sizes: { ...prev.sizes, ...saved.sizes },
+        }));
       }
     } catch {
       // localStorage indisponible ou JSON corrompu -- on garde la disposition par défaut
@@ -148,7 +152,6 @@ export function TerminalDashboard({
 
   const titles: Record<WidgetId, { title: string; subtitle: string }> = {
     catalogue: { title: t("catalogue.title"), subtitle: t("catalogue.subtitle") },
-    live: { title: t("live.title"), subtitle: t("live.subtitle") },
     tx: { title: t("tx.title"), subtitle: t("tx.subtitle") },
     under: { title: t("under.title"), subtitle: t("under.subtitle") },
     div: { title: t("div.title"), subtitle: t("div.subtitle") },
@@ -157,14 +160,6 @@ export function TerminalDashboard({
 
   const content: Record<WidgetId, ReactNode> = {
     catalogue: <CatalogueWidget tcg={tcg} initialItems={catalogueInitialItems} />,
-    live: (
-      <LiveMarketWidget
-        index={liveIndex}
-        movers={liveMovers}
-        expanded={layout.expanded === "live"}
-        expandedContent={liveExpandedContent}
-      />
-    ),
     tx: <TransactionsWidget sales={sales} />,
     under: <UndervaluedWidget rows={undervalued} />,
     div: <DivergencesWidget rows={divergences} />,
@@ -194,15 +189,6 @@ export function TerminalDashboard({
           hidden={layout.expanded !== null && layout.expanded !== id}
           size={layout.sizes[id]}
           customSize={layout.customSize[id]}
-          leftAccessory={
-            id === "live" ? (
-              <span
-                className="pulse-dot"
-                aria-hidden
-                style={{ width: "10px", height: "10px", borderRadius: "50%", background: "var(--positive)", flexShrink: 0, marginTop: "3px" }}
-              />
-            ) : undefined
-          }
           onSizeChange={(size) => setSize(id, size)}
           onToggleExpand={() => toggleExpand(id)}
           onResizeStart={startResize(id)}

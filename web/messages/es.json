@@ -15,7 +15,6 @@
     "gradingRoi": "ROI de gradación",
     "divergence": "Divergencias",
     "liquidity": "Liquidez",
-    "live": "Live Market Data",
     "footer": "Datos públicos · metodología transparente",
     "themeToLight": "Cambiar a modo claro",
     "themeToDark": "Cambiar a modo oscuro"
@@ -56,56 +55,6 @@
     "updatedValue": "Tiempo real",
     "source": "Fuente",
     "sourceValue": "TCG Community"
-  },
-  "live": {
-    "breadcrumbCurrent": "Live Market Data",
-    "description": "Lo que se está ejecutando ahora mismo en la ingesta, y la frescura de los datos por TCG — catálogo, precios, gradación.",
-    "liveStatus": "En vivo",
-    "seeAll": "Ver todo",
-    "disconnected": "Conexión perdida",
-    "refreshed": "actualizado {time}",
-    "freshnessTitle": "Frescura de los datos por TCG",
-    "tracked": "{count} seguidos",
-    "noData": "sin datos",
-    "runningTitle": "Sincronización en curso",
-    "noRunningTitle": "Ninguna sincronización en curso",
-    "bothTcgs": "Pokémon y One Piece",
-    "startedAt": "iniciado {time}",
-    "scheduleIntro": "El pipeline se ejecuta con un cron de GitHub Actions, no de forma continua — aquí está la próxima ventana programada.",
-    "historyTitle": "Historial de ejecuciones",
-    "emptyRunsTitle": "Aún no hay ninguna ejecución registrada",
-    "emptyRunsDescription": "El registro empieza con la próxima sincronización programada (catálogo + precios a las 06:00 UTC). No hay nada que hacer de tu parte — se acumula solo.",
-    "inProgress": "en curso…",
-    "steps": {
-      "items": "Catálogo",
-      "prices": "Precios — sellado y cartas",
-      "grades_sales": "Gradación PSA y ventas",
-      "index": "Cálculo de índices",
-      "sealed_ev": "Ratio EV de sellados",
-      "undervalued": "Puntuaciones de infravaloración",
-      "grading_roi": "Datos de ROI de gradación",
-      "volume": "Volumen de ventas",
-      "active_listings": "Anuncios activos eBay"
-    },
-    "tiers": {
-      "hot": "Hot (< 6 meses)",
-      "recent": "Recent (6–18 meses)",
-      "established": "Established (18–36 meses)",
-      "vintage": "Vintage (36+ meses)"
-    },
-    "segments": {
-      "items": "Catálogo",
-      "sealed": "Sellado (display)",
-      "single": "Cartas (singles)",
-      "grading": "Gradación PSA"
-    },
-    "schedule": {
-      "itemsPrices": { "label": "Catálogo + precios", "cron": "diario, 06:00 UTC" },
-      "hot": { "label": "Gradación y ventas — hot", "cron": "diario, 04:00 UTC" },
-      "recent": { "label": "Gradación y ventas — recent", "cron": "lun/mié/vie, 03:00 UTC" },
-      "established": { "label": "Gradación y ventas — established", "cron": "domingo, 03:00 UTC" },
-      "vintage": { "label": "Gradación y ventas — vintage", "cron": "sábado, 03:00 UTC" }
-    }
   },
   "transactions": {
     "title": "Transacciones recientes",
@@ -416,7 +365,6 @@
     "widgets": {
       "gridView": "Vista de cuadrícula",
       "catalogue": { "title": "Catálogo", "subtitle": "Buscar cualquier carta, todos los idiomas" },
-      "live": { "title": "Live Market", "subtitle": "Índice de mercado en tiempo real" },
       "tx": { "title": "Transacciones", "subtitle": "Ventas recientes registradas" },
       "under": { "title": "Infravalorado", "subtitle": "Diferencias entre precio y valor justo" },
       "div": { "title": "Divergencias", "subtitle": "Diferencia precio vs volumen, solo ventas ungraded" },
@@ -426,11 +374,6 @@
       "searchPlaceholder": "Buscar una carta...",
       "noResults": "Ninguna carta encontrada",
       "empty": "Escribe al menos 2 caracteres para buscar"
-    },
-    "live": {
-      "topMovers": "MAYORES MOVIMIENTOS",
-      "noMovers": "No hay suficientes ventas recientes para clasificar movimientos",
-      "noHistory": "Todavía no hay suficiente historial"
     },
     "transactions": {
       "colName": "Carta",
@@ -503,14 +446,13 @@
     "profitRow": "Beneficio potencial: +{roi}% ({amount})",
     "heroEmpty": "Todavía no hay suficientes datos gradados para la demo.",
     "featuresKicker": "FUNCIONALIDADES CLAVE",
-    "featuresTitle": "Seis módulos, un solo terminal.",
+    "featuresTitle": "Cinco módulos, un solo terminal.",
     "featuresSub": "Todo lo necesario para gestionar una cartera de cartas como un libro de trading — sin hacer malabares entre diez pestañas.",
     "features": {
       "catalogue": { "title": "Catálogo", "desc": "Búsqueda instantánea en todo el mercado Pokémon y One Piece, cotizaciones en directo." },
       "transactions": { "title": "Transacciones", "desc": "Historial completo de tus compras y ventas, margen neto calculado automáticamente." },
       "undervalued": { "title": "Cartas infravaloradas", "desc": "Detección algorítmica de diferencias entre precio cotizado y valor de mercado real." },
       "divergences": { "title": "Divergencias", "desc": "Alertas sobre descorrelaciones precio / volumen antes de que se cierren." },
-      "live": { "title": "Live Market", "desc": "Flujo de datos en tiempo real de las principales plataformas de intercambio." },
       "grading": { "title": "ROI de gradación", "desc": "Simula la rentabilidad de un envío a gradación PSA/BGS antes de pagar las tarifas." }
     },
     "footer": "© 2026 TCG Terminal. Datos de mercado proporcionados con fines informativos."

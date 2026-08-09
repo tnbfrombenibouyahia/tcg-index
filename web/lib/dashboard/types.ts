@@ -6,7 +6,12 @@
 // TerminalDashboard.tsx.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const WIDGET_IDS = ["catalogue", "live", "tx", "under", "div", "grade"] as const;
+// "live" (Live Market Data) retiré du dashboard -- demande utilisateur du
+// 2026-08-09 : plus de widget/page/données de run-schedule côté front pour
+// l'instant. Widget, composants (components/live/*), route (/live) et
+// wiring de données supprimés ; seule la couche backend (lib/queries/
+// syncStatus.ts, app/api/sync-status) reste, au cas où ça revienne.
+export const WIDGET_IDS = ["catalogue", "tx", "under", "div", "grade"] as const;
 export type WidgetId = (typeof WIDGET_IDS)[number];
 
 export type WidgetSize = "s" | "m" | "l";
@@ -17,11 +22,9 @@ export interface CustomWidgetSize {
 }
 
 // Nombre de colonnes (sur 12) occupées par chaque widget selon sa taille --
-// mêmes proportions que le mockup (le Live Market est le plus large, le
-// Catalogue le plus étroit).
+// mêmes proportions que le mockup, moins "live".
 export const SIZE_SPANS: Record<WidgetId, Record<WidgetSize, number>> = {
   catalogue: { s: 3, m: 5, l: 8 },
-  live: { s: 5, m: 7, l: 10 },
   tx: { s: 4, m: 6, l: 9 },
   under: { s: 4, m: 6, l: 9 },
   div: { s: 4, m: 6, l: 9 },
@@ -42,8 +45,8 @@ export interface DashboardLayoutState {
 }
 
 export const DEFAULT_LAYOUT: DashboardLayoutState = {
-  order: ["catalogue", "live", "tx", "under", "div", "grade"],
-  sizes: { catalogue: "m", live: "m", tx: "m", under: "m", div: "m", grade: "m" },
+  order: ["catalogue", "tx", "under", "div", "grade"],
+  sizes: { catalogue: "m", tx: "m", under: "m", div: "m", grade: "m" },
   customSize: {},
   expanded: null,
 };
