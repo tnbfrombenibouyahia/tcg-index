@@ -61,6 +61,7 @@
     "breadcrumbCurrent": "Live Market Data",
     "description": "What's running right now on the ingestion side, and data freshness per TCG — catalog, prices, grading.",
     "liveStatus": "Live",
+    "seeAll": "See all",
     "disconnected": "Connection lost",
     "refreshed": "refreshed {time}",
     "freshnessTitle": "Data freshness by TCG",
