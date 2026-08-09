@@ -71,16 +71,34 @@ Aucun rewrite nécessaire.
 
 ### Notes de connexion (SSL) rencontrées en testant
 
-- Sur Windows, `sslmode=verify-full` seul échoue (`root certificate file ...
-  does not exist`) et `sslrootcert=system` échoue aussi
-  (`certificate verify failed`) — l'OpenSSL embarqué dans `psycopg2-binary`
-  ne se branche pas correctement sur le magasin de certificats Windows.
-  **Fix qui marche** : pointer `sslrootcert` sur le bundle CA de `certifi`
-  (déjà présent, dépendance de `requests`) :
-  `sslrootcert=<chemin>/site-packages/certifi/cacert.pem` (slashes, pas de
-  backslash, dans l'URI). Ce problème est spécifique à Windows + psycopg2 --
-  ne devrait pas se reproduire sur les runners GitHub Actions (Linux) ni sur
-  Vercel.
+- **Mise à jour 2026-08-09 (incident cron 3 jours) : le paragraphe ci-dessous
+  s'est révélé faux sur un point clé.** `sslmode=verify-full` seul échoue
+  partout (`root certificate file ... does not exist`) -- ça, confirmé. Mais
+  `sslrootcert=system`, présenté ici comme un fix Linux fiable, a **aussi**
+  échoué (`certificate verify failed`) sur un runner GitHub Actions
+  (ubuntu-latest) : l'OpenSSL statique de `psycopg2-binary` ne s'appuie
+  apparemment pas de façon fiable sur le magasin de certs de l'OS, ni sur
+  Windows ni sur Linux -- pas un problème Windows-only comme on le pensait.
+  **Le vrai fix, portable partout (Windows/Linux/CI)** : ne plus mettre
+  `sslrootcert` dans `DATABASE_URL` du tout -- `shared/db.py::get_connection`
+  le retire de la chaîne et impose `sslrootcert=certifi.where()` en code,
+  résolu à chaque exécution dans l'environnement courant (jamais un chemin
+  figé qui peut fuiter d'une machine à l'autre, cf. l'incident : un chemin
+  Windows codé en dur dans le secret GitHub Actions `DATABASE_URL` a cassé
+  `daily-sync`/`tiered-sync` du 7 au 9 août, échec quasi instantané à chaque
+  run). **`DATABASE_URL` (local ET secret CI) ne doit contenir que
+  `sslmode=verify-full`, sans `sslrootcert`.**
+- ~~Sur Windows, `sslmode=verify-full` seul échoue (`root certificate file
+  ... does not exist`) et `sslrootcert=system` échoue aussi (`certificate
+  verify failed`) — l'OpenSSL embarqué dans `psycopg2-binary` ne se branche
+  pas correctement sur le magasin de certificats Windows. Fix : pointer
+  `sslrootcert` sur le bundle CA de `certifi`
+  (`sslrootcert=<chemin>/site-packages/certifi/cacert.pem`). Spécifique à
+  Windows + psycopg2, ne devrait pas se reproduire sur GitHub Actions
+  (Linux) ni Vercel.~~ Diagnostic d'origine, corrigé par la note ci-dessus :
+  le problème n'était pas Windows-only, et coder le chemin en dur (plutôt
+  que `certifi.where()` en Python) est justement ce qui a permis au chemin
+  local de fuiter dans un secret partagé.
 - `CREATE TEMP TABLE` refusé par ce cluster (`temporary tables are only
   supported experimentally`) — sans impact réel : `db/schema.sql` n'utilise
   aucune table temporaire.
