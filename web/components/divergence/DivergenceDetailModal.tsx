@@ -87,8 +87,8 @@ export function DivergenceDetailModal({
               <img
                 src={row.imageUrl}
                 alt={row.name}
-                className="h-64 w-48 flex-shrink-0 self-center rounded-xl object-contain bg-white shadow-sm sm:self-start"
-                style={{ aspectRatio: "3/4" }}
+                className="h-64 w-48 flex-shrink-0 self-center rounded-xl object-contain shadow-sm sm:self-start"
+                style={{ aspectRatio: "3/4", background: "var(--surface-alt)" }}
               />
             ) : (
               <div className="h-64 w-48 flex-shrink-0 self-center rounded-xl bg-muted sm:self-start" />

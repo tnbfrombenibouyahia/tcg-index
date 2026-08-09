@@ -79,8 +79,8 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
           <img
             src={item.imageUrl}
             alt={item.name}
-            className="h-48 w-36 flex-shrink-0 self-center rounded-xl object-contain bg-white shadow-sm sm:self-start"
-            style={{ aspectRatio: "3/4" }}
+            className="h-48 w-36 flex-shrink-0 self-center rounded-xl object-contain shadow-sm sm:self-start"
+            style={{ aspectRatio: "3/4", background: "var(--surface-alt)" }}
           />
         ) : (
           <div className="h-48 w-36 flex-shrink-0 self-center rounded-xl bg-muted sm:self-start" />

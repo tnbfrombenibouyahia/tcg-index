@@ -203,8 +203,8 @@ function ItemResultCard({ item }: { item: ItemSummary }) {
           src={item.imageUrl}
           alt={item.name}
           loading="lazy"
-          className="h-28 w-[5.25rem] rounded-lg object-contain bg-white shadow-sm"
-          style={{ aspectRatio: "3/4" }}
+          className="h-28 w-[5.25rem] rounded-lg object-contain shadow-sm"
+          style={{ aspectRatio: "3/4", background: "var(--surface-alt)" }}
         />
       ) : (
         <div className="h-28 w-[5.25rem] rounded-lg bg-muted" />

@@ -50,8 +50,8 @@ export default async function GradingRoiItemPage({ params }: { params: Promise<{
             <img
               src={candidate.imageUrl}
               alt={candidate.name}
-              className="h-20 w-[3.75rem] flex-shrink-0 rounded-lg object-contain bg-white shadow-sm"
-              style={{ aspectRatio: "3/4" }}
+              className="h-20 w-[3.75rem] flex-shrink-0 rounded-lg object-contain shadow-sm"
+              style={{ aspectRatio: "3/4", background: "var(--surface-alt)" }}
             />
           ) : (
             <div className="h-20 w-[3.75rem] flex-shrink-0 rounded-lg bg-muted" />

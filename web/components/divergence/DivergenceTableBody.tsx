@@ -40,8 +40,8 @@ export function DivergenceTableBody({
                     src={r.imageUrl}
                     alt={r.name}
                     loading="lazy"
-                    className="h-12 w-9 flex-shrink-0 rounded-md object-contain bg-white"
-                    style={{ aspectRatio: "3/4" }}
+                    className="h-12 w-9 flex-shrink-0 rounded-md object-contain"
+                    style={{ aspectRatio: "3/4", background: "var(--surface-alt)" }}
                   />
                 ) : (
                   <div className="h-12 w-9 flex-shrink-0 rounded-md bg-muted" />

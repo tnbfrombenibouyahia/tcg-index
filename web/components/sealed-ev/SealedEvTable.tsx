@@ -56,7 +56,8 @@ export async function SealedEvTable({
                         src={r.imageUrl}
                         alt={r.name}
                         loading="lazy"
-                        className="h-12 w-12 flex-shrink-0 rounded-md object-contain bg-white"
+                        className="h-12 w-12 flex-shrink-0 rounded-md object-contain"
+                        style={{ background: "var(--surface-alt)" }}
                       />
                     ) : (
                       <div className="h-12 w-12 flex-shrink-0 rounded-md bg-muted" />
