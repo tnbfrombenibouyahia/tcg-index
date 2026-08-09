@@ -85,7 +85,7 @@
     "noErrorsTitle": "No recent errors",
     "noErrorsDescription": "All recent runs completed successfully.",
     "coverageTitle": "Data coverage",
-    "coverageDescription": "\"Precision\" measures the cards we chose to track, not the whole catalog at large — the why is explained directly under each affected TCG. Rarity/image stay over the full catalog.",
+    "coverageDescription": "\"Precision\" measures the cards we chose to track, not the whole catalog at large — the why is explained directly under each affected TCG. Sealed only counts each set's Display Box (Booster Box), not starter decks, DON!! cards, or promotional bundles. Rarity/image stay over the full catalog.",
     "coverageScopeNote": "Pokémon singles: by choice, only high-interest cards (SIR/IR/FA/Secret/chase) are price-tracked — not commons, to keep data volume manageable. \"Precision\" and \"Price (30d)\" below cover only those tracked cards (shown under each row's total), not the full catalog.",
     "colSegment": "Segment",
     "colItems": "Items",

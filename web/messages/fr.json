@@ -85,7 +85,7 @@
     "noErrorsTitle": "Aucune erreur récente",
     "noErrorsDescription": "Tous les runs récents se sont terminés avec succès.",
     "coverageTitle": "Couverture des données",
-    "coverageDescription": "\"Précision\" mesure les cartes qu'on a choisi de suivre, pas tout le catalogue au sens large — le pourquoi est expliqué directement sous chaque TCG concerné. Rareté/image restent sur le catalogue complet.",
+    "coverageDescription": "\"Précision\" mesure les cartes qu'on a choisi de suivre, pas tout le catalogue au sens large — le pourquoi est expliqué directement sous chaque TCG concerné. Le scellé ne compte que le Display Box (Booster Box) de chaque set, pas les starter decks, cartes DON!! ou lots promotionnels. Rareté/image restent sur le catalogue complet.",
     "coverageScopeNote": "Singles Pokémon : par choix, seules les cartes à fort intérêt (SIR/IR/FA/Secret/chase) sont suivies pour le prix — pas les communes, pour ne pas faire exploser le volume de données. \"Précision\" et \"Prix (30j)\" ci-dessous portent uniquement sur ces cartes suivies (indiquées sous le total de chaque ligne), pas sur l'ensemble du catalogue.",
     "colSegment": "Segment",
     "colItems": "Items",

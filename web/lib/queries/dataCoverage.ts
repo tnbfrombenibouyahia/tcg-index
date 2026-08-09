@@ -40,18 +40,21 @@ import type { Tcg } from "@/lib/constants";
 //   une décision vérifiée, pas un pattern qui risquerait d'avaler un vrai set
 //   (ex. "Pokémon GO" ou "30th Celebration" NE sont PAS ici -- vrais sets,
 //   juste pas encore mappés vers PriceCharting).
-// - "Case"/"Display" et "[Set of N]", SCELLÉ UNIQUEMENT (`category = 'sealed'`
-//   dans la condition, pas un filtre nom global) : lots groupés de plusieurs
-//   unités déjà comptées individuellement ailleurs (ex. "Starter Deck 33
-//   Display" = plusieurs "Starter Deck 33"). PriceCharting ne trace jamais
-//   ces lots comme un produit à part -- vérifié sur One Piece scellé EN :
-//   100/448 items (22%), 0% pricés, tous des lots. Même logique que Code
-//   Card : pas un trou de couverture, un multiple de quelque chose déjà
-//   compté. Restreint au scellé après avoir constaté que "case"/"display"/
-//   "[Set of N]" apparaissent aussi dans de VRAIS noms de cartes single
-//   ("Pikachu (Rain City Showcase)", "Chikorita & Casey", "Morpeko V-Union
-//   [Set of 4]" -- ce dernier un vrai produit vendu comme un seul single) :
-//   un filtre nom sans garde de catégorie les aurait exclues à tort.
+// - Scellé restreint au "Display Box" uniquement (demande utilisateur
+//   2026-08-09 : "quand je te parle de scellé je te parle juste de display
+//   box scellé, pas plus pas moins -- OP01, OP02... et les PRB0X pour One
+//   Piece"). Remplace l'ancienne exclusion négative (Case/Display/[Set of
+//   N]) par un filtre POSITIF sur les singles ne s'applique pas -- seul le
+//   scellé doit matcher `%booster box%`/`%collection box%`/`%edition box%`
+//   (les trois formulations réelles observées, ex. "Extra Booster: Anime
+//   25th Collection Box" n'a pas "booster" collé à "box"), en excluant
+//   "case" (lot de plusieurs box) et "half" (demi-box, un produit différent
+//   du plein format). Ça exclut mécaniquement Starter Decks, DON!! Card,
+//   Double Pack Set, promos d'événement -- tout ce qui n'est pas LE
+//   display box du set. Vérifié : 1 seul display box par set dans
+//   l'immense majorité des cas (Romance Dawn a 2 éditions Wave 1/2, c'est
+//   une vraie donnée, pas un doublon). Résultat mesuré : One Piece scellé
+//   EN 55%->91%, Pokémon scellé EN 40%->82%.
 // - `release_date > CURRENT_DATE` : produit annoncé mais pas encore en
 //   vente (ex. sortie prévue 2026-09-18 alors qu'on est le 2026-08-09) --
 //   aucun prix ne peut exister avant que le produit n'existe sur le marché.
@@ -67,15 +70,21 @@ const JUNK_SET_CODES = [
 
 const EXCLUDE_FILTER = sql`
   name NOT ILIKE 'Code Card - %'
-  AND NOT (category = 'sealed' AND (name ILIKE '%case%' OR name ILIKE '%display%' OR name ILIKE '%[set of%' OR name ILIKE '%(set of%'))
   AND set_code NOT IN ${sql(JUNK_SET_CODES)}
   AND (release_date IS NULL OR release_date <= CURRENT_DATE)
+  AND (category != 'sealed' OR (
+    (name ILIKE '%booster box%' OR name ILIKE '%collection box%' OR name ILIKE '%edition box%')
+    AND name NOT ILIKE '%case%' AND name NOT ILIKE '%half%'
+  ))
 `;
 const EXCLUDE_FILTER_ALIASED = sql`
   i.name NOT ILIKE 'Code Card - %'
-  AND NOT (i.category = 'sealed' AND (i.name ILIKE '%case%' OR i.name ILIKE '%display%' OR i.name ILIKE '%[set of%' OR i.name ILIKE '%(set of%'))
   AND i.set_code NOT IN ${sql(JUNK_SET_CODES)}
   AND (i.release_date IS NULL OR i.release_date <= CURRENT_DATE)
+  AND (i.category != 'sealed' OR (
+    (i.name ILIKE '%booster box%' OR i.name ILIKE '%collection box%' OR i.name ILIKE '%edition box%')
+    AND i.name NOT ILIKE '%case%' AND i.name NOT ILIKE '%half%'
+  ))
 `;
 const TRACKED_FILTER = sql`NOT (tcg = 'pokemon' AND category = 'single') OR interest_tier IS NOT NULL`;
 const TRACKED_FILTER_ALIASED = sql`NOT (i.tcg = 'pokemon' AND i.category = 'single') OR i.interest_tier IS NOT NULL`;
