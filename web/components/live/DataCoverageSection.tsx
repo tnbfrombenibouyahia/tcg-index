@@ -82,7 +82,7 @@ export function DataCoverageSection({ rows }: { rows: DataCoverageRow[] }) {
         {t("coverageTitle")}
         <InfoTooltip text={t("coverageDescription")} />
       </h2>
-      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+      <div className="grid gap-3 sm:grid-cols-2">
         {TCGS.map(({ value: tcg, label }) => {
           const tcgRows = rows.filter((r) => r.tcg === tcg);
           if (tcgRows.length === 0) return null;
