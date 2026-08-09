@@ -15,7 +15,9 @@ Un seul scellé retenu par set : le "Booster Box" standard -- pas "...Case"
 (plusieurs box) ni "Half Booster Box" (moitié des packs).
 
 Prix du box : médiane des 3 dernières ventes individuelles (`sales`, grade=
-'ungraded', source='pricecharting'), pas l'agrégat PriceCharting seul -- cf.
+'ungraded' -- `sales` n'a que des ventes PriceCharting, pas de colonne
+`source` depuis le nettoyage du 2026-08-05, cf. schema.sql), pas l'agrégat
+PriceCharting seul -- cf.
 incident Deoxys Booster Box du 2026-07-31 : leur "Ungraded" affichait $110.70
 avec un delta de -$30,618 par rapport à la mise à jour précédente, à cause
 d'une vente d'édition italienne mal classée dans l'historique du produit
@@ -79,7 +81,7 @@ _BOXES_SQL = """
 
 _BOX_LAST_SALES_SQL = """
     SELECT sale_date, price FROM sales
-    WHERE item_id = %s AND grade = 'ungraded' AND source = 'pricecharting'
+    WHERE item_id = %s AND grade = 'ungraded'
     ORDER BY sale_date DESC LIMIT %s
 """
 

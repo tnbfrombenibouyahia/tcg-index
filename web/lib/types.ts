@@ -119,9 +119,18 @@ export interface SyncStatusResponse {
 // combien d'items on référence vs. combien ont réellement du prix/rareté/
 // image, par tcg × langue × catégorie -- pas de la fraîcheur (FreshnessCell,
 // "quand"), de la complétude ("combien"). Sert au debug direct : un ratio
-// bas explique tout de suite pourquoi une carte donnée n'a pas de prix
-// (cf. mémoire projet "price_sync_scope" -- le scope quota exclut
-// délibérément une partie du catalogue Pokémon EN/JP singles).
+// bas explique tout de suite pourquoi une carte donnée n'a pas de prix.
+//
+// `tracked*` (ajouté 2026-08-09, même jour) sépare deux questions qu'un
+// simple withAnyPrice/totalItems conflait et qui induisait en erreur :
+// "combien de cartes suit-on activement" vs "parmi celles qu'on suit,
+// combien ont un prix". Pour les singles Pokémon, `trackedItems` = celles
+// avec interest_tier renseigné (scope volontaire, cf. index/interest_tier.py
+// + [[project_price_sync_scope]] -- les commons ne sont délibérément pas
+// pricées pour contenir la croissance du stockage). Pour tout le reste
+// (scellé, singles One Piece -- interest_tier n'existe pas hors Pokémon),
+// `trackedItems === totalItems` : rien n'est exclu par design, un ratio bas
+// là y signale un vrai trou de couverture, pas un choix de scope.
 export interface DataCoverageRow {
   tcg: Tcg;
   language: string;
@@ -131,6 +140,9 @@ export interface DataCoverageRow {
   withRecentPrice: number; // captured_at dans les 30 derniers jours
   withRarity: number;
   withImage: number;
+  trackedItems: number;
+  trackedWithPrice: number;
+  trackedWithRecentPrice: number;
 }
 
 export type SealedEvMode = "total" | "top10";

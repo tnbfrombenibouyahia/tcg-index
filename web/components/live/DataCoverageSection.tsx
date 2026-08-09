@@ -9,13 +9,26 @@ import type { DataCoverageRow } from "@/lib/types";
 // Recap de couverture -- demande utilisateur 2026-08-09 : "% de données qu'on
 // a par TCG en fonction des langues, quel type de cartes" + usage debug
 // direct ("pourquoi cette carte n'a pas de prix ?"). Une carte par TCG (même
-// pattern que FreshnessGrid), une ligne par langue × catégorie, colonnes =
-// les 4 dimensions calculées côté serveur (lib/queries/dataCoverage.ts) :
-// prix (n'importe quand / 30 derniers jours), rareté, image.
+// pattern que FreshnessGrid), une ligne par langue × catégorie.
 //
-// Rareté n'a structurellement aucun sens pour le scellé (schema.sql : NULL
-// pour category='sealed', jamais backfillé) -- affiché "—" plutôt qu'un faux
-// 0% rouge qui laisserait croire à un trou de données.
+// Deux colonnes de prix distinctes plutôt qu'une -- suite à question
+// utilisateur le même jour ("comment on améliore ces scores... je ne veux
+// pas mentir à l'utilisateur final") : un ratio "prix / TOUT le catalogue"
+// pour les singles Pokémon noyait un vrai 91-100% de précision sous un choix
+// de scope délibéré (seules les cartes avec interest_tier -- SIR/IR/FA/
+// Secret/chase -- sont pricées, pas les commons, pour contenir le stockage,
+// cf. [[project_price_sync_scope]]). Un chiffre bas là ressemblait à un trou
+// de données alors que c'était voulu -- ni mentir en cachant le vrai
+// dénominateur, ni induire en erreur en laissant croire à un problème.
+// Résolu en séparant explicitement :
+//   - "Suivi"       = trackedItems/totalItems -- QUELLE PART du catalogue on
+//                      a choisi de suivre (100% partout sauf singles Pokémon).
+//   - "Précision"    = trackedWithPrice/trackedItems -- PARMI ce qu'on suit,
+//                      combien a réellement un prix (c'est la question qui
+//                      compte pour l'utilisateur final : "la carte que je
+//                      cherche, si elle est suivie, a-t-elle un prix ?").
+// Rareté/Image restent sur le dénominateur plein catalogue (pas de scope
+// délibéré sur ces deux-là, cf. lib/queries/dataCoverage.ts).
 // ─────────────────────────────────────────────────────────────────────────────
 
 function pct(n: number, total: number): number {
@@ -63,7 +76,7 @@ export function DataCoverageSection({ rows }: { rows: DataCoverageRow[] }) {
       >
         {t("coverageTitle")}
       </h2>
-      <p style={{ fontSize: "12px", color: "var(--foreground-muted)", margin: "0 0 12px", maxWidth: "640px" }}>
+      <p style={{ fontSize: "12px", color: "var(--foreground-muted)", margin: "0 0 12px", maxWidth: "680px" }}>
         {t("coverageDescription")}
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -78,14 +91,15 @@ export function DataCoverageSection({ rows }: { rows: DataCoverageRow[] }) {
                   {label}
                 </span>
               </div>
-              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "560px" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "680px" }}>
                 <thead>
                   <tr>
-                    {["colSegment", "colItems", "colPriceAny", "colPriceRecent", "colRarity", "colImage"].map((k) => (
+                    {["colSegment", "colItems", "colTracked", "colPrecision", "colPriceRecent", "colRarity", "colImage"].map((k) => (
                       <th
                         key={k}
+                        title={k === "colTracked" ? t("colTrackedHint") : k === "colPrecision" ? t("colPrecisionHint") : undefined}
                         style={{
-                          textAlign: k === "colSegment" ? "left" : "left",
+                          textAlign: "left",
                           fontSize: "10.5px",
                           fontWeight: 700,
                           letterSpacing: "0.06em",
@@ -111,10 +125,13 @@ export function DataCoverageSection({ rows }: { rows: DataCoverageRow[] }) {
                         {row.totalItems.toLocaleString()}
                       </td>
                       <td style={{ padding: "10px 12px 10px 0" }}>
-                        <CoverageCell n={row.withAnyPrice} total={row.totalItems} />
+                        <CoverageCell n={row.trackedItems} total={row.totalItems} />
                       </td>
                       <td style={{ padding: "10px 12px 10px 0" }}>
-                        <CoverageCell n={row.withRecentPrice} total={row.totalItems} />
+                        <CoverageCell n={row.trackedWithPrice} total={row.trackedItems} />
+                      </td>
+                      <td style={{ padding: "10px 12px 10px 0" }}>
+                        <CoverageCell n={row.trackedWithRecentPrice} total={row.trackedItems} />
                       </td>
                       <td style={{ padding: "10px 12px 10px 0" }}>
                         <CoverageCell n={row.withRarity} total={row.totalItems} naWhenSealed={row.category === "sealed"} />
