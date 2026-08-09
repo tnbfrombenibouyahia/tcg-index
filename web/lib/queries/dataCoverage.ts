@@ -94,5 +94,8 @@ export async function getDataCoverage(): Promise<DataCoverageRow[]> {
         trackedWithRecentPrice: price?.trackedWithRecentPrice ?? 0,
       };
     })
-    .sort((a, b) => a.tcg.localeCompare(b.tcg) || a.language.localeCompare(b.language) || a.category.localeCompare(b.category));
+    // category avant language -- demande utilisateur : les deux lignes
+    // "Scellé" (EN puis JP) d'abord, puis les deux lignes "Cartes" ("sealed"
+    // < "single" alphabétiquement, donc rien de plus à faire pour cet ordre).
+    .sort((a, b) => a.tcg.localeCompare(b.tcg) || a.category.localeCompare(b.category) || a.language.localeCompare(b.language));
 }

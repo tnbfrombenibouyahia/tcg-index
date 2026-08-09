@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { TcgIcon } from "@/components/homepage/TcgIcon";
+import { LanguageFlag } from "@/components/ui/LanguageFlag";
 import { TCGS } from "@/lib/constants";
 import type { DataCoverageRow } from "@/lib/types";
 
@@ -106,7 +107,7 @@ export function DataCoverageSection({ rows }: { rows: DataCoverageRow[] }) {
               <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "620px" }}>
                 <thead>
                   <tr>
-                    {["colSegment", "colItems", "colPrecision", "colPriceRecent", "colRarity", "colImage"].map((k) => (
+                    {["colSegment", "colItems", "colRarity", "colPrecision", "colPriceRecent", "colImage"].map((k) => (
                       <th
                         key={k}
                         title={k === "colPrecision" ? t("colPrecisionHint") : undefined}
@@ -132,8 +133,10 @@ export function DataCoverageSection({ rows }: { rows: DataCoverageRow[] }) {
                     return (
                       <tr key={`${row.language}-${row.category}`} style={{ borderTop: "1px solid var(--border)" }}>
                         <td style={{ padding: "10px 12px 10px 0", whiteSpace: "nowrap" }}>
-                          <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--foreground)" }}>{row.language}</span>
-                          <span style={{ fontSize: "12px", color: "var(--foreground-muted)" }}> · {tSegments(row.category)}</span>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                            <LanguageFlag language={row.language} size={14} />
+                            <span style={{ fontSize: "12px", color: "var(--foreground-muted)" }}>{tSegments(row.category)}</span>
+                          </span>
                         </td>
                         <td style={{ padding: "10px 12px 10px 0" }}>
                           <div style={{ fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: "13px", color: "var(--foreground)" }}>
@@ -146,13 +149,13 @@ export function DataCoverageSection({ rows }: { rows: DataCoverageRow[] }) {
                           ) : null}
                         </td>
                         <td style={{ padding: "10px 12px 10px 0" }}>
+                          <CoverageCell n={row.withRarity} total={row.totalItems} naWhenSealed={row.category === "sealed"} />
+                        </td>
+                        <td style={{ padding: "10px 12px 10px 0" }}>
                           <CoverageCell n={row.trackedWithPrice} total={row.trackedItems} />
                         </td>
                         <td style={{ padding: "10px 12px 10px 0" }}>
                           <CoverageCell n={row.trackedWithRecentPrice} total={row.trackedItems} />
-                        </td>
-                        <td style={{ padding: "10px 12px 10px 0" }}>
-                          <CoverageCell n={row.withRarity} total={row.totalItems} naWhenSealed={row.category === "sealed"} />
                         </td>
                         <td style={{ padding: "10px 0" }}>
                           <CoverageCell n={row.withImage} total={row.totalItems} />
