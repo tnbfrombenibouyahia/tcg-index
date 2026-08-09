@@ -118,8 +118,18 @@ export async function getSales(filters: SalesFilterParams): Promise<SalesRespons
       ${order}
       LIMIT ${pageSize} OFFSET ${offset}
     `,
-    sql<{ count: number }[]>`
-      SELECT COUNT(*)::int4 AS count
+    // SUM/AVG/MAX embarqués dans la même requête que le COUNT -- même WHERE,
+    // même scan, "gratuit" pour /transactions (bandeau de stats, demande
+    // utilisateur) sans requête séparée. COALESCE à 0 : 0 ligne matchée ->
+    // SUM/AVG/MAX NULL sinon, ce que l'UI devrait de toute façon masquer via
+    // totalCount === 0 mais autant rester honnête sur le type (number, pas
+    // number | null).
+    sql<{ count: number; totalVolume: number; avgPrice: number; maxPrice: number }[]>`
+      SELECT
+        COUNT(*)::int4 AS count,
+        COALESCE(SUM(s.price), 0)::float8 AS "totalVolume",
+        COALESCE(AVG(s.price), 0)::float8 AS "avgPrice",
+        COALESCE(MAX(s.price), 0)::float8 AS "maxPrice"
       FROM sales s
       JOIN items i ON i.id = s.item_id
       ${where}
@@ -127,6 +137,9 @@ export async function getSales(filters: SalesFilterParams): Promise<SalesRespons
   ]);
 
   const totalCount = countRows[0]?.count ?? 0;
+  const totalVolume = countRows[0]?.totalVolume ?? 0;
+  const avgPrice = countRows[0]?.avgPrice ?? 0;
+  const maxPrice = countRows[0]?.maxPrice ?? 0;
 
   const sales: SaleRow[] = rows.map((r) => ({
     id: r.id,
@@ -156,6 +169,9 @@ export async function getSales(filters: SalesFilterParams): Promise<SalesRespons
     totalCount,
     totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
     sales,
+    totalVolume,
+    avgPrice,
+    maxPrice,
   };
 }
 

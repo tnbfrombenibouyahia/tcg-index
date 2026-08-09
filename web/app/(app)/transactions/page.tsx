@@ -4,6 +4,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { TransactionFilters } from "@/components/transactions/TransactionFilters";
 import { TransactionsTable } from "@/components/transactions/TransactionsTable";
 import { SourceBadges } from "@/components/ui/SourceBadge";
+import { formatUsd } from "@/lib/format";
 import { GRADES } from "@/lib/constants";
 import { getSales, getSalesFilters, type SalesFilterParams } from "@/lib/queries/sales";
 
@@ -59,9 +60,27 @@ export default async function TransactionsPage({
         <p className="mt-1 text-sm text-muted-foreground">
           {t("count", { count: salesResult.totalCount.toLocaleString(locale) })}
         </p>
+        <p className="mt-1 text-xs text-muted-foreground">{t("description")}</p>
       </div>
 
       <SourceBadges sources={["pricecharting"]} />
+
+      {salesResult.totalCount > 0 && (
+        <div className="card-glass mb-6 grid grid-cols-3 gap-3 rounded-2xl p-4">
+          <div>
+            <p className="text-[11px] text-muted-foreground">{t("stats.volume")}</p>
+            <p className="text-base font-semibold tabular-nums sm:text-lg">{formatUsd(salesResult.totalVolume)}</p>
+          </div>
+          <div>
+            <p className="text-[11px] text-muted-foreground">{t("stats.avgPrice")}</p>
+            <p className="text-base font-semibold tabular-nums sm:text-lg">{formatUsd(salesResult.avgPrice)}</p>
+          </div>
+          <div>
+            <p className="text-[11px] text-muted-foreground">{t("stats.maxPrice")}</p>
+            <p className="text-base font-semibold tabular-nums sm:text-lg">{formatUsd(salesResult.maxPrice)}</p>
+          </div>
+        </div>
+      )}
 
       <div className="mb-6">
         <TransactionFilters sets={filtersResult.sets} grades={filtersResult.grades} rarities={filtersResult.rarities} />

@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
 import type { ItemSummary } from "@/lib/types";
 import { TCGS, type Tcg } from "@/lib/constants";
 import { LanguageFlag } from "@/components/ui/LanguageFlag";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ItemDetailModal } from "@/components/catalog/ItemDetailModal";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Recherche catalogue générale (demande utilisateur) : un seul champ pour le
@@ -40,6 +41,10 @@ export function CatalogSearch({
   const [tcg, setTcg] = useState<Tcg | undefined>(initialTcg);
   const [results, setResults] = useState<ItemSummary[]>([]);
   const [loading, setLoading] = useState(false);
+  // Item sélectionné -- ouvre ItemDetailModal en popup plutôt que de
+  // naviguer vers /catalog/[id] (demande utilisateur : rester sur la
+  // recherche pour lire l'analyse).
+  const [selected, setSelected] = useState<ItemSummary | null>(null);
 
   // Dérivés du render, pas d'état séparé -- évite un setState synchrone dans
   // l'effet juste pour refléter ce que `query` dit déjà (cf. commentaire
@@ -90,7 +95,7 @@ export function CatalogSearch({
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter" && results.length > 0) {
-      router.push(`/catalog/${results[0].id}`);
+      setSelected(results[0]);
     }
   }
 
@@ -159,12 +164,17 @@ export function CatalogSearch({
             <p className="mb-3 text-xs text-muted-foreground">{t("resultsCount", { count: results.length })}</p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
               {results.map((item) => (
-                <ItemResultCard key={item.id} item={item} />
+                <ItemResultCard key={item.id} item={item} onSelect={() => setSelected(item)} />
               ))}
             </div>
           </>
         )}
       </div>
+
+      {/* Portal : même raison qu'UndervaluedTableBody/GradingRoiTableBody --
+          on rend la modale dans document.body plutôt qu'imbriquée ici. */}
+      {selected &&
+        createPortal(<ItemDetailModal key={selected.id} item={selected} onClose={() => setSelected(null)} />, document.body)}
     </div>
   );
 }
@@ -191,10 +201,11 @@ function FilterPill({
   );
 }
 
-function ItemResultCard({ item }: { item: ItemSummary }) {
+function ItemResultCard({ item, onSelect }: { item: ItemSummary; onSelect: () => void }) {
   return (
-    <Link
-      href={`/catalog/${item.id}`}
+    <button
+      type="button"
+      onClick={onSelect}
       className="card-glass flex flex-col items-center gap-2 rounded-xl p-3 text-center transition-transform hover:-translate-y-0.5"
     >
       {item.imageUrl ? (
@@ -217,6 +228,6 @@ function ItemResultCard({ item }: { item: ItemSummary }) {
         </div>
         {item.setCode && <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{item.setCode}</p>}
       </div>
-    </Link>
+    </button>
   );
 }

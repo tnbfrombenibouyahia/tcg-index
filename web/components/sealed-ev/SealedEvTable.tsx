@@ -1,9 +1,7 @@
 import { getTranslations } from "next-intl/server";
-import { formatUsd } from "@/lib/format";
 import type { SealedEvMode, SealedEvRow } from "@/lib/types";
-import { LanguageFlag } from "@/components/ui/LanguageFlag";
 import { SortHeader } from "@/components/ui/SortHeader";
-import { ReliabilityBars } from "./ReliabilityBars";
+import { SealedEvTableBody } from "./SealedEvTableBody";
 
 export async function SealedEvTable({
   rows,
@@ -42,47 +40,7 @@ export async function SealedEvTable({
             <th className="px-4 py-3">{t("reliability")}</th>
           </tr>
         </thead>
-        <tbody>
-          {rows.map((r) => {
-            const value = mode === "top10" ? r.singlesTop10Value : r.singlesTotalValue;
-            const ratio = mode === "top10" ? r.evRatioTop10 : r.evRatioTotal;
-            return (
-              <tr key={r.itemId} className="border-b border-border last:border-0 hover:bg-muted/50">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    {r.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- hôtes CDN externes inconnus à l'avance, cf. plan §5
-                      <img
-                        src={r.imageUrl}
-                        alt={r.name}
-                        loading="lazy"
-                        className="h-12 w-12 flex-shrink-0 rounded-md object-contain"
-                        style={{ background: "var(--surface-alt)" }}
-                      />
-                    ) : (
-                      <div className="h-12 w-12 flex-shrink-0 rounded-md bg-muted" />
-                    )}
-                    <div>
-                      <p className="font-medium">{r.name}</p>
-                      <p className="text-xs text-muted-foreground">{r.setCode}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <LanguageFlag language={r.language} />
-                </td>
-                <td className="px-4 py-3 capitalize text-muted-foreground">{r.tcg}</td>
-                <td className="whitespace-nowrap px-4 py-3 tabular-nums">{formatUsd(r.boxPrice)}</td>
-                <td className="whitespace-nowrap px-4 py-3 tabular-nums">{formatUsd(value)}</td>
-                <td className="px-4 py-3 tabular-nums text-muted-foreground">{r.singlesCount}</td>
-                <td className="whitespace-nowrap px-4 py-3 font-semibold tabular-nums">{ratio.toFixed(1)}×</td>
-                <td className="whitespace-nowrap px-4 py-3">
-                  <ReliabilityBars score={r.boxReliabilityScore} salesUsed={r.boxSalesUsed} />
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
+        <SealedEvTableBody rows={rows} mode={mode} />
       </table>
     </div>
   );

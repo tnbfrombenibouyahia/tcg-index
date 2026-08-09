@@ -59,6 +59,13 @@ export interface SalesResponse {
   totalCount: number;
   totalPages: number;
   sales: SaleRow[];
+  // Agrégats sur l'ensemble filtré (pas juste la page courante) -- bandeau
+  // de stats de /transactions. Calculés dans la même requête COUNT que
+  // totalCount (cf. lib/queries/sales.ts), donc "gratuits" partout ailleurs
+  // (ex. /api/sales pour une seule carte) même quand ils ne sont pas utilisés.
+  totalVolume: number;
+  avgPrice: number;
+  maxPrice: number;
 }
 
 export interface SetOption {

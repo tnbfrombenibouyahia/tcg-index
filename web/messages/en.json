@@ -127,8 +127,14 @@
   "transactions": {
     "title": "Recent transactions",
     "count": "{count} sales found",
+    "description": "Individual sale prices scraped from PriceCharting listings. Current scope: cards from recent sets only — sealed products and older sets aren't covered yet.",
     "emptyTitle": "No transaction matches these filters",
     "emptyDescription": "Sealed products and older sets don't have sales data yet (current scope: cards from recent sets).",
+    "stats": {
+      "volume": "Total volume",
+      "avgPrice": "Average price",
+      "maxPrice": "Highest sale"
+    },
     "table": {
       "date": "Date",
       "card": "Card",
@@ -136,7 +142,8 @@
       "grade": "Grade",
       "rarity": "Rarity",
       "price": "Price",
-      "marketplace": "Marketplace"
+      "marketplace": "Marketplace",
+      "listingTitleTooltip": "Original listing title: {title}"
     },
     "filters": {
       "tcg": "TCG",
@@ -185,6 +192,15 @@
       "notCrossChecked": "Not cross-checked",
       "notCrossCheckedTooltip": "No individual sale found -- PriceCharting aggregate not cross-checked",
       "scoreTooltip": "Reliability {score}/100 ({count, plural, one {# sale used} other {# sales used}})"
+    },
+    "modal": {
+      "close": "Close",
+      "analysisTitle": "Calculation breakdown",
+      "ratioTotal": "Ratio (whole set)",
+      "ratioTop10": "Ratio (top 10)",
+      "salesHistoryTitle": "Sales history",
+      "loading": "Loading...",
+      "noSales": "No sales found for this box"
     }
   },
   "undervalued": {
@@ -424,7 +440,10 @@
     "liquidityDescription": "How much of this card is actually selling (recent sales) versus how much is still sitting on the market (active eBay listings) — not an order book, a sell-through rate.",
     "liquidityListingCount": "Still listed (eBay)",
     "liquiditySales30d": "Sold (30d)",
-    "liquiditySales90d": "Sold (90d)"
+    "liquiditySales90d": "Sold (90d)",
+    "modal": {
+      "close": "Close"
+    }
   },
   "dashboard": {
     "widgets": {

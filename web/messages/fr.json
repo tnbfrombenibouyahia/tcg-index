@@ -127,8 +127,14 @@
   "transactions": {
     "title": "Transactions récentes",
     "count": "{count} ventes trouvées",
+    "description": "Prix de vente individuels récupérés depuis les annonces PriceCharting. Scope actuel : cartes des sets récents seulement — le scellé et les sets plus anciens ne sont pas encore couverts.",
     "emptyTitle": "Aucune transaction ne correspond à ces filtres",
     "emptyDescription": "Le scellé et les sets plus anciens n'ont pas encore de données de ventes (scope actuel : cartes des sets récents).",
+    "stats": {
+      "volume": "Volume total",
+      "avgPrice": "Prix moyen",
+      "maxPrice": "Vente la plus chère"
+    },
     "table": {
       "date": "Date",
       "card": "Carte",
@@ -136,7 +142,8 @@
       "grade": "Grade",
       "rarity": "Rareté",
       "price": "Prix",
-      "marketplace": "Marketplace"
+      "marketplace": "Marketplace",
+      "listingTitleTooltip": "Titre original de l'annonce : {title}"
     },
     "filters": {
       "tcg": "TCG",
@@ -185,6 +192,15 @@
       "notCrossChecked": "Non recoupé",
       "notCrossCheckedTooltip": "Aucune vente individuelle trouvée -- agrégat PriceCharting non recoupé",
       "scoreTooltip": "Fiabilité {score}/100 ({count, plural, one {# vente utilisée} other {# ventes utilisées}})"
+    },
+    "modal": {
+      "close": "Fermer",
+      "analysisTitle": "Détail du calcul",
+      "ratioTotal": "Ratio (total du set)",
+      "ratioTop10": "Ratio (top 10)",
+      "salesHistoryTitle": "Historique des ventes",
+      "loading": "Chargement...",
+      "noSales": "Aucune vente trouvée pour cette box"
     }
   },
   "undervalued": {
@@ -424,7 +440,10 @@
     "liquidityDescription": "Combien de cette carte se vend réellement (ventes récentes) par rapport à combien en reste encore en vente (annonces eBay actives) — pas un carnet d'ordres, un taux d'écoulement.",
     "liquidityListingCount": "Encore en vente (eBay)",
     "liquiditySales30d": "Vendues (30j)",
-    "liquiditySales90d": "Vendues (90j)"
+    "liquiditySales90d": "Vendues (90j)",
+    "modal": {
+      "close": "Fermer"
+    }
   },
   "dashboard": {
     "widgets": {

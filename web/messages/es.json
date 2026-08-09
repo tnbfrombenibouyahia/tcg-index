@@ -127,8 +127,14 @@
   "transactions": {
     "title": "Transacciones recientes",
     "count": "{count} ventas encontradas",
+    "description": "Precios de venta individuales extraídos de anuncios de PriceCharting. Alcance actual: solo cartas de sets recientes — los sellados y los sets más antiguos aún no están cubiertos.",
     "emptyTitle": "Ninguna transacción coincide con estos filtros",
     "emptyDescription": "Los sellados y los sets más antiguos aún no tienen datos de ventas (alcance actual: cartas de sets recientes).",
+    "stats": {
+      "volume": "Volumen total",
+      "avgPrice": "Precio medio",
+      "maxPrice": "Venta más alta"
+    },
     "table": {
       "date": "Fecha",
       "card": "Carta",
@@ -136,7 +142,8 @@
       "grade": "Grado",
       "rarity": "Rareza",
       "price": "Precio",
-      "marketplace": "Marketplace"
+      "marketplace": "Marketplace",
+      "listingTitleTooltip": "Título original del anuncio: {title}"
     },
     "filters": {
       "tcg": "TCG",
@@ -185,6 +192,15 @@
       "notCrossChecked": "Sin verificar",
       "notCrossCheckedTooltip": "No se encontró ninguna venta individual -- agregado de PriceCharting sin verificar",
       "scoreTooltip": "Fiabilidad {score}/100 ({count, plural, one {# venta utilizada} other {# ventas utilizadas}})"
+    },
+    "modal": {
+      "close": "Cerrar",
+      "analysisTitle": "Detalle del cálculo",
+      "ratioTotal": "Ratio (set completo)",
+      "ratioTop10": "Ratio (top 10)",
+      "salesHistoryTitle": "Historial de ventas",
+      "loading": "Cargando...",
+      "noSales": "No se encontraron ventas para esta caja"
     }
   },
   "undervalued": {
@@ -424,7 +440,10 @@
     "liquidityDescription": "Cuánto se vende realmente esta carta (ventas recientes) frente a cuánto queda todavía en venta (anuncios activos en eBay) — no es un libro de órdenes, es una tasa de rotación.",
     "liquidityListingCount": "Todavía en venta (eBay)",
     "liquiditySales30d": "Vendidas (30d)",
-    "liquiditySales90d": "Vendidas (90d)"
+    "liquiditySales90d": "Vendidas (90d)",
+    "modal": {
+      "close": "Cerrar"
+    }
   },
   "dashboard": {
     "widgets": {
