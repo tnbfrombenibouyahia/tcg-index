@@ -11,24 +11,20 @@ import type { DataCoverageRow } from "@/lib/types";
 // direct ("pourquoi cette carte n'a pas de prix ?"). Une carte par TCG (même
 // pattern que FreshnessGrid), une ligne par langue × catégorie.
 //
-// Deux colonnes de prix distinctes plutôt qu'une -- suite à question
-// utilisateur le même jour ("comment on améliore ces scores... je ne veux
-// pas mentir à l'utilisateur final") : un ratio "prix / TOUT le catalogue"
-// pour les singles Pokémon noyait un vrai 91-100% de précision sous un choix
-// de scope délibéré (seules les cartes avec interest_tier -- SIR/IR/FA/
-// Secret/chase -- sont pricées, pas les commons, pour contenir le stockage,
-// cf. [[project_price_sync_scope]]). Un chiffre bas là ressemblait à un trou
-// de données alors que c'était voulu -- ni mentir en cachant le vrai
-// dénominateur, ni induire en erreur en laissant croire à un problème.
-// Résolu en séparant explicitement :
-//   - "Suivi"       = trackedItems/totalItems -- QUELLE PART du catalogue on
-//                      a choisi de suivre (100% partout sauf singles Pokémon).
-//   - "Précision"    = trackedWithPrice/trackedItems -- PARMI ce qu'on suit,
-//                      combien a réellement un prix (c'est la question qui
-//                      compte pour l'utilisateur final : "la carte que je
-//                      cherche, si elle est suivie, a-t-elle un prix ?").
-// Rareté/Image restent sur le dénominateur plein catalogue (pas de scope
-// délibéré sur ces deux-là, cf. lib/queries/dataCoverage.ts).
+// "Précision" (trackedWithPrice/trackedItems) plutôt que "prix/TOUT le
+// catalogue" -- suite à discussion utilisateur le même jour ("comment on
+// améliore ces scores... je ne veux pas mentir à l'utilisateur final, base
+// notre pourcentage sur notre choix de se focus uniquement sur les cartes
+// d'intérêt"). Un ratio sur le catalogue entier noyait un vrai 91-100% de
+// précision sous un choix de scope délibéré (seules les cartes avec
+// interest_tier -- SIR/IR/FA/Secret/chase -- sont pricées pour les singles
+// Pokémon, pas les commons, pour contenir le stockage, cf.
+// [[project_price_sync_scope]]). Le scope lui-même est expliqué en clair
+// dans `coverageScopeNote` (texte visible sur la page, pas juste un tooltip
+// au survol -- trop facile à rater) plutôt qu'affiché comme une colonne
+// "Suivi" séparée : `trackedItems` reste montré, mais comme contexte sous
+// le total (colonne Items), pas comme un deuxième pourcentage qui ferait
+// doublon avec l'explication écrite.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function pct(n: number, total: number): number {
@@ -83,21 +79,37 @@ export function DataCoverageSection({ rows }: { rows: DataCoverageRow[] }) {
         {TCGS.map(({ value: tcg, label }) => {
           const tcgRows = rows.filter((r) => r.tcg === tcg);
           if (tcgRows.length === 0) return null;
+          const tcgHasScope = tcgRows.some((r) => r.trackedItems < r.totalItems);
           return (
             <div key={tcg} className="card-glass" style={{ padding: "18px 22px", overflowX: "auto" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "9px", marginBottom: "14px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "9px", marginBottom: tcgHasScope ? "10px" : "14px" }}>
                 <TcgIcon tcg={tcg} />
                 <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--foreground)", letterSpacing: "-0.01em" }}>
                   {label}
                 </span>
               </div>
-              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "680px" }}>
+              {tcgHasScope ? (
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "var(--foreground-muted)",
+                    background: "var(--tint-neutral-strong)",
+                    borderRadius: "8px",
+                    padding: "9px 12px",
+                    margin: "0 0 14px",
+                    maxWidth: "620px",
+                  }}
+                >
+                  {t("coverageScopeNote")}
+                </p>
+              ) : null}
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "620px" }}>
                 <thead>
                   <tr>
-                    {["colSegment", "colItems", "colTracked", "colPrecision", "colPriceRecent", "colRarity", "colImage"].map((k) => (
+                    {["colSegment", "colItems", "colPrecision", "colPriceRecent", "colRarity", "colImage"].map((k) => (
                       <th
                         key={k}
-                        title={k === "colTracked" ? t("colTrackedHint") : k === "colPrecision" ? t("colPrecisionHint") : undefined}
+                        title={k === "colPrecision" ? t("colPrecisionHint") : undefined}
                         style={{
                           textAlign: "left",
                           fontSize: "10.5px",
@@ -115,32 +127,39 @@ export function DataCoverageSection({ rows }: { rows: DataCoverageRow[] }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {tcgRows.map((row) => (
-                    <tr key={`${row.language}-${row.category}`} style={{ borderTop: "1px solid var(--border)" }}>
-                      <td style={{ padding: "10px 12px 10px 0", whiteSpace: "nowrap" }}>
-                        <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--foreground)" }}>{row.language}</span>
-                        <span style={{ fontSize: "12px", color: "var(--foreground-muted)" }}> · {tSegments(row.category)}</span>
-                      </td>
-                      <td style={{ padding: "10px 12px 10px 0", fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: "13px", color: "var(--foreground)" }}>
-                        {row.totalItems.toLocaleString()}
-                      </td>
-                      <td style={{ padding: "10px 12px 10px 0" }}>
-                        <CoverageCell n={row.trackedItems} total={row.totalItems} />
-                      </td>
-                      <td style={{ padding: "10px 12px 10px 0" }}>
-                        <CoverageCell n={row.trackedWithPrice} total={row.trackedItems} />
-                      </td>
-                      <td style={{ padding: "10px 12px 10px 0" }}>
-                        <CoverageCell n={row.trackedWithRecentPrice} total={row.trackedItems} />
-                      </td>
-                      <td style={{ padding: "10px 12px 10px 0" }}>
-                        <CoverageCell n={row.withRarity} total={row.totalItems} naWhenSealed={row.category === "sealed"} />
-                      </td>
-                      <td style={{ padding: "10px 0" }}>
-                        <CoverageCell n={row.withImage} total={row.totalItems} />
-                      </td>
-                    </tr>
-                  ))}
+                  {tcgRows.map((row) => {
+                    const scoped = row.trackedItems < row.totalItems;
+                    return (
+                      <tr key={`${row.language}-${row.category}`} style={{ borderTop: "1px solid var(--border)" }}>
+                        <td style={{ padding: "10px 12px 10px 0", whiteSpace: "nowrap" }}>
+                          <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--foreground)" }}>{row.language}</span>
+                          <span style={{ fontSize: "12px", color: "var(--foreground-muted)" }}> · {tSegments(row.category)}</span>
+                        </td>
+                        <td style={{ padding: "10px 12px 10px 0" }}>
+                          <div style={{ fontFamily: "var(--font-ibm-plex-mono), monospace", fontSize: "13px", color: "var(--foreground)" }}>
+                            {row.totalItems.toLocaleString()}
+                          </div>
+                          {scoped ? (
+                            <div style={{ fontSize: "10.5px", color: "var(--foreground-subtle)", whiteSpace: "nowrap" }}>
+                              {t("colItemsTracked", { count: row.trackedItems.toLocaleString() })}
+                            </div>
+                          ) : null}
+                        </td>
+                        <td style={{ padding: "10px 12px 10px 0" }}>
+                          <CoverageCell n={row.trackedWithPrice} total={row.trackedItems} />
+                        </td>
+                        <td style={{ padding: "10px 12px 10px 0" }}>
+                          <CoverageCell n={row.trackedWithRecentPrice} total={row.trackedItems} />
+                        </td>
+                        <td style={{ padding: "10px 12px 10px 0" }}>
+                          <CoverageCell n={row.withRarity} total={row.totalItems} naWhenSealed={row.category === "sealed"} />
+                        </td>
+                        <td style={{ padding: "10px 0" }}>
+                          <CoverageCell n={row.withImage} total={row.totalItems} />
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
