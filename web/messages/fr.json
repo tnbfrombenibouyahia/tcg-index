@@ -15,6 +15,7 @@
     "gradingRoi": "ROI de gradation",
     "divergence": "Divergences",
     "liquidity": "Liquidité",
+    "live": "Live Synchronisation",
     "footer": "Données publiques · méthodologie transparente",
     "themeToLight": "Passer en mode clair",
     "themeToDark": "Passer en mode sombre"
@@ -55,6 +56,72 @@
     "updatedValue": "Temps réel",
     "source": "Source",
     "sourceValue": "TCG Community"
+  },
+  "live": {
+    "breadcrumbCurrent": "Live Synchronisation",
+    "description": "Statut du pipeline d'ingestion en temps réel : ce qui tourne, ce qui a échoué, la fraîcheur et la couverture des données par TCG — pensé pour le debug.",
+    "liveStatus": "Live",
+    "disconnected": "Connexion perdue",
+    "refreshed": "actualisé {time}",
+    "freshnessTitle": "Fraîcheur des données par TCG",
+    "tracked": "{count} suivis",
+    "noData": "pas de données",
+    "runningTitle": "En cours de synchronisation",
+    "noRunningTitle": "Aucune synchronisation en cours",
+    "bothTcgs": "Pokémon & One Piece",
+    "startedAt": "démarré {time}",
+    "scheduleIntro": "Le pipeline tourne sur un cron GitHub Actions, pas en continu — voici la prochaine fenêtre de passage.",
+    "historyTitle": "Historique des runs",
+    "historyFilter": {
+      "all": "Tous",
+      "error": "Erreurs",
+      "success": "Succès",
+      "running": "En cours"
+    },
+    "emptyRunsTitle": "Pas encore de run enregistré",
+    "emptyRunsDescription": "Le journal démarre avec le prochain sync programmé (référentiel + prix à 06:00 UTC). Rien à faire de votre côté — ça s'accumule tout seul.",
+    "inProgress": "en cours…",
+    "errorsTitle": "Erreurs récentes",
+    "noErrorsTitle": "Aucune erreur récente",
+    "noErrorsDescription": "Tous les runs récents se sont terminés avec succès.",
+    "coverageTitle": "Couverture des données",
+    "coverageDescription": "Part du référentiel qui a réellement un prix, une rareté ou une image — par TCG, langue et type de carte. Un ratio bas explique souvent pourquoi une carte précise semble manquer de données (scope de sync limité, cf. méthodologie).",
+    "colSegment": "Segment",
+    "colItems": "Items",
+    "colPriceAny": "Prix (tout)",
+    "colPriceRecent": "Prix (30j)",
+    "colRarity": "Rareté",
+    "colImage": "Image",
+    "steps": {
+      "items": "Référentiel",
+      "prices": "Prix — scellé & cartes",
+      "grades_sales": "Gradation PSA & ventes",
+      "index": "Calcul des indices",
+      "sealed_ev": "Ratio EV scellés",
+      "undervalued": "Scores de sous-évaluation",
+      "grading_roi": "Données ROI de gradation",
+      "volume": "Volume de ventes",
+      "active_listings": "Annonces actives eBay"
+    },
+    "tiers": {
+      "hot": "Hot (< 6 mois)",
+      "recent": "Recent (6–18 mois)",
+      "established": "Established (18–36 mois)",
+      "vintage": "Vintage (36+ mois)"
+    },
+    "segments": {
+      "items": "Référentiel",
+      "sealed": "Scellé (display)",
+      "single": "Cartes (singles)",
+      "grading": "Gradation PSA"
+    },
+    "schedule": {
+      "itemsPrices": { "label": "Référentiel + prix", "cron": "quotidien, 06:00 UTC" },
+      "hot": { "label": "Gradation & ventes — hot", "cron": "quotidien, 04:00 UTC" },
+      "recent": { "label": "Gradation & ventes — recent", "cron": "lun/mer/ven, 03:00 UTC" },
+      "established": { "label": "Gradation & ventes — established", "cron": "dimanche, 03:00 UTC" },
+      "vintage": { "label": "Gradation & ventes — vintage", "cron": "samedi, 03:00 UTC" }
+    }
   },
   "transactions": {
     "title": "Transactions récentes",

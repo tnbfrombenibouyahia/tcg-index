@@ -7,6 +7,7 @@ import type { WidgetId } from "@/lib/dashboard/types";
 import {
   GridIcon,
   SearchIcon,
+  PulseIcon,
   TransactionsIcon,
   BoxIcon,
   TrendingUpIcon,
@@ -21,25 +22,28 @@ import {
 // Terminal.dc.html : pilule fixe en bas d'écran, verre liquide, se déplie au
 // survol. Couvre les destinations de l'ancienne sidebar -- 5 ont un widget
 // équivalent sur /dashboard (Catalogue, Transactions, Sous-évalué,
-// Divergences, ROI Gradation), 2 n'en ont pas (Scellés sous-évalués,
-// Liquidité) et naviguent toujours vers leur page dédiée.
+// Divergences, ROI Gradation), 3 n'en ont pas (Scellés sous-évalués,
+// Liquidité, Live Synchronisation) et naviguent toujours vers leur page dédiée.
 //
-// "live" (Live Market Data) retiré du front entièrement -- demande
-// utilisateur du 2026-08-09 : plus de widget, plus de page /live, donc plus
-// de point d'entrée nav ici non plus (cf. lib/dashboard/types.ts).
+// "live" (page /live) reconstruite le 2026-08-09 comme outil de debug pur
+// (statut de synchro, erreurs, couverture des données -- cf. app/(app)/
+// live/page.tsx) plutôt que widget marché : volontairement SANS équivalent
+// dashboard (hasWidget: false, comme sealedEv/liquidity), et volontairement
+// EN DERNIER dans ITEMS -- demande utilisateur explicite : ce point d'entrée
+// doit rester le plus à droite du dock.
 //
 // Double comportement au clic, résolu ici plutôt que dans deux composants
 // séparés :
 // - Sur /dashboard, avec `expanded`/`onSelect` fournis (par TerminalDashboard) :
 //   les items à widget AGRANDISSENT ce widget en place (même geste que le
-//   ⤢ de son en-tête). Les 2 sans widget naviguent quand même (rien à
+//   ⤢ de son en-tête). Les 3 sans widget naviguent quand même (rien à
 //   agrandir sur place).
 // - Partout ailleurs (GlobalDock.tsx, sans `expanded`/`onSelect`) : tous les
 //   items naviguent vers leur route, comme l'ancienne sidebar.
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface DockItem {
-  id: WidgetId | "sealedEv" | "liquidity";
+  id: WidgetId | "sealedEv" | "liquidity" | "live";
   href: string;
   labelKey: string;
   Icon: (props: { size?: number }) => React.ReactElement;
@@ -54,6 +58,7 @@ const ITEMS: DockItem[] = [
   { id: "grade", href: "/grading-roi", labelKey: "gradingRoi", Icon: GradingRoiIcon, hasWidget: true },
   { id: "div", href: "/divergence", labelKey: "divergence", Icon: DivergenceIcon, hasWidget: true },
   { id: "liquidity", href: "/liquidity", labelKey: "liquidity", Icon: LiquidityIcon, hasWidget: false },
+  { id: "live", href: "/live", labelKey: "live", Icon: PulseIcon, hasWidget: false },
 ];
 
 export function WidgetDock({

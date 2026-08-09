@@ -54,10 +54,25 @@ export async function getRunningSyncs(): Promise<SyncRun[]> {
   return rows.map(toSyncRun);
 }
 
-export async function getRecentRuns(limit = 25): Promise<SyncRun[]> {
+export async function getRecentRuns(limit = 100): Promise<SyncRun[]> {
   const rows = await sql<SyncRunRow[]>`
     SELECT ${syncRunColumns()}
     FROM sync_runs
+    ORDER BY started_at DESC
+    LIMIT ${limit}
+  `;
+  return rows.map(toSyncRun);
+}
+
+// Requête séparée plutôt qu'un simple .filter() côté client sur recentRuns :
+// les erreurs sont rares (13/97 runs au moment d'écrire ceci) et doivent
+// rester visibles même une fois que `recentRuns` aura tourné au-delà de la
+// dernière erreur -- page /live, section debug dédiée.
+export async function getRecentErrors(limit = 50): Promise<SyncRun[]> {
+  const rows = await sql<SyncRunRow[]>`
+    SELECT ${syncRunColumns()}
+    FROM sync_runs
+    WHERE status = 'error'
     ORDER BY started_at DESC
     LIMIT ${limit}
   `;
@@ -158,10 +173,11 @@ export async function getFreshnessGrid(): Promise<FreshnessCell[]> {
 }
 
 export async function getSyncStatus(): Promise<SyncStatusResponse> {
-  const [runningNow, recentRuns, freshness] = await Promise.all([
+  const [runningNow, recentRuns, recentErrors, freshness] = await Promise.all([
     getRunningSyncs(),
-    getRecentRuns(25),
+    getRecentRuns(),
+    getRecentErrors(),
     getFreshnessGrid(),
   ]);
-  return { runningNow, recentRuns, freshness, fetchedAt: new Date().toISOString() };
+  return { runningNow, recentRuns, recentErrors, freshness, fetchedAt: new Date().toISOString() };
 }

@@ -15,6 +15,7 @@
     "gradingRoi": "ROI de gradación",
     "divergence": "Divergencias",
     "liquidity": "Liquidez",
+    "live": "Live Synchronisation",
     "footer": "Datos públicos · metodología transparente",
     "themeToLight": "Cambiar a modo claro",
     "themeToDark": "Cambiar a modo oscuro"
@@ -55,6 +56,72 @@
     "updatedValue": "Tiempo real",
     "source": "Fuente",
     "sourceValue": "TCG Community"
+  },
+  "live": {
+    "breadcrumbCurrent": "Live Synchronisation",
+    "description": "Estado en tiempo real del pipeline de ingesta: qué se está ejecutando, qué ha fallado, la frescura y la cobertura de los datos por TCG — pensado para depurar.",
+    "liveStatus": "En vivo",
+    "disconnected": "Conexión perdida",
+    "refreshed": "actualizado {time}",
+    "freshnessTitle": "Frescura de los datos por TCG",
+    "tracked": "{count} seguidos",
+    "noData": "sin datos",
+    "runningTitle": "Sincronización en curso",
+    "noRunningTitle": "Ninguna sincronización en curso",
+    "bothTcgs": "Pokémon y One Piece",
+    "startedAt": "iniciado {time}",
+    "scheduleIntro": "El pipeline se ejecuta con un cron de GitHub Actions, no de forma continua — aquí está la próxima ventana programada.",
+    "historyTitle": "Historial de ejecuciones",
+    "historyFilter": {
+      "all": "Todas",
+      "error": "Errores",
+      "success": "Éxito",
+      "running": "En curso"
+    },
+    "emptyRunsTitle": "Aún no hay ninguna ejecución registrada",
+    "emptyRunsDescription": "El registro empieza con la próxima sincronización programada (catálogo + precios a las 06:00 UTC). No hay nada que hacer de tu parte — se acumula solo.",
+    "inProgress": "en curso…",
+    "errorsTitle": "Errores recientes",
+    "noErrorsTitle": "Sin errores recientes",
+    "noErrorsDescription": "Todas las ejecuciones recientes se completaron correctamente.",
+    "coverageTitle": "Cobertura de datos",
+    "coverageDescription": "Parte del catálogo que realmente tiene precio, rareza o imagen — por TCG, idioma y tipo de carta. Un ratio bajo suele explicar por qué a una carta concreta le faltan datos (alcance de sincronización limitado, ver metodología).",
+    "colSegment": "Segmento",
+    "colItems": "Items",
+    "colPriceAny": "Precio (todo)",
+    "colPriceRecent": "Precio (30d)",
+    "colRarity": "Rareza",
+    "colImage": "Imagen",
+    "steps": {
+      "items": "Catálogo",
+      "prices": "Precios — sellado y cartas",
+      "grades_sales": "Gradación PSA y ventas",
+      "index": "Cálculo de índices",
+      "sealed_ev": "Ratio EV de sellados",
+      "undervalued": "Puntuaciones de infravaloración",
+      "grading_roi": "Datos de ROI de gradación",
+      "volume": "Volumen de ventas",
+      "active_listings": "Anuncios activos eBay"
+    },
+    "tiers": {
+      "hot": "Hot (< 6 meses)",
+      "recent": "Recent (6–18 meses)",
+      "established": "Established (18–36 meses)",
+      "vintage": "Vintage (36+ meses)"
+    },
+    "segments": {
+      "items": "Catálogo",
+      "sealed": "Sellado (display)",
+      "single": "Cartas (singles)",
+      "grading": "Gradación PSA"
+    },
+    "schedule": {
+      "itemsPrices": { "label": "Catálogo + precios", "cron": "diario, 06:00 UTC" },
+      "hot": { "label": "Gradación y ventas — hot", "cron": "diario, 04:00 UTC" },
+      "recent": { "label": "Gradación y ventas — recent", "cron": "lun/mié/vie, 03:00 UTC" },
+      "established": { "label": "Gradación y ventas — established", "cron": "domingo, 03:00 UTC" },
+      "vintage": { "label": "Gradación y ventas — vintage", "cron": "sábado, 03:00 UTC" }
+    }
   },
   "transactions": {
     "title": "Transacciones recientes",

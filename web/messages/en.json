@@ -15,6 +15,7 @@
     "gradingRoi": "Grading ROI",
     "divergence": "Divergence",
     "liquidity": "Liquidity",
+    "live": "Live Synchronisation",
     "footer": "Public data · transparent methodology",
     "themeToLight": "Switch to light mode",
     "themeToDark": "Switch to dark mode"
@@ -55,6 +56,72 @@
     "updatedValue": "Real-time",
     "source": "Source",
     "sourceValue": "TCG Community"
+  },
+  "live": {
+    "breadcrumbCurrent": "Live Synchronisation",
+    "description": "Real-time status of the ingestion pipeline: what's running, what failed, data freshness and coverage per TCG — built for debugging.",
+    "liveStatus": "Live",
+    "disconnected": "Connection lost",
+    "refreshed": "refreshed {time}",
+    "freshnessTitle": "Data freshness by TCG",
+    "tracked": "{count} tracked",
+    "noData": "no data",
+    "runningTitle": "Sync in progress",
+    "noRunningTitle": "No sync in progress",
+    "bothTcgs": "Pokémon & One Piece",
+    "startedAt": "started {time}",
+    "scheduleIntro": "The pipeline runs on a GitHub Actions cron, not continuously — here's the next scheduled window.",
+    "historyTitle": "Run history",
+    "historyFilter": {
+      "all": "All",
+      "error": "Errors",
+      "success": "Success",
+      "running": "Running"
+    },
+    "emptyRunsTitle": "No run recorded yet",
+    "emptyRunsDescription": "The log starts with the next scheduled sync (catalog + prices at 06:00 UTC). Nothing to do on your end — it accumulates on its own.",
+    "inProgress": "in progress…",
+    "errorsTitle": "Recent errors",
+    "noErrorsTitle": "No recent errors",
+    "noErrorsDescription": "All recent runs completed successfully.",
+    "coverageTitle": "Data coverage",
+    "coverageDescription": "Share of the catalog that actually has a price, a rarity, or an image — by TCG, language, and card type. A low ratio usually explains why a given card seems to be missing data (limited sync scope, see methodology).",
+    "colSegment": "Segment",
+    "colItems": "Items",
+    "colPriceAny": "Price (any)",
+    "colPriceRecent": "Price (30d)",
+    "colRarity": "Rarity",
+    "colImage": "Image",
+    "steps": {
+      "items": "Catalog",
+      "prices": "Prices — sealed & cards",
+      "grades_sales": "PSA grading & sales",
+      "index": "Index calculation",
+      "sealed_ev": "Sealed EV ratio",
+      "undervalued": "Undervalued scores",
+      "grading_roi": "Grading ROI inputs",
+      "volume": "Sales volume",
+      "active_listings": "eBay active listings"
+    },
+    "tiers": {
+      "hot": "Hot (< 6 months)",
+      "recent": "Recent (6–18 months)",
+      "established": "Established (18–36 months)",
+      "vintage": "Vintage (36+ months)"
+    },
+    "segments": {
+      "items": "Catalog",
+      "sealed": "Sealed (display)",
+      "single": "Cards (singles)",
+      "grading": "PSA grading"
+    },
+    "schedule": {
+      "itemsPrices": { "label": "Catalog + prices", "cron": "daily, 06:00 UTC" },
+      "hot": { "label": "Grading & sales — hot", "cron": "daily, 04:00 UTC" },
+      "recent": { "label": "Grading & sales — recent", "cron": "Mon/Wed/Fri, 03:00 UTC" },
+      "established": { "label": "Grading & sales — established", "cron": "Sunday, 03:00 UTC" },
+      "vintage": { "label": "Grading & sales — vintage", "cron": "Saturday, 03:00 UTC" }
+    }
   },
   "transactions": {
     "title": "Recent transactions",

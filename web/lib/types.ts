@@ -110,8 +110,27 @@ export interface FreshnessCell {
 export interface SyncStatusResponse {
   runningNow: SyncRun[];
   recentRuns: SyncRun[];
+  recentErrors: SyncRun[];
   freshness: FreshnessCell[];
   fetchedAt: string;
+}
+
+// Recap de couverture (demande utilisateur 2026-08-09, page /live) :
+// combien d'items on référence vs. combien ont réellement du prix/rareté/
+// image, par tcg × langue × catégorie -- pas de la fraîcheur (FreshnessCell,
+// "quand"), de la complétude ("combien"). Sert au debug direct : un ratio
+// bas explique tout de suite pourquoi une carte donnée n'a pas de prix
+// (cf. mémoire projet "price_sync_scope" -- le scope quota exclut
+// délibérément une partie du catalogue Pokémon EN/JP singles).
+export interface DataCoverageRow {
+  tcg: Tcg;
+  language: string;
+  category: "sealed" | "single";
+  totalItems: number;
+  withAnyPrice: number;
+  withRecentPrice: number; // captured_at dans les 30 derniers jours
+  withRarity: number;
+  withImage: number;
 }
 
 export type SealedEvMode = "total" | "top10";
