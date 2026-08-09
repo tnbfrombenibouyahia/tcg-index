@@ -24,7 +24,7 @@ import type { Tcg } from "@/lib/constants";
 //
 // `EXCLUDE_FILTER` (ajouté le même jour, investigation approfondie suite à
 // "pourquoi ces % sont bas") -- exclut du calcul (dénominateur ET numérateur,
-// donc appliqué identiquement aux deux requêtes ci-dessous) deux catégories
+// donc appliqué identiquement aux deux requêtes ci-dessous) des catégories
 // d'items qui ne sont structurellement JAMAIS priçables, pas un trou de sync :
 // - `name ILIKE 'Code Card - %'` : codes numériques vendus séparément du
 //   produit scellé physique -- jamais un collector distinct sur PriceCharting.
@@ -40,6 +40,22 @@ import type { Tcg } from "@/lib/constants";
 //   une décision vérifiée, pas un pattern qui risquerait d'avaler un vrai set
 //   (ex. "Pokémon GO" ou "30th Celebration" NE sont PAS ici -- vrais sets,
 //   juste pas encore mappés vers PriceCharting).
+// - "Case"/"Display" et "[Set of N]", SCELLÉ UNIQUEMENT (`category = 'sealed'`
+//   dans la condition, pas un filtre nom global) : lots groupés de plusieurs
+//   unités déjà comptées individuellement ailleurs (ex. "Starter Deck 33
+//   Display" = plusieurs "Starter Deck 33"). PriceCharting ne trace jamais
+//   ces lots comme un produit à part -- vérifié sur One Piece scellé EN :
+//   100/448 items (22%), 0% pricés, tous des lots. Même logique que Code
+//   Card : pas un trou de couverture, un multiple de quelque chose déjà
+//   compté. Restreint au scellé après avoir constaté que "case"/"display"/
+//   "[Set of N]" apparaissent aussi dans de VRAIS noms de cartes single
+//   ("Pikachu (Rain City Showcase)", "Chikorita & Casey", "Morpeko V-Union
+//   [Set of 4]" -- ce dernier un vrai produit vendu comme un seul single) :
+//   un filtre nom sans garde de catégorie les aurait exclues à tort.
+// - `release_date > CURRENT_DATE` : produit annoncé mais pas encore en
+//   vente (ex. sortie prévue 2026-09-18 alors qu'on est le 2026-08-09) --
+//   aucun prix ne peut exister avant que le produit n'existe sur le marché.
+//   Se résout tout seul avec le temps, pas un vrai trou de couverture.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const JUNK_SET_CODES = [
@@ -49,8 +65,18 @@ const JUNK_SET_CODES = [
   "one-piece-one-piece-promotion-cards",
 ];
 
-const EXCLUDE_FILTER = sql`name NOT ILIKE 'Code Card - %' AND set_code NOT IN ${sql(JUNK_SET_CODES)}`;
-const EXCLUDE_FILTER_ALIASED = sql`i.name NOT ILIKE 'Code Card - %' AND i.set_code NOT IN ${sql(JUNK_SET_CODES)}`;
+const EXCLUDE_FILTER = sql`
+  name NOT ILIKE 'Code Card - %'
+  AND NOT (category = 'sealed' AND (name ILIKE '%case%' OR name ILIKE '%display%' OR name ILIKE '%[set of%' OR name ILIKE '%(set of%'))
+  AND set_code NOT IN ${sql(JUNK_SET_CODES)}
+  AND (release_date IS NULL OR release_date <= CURRENT_DATE)
+`;
+const EXCLUDE_FILTER_ALIASED = sql`
+  i.name NOT ILIKE 'Code Card - %'
+  AND NOT (i.category = 'sealed' AND (i.name ILIKE '%case%' OR i.name ILIKE '%display%' OR i.name ILIKE '%[set of%' OR i.name ILIKE '%(set of%'))
+  AND i.set_code NOT IN ${sql(JUNK_SET_CODES)}
+  AND (i.release_date IS NULL OR i.release_date <= CURRENT_DATE)
+`;
 const TRACKED_FILTER = sql`NOT (tcg = 'pokemon' AND category = 'single') OR interest_tier IS NOT NULL`;
 const TRACKED_FILTER_ALIASED = sql`NOT (i.tcg = 'pokemon' AND i.category = 'single') OR i.interest_tier IS NOT NULL`;
 
