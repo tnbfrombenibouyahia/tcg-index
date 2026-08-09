@@ -81,7 +81,11 @@ export function RunsTimeline({ runs }: { runs: SyncRun[] }) {
       {filtered.length === 0 ? (
         <EmptyState title={t("emptyRunsTitle")} description={t("emptyRunsDescription")} />
       ) : (
-        <div className="card-glass" style={{ padding: "6px 22px" }}>
+        // Hauteur bornée + scroll interne -- demande utilisateur : la page ne
+        // doit pas s'étirer indéfiniment avec le nombre de runs (jusqu'à 100
+        // affichés), l'historique devient un panneau qu'on scrolle DANS
+        // plutôt qu'une liste qui pousse le bas de page toujours plus loin.
+        <div className="card-glass" style={{ padding: "6px 22px", maxHeight: "48vh", overflowY: "auto" }}>
           {filtered.map((run, i) => (
             <div
               key={run.id}

@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { formatRelativeTime } from "@/lib/format";
 import type { DataCoverageRow, SyncStatusResponse } from "@/lib/types";
 import { ErrorsPanel } from "./ErrorsPanel";
-import { FreshnessGrid } from "./FreshnessGrid";
+import { FreshnessSection } from "./FreshnessSection";
 import { DataCoverageSection } from "./DataCoverageSection";
 import { RunningNowPanel } from "./RunningNowPanel";
 import { RunsTimeline } from "./RunsTimeline";
@@ -56,10 +56,14 @@ export function LiveDashboard({ initialData, coverage }: { initialData: SyncStat
         </span>
       </div>
 
+      {/* Ordre demandé par l'utilisateur (2026-08-09) : couverture tout en
+          haut, puis fraîcheur/planning, puis historique en bas -- erreurs et
+          "en cours" gardés (debug prioritaire) mais compacts/conditionnels,
+          ils disparaissent quand il n'y a rien à signaler. */}
+      <DataCoverageSection rows={coverage} />
       <ErrorsPanel errors={data.recentErrors} />
       <RunningNowPanel runs={data.runningNow} />
-      <FreshnessGrid freshness={data.freshness} />
-      <DataCoverageSection rows={coverage} />
+      <FreshnessSection freshness={data.freshness} />
       <RunsTimeline runs={data.recentRuns} />
     </div>
   );
