@@ -33,7 +33,7 @@ export function ErrorsPanel({ errors }: { errors: SyncRun[] }) {
     return (
       <div
         className="card-glass"
-        style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "10px" }}
+        style={{ padding: "10px 16px", display: "flex", alignItems: "center", gap: "10px" }}
       >
         <StatusDot color="var(--positive)" size={9} />
         <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--foreground)" }}>{t("noErrorsTitle")}</span>
@@ -73,7 +73,7 @@ export function ErrorsPanel({ errors }: { errors: SyncRun[] }) {
               display: "flex",
               flexDirection: "column",
               gap: "6px",
-              padding: "14px 0",
+              padding: "10px 0",
               borderTop: i === 0 ? "none" : "1px solid var(--border)",
             }}
           >

@@ -27,7 +27,7 @@ export default async function LivePage() {
   return (
     <div style={{ padding: "0 32px 40px" }}>
       {/* ── Breadcrumbs ────────────────────────────────────────────────────── */}
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "24px 0 20px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "18px 0 12px" }}>
         <span style={{ fontSize: "14px", color: "var(--foreground-muted)", fontWeight: 500, cursor: "pointer" }}>{tNav("home")}</span>
         <span style={{ fontSize: "14px", color: "var(--foreground-subtle)" }}>/</span>
         <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--foreground)", letterSpacing: "-0.01em" }}>
@@ -35,7 +35,7 @@ export default async function LivePage() {
         </span>
       </div>
 
-      <p style={{ fontSize: "13px", color: "var(--foreground-muted)", margin: "-8px 0 20px", maxWidth: "640px" }}>
+      <p style={{ fontSize: "12.5px", color: "var(--foreground-muted)", margin: "-4px 0 14px", maxWidth: "640px" }}>
         {t("description")}
       </p>
 

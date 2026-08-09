@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import type { FreshnessCell } from "@/lib/types";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { FreshnessGrid } from "./FreshnessGrid";
 
 // Cadence réelle des deux workflows GitHub Actions (cf. .github/workflows/) --
@@ -25,23 +26,30 @@ export function FreshnessSection({ freshness }: { freshness: FreshnessCell[] }) 
   const tSchedule = useTranslations("live.schedule");
 
   return (
-    <section style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+    <section style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
       <div>
         <h2
           className="text-xs font-semibold uppercase"
-          style={{ color: "var(--foreground-muted)", letterSpacing: "0.10em", marginBottom: "6px" }}
+          style={{
+            color: "var(--foreground-muted)",
+            letterSpacing: "0.10em",
+            marginBottom: "8px",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+          }}
         >
           {t("scheduleTitle")}
+          <InfoTooltip text={t("scheduleIntro")} />
         </h2>
-        <p style={{ fontSize: "12px", color: "var(--foreground-muted)", margin: "0 0 10px" }}>{t("scheduleIntro")}</p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
           {SCHEDULE_KEYS.map((key) => (
             <span
               key={key}
               className="tile-glass"
               style={{
-                padding: "6px 12px",
-                fontSize: "11.5px",
+                padding: "5px 11px",
+                fontSize: "11px",
                 color: "var(--foreground-muted)",
                 display: "inline-flex",
                 alignItems: "center",

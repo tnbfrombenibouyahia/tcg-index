@@ -19,20 +19,20 @@ export function FreshnessGrid({ freshness }: { freshness: FreshnessCell[] }) {
     <section>
       <h2
         className="text-xs font-semibold uppercase"
-        style={{ color: "var(--foreground-muted)", letterSpacing: "0.10em", marginBottom: "12px" }}
+        style={{ color: "var(--foreground-muted)", letterSpacing: "0.10em", marginBottom: "8px" }}
       >
         {t("freshnessTitle")}
       </h2>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         {TCGS.map(({ value: tcg, label }) => {
           const cells = SEGMENT_ORDER.map(
             (segment) => freshness.find((c) => c.tcg === tcg && c.segment === segment) ?? null
           );
           return (
-            <div key={tcg} className="card-glass" style={{ padding: "20px 22px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "9px", marginBottom: "14px" }}>
+            <div key={tcg} className="card-glass" style={{ padding: "14px 18px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
                 <TcgIcon tcg={tcg} />
-                <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--foreground)", letterSpacing: "-0.01em" }}>
+                <span style={{ fontSize: "13.5px", fontWeight: 700, color: "var(--foreground)", letterSpacing: "-0.01em" }}>
                   {label}
                 </span>
               </div>
@@ -47,7 +47,7 @@ export function FreshnessGrid({ freshness }: { freshness: FreshnessCell[] }) {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
-                        padding: "10px 0",
+                        padding: "7px 0",
                         borderTop: i === 0 ? "none" : "1px solid var(--border)",
                       }}
                     >

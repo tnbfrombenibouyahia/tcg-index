@@ -48,7 +48,7 @@ export function LiveDashboard({ initialData, coverage }: { initialData: SyncStat
   }, []);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
         <StatusDot color={live ? "var(--positive)" : "var(--foreground-subtle)"} pulsing={live} size={7} />
         <span style={{ fontSize: "12px", color: "var(--foreground-muted)" }}>

@@ -48,7 +48,7 @@ export function RunsTimeline({ runs }: { runs: SyncRun[] }) {
 
   return (
     <section>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", marginBottom: "12px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", marginBottom: "8px" }}>
         <h2
           className="text-xs font-semibold uppercase"
           style={{ color: "var(--foreground-muted)", letterSpacing: "0.10em", margin: 0 }}
@@ -85,7 +85,7 @@ export function RunsTimeline({ runs }: { runs: SyncRun[] }) {
         // doit pas s'étirer indéfiniment avec le nombre de runs (jusqu'à 100
         // affichés), l'historique devient un panneau qu'on scrolle DANS
         // plutôt qu'une liste qui pousse le bas de page toujours plus loin.
-        <div className="card-glass" style={{ padding: "6px 22px", maxHeight: "48vh", overflowY: "auto" }}>
+        <div className="card-glass" style={{ padding: "4px 18px", maxHeight: "32vh", overflowY: "auto" }}>
           {filtered.map((run, i) => (
             <div
               key={run.id}
@@ -93,7 +93,7 @@ export function RunsTimeline({ runs }: { runs: SyncRun[] }) {
                 display: "flex",
                 alignItems: "flex-start",
                 gap: "12px",
-                padding: "14px 0",
+                padding: "9px 0",
                 borderTop: i === 0 ? "none" : "1px solid var(--border)",
               }}
             >
