@@ -7,7 +7,9 @@ import { SourceBadges } from "@/components/ui/SourceBadge";
 import {
   getPopulationRanking,
   POPULATION_PRICE_GRADES,
+  POPULATION_PRICE_RANGES,
   type PopulationPriceGrade,
+  type PopulationPriceRange,
   type PopulationSort,
 } from "@/lib/queries/populationAnalysis";
 import type { Tcg } from "@/lib/constants";
@@ -19,12 +21,14 @@ const PAGE_SIZE = 50;
 // Population PSA/CGC réelle (comptage par grade, PAS un prix) -- demande
 // utilisateur 2026-08-10, cf. [[project_population_analysis]]. Même squelette
 // que /grading-roi : filtre TCG + callout méthodologie + tableau trié. Filtre
-// prix mini AJOUTÉ le même jour (2ème demande) -- contrairement à
-// /grading-roi (toujours gaté par un prix mini ungraded), ici le prix reste
-// du contexte optionnel PAR DÉFAUT (pas de seuil actif tant que l'utilisateur
-// n'en choisit pas un) puisque la page existe pour la population, pas pour
-// la valeur -- le sélecteur de grade (loose/PSA8/9/10) + seuil ne filtre
-// qu'une fois un seuil explicitement choisi (cf. getPopulationRanking).
+// prix AJOUTÉ le même jour (2ème demande, un simple seuil mini d'abord, puis
+// converti en tranches fixes -- 3ème demande, "10-50, 50-100... 10k+", cf.
+// POPULATION_PRICE_RANGES) -- contrairement à /grading-roi (toujours gaté
+// par un prix mini ungraded), ici le prix reste du contexte optionnel PAR
+// DÉFAUT (aucune tranche active tant que l'utilisateur n'en choisit pas une)
+// puisque la page existe pour la population, pas pour la valeur -- le
+// sélecteur de grade (loose/PSA8/9/10) + tranche ne filtre qu'une fois une
+// tranche explicitement choisie (cf. getPopulationRanking).
 // Chaque ligne ouvre le détail en modale (PopulationDetailModal), même
 // convention que les autres pages d'analyse (cf. "Analyse en popup au clic").
 // ─────────────────────────────────────────────────────────────────────────────
@@ -35,10 +39,19 @@ const VALID_SORTS = new Set<string>([
   "language_asc", "language_desc",
 ]);
 
-// Paliers de prix proposés -- mêmes valeurs que /grading-roi (MIN_UNGRADED_PRICES)
-// pour une cohérence de vocabulaire "seuil de prix" à travers le site.
-const MIN_PRICES = [1, 2, 5, 10, 25] as const;
-type MinPrice = (typeof MIN_PRICES)[number];
+// Compacte 1000+ en "1k"/"2.5k" (pas de décimale superflue sur les ronds) --
+// même esprit que formatUsdCompact (lib/format.ts) mais sans le symbole $
+// dupliqué à chaque borne d'une tranche ("$1k–2.5k", pas "$1k–$2.5k").
+function formatRangeBound(n: number): string {
+  if (n < 1000) return String(n);
+  const thousands = n / 1000;
+  return `${Number.isInteger(thousands) ? thousands : thousands.toFixed(1)}k`;
+}
+
+function rangeLabel(range: PopulationPriceRange): string {
+  const min = formatRangeBound(range.min);
+  return range.max == null ? `$${min}+` : `$${min}–${formatRangeBound(range.max)}`;
+}
 
 export default async function PopulationAnalysisPage({
   searchParams,
@@ -58,15 +71,13 @@ export default async function PopulationAnalysisPage({
     ? (priceGradeRaw as PopulationPriceGrade)
     : "ungraded";
 
-  const minPriceRaw = Number(Array.isArray(raw.minPrice) ? raw.minPrice[0] : raw.minPrice);
-  const minPrice: MinPrice | undefined = (MIN_PRICES as readonly number[]).includes(minPriceRaw)
-    ? (minPriceRaw as MinPrice)
-    : undefined;
+  const priceMinRaw = Number(Array.isArray(raw.priceMin) ? raw.priceMin[0] : raw.priceMin);
+  const priceRange: PopulationPriceRange | undefined = POPULATION_PRICE_RANGES.find((r) => r.min === priceMinRaw);
 
   const pageRaw = Number(Array.isArray(raw.page) ? raw.page[0] : raw.page);
   const page = Number.isInteger(pageRaw) && pageRaw >= 1 ? pageRaw : 1;
 
-  const { rows, totalCount } = await getPopulationRanking({ tcg, limit: PAGE_SIZE, page, sort, priceGrade, minPrice });
+  const { rows, totalCount } = await getPopulationRanking({ tcg, limit: PAGE_SIZE, page, sort, priceGrade, priceRange });
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   const searchParamsForLinks = new URLSearchParams(
@@ -114,14 +125,14 @@ export default async function PopulationAnalysisPage({
 
         <div style={{ width: "1px", height: "20px", background: "var(--border)", flexShrink: 0 }} />
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <span className="mr-1 text-xs text-muted-foreground">{t("filterMinPrice")}</span>
-          <FilterPill active={!minPrice} href={buildHref(searchParamsForLinks, { minPrice: undefined })}>
+          <FilterPill active={!priceRange} href={buildHref(searchParamsForLinks, { priceMin: undefined })}>
             {t("filterPriceAll")}
           </FilterPill>
-          {MIN_PRICES.map((p) => (
-            <FilterPill key={p} active={minPrice === p} href={buildHref(searchParamsForLinks, { minPrice: String(p) })}>
-              ${p}+
+          {POPULATION_PRICE_RANGES.map((r) => (
+            <FilterPill key={r.min} active={priceRange?.min === r.min} href={buildHref(searchParamsForLinks, { priceMin: String(r.min) })}>
+              {rangeLabel(r)}
             </FilterPill>
           ))}
         </div>

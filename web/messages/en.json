@@ -397,7 +397,7 @@
     "methodology": "Population counts (grades 6-10, PSA + CGC combined) come from PSA/CGC's own published census, scraped from PriceCharting's population report pages -- psacard.com/pop itself blocks automated access. Half-grades (e.g. PSA 9.5) are folded by PSA into the whole grade below. Updated monthly, matching PSA's own census cadence. Sealed products are never graded and never appear here.",
     "filterAll": "All TCGs",
     "filterPriceGrade": "Price grade:",
-    "filterMinPrice": "Min price:",
+    "filterMinPrice": "Price range:",
     "filterPriceAll": "Any",
     "count": "{count} cards",
     "emptyTitle": "No population data yet",
