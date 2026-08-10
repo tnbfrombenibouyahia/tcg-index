@@ -28,18 +28,31 @@ name: Tiered grades & sales sync
 # de l'incident) : tôt dans la nuit heure locale FR/SE (UTC+2 l'été) pour
 # absorber le retard de scheduling GitHub Actions observé sur ce repo, et
 # minutes non rondes pour éviter la file d'attente aux heures pile. Étalés de
-# 26 min les uns des autres (au lieu de tous à 03:00/04:00 UTC) pour ne pas
-# faire démarrer plusieurs jobs pile en même temps. Jours de semaine
-# inchangés (toujours en UTC, pas décalés au-delà de minuit local) : hot/
-# recent/established/vintage restent respectivement quotidien/lun-mer-ven/
-# dimanche/samedi ; jp_singles ajouté le mardi (seul jour encore libre).
+# ~14-28 min les uns des autres (au lieu de tous à 03:00/04:00 UTC) pour ne
+# pas faire démarrer plusieurs jobs de CE workflow pile en même temps. Jours
+# de semaine inchangés (toujours en UTC, pas décalés au-delà de minuit
+# local) : hot/recent/established/vintage restent respectivement quotidien/
+# lun-mer-ven/dimanche/samedi ; jp_singles ajouté le mardi (seul jour encore
+# libre).
+#
+# Re-décalés en bloc de +1h22 le 2026-08-10 (incident retries CockroachDB,
+# cf. shared/db.py::retry_on_serialization_failure) : le premier créneau
+# (hot, 01:43 UTC) démarrait seulement 26 min après daily-sync.yml
+# (01:17 UTC), qui prend couramment 80-90 min -- les deux tournaient donc en
+# même temps presque toutes les nuits et s'écrivaient dessus sur les mêmes
+# tables de calcul (indices/undervalued/sealed_ev/volume/grading_roi_inputs,
+# calculées par les deux workflows). Le retry côté Python absorbe déjà ce
+# conflit s'il se reproduit (ex. après un run manuel décalé), mais autant ne
+# pas y compter chaque nuit : hot démarre maintenant à 03:05 UTC, largement
+# après le pire cas de daily-sync (90 min de timeout -> fin au plus tard
+# 02:47 UTC).
 on:
   schedule:
-    - cron: "43 1 * * *"      # hot : quotidien, ~03:43 heure locale
-    - cron: "11 2 * * 1,3,5"  # recent : lundi/mercredi/vendredi, ~04:11 heure locale
-    - cron: "23 2 * * 0"      # established : dimanche, ~04:23 heure locale
-    - cron: "37 2 * * 6"      # vintage : samedi, ~04:37 heure locale
-    - cron: "51 2 * * 2"      # jp_singles : mardi, ~04:51 heure locale
+    - cron: "05 3 * * *"      # hot : quotidien, ~05:05 heure locale
+    - cron: "33 3 * * 1,3,5"  # recent : lundi/mercredi/vendredi, ~05:33 heure locale
+    - cron: "45 3 * * 0"      # established : dimanche, ~05:45 heure locale
+    - cron: "59 3 * * 6"      # vintage : samedi, ~05:59 heure locale
+    - cron: "13 4 * * 2"      # jp_singles : mardi, ~06:13 heure locale
   workflow_dispatch:
     inputs:
       tier:
@@ -69,11 +82,11 @@ jobs:
             echo "value=${{ github.event.inputs.tier }}" >> "$GITHUB_OUTPUT"
           else
             case "${{ github.event.schedule }}" in
-              "43 1 * * *") echo "value=hot" >> "$GITHUB_OUTPUT" ;;
-              "11 2 * * 1,3,5") echo "value=recent" >> "$GITHUB_OUTPUT" ;;
-              "23 2 * * 0") echo "value=established" >> "$GITHUB_OUTPUT" ;;
-              "37 2 * * 6") echo "value=vintage" >> "$GITHUB_OUTPUT" ;;
-              "51 2 * * 2") echo "value=jp_singles" >> "$GITHUB_OUTPUT" ;;
+              "05 3 * * *") echo "value=hot" >> "$GITHUB_OUTPUT" ;;
+              "33 3 * * 1,3,5") echo "value=recent" >> "$GITHUB_OUTPUT" ;;
+              "45 3 * * 0") echo "value=established" >> "$GITHUB_OUTPUT" ;;
+              "59 3 * * 6") echo "value=vintage" >> "$GITHUB_OUTPUT" ;;
+              "13 4 * * 2") echo "value=jp_singles" >> "$GITHUB_OUTPUT" ;;
               *) echo "Palier inconnu pour le cron '${{ github.event.schedule }}'" >&2; exit 1 ;;
             esac
           fi

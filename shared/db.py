@@ -3,10 +3,12 @@
 Une seule variable d'environnement : DATABASE_URL (cf. .env.example).
 """
 import os
+import time
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import certifi
 import psycopg2
+import psycopg2.errors
 
 # `sslrootcert` est résolu ici via certifi.where() plutôt que codé en dur
 # dans DATABASE_URL -- incident 2026-08-09 : un chemin Windows
@@ -34,3 +36,33 @@ def _dsn_without_sslrootcert(raw_dsn: str) -> str:
 def get_connection():
     dsn = _dsn_without_sslrootcert(os.environ["DATABASE_URL"])
     return psycopg2.connect(dsn, sslrootcert=certifi.where())
+
+
+# ---------------------------------------------------------------------------
+# Retry sur conflit d'écriture CockroachDB (SQLSTATE 40001, RETRY_SERIALIZABLE)
+# ---------------------------------------------------------------------------
+# Constaté 2026-08-09/10 : `daily-sync` (référentiel + prix + index/undervalued/
+# sealed_ev) et `tiered-sync --tier hot` (grades/ventes + les 5 mêmes calculs
+# d'index) tournent à 26 min d'écart (cf. tiered-sync.yml) alors que
+# `daily-sync` prend couramment 80-90 min -- ils se chevauchent presque
+# toutes les nuits et s'écrivent dessus sur les mêmes lignes (indices,
+# undervalued_scores, sealed_ev, volume, grading_roi_inputs). Sous isolation
+# SERIALIZABLE (seule proposée par CockroachDB), c'est le comportement
+# ATTENDU en cas de conflit, pas un bug : le client est censé rejouer toute
+# la transaction, cf.
+# https://www.cockroachlabs.com/docs/v26.2/transaction-retry-error-reference.html
+#
+# `fn` doit être un callable sans argument qui rejoue tout le calcul de bout
+# en bout (sa propre connexion incluse) -- vrai des 5 étapes de calcul de
+# l'orchestrateur, chacune "rejouable" par conception (recalcule tout,
+# jamais incrémental, cf. leurs docstrings), donc sûr à ré-exécuter en entier
+# plutôt que de retenter juste la requête qui a échoué.
+def retry_on_serialization_failure(fn, *, max_attempts=5, base_delay_s=2.0):
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return fn()
+        except psycopg2.errors.SerializationFailure:
+            if attempt == max_attempts:
+                raise
+            print(f"  (conflit d'écriture CockroachDB, nouvelle tentative {attempt}/{max_attempts}...)")
+            time.sleep(base_delay_s * attempt)

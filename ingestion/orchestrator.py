@@ -56,7 +56,7 @@ from index import volume as index_volume
 from index.methodology import INDEX_DEFINITIONS
 from ingestion import rarity_inherit
 from ingestion.sources import apitcg, bulbapedia, ebay, limitlesstcg, pricecharting, tcgdex
-from shared.db import get_connection
+from shared.db import get_connection, retry_on_serialization_failure
 from shared.sync_log import finish_run, start_run
 
 TCGS = ["pokemon", "one-piece"]
@@ -559,32 +559,32 @@ def main() -> int:
         print(f"\n!! Erreur pendant la sync prix : {exc}")
 
     try:
-        run_index_calculation(run_type)
+        retry_on_serialization_failure(lambda: run_index_calculation(run_type))
     except Exception as exc:
         had_errors = True
         print(f"\n!! Erreur pendant le calcul des indices : {exc}")
 
     try:
-        run_sealed_ev_calculation(run_type)
+        retry_on_serialization_failure(lambda: run_sealed_ev_calculation(run_type))
     except Exception as exc:
         had_errors = True
         print(f"\n!! Erreur pendant le calcul du ratio EV des scellés : {exc}")
 
     try:
-        run_undervalued_calculation(run_type)
+        retry_on_serialization_failure(lambda: run_undervalued_calculation(run_type))
     except Exception as exc:
         had_errors = True
         print(f"\n!! Erreur pendant le calcul des scores undervalued : {exc}")
 
     if args.tier is not None:
         try:
-            run_volume_calculation(run_type)
+            retry_on_serialization_failure(lambda: run_volume_calculation(run_type))
         except Exception as exc:
             had_errors = True
             print(f"\n!! Erreur pendant le calcul du volume : {exc}")
 
         try:
-            run_grading_roi_inputs_calculation(run_type)
+            retry_on_serialization_failure(lambda: run_grading_roi_inputs_calculation(run_type))
         except Exception as exc:
             had_errors = True
             print(f"\n!! Erreur pendant le calcul des ingrédients ROI de gradation : {exc}")
