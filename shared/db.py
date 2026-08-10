@@ -3,6 +3,7 @@
 Une seule variable d'environnement : DATABASE_URL (cf. .env.example).
 """
 import os
+import random
 import time
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
@@ -57,12 +58,27 @@ def get_connection():
 # l'orchestrateur, chacune "rejouable" par conception (recalcule tout,
 # jamais incrémental, cf. leurs docstrings), donc sûr à ré-exécuter en entier
 # plutôt que de retenter juste la requête qui a échoué.
-def retry_on_serialization_failure(fn, *, max_attempts=5, base_delay_s=2.0):
+#
+# Réglages 2026-08-10 (après un test délibéré des deux workflows lancés à la
+# même seconde, cf. commit précédent) : les 5 tentatives / ~20s d'origine
+# n'ont pas suffi face à un chevauchement complet avec un autre job de
+# ~90 min qui réécrit sans arrêt les mêmes lignes -- attendu (le décalage des
+# crons dans tiered-sync.yml reste le vrai fix contre CE scénario), mais on
+# muscle quand même le filet de sécurité pour les cas résiduels (relance
+# manuelle mal synchronisée, drift de scheduling GitHub Actions, run
+# exceptionnellement long). Backoff exponentiel (×2, plafonné à 60s) + jitter
+# aléatoire (évite que plusieurs calculs en conflit ne retentent tous à
+# l'identique et se re-percutent) : ~10 tentatives couvrent maintenant
+# jusqu'à ~5 min de contention continue avant d'abandonner, contre ~20s
+# avant.
+def retry_on_serialization_failure(fn, *, max_attempts=10, base_delay_s=2.0, max_delay_s=60.0):
     for attempt in range(1, max_attempts + 1):
         try:
             return fn()
         except psycopg2.errors.SerializationFailure:
             if attempt == max_attempts:
                 raise
-            print(f"  (conflit d'écriture CockroachDB, nouvelle tentative {attempt}/{max_attempts}...)")
-            time.sleep(base_delay_s * attempt)
+            delay = min(base_delay_s * (2 ** (attempt - 1)), max_delay_s)
+            delay += random.uniform(0, delay * 0.25)
+            print(f"  (conflit d'écriture CockroachDB, nouvelle tentative {attempt}/{max_attempts} dans {delay:.0f}s...)")
+            time.sleep(delay)
