@@ -15,6 +15,7 @@
     "gradingRoi": "Grading ROI",
     "divergence": "Divergence",
     "liquidity": "Liquidity",
+    "populationAnalysis": "Population Analysis",
     "live": "Live Synchronisation",
     "footer": "Public data · transparent methodology"
   },
@@ -102,7 +103,8 @@
       "undervalued": "Undervalued scores",
       "grading_roi": "Grading ROI inputs",
       "volume": "Sales volume",
-      "active_listings": "eBay active listings"
+      "active_listings": "eBay active listings",
+      "population": "PSA/CGC population"
     },
     "tiers": {
       "hot": "Hot (< 6 months)",
@@ -388,6 +390,38 @@
       "loading": "Loading..."
     }
   },
+  "populationAnalysis": {
+    "title": "Population Analysis",
+    "description": "Real PSA/CGC graded population by card -- how many copies actually exist at each grade, a scarcity signal independent of price.",
+    "methodologyLabel": "Source:",
+    "methodology": "Population counts (grades 6-10, PSA + CGC combined) come from PSA/CGC's own published census, scraped from PriceCharting's population report pages -- psacard.com/pop itself blocks automated access. Half-grades (e.g. PSA 9.5) are folded by PSA into the whole grade below. Updated monthly, matching PSA's own census cadence. Sealed products are never graded and never appear here.",
+    "filterAll": "All TCGs",
+    "count": "{count} cards",
+    "emptyTitle": "No population data yet",
+    "emptyDescription": "No card currently has published PSA/CGC population data.",
+    "table": {
+      "card": "Card",
+      "language": "Language",
+      "tcg": "TCG",
+      "grade6": "PSA 6",
+      "grade7": "PSA 7",
+      "grade8": "PSA 8",
+      "grade9": "PSA 9",
+      "grade10": "PSA 10",
+      "total": "Total"
+    },
+    "modal": {
+      "close": "Close",
+      "asOf": "Population as of {date}",
+      "breakdownTitle": "Population by grade",
+      "totalLabel": "Total (all grades, incl. below PSA 6)",
+      "ungradedPriceLabel": "Ungraded price",
+      "psa10PriceLabel": "PSA 10 price",
+      "salesHistoryTitle": "Sales history",
+      "loading": "Loading...",
+      "noSales": "No sale recorded yet."
+    }
+  },
   "catalog": {
     "title": "Card Catalog",
     "description": "Search by card name or collector number to jump straight to its full price analysis.",
@@ -441,6 +475,14 @@
     "liquidityListingCount": "Still listed (eBay)",
     "liquiditySales30d": "Sold (30d)",
     "liquiditySales90d": "Sold (90d)",
+    "populationTitle": "PSA/CGC population",
+    "populationDescription": "How many graded copies actually exist at each grade -- a scarcity signal, sourced from PSA/CGC's own published census (via PriceCharting, updated monthly).",
+    "populationGrade6": "PSA 6",
+    "populationGrade7": "PSA 7",
+    "populationGrade8": "PSA 8",
+    "populationGrade9": "PSA 9",
+    "populationGrade10": "PSA 10",
+    "populationTotal": "Total (all grades)",
     "modal": {
       "close": "Close"
     }

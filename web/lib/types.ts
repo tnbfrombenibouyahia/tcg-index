@@ -89,7 +89,8 @@ export type SyncStep =
   | "volume"
   | "undervalued"
   | "grading_roi"
-  | "active_listings";
+  | "active_listings"
+  | "population";
 export type SyncRunStatus = "running" | "success" | "error";
 
 export interface SyncRun {
@@ -291,10 +292,41 @@ export interface LiquidityRow {
   sellThroughRate30d: number | null;
 }
 
+// Population PSA+CGC réelle (comptage par grade, PAS un prix -- cf.
+// db/schema.sql::population_snapshots, [[project_population_analysis]]).
+// pop_grade6..10 = comptage PSA+CGC combiné pour ce grade entier ; popTotal =
+// grand total toutes notes confondues (PAS juste la somme de pop_grade6..10,
+// les grades 1-5 y sont inclus sans être détaillés -- cf. schéma). Scellé n'a
+// jamais ce champ (PSA/CGC ne gradent pas de boîtes de TCG scellées).
+export interface PopulationCalc {
+  capturedAt: string;
+  popGrade6: number;
+  popGrade7: number;
+  popGrade8: number;
+  popGrade9: number;
+  popGrade10: number;
+  popTotal: number;
+}
+
+export interface PopulationRow {
+  itemId: number;
+  name: string;
+  imageUrl: string | null;
+  tcg: Tcg;
+  language: string;
+  setCode: string | null;
+  code: string | null;
+  rarity: string | null;
+  ungradedPrice: number | null;
+  psa10Price: number | null;
+  population: PopulationCalc;
+}
+
 export interface ItemDetail extends ItemSummary {
   releaseDate: string | null;
   latestPrices: ItemPriceEntry[];
   undervalued: UndervaluedCalc | null;
   sealedEv: SealedEvCalc | null;
   liquidity: LiquidityCalc | null;
+  population: PopulationCalc | null;
 }

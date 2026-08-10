@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { GradingRoiCandidate, GradingRoiResult } from "@/lib/gradingRoi";
 import { GRADES, GRADE_LABELS } from "@/lib/constants";
-import type { ItemDetail, LiquidityCalc, SaleRow, SealedEvCalc, UndervaluedCalc } from "@/lib/types";
+import type { ItemDetail, LiquidityCalc, PopulationCalc, SaleRow, SealedEvCalc, UndervaluedCalc } from "@/lib/types";
 import { formatDate, formatUsd } from "@/lib/format";
 import { InterestTierBadge } from "@/components/ui/InterestTierBadge";
 import { LanguageFlag } from "@/components/ui/LanguageFlag";
@@ -152,6 +152,15 @@ export function ItemDetailBody({
       {item.liquidity && (
         <Section title={t("liquidityTitle")} sources={["ebay", "pricecharting"]}>
           <LiquidityBlock calc={item.liquidity} t={t} />
+        </Section>
+      )}
+
+      {/* Population PSA/CGC réelle : comptage par grade, pas un prix -- cf.
+          [[project_population_analysis]]. N'existe jamais pour le scellé
+          (PSA/CGC ne gradent pas de boîtes de TCG). */}
+      {item.population && (
+        <Section title={t("populationTitle")} link={{ href: "/population-analysis", label: t("seeMethodology") }} sources={["pricecharting"]}>
+          <PopulationBlock calc={item.population} t={t} />
         </Section>
       )}
 
@@ -338,6 +347,35 @@ function LiquidityBlock({ calc, t }: { calc: LiquidityCalc; t: ReturnType<typeof
         ))}
       </div>
       <StockFlowBar listingCount={calc.listingCount} salesCount30d={calc.salesCount30d} />
+    </div>
+  );
+}
+
+// ── Population PSA/CGC : comptage par grade (pas un prix) ──────────────────
+function PopulationBlock({ calc, t }: { calc: PopulationCalc; t: ReturnType<typeof useTranslations> }) {
+  const stats: { label: string; value: string }[] = [
+    { label: t("populationGrade6"), value: calc.popGrade6.toLocaleString() },
+    { label: t("populationGrade7"), value: calc.popGrade7.toLocaleString() },
+    { label: t("populationGrade8"), value: calc.popGrade8.toLocaleString() },
+    { label: t("populationGrade9"), value: calc.popGrade9.toLocaleString() },
+    { label: t("populationGrade10"), value: calc.popGrade10.toLocaleString() },
+  ];
+
+  return (
+    <div>
+      <p className="mb-4 text-xs text-muted-foreground">{t("populationDescription")}</p>
+      <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
+        {stats.map((s) => (
+          <div key={s.label}>
+            <p className="text-[11px] text-muted-foreground">{s.label}</p>
+            <p className="text-sm font-semibold tabular-nums">{s.value}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 flex items-center gap-2 rounded-lg bg-muted/40 px-3 py-2">
+        <span className="text-xs text-muted-foreground">{t("populationTotal")}</span>
+        <span className="text-base font-bold tabular-nums">{calc.popTotal.toLocaleString()}</span>
+      </div>
     </div>
   );
 }

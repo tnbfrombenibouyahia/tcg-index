@@ -114,6 +114,54 @@ CREATE TABLE IF NOT EXISTS active_listings (
 CREATE INDEX IF NOT EXISTS idx_active_listings_item
     ON active_listings (item_id, captured_at DESC);
 
+-- Population PSA/CGC réelle (combien d'exemplaires existent à CHAQUE grade)
+-- -- PAS un prix, un comptage : proxy de rareté/scarcité complémentaire de
+-- price_snapshots (qui donne la valeur, jamais la quantité en circulation).
+--
+-- Source : PriceCharting `/pop/set/{slug}` (page HTML publique, même hôte et
+-- même infra de scraping que le reste de pricecharting.py), PAS
+-- psacard.com/pop lui-même (bloqué Cloudflare, cf. mémoire projet
+-- "psa_pop_report_blocked") -- PriceCharting republie la même donnée
+-- PSA+CGC sans blocage. Découverte utilisateur 2026-08-10.
+--
+-- Grain "1 requête pour tout le set" (page /pop/set/{slug}, même pagination
+-- par curseur POST que /console/), pas "1 requête/carte" comme la gradation
+-- de PRIX (fetch_grades, cf. price_snapshots ci-dessus) -- bien moins cher,
+-- donc pas besoin du système de paliers TIERS ni d'un run --tier dédié :
+-- tout le catalogue mappé tient dans un seul run mensuel (cf.
+-- ingestion/orchestrator.py::run_population_sync, cadence alignée sur la
+-- note "population census updated monthly" affichée sur la page source
+-- elle-même -- scraper plus souvent ne rapporterait rien).
+--
+-- pop_grade6..10 = comptage PSA+CGC COMBINÉ pour ce grade entier (les
+-- demi-grades, ex. 9.5, sont fondus par PSA lui-même dans le grade entier
+-- inférieur, cf. note "Half grade populations are included in the nearest
+-- whole grade" sur la page source) -- vocabulaire donc différent de
+-- price_snapshots.grade (qui distingue psa9.5, mais n'a pas de psa6).
+-- pop_total = grand total toutes notes confondues (grades 1-10 + Authentic),
+-- PAS juste la somme de pop_grade6..10 -- vérifié en conditions réelles
+-- (Kadabra #46 Base Set 2 : 603 total contre 559 en sommant grades 6-10
+-- seulement, l'écart de 44 vient des grades 1-5, jamais détaillés ici).
+-- Scellé jamais concerné (PSA/CGC ne gradent pas de boîtes de TCG scellées
+-- -- ces lignes existent sur la page source mais avec un Total vide/'-',
+-- filtrées avant écriture, cf. `_parse_pop_rows_from_soup`).
+CREATE TABLE IF NOT EXISTS population_snapshots (
+  id             BIGSERIAL PRIMARY KEY,
+  item_id        BIGINT NOT NULL REFERENCES items(id),
+  captured_at    DATE NOT NULL,
+  pop_grade6     INTEGER NOT NULL DEFAULT 0,
+  pop_grade7     INTEGER NOT NULL DEFAULT 0,
+  pop_grade8     INTEGER NOT NULL DEFAULT 0,
+  pop_grade9     INTEGER NOT NULL DEFAULT 0,
+  pop_grade10    INTEGER NOT NULL DEFAULT 0,
+  pop_total      INTEGER NOT NULL DEFAULT 0,
+  source         TEXT NOT NULL DEFAULT 'pricecharting',
+  created_at     TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (item_id, captured_at)
+);
+CREATE INDEX IF NOT EXISTS idx_population_snapshots_item
+    ON population_snapshots (item_id, captured_at DESC);
+
 -- Volume d'échange quotidien : agrégat de `sales` (nb de ventes + $ total),
 -- même grain (index_code, captured_at) que index_values mais pas de
 -- chaînage -- chaque jour est indépendant. Alimente une future pondération
@@ -177,9 +225,9 @@ CREATE TABLE IF NOT EXISTS sealed_ev (
 -- affichable séparément par TCG).
 CREATE TABLE IF NOT EXISTS sync_runs (
   id            BIGSERIAL PRIMARY KEY,
-  run_type      TEXT NOT NULL,        -- 'daily' | 'tier' | 'weekly'
+  run_type      TEXT NOT NULL,        -- 'daily' | 'tier' | 'weekly' | 'monthly'
   tier          TEXT,                 -- palier (cf. orchestrator.TIERS) si run_type='tier', sinon NULL
-  step          TEXT NOT NULL,        -- 'items' | 'prices' | 'grades_sales' | 'index' | 'sealed_ev' | 'volume' | 'active_listings'
+  step          TEXT NOT NULL,        -- 'items' | 'prices' | 'grades_sales' | 'index' | 'sealed_ev' | 'volume' | 'active_listings' | 'population'
   tcg           TEXT,                 -- 'pokemon' | 'one-piece' | NULL (étape globale aux deux TCG)
   status        TEXT NOT NULL DEFAULT 'running',  -- 'running' | 'success' | 'error'
   started_at    TIMESTAMPTZ NOT NULL DEFAULT now(),

@@ -361,6 +361,36 @@ def run_rarity_backfill_sync(run_type: str) -> None:
         finish_run(run_id, status="error" if n_errors else "success", rows_written=result["total"], detail=detail)
 
 
+def run_population_sync(run_type: str) -> None:
+    """Population PSA+CGC réelle (comptage par grade, PAS un prix -- cf.
+    db/schema.sql::population_snapshots, [[project_population_analysis]]) sur
+    tous les set_code de PRICECHARTING_SET_SLUGS. 1 requête HTTP/set (comme le
+    prix ungraded quotidien), PAS 1/carte comme la gradation de prix
+    (fetch_grades) -- pas besoin du système de paliers TIERS, tout le
+    catalogue mappé (~226 sets, deux TCG) tient dans un seul run. Cadence
+    mensuelle (cf. --population / .github/workflows/monthly-population-sync.yml) :
+    la page source elle-même annonce "population census updated monthly",
+    scraper plus souvent ne rapporterait rien de neuf."""
+    print("\n=== Population PSA+CGC (PriceCharting) ===")
+    run_id = start_run(run_type, "population")
+    try:
+        results = pricecharting.sync_all_mapped_population()
+    except Exception as exc:
+        finish_run(run_id, status="error", detail=str(exc))
+        raise
+    errors = [r for r in results if r.get("error")]
+    ok = [r for r in results if not r.get("error")]
+    rows_written = sum(r.get("rows_matched", 0) for r in ok)
+    detail = f"{len(ok)} set(s), {rows_written} ligne(s) de population"
+    if errors:
+        detail += f", {len(errors)} erreur(s)"
+        print(f"\n{len(errors)} set(s) en erreur :")
+        for r in errors:
+            print(f"  {r['set_code']}: {r['error']}")
+    print(f"  {detail}")
+    finish_run(run_id, status="error" if errors else "success", rows_written=rows_written, detail=detail)
+
+
 def run_index_calculation(run_type: str) -> None:
     """Recalcule tous les indices de prix (cf. index/methodology.py) à partir
     des prix qu'on vient de synchroniser. Tourne à chaque run (quotidien et
@@ -517,6 +547,14 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--population", action="store_true",
+        help=(
+            "Lance UNIQUEMENT la sync population PSA+CGC (cf. run_population_sync) et sort -- "
+            "nouvelle source indépendante à cadence mensuelle (1 requête/set, tout le catalogue "
+            "mappé en un seul run, cf. .github/workflows/monthly-population-sync.yml)."
+        ),
+    )
+    parser.add_argument(
         "--items-only", action="store_true",
         help=(
             "Lance UNIQUEMENT la sync référentiel API TCG (cf. run_items_sync) et sort -- retiré du run "
@@ -540,6 +578,18 @@ def main() -> int:
         except Exception as exc:
             had_errors = True
             print(f"\n!! Erreur pendant la sync référentiel : {exc}")
+        elapsed = time.monotonic() - started
+        print(f"\n=== Terminé en {elapsed / 60:.1f} min ({'avec erreurs' if had_errors else 'OK'}) ===")
+        return 1 if had_errors else 0
+
+    if args.population:
+        started = time.monotonic()
+        had_errors = False
+        try:
+            run_population_sync("monthly")
+        except Exception as exc:
+            had_errors = True
+            print(f"\n!! Erreur pendant la sync population : {exc}")
         elapsed = time.monotonic() - started
         print(f"\n=== Terminé en {elapsed / 60:.1f} min ({'avec erreurs' if had_errors else 'OK'}) ===")
         return 1 if had_errors else 0

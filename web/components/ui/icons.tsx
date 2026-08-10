@@ -93,6 +93,20 @@ export function LiquidityIcon({ size = 15 }: IconProps) {
   );
 }
 
+export function PopulationIcon({ size = 15 }: IconProps) {
+  // Histogramme (barres croissantes) -- une distribution figée par grade,
+  // pas une évolution dans le temps (à distinguer de TrendingUpIcon, qui
+  // trace une tendance).
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 20V14" />
+      <path d="M10 20V10" />
+      <path d="M16 20V6" />
+      <path d="M22 20V13" />
+    </svg>
+  );
+}
+
 export function GridIcon({ size = 15 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

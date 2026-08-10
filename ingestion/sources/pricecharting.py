@@ -1402,6 +1402,23 @@ _ITEMS_FOR_SET_SQL = """
                AND rarity IS NOT NULL AND interest_tier IS NULL)
 """
 
+# Variante SANS le filtre "carte d'intérêt" ci-dessus -- utilisée par la
+# population (`sync_population_for_set`), PAS par le prix/la gradation. Ce
+# filtre existe pour épargner le budget de requêtes HTTP PAR CARTE (fetch_grades,
+# ~1/carte) sur les commons jamais chase ; la population coûte 1 requête pour
+# TOUT le set quel que soit le nombre de cartes matchées, donc l'exclusion ne
+# fait économiser aucune requête ici -- elle ferait juste disparaître une
+# donnée gratuite (constaté 2026-08-10 : 6/131 matchés sur pokemon-base-set-2
+# avec le filtre, contre un match quasi complet sans -- la quasi-totalité
+# d'un set vintage n'a jamais de interest_tier, par design, cf. commentaire
+# ci-dessus). La rareté d'une carte n'a aucun rapport avec sa rareté de
+# POPULATION gradée -- un simple commun vintage peut très bien n'avoir que
+# 2 exemplaires connus en PSA 10.
+_ALL_ITEMS_FOR_SET_SQL = """
+    SELECT id, category, code, name FROM items
+    WHERE tcg = %s AND set_code = %s
+"""
+
 
 def sync_price_snapshots_for_set(
     set_code: str, tcg: str, fetch_grades: bool = False, max_cards: int | None = None,
@@ -1637,6 +1654,198 @@ def sync_all_mapped_sets(
             print(
                 f"[{i+1}/{len(set_codes)}] {set_code} -> {stats['pricecharting_slug']}: "
                 f"{stats['rows_matched']}/{stats['rows_scraped']} matchés ({ratio:.0%}){extra}"
+            )
+            results.append({**stats, "error": None})
+        except Exception as exc:
+            print(f"[{i+1}/{len(set_codes)}] {set_code}: ERREUR {exc}")
+            results.append({"set_code": set_code, "error": str(exc)})
+    return results
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Population PSA/CGC (cf. db/schema.sql::population_snapshots pour le contexte
+# complet -- psacard.com/pop lui-même est bloqué Cloudflare, mais PriceCharting
+# republie la même donnée PSA+CGC en HTML brut, découverte utilisateur
+# 2026-08-10). Page `/pop/set/{slug}` : même table `#games_table`, même
+# pagination par curseur POST que `/console/{slug}` (cf. `fetch_all_console_rows`
+# ci-dessus) -- seules les colonnes changent (6 `td.pop-value` : Grade 6/7/8/9/
+# 10/Total au lieu d'un prix). 1 requête pour tout le set, pas 1/carte comme
+# la gradation de PRIX (fetch_grades) -- pas besoin du système de paliers TIERS,
+# cf. `sync_all_mapped_population` plus bas.
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _parse_pop_count(text: str) -> int | None:
+    text = text.strip().replace(",", "")
+    if not text or text == "-":
+        return None
+    try:
+        return int(text)
+    except ValueError:
+        return None
+
+
+def _parse_pop_rows_from_soup(soup: BeautifulSoup) -> list[dict]:
+    """Parse le tableau `#games_table` d'une page /pop/set/{slug}. Le scellé
+    apparaît sur cette page (même listing que /console/) mais avec les 6
+    colonnes vides ('-') -- PSA/CGC ne gradent pas de boîtes de TCG scellées --
+    ces lignes sont filtrées ici (pop_total None) plutôt que plus tard, pour
+    qu'aucun matching sealed inutile ne soit tenté."""
+    table = soup.find("table", id="games_table")
+    if table is None:
+        return []
+
+    rows = []
+    for tr in table.select("tbody tr[data-product]"):
+        title_link = tr.select_one("td.title a")
+        if title_link is None:
+            continue
+        pop_cells = tr.select("td.pop-value")
+        if len(pop_cells) < 6:
+            continue
+        grade6, grade7, grade8, grade9, grade10, total = (
+            _parse_pop_count(c.get_text()) for c in pop_cells[:6]
+        )
+        if not total:
+            continue
+        rows.append({
+            "title": title_link.get_text(strip=True),
+            "pop_grade6": grade6 or 0,
+            "pop_grade7": grade7 or 0,
+            "pop_grade8": grade8 or 0,
+            "pop_grade9": grade9 or 0,
+            "pop_grade10": grade10 or 0,
+            "pop_total": total,
+        })
+    return rows
+
+
+def fetch_all_pop_set_rows(slug: str, max_pages: int = 20) -> list[dict]:
+    """Comme `fetch_all_console_rows` mais sur /pop/set/{slug} (population
+    PSA+CGC au lieu du prix) -- même mécanique de pagination par curseur POST
+    (cf. `_extract_next_page_form`, réutilisée telle quelle : même structure
+    de formulaire sur les deux familles de page)."""
+    all_rows = []
+    resp = requests.get(f"{BASE_URL}/pop/set/{slug}", headers=HEADERS, timeout=30)
+    resp.raise_for_status()
+    html = resp.text
+
+    for _ in range(max_pages):
+        soup = BeautifulSoup(html, "html.parser")
+        all_rows.extend(_parse_pop_rows_from_soup(soup))
+        next_fields = _extract_next_page_form(soup)
+        if not next_fields:
+            break
+        time.sleep(MIN_SECONDS_BETWEEN_REQUESTS)
+        resp = requests.post(f"{BASE_URL}/pop/set/{slug}", headers=HEADERS, data=next_fields, timeout=30)
+        resp.raise_for_status()
+        html = resp.text
+    return all_rows
+
+
+_UPSERT_POPULATION_SNAPSHOTS_SQL = """
+    INSERT INTO population_snapshots
+        (item_id, captured_at, pop_grade6, pop_grade7, pop_grade8, pop_grade9, pop_grade10, pop_total, source)
+    VALUES %s
+    ON CONFLICT (item_id, captured_at) DO UPDATE SET
+        pop_grade6 = EXCLUDED.pop_grade6,
+        pop_grade7 = EXCLUDED.pop_grade7,
+        pop_grade8 = EXCLUDED.pop_grade8,
+        pop_grade9 = EXCLUDED.pop_grade9,
+        pop_grade10 = EXCLUDED.pop_grade10,
+        pop_total = EXCLUDED.pop_total
+"""
+
+
+def sync_population_for_set(set_code: str, tcg: str) -> dict:
+    """Scrape /pop/set/{slug} et archive la population PSA+CGC dans
+    `population_snapshots`. Matching identique aux prix (numéro de carte ->
+    `items.code`, départage de variantes par `_best_single_match`, cf.
+    `sync_price_snapshots_for_set`) -- seul le scellé n'est jamais matché ici
+    (aucun numéro à extraire, et de toute façon déjà filtré en amont par
+    `_parse_pop_rows_from_soup`, pop_total toujours vide pour ces lignes)."""
+    slug = PRICECHARTING_SET_SLUGS.get(set_code)
+    if not slug:
+        raise ValueError(
+            f"Pas de mapping PriceCharting pour set_code={set_code!r}. "
+            f"Ajoute-le dans PRICECHARTING_SET_SLUGS."
+        )
+
+    rows = fetch_all_pop_set_rows(slug)
+
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(_ALL_ITEMS_FOR_SET_SQL, (tcg, set_code))
+            items = [
+                {"id": r[0], "category": r[1], "code": r[2], "name": r[3]}
+                for r in cur.fetchall()
+            ]
+
+        singles_by_number: dict[int, list[dict]] = {}
+        for it in items:
+            if it["category"] != "single":
+                continue
+            n = _code_numerator(it["code"])
+            if n is not None:
+                singles_by_number.setdefault(n, []).append(it)
+
+        matches = []
+        unmatched = []
+        for row in rows:
+            number = _extract_number(row["title"])
+            if number is None:
+                continue  # scellé -- pas de population carte à matcher
+            candidates = singles_by_number.get(number)
+            item = _best_single_match(row["title"], candidates) if candidates else None
+            if item is None:
+                unmatched.append(row["title"])
+                continue
+            matches.append((row, item))
+
+        today = date.today()
+        canonical_rows = _select_canonical_rows(matches)
+        pop_rows = [
+            (
+                item_id, today, row["pop_grade6"], row["pop_grade7"], row["pop_grade8"],
+                row["pop_grade9"], row["pop_grade10"], row["pop_total"], "pricecharting",
+            )
+            for item_id, row in canonical_rows.items()
+        ]
+
+        if pop_rows:
+            with conn.cursor() as cur:
+                execute_values(cur, _UPSERT_POPULATION_SNAPSHOTS_SQL, pop_rows)
+                conn.commit()
+    finally:
+        conn.close()
+
+    return {
+        "set_code": set_code,
+        "pricecharting_slug": slug,
+        "rows_scraped": len(rows),
+        "rows_matched": len(pop_rows),
+        "rows_unmatched": len(unmatched),
+        "unmatched_titles": unmatched,
+    }
+
+
+def sync_all_mapped_population(tcg: str | None = None) -> list[dict]:
+    """Boucle sur les set_code de PRICECHARTING_SET_SLUGS (filtrés par `tcg` si
+    fourni), 1 requête/set -- pas de système de paliers d'âge comme
+    `sync_all_mapped_sets` (fetch_grades) : le coût est le même quel que soit
+    l'âge du set, tout le catalogue mappé tient dans un seul run mensuel (cf.
+    ingestion/orchestrator.py::run_population_sync)."""
+    set_codes = [sc for sc in PRICECHARTING_SET_SLUGS if tcg is None or _tcg_from_set_code(sc) == tcg]
+    results = []
+    for i, set_code in enumerate(set_codes):
+        if i > 0:
+            time.sleep(MIN_SECONDS_BETWEEN_REQUESTS)
+        try:
+            stats = sync_population_for_set(set_code, _tcg_from_set_code(set_code))
+            ratio = stats["rows_matched"] / stats["rows_scraped"] if stats["rows_scraped"] else 0.0
+            print(
+                f"[{i+1}/{len(set_codes)}] {set_code} -> {stats['pricecharting_slug']}: "
+                f"{stats['rows_matched']}/{stats['rows_scraped']} matchés ({ratio:.0%})"
             )
             results.append({**stats, "error": None})
         except Exception as exc:
@@ -2120,6 +2329,13 @@ def main():
         help="Mode bulk uniquement : ne garder que les sets dont le dernier item est sorti il y a plus de N mois.",
     )
     parser.add_argument(
+        "--population", action="store_true",
+        help=(
+            "Population PSA+CGC réelle (pas un prix -- cf. db/schema.sql::population_snapshots) "
+            "au lieu du flux prix habituel. 1 requête/set, --fetch-grades sans effet ici."
+        ),
+    )
+    parser.add_argument(
         "--jp-sealed", action="store_true",
         help=(
             "Scellé JAPONAIS (PRICECHARTING_JP_SEALED_SLUGS) au lieu du flux EN habituel : "
@@ -2136,6 +2352,31 @@ def main():
         ),
     )
     args = parser.parse_args()
+
+    if args.population:
+        if args.set_code:
+            tcg = args.tcg or _tcg_from_set_code(args.set_code)
+            print(f"== Sync population PriceCharting pour set_code={args.set_code} ==")
+            stats = sync_population_for_set(args.set_code, tcg)
+            print(f"Scrapé: {stats['rows_scraped']}, matché: {stats['rows_matched']}, non-matché: {stats['rows_unmatched']}")
+            if stats["unmatched_titles"]:
+                print("Non matchés:", stats["unmatched_titles"])
+            return
+
+        scope = args.tcg or "tous"
+        print(f"== Sync population PriceCharting (tcg={scope}) ==")
+        results = sync_all_mapped_population(args.tcg)
+        errors = [r for r in results if r["error"]]
+        ok = [r for r in results if not r["error"]]
+        total_scraped = sum(r["rows_scraped"] for r in ok)
+        total_matched = sum(r["rows_matched"] for r in ok)
+        print(f"\n=== Bilan : {len(ok)} sets OK, {len(errors)} erreurs ===")
+        print(f"Total: {total_matched}/{total_scraped} lignes matchées ({total_matched/total_scraped:.0%})" if total_scraped else "Aucune ligne scrapée.")
+        if errors:
+            print("\nErreurs :")
+            for r in errors:
+                print(f"  {r['set_code']}: {r['error']}")
+        return
 
     if args.jp_sealed:
         if args.set_code:

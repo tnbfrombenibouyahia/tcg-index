@@ -15,6 +15,7 @@
     "gradingRoi": "ROI de gradación",
     "divergence": "Divergencias",
     "liquidity": "Liquidez",
+    "populationAnalysis": "Análisis de población",
     "live": "Live Synchronisation",
     "footer": "Datos públicos · metodología transparente"
   },
@@ -102,7 +103,8 @@
       "undervalued": "Puntuaciones de infravaloración",
       "grading_roi": "Datos de ROI de gradación",
       "volume": "Volumen de ventas",
-      "active_listings": "Anuncios activos eBay"
+      "active_listings": "Anuncios activos eBay",
+      "population": "Población PSA/CGC"
     },
     "tiers": {
       "hot": "Hot (< 6 meses)",
@@ -388,6 +390,38 @@
       "loading": "Cargando..."
     }
   },
+  "populationAnalysis": {
+    "title": "Análisis de población",
+    "description": "Población PSA/CGC real por carta -- cuántos ejemplares existen realmente en cada grado, una señal de escasez independiente del precio.",
+    "methodologyLabel": "Fuente:",
+    "methodology": "Los recuentos de población (grados 6-10, PSA + CGC combinados) provienen del censo oficial de PSA/CGC, extraído de las páginas de informe de población de PriceCharting -- psacard.com/pop bloquea el acceso automatizado. Los medios grados (ej. PSA 9.5) son fusionados por PSA en el grado entero inferior. Actualizado mensualmente, alineado con la cadencia del propio censo de PSA. Los productos sellados nunca se gradúan y por tanto nunca aparecen aquí.",
+    "filterAll": "Todos los TCG",
+    "count": "{count} cartas",
+    "emptyTitle": "Sin datos de población todavía",
+    "emptyDescription": "Ninguna carta tiene datos de población PSA/CGC publicados por ahora.",
+    "table": {
+      "card": "Carta",
+      "language": "Idioma",
+      "tcg": "TCG",
+      "grade6": "PSA 6",
+      "grade7": "PSA 7",
+      "grade8": "PSA 8",
+      "grade9": "PSA 9",
+      "grade10": "PSA 10",
+      "total": "Total"
+    },
+    "modal": {
+      "close": "Cerrar",
+      "asOf": "Población al {date}",
+      "breakdownTitle": "Población por grado",
+      "totalLabel": "Total (todas las notas, incl. bajo PSA 6)",
+      "ungradedPriceLabel": "Precio sin gradar",
+      "psa10PriceLabel": "Precio PSA 10",
+      "salesHistoryTitle": "Historial de ventas",
+      "loading": "Cargando...",
+      "noSales": "Ninguna venta registrada todavía."
+    }
+  },
   "catalog": {
     "title": "Catálogo de cartas",
     "description": "Busca por nombre de carta o número de colección para acceder directamente a su análisis completo.",
@@ -441,6 +475,14 @@
     "liquidityListingCount": "Todavía en venta (eBay)",
     "liquiditySales30d": "Vendidas (30d)",
     "liquiditySales90d": "Vendidas (90d)",
+    "populationTitle": "Población PSA/CGC",
+    "populationDescription": "Cuántos ejemplares gradados existen realmente en cada grado -- una señal de escasez, procedente del censo oficial PSA/CGC (vía PriceCharting, actualizado mensualmente).",
+    "populationGrade6": "PSA 6",
+    "populationGrade7": "PSA 7",
+    "populationGrade8": "PSA 8",
+    "populationGrade9": "PSA 9",
+    "populationGrade10": "PSA 10",
+    "populationTotal": "Total (todas las notas)",
     "modal": {
       "close": "Cerrar"
     }

@@ -18,6 +18,7 @@ import {
   GradingRoiIcon,
   DivergenceIcon,
   LiquidityIcon,
+  PopulationIcon,
 } from "@/components/ui/icons";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -26,8 +27,9 @@ import {
 // Terminal.dc.html : pilule fixe en bas d'écran, verre liquide, se déplie au
 // survol. Couvre les destinations de l'ancienne sidebar -- 5 ont un widget
 // équivalent sur /dashboard (Catalogue, Transactions, Sous-évalué,
-// Divergences, ROI Gradation), 3 n'en ont pas (Scellés sous-évalués,
-// Liquidité, Live Synchronisation) et naviguent toujours vers leur page dédiée.
+// Divergences, ROI Gradation), 4 n'en ont pas (Scellés sous-évalués,
+// Liquidité, Population, Live Synchronisation) et naviguent toujours vers
+// leur page dédiée.
 //
 // "live" (page /live) reconstruite le 2026-08-09 comme outil de debug pur
 // (statut de synchro, erreurs, couverture des données -- cf. app/(app)/
@@ -73,7 +75,7 @@ function DockDivider() {
 }
 
 interface DockItem {
-  id: WidgetId | "sealedEv" | "liquidity" | "live";
+  id: WidgetId | "sealedEv" | "liquidity" | "population" | "live";
   href: string;
   labelKey: string;
   Icon: (props: { size?: number }) => React.ReactElement;
@@ -88,6 +90,7 @@ const ITEMS: DockItem[] = [
   { id: "grade", href: "/grading-roi", labelKey: "gradingRoi", Icon: GradingRoiIcon, hasWidget: true },
   { id: "div", href: "/divergence", labelKey: "divergence", Icon: DivergenceIcon, hasWidget: true },
   { id: "liquidity", href: "/liquidity", labelKey: "liquidity", Icon: LiquidityIcon, hasWidget: false },
+  { id: "population", href: "/population-analysis", labelKey: "populationAnalysis", Icon: PopulationIcon, hasWidget: false },
   { id: "live", href: "/live", labelKey: "live", Icon: PulseIcon, hasWidget: false },
 ];
 

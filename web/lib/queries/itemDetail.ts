@@ -1,5 +1,5 @@
 import sql from "@/lib/db";
-import type { ItemDetail, ItemPriceEntry, LiquidityCalc, SealedEvCalc, UndervaluedCalc } from "@/lib/types";
+import type { ItemDetail, ItemPriceEntry, LiquidityCalc, PopulationCalc, SealedEvCalc, UndervaluedCalc } from "@/lib/types";
 import type { Grade, Tcg } from "@/lib/constants";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -34,7 +34,7 @@ interface LiquidityRow {
 }
 
 export async function getItemById(itemId: number): Promise<ItemDetail | null> {
-  const [itemRows, priceRows, undervaluedRows, sealedEvRows, liquidityRows] = await Promise.all([
+  const [itemRows, priceRows, undervaluedRows, sealedEvRows, liquidityRows, populationRows] = await Promise.all([
     sql<ItemRow[]>`
       SELECT
         id::int4 AS id, name, tcg, category,
@@ -118,6 +118,20 @@ export async function getItemById(itemId: number): Promise<ItemDetail | null> {
       FROM latest_listing
       LEFT JOIN sales_counts ON true
     `,
+    sql<PopulationCalc[]>`
+      SELECT
+        captured_at::text AS "capturedAt",
+        pop_grade6::int4 AS "popGrade6",
+        pop_grade7::int4 AS "popGrade7",
+        pop_grade8::int4 AS "popGrade8",
+        pop_grade9::int4 AS "popGrade9",
+        pop_grade10::int4 AS "popGrade10",
+        pop_total::int4 AS "popTotal"
+      FROM population_snapshots
+      WHERE item_id = ${itemId}
+      ORDER BY captured_at DESC
+      LIMIT 1
+    `,
   ]);
 
   const item = itemRows[0];
@@ -164,6 +178,7 @@ export async function getItemById(itemId: number): Promise<ItemDetail | null> {
     undervalued: undervaluedRows[0] ?? null,
     sealedEv: sealedEvRows[0] ?? null,
     liquidity,
+    population: populationRows[0] ?? null,
   };
 }
 
