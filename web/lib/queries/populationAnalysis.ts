@@ -22,6 +22,11 @@ import type { Tcg } from "@/lib/constants";
 // "pop 50, pop 100... plus de pop 2000"), auquel cas le filtre est appliqué
 // en SQL (pas en JS après coup) pour rester correct même si le nombre de
 // candidats dépasse un jour `hardCap`.
+//
+// Exclusion PERMANENTE (pas un filtre désactivable) : Common/Uncommon, cf.
+// `_EXCLUDE_LOW_INTEREST_RARITY_SQL` ci-dessous -- demande utilisateur, un
+// pop_total de 2-3 sur ces rarétés ne signale rien (personne ne les envoie
+// en gradation), pas une vraie rareté.
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface RawRow {
@@ -150,6 +155,20 @@ function popCountFilterFragment(range?: PopulationCountRange) {
   return max != null ? sql`AND l.pop_total >= ${min} AND l.pop_total <= ${max}` : sql`AND l.pop_total >= ${min}`;
 }
 
+// Exclusion permanente Common/Uncommon (demande utilisateur, "pour le bien
+// de Pokémon et One Piece" -- pas un pill désactivable comme les autres
+// filtres). Motif : un pop_total de 2-3 sur ces rarétés ne veut rien dire
+// -- personne ne les envoie en gradation (vérifié en base 2026-08-10 :
+// pop_total moyen Common/Uncommon = 105/56 Pokémon, 5/4 One Piece, contre
+// 995+ dès Holo Rare côté Pokémon et 26+ dès Rare côté One Piece) -- donc un
+// petit total y signale juste "personne n'a essayé", pas une vraie rareté
+// en grade élevé. `rarity IS NULL` reste ADMIS (carte pas encore classée,
+// cf. même raisonnement que _ITEMS_FOR_SET_SQL côté pricecharting.py) --
+// seule une valeur explicitement connue comme Common/Uncommon est exclue.
+// Même vocabulaire exact des deux côtés (vérifié en base) : pas besoin de
+// brancher par tcg.
+const _EXCLUDE_LOW_INTEREST_RARITY_SQL = sql`AND (i.rarity IS NULL OR i.rarity NOT IN ('Common', 'Uncommon'))`;
+
 async function fetchCandidates({
   tcg,
   priceGrade = "ungraded",
@@ -197,6 +216,7 @@ async function fetchCandidates({
     JOIN items i ON i.id = l.item_id
     LEFT JOIN latest_price lp ON lp.item_id = l.item_id
     WHERE 1=1
+      ${_EXCLUDE_LOW_INTEREST_RARITY_SQL}
       ${tcg ? sql`AND i.tcg = ${tcg}` : sql``}
       ${priceFilterFragment(priceGrade, priceRange)}
       ${popCountFilterFragment(popRange)}

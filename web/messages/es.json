@@ -394,7 +394,7 @@
     "title": "Análisis de población",
     "description": "Población PSA/CGC real por carta -- cuántos ejemplares existen realmente en cada grado, una señal de escasez independiente del precio.",
     "methodologyLabel": "Fuente:",
-    "methodology": "Los recuentos de población (grados 6-10, PSA + CGC combinados) provienen del censo oficial de PSA/CGC, extraído de las páginas de informe de población de PriceCharting -- psacard.com/pop bloquea el acceso automatizado. Los medios grados (ej. PSA 9.5) son fusionados por PSA en el grado entero inferior. Actualizado mensualmente, alineado con la cadencia del propio censo de PSA. Los productos sellados nunca se gradúan y por tanto nunca aparecen aquí.",
+    "methodology": "Los recuentos de población (grados 6-10, PSA + CGC combinados) provienen del censo oficial de PSA/CGC, extraído de las páginas de informe de población de PriceCharting -- psacard.com/pop bloquea el acceso automatizado. Los medios grados (ej. PSA 9.5) son fusionados por PSA en el grado entero inferior. Actualizado mensualmente, alineado con la cadencia del propio censo de PSA. Los productos sellados nunca se gradúan y por tanto nunca aparecen aquí. Las cartas Common y Uncommon quedan excluidas en ambos TCG: una población de 2-3 en estas rarezas solo indica que nadie las envía a gradación, no una rareza real.",
     "filterAll": "Todos los TCG",
     "filterPriceGrade": "Grado de precio:",
     "filterMinPrice": "Rango de precio:",
