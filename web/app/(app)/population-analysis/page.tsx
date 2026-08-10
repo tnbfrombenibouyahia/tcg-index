@@ -6,8 +6,10 @@ import { PopulationAnalysisTable } from "@/components/population-analysis/Popula
 import { SourceBadges } from "@/components/ui/SourceBadge";
 import {
   getPopulationRanking,
+  POPULATION_COUNT_RANGES,
   POPULATION_PRICE_GRADES,
   POPULATION_PRICE_RANGES,
+  type PopulationCountRange,
   type PopulationPriceGrade,
   type PopulationPriceRange,
   type PopulationSort,
@@ -23,14 +25,16 @@ const PAGE_SIZE = 50;
 // que /grading-roi : filtre TCG + callout méthodologie + tableau trié. Filtre
 // prix AJOUTÉ le même jour (2ème demande, un simple seuil mini d'abord, puis
 // converti en tranches fixes -- 3ème demande, "10-50, 50-100... 10k+", cf.
-// POPULATION_PRICE_RANGES) -- contrairement à /grading-roi (toujours gaté
-// par un prix mini ungraded), ici le prix reste du contexte optionnel PAR
+// POPULATION_PRICE_RANGES). Filtre POPULATION (4ème demande, même jour --
+// "pop 50, pop 100... plus de pop 2000", cf. POPULATION_COUNT_RANGES) porte
+// sur `pop_total` (pas de grade précisé par l'utilisateur, contrairement au
+// filtre de prix). Contrairement à /grading-roi (toujours gaté par un prix
+// mini ungraded), les deux filtres ici restent du contexte optionnel PAR
 // DÉFAUT (aucune tranche active tant que l'utilisateur n'en choisit pas une)
-// puisque la page existe pour la population, pas pour la valeur -- le
-// sélecteur de grade (loose/PSA8/9/10) + tranche ne filtre qu'une fois une
-// tranche explicitement choisie (cf. getPopulationRanking).
-// Chaque ligne ouvre le détail en modale (PopulationDetailModal), même
-// convention que les autres pages d'analyse (cf. "Analyse en popup au clic").
+// puisque la page existe pour la population, pas pour la valeur (cf.
+// getPopulationRanking). Chaque ligne ouvre le détail en modale
+// (PopulationDetailModal), même convention que les autres pages d'analyse
+// (cf. "Analyse en popup au clic").
 // ─────────────────────────────────────────────────────────────────────────────
 
 const VALID_SORTS = new Set<string>([
@@ -48,9 +52,14 @@ function formatRangeBound(n: number): string {
   return `${Number.isInteger(thousands) ? thousands : thousands.toFixed(1)}k`;
 }
 
-function rangeLabel(range: PopulationPriceRange): string {
+function priceRangeLabel(range: PopulationPriceRange): string {
   const min = formatRangeBound(range.min);
   return range.max == null ? `$${min}+` : `$${min}–${formatRangeBound(range.max)}`;
+}
+
+function popRangeLabel(range: PopulationCountRange): string {
+  const min = formatRangeBound(range.min);
+  return range.max == null ? `${min}+` : `${min}–${formatRangeBound(range.max)}`;
 }
 
 export default async function PopulationAnalysisPage({
@@ -74,10 +83,13 @@ export default async function PopulationAnalysisPage({
   const priceMinRaw = Number(Array.isArray(raw.priceMin) ? raw.priceMin[0] : raw.priceMin);
   const priceRange: PopulationPriceRange | undefined = POPULATION_PRICE_RANGES.find((r) => r.min === priceMinRaw);
 
+  const popMinRaw = Number(Array.isArray(raw.popMin) ? raw.popMin[0] : raw.popMin);
+  const popRange: PopulationCountRange | undefined = POPULATION_COUNT_RANGES.find((r) => r.min === popMinRaw);
+
   const pageRaw = Number(Array.isArray(raw.page) ? raw.page[0] : raw.page);
   const page = Number.isInteger(pageRaw) && pageRaw >= 1 ? pageRaw : 1;
 
-  const { rows, totalCount } = await getPopulationRanking({ tcg, limit: PAGE_SIZE, page, sort, priceGrade, priceRange });
+  const { rows, totalCount } = await getPopulationRanking({ tcg, limit: PAGE_SIZE, page, sort, priceGrade, priceRange, popRange });
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   const searchParamsForLinks = new URLSearchParams(
@@ -132,10 +144,22 @@ export default async function PopulationAnalysisPage({
           </FilterPill>
           {POPULATION_PRICE_RANGES.map((r) => (
             <FilterPill key={r.min} active={priceRange?.min === r.min} href={buildHref(searchParamsForLinks, { priceMin: String(r.min) })}>
-              {rangeLabel(r)}
+              {priceRangeLabel(r)}
             </FilterPill>
           ))}
         </div>
+      </div>
+
+      <div className="mb-6 flex flex-wrap items-center gap-1.5">
+        <span className="mr-1 text-xs text-muted-foreground">{t("filterPopRange")}</span>
+        <FilterPill active={!popRange} href={buildHref(searchParamsForLinks, { popMin: undefined })}>
+          {t("filterPriceAll")}
+        </FilterPill>
+        {POPULATION_COUNT_RANGES.map((r) => (
+          <FilterPill key={r.min} active={popRange?.min === r.min} href={buildHref(searchParamsForLinks, { popMin: String(r.min) })}>
+            {popRangeLabel(r)}
+          </FilterPill>
+        ))}
       </div>
 
       {rows.length === 0 ? (

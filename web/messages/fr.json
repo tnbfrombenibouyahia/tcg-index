@@ -399,6 +399,7 @@
     "filterPriceGrade": "Grade de prix :",
     "filterMinPrice": "Tranche de prix :",
     "filterPriceAll": "Toutes",
+    "filterPopRange": "Population :",
     "count": "{count} cartes",
     "emptyTitle": "Aucune donnée de population",
     "emptyDescription": "Aucune carte n'a de donnée de population PSA/CGC publiée pour l'instant.",

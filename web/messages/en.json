@@ -399,6 +399,7 @@
     "filterPriceGrade": "Price grade:",
     "filterMinPrice": "Price range:",
     "filterPriceAll": "Any",
+    "filterPopRange": "Population:",
     "count": "{count} cards",
     "emptyTitle": "No population data yet",
     "emptyDescription": "No card currently has published PSA/CGC population data.",

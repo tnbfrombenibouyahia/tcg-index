@@ -16,11 +16,12 @@ import type { Tcg } from "@/lib/constants";
 // contexte de valeur affiché à côté de la population. Par défaut c'est
 // juste du contexte, jamais un filtre implicite (une carte sans prix gradé
 // connu reste dans le classement) -- SAUF si l'appelant fournit
-// `priceGrade`/`priceMin`/`priceMax` (demande utilisateur 2026-08-10 :
-// d'abord un simple seuil mini, puis des tranches fixes -- "10-50, 50-100,
-// 100-250... 10k+"), auquel cas le filtre est appliqué en SQL (pas en JS
-// après coup) pour rester correct même si le nombre de candidats dépasse un
-// jour `hardCap`.
+// `priceGrade`/`priceRange` (demande utilisateur 2026-08-10 : d'abord un
+// simple seuil mini, puis des tranches fixes -- "10-50, 50-100, 100-250...
+// 10k+") et/ou `popRange` (même jour, même mécanique mais sur `pop_total` --
+// "pop 50, pop 100... plus de pop 2000"), auquel cas le filtre est appliqué
+// en SQL (pas en JS après coup) pour rester correct même si le nombre de
+// candidats dépasse un jour `hardCap`.
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface RawRow {
@@ -121,15 +122,45 @@ function priceFilterFragment(priceGrade: PopulationPriceGrade, range?: Populatio
   }
 }
 
+// Tranches de POPULATION proposées au filtre (demande utilisateur : "pop 50,
+// pop 100, pop 200, pop 500, pop 1000, pop 2000, plus de pop 2000") -- même
+// mécanique que POPULATION_PRICE_RANGES (min/max, dernière tranche ouverte),
+// mais porte sur `pop_total` (colonne "Total" -- la population TOUTES notes
+// confondues, cf. schéma) plutôt que sur un grade précis : l'utilisateur n'a
+// mentionné aucun grade pour ce filtre-ci, contrairement au filtre de prix
+// où loose/PSA8/9/10 étaient explicitement nommés.
+export interface PopulationCountRange {
+  min: number;
+  max: number | null;
+}
+
+export const POPULATION_COUNT_RANGES: readonly PopulationCountRange[] = [
+  { min: 0, max: 50 },
+  { min: 50, max: 100 },
+  { min: 100, max: 200 },
+  { min: 200, max: 500 },
+  { min: 500, max: 1000 },
+  { min: 1000, max: 2000 },
+  { min: 2000, max: null },
+];
+
+function popCountFilterFragment(range?: PopulationCountRange) {
+  if (!range) return sql``;
+  const { min, max } = range;
+  return max != null ? sql`AND l.pop_total >= ${min} AND l.pop_total <= ${max}` : sql`AND l.pop_total >= ${min}`;
+}
+
 async function fetchCandidates({
   tcg,
   priceGrade = "ungraded",
   priceRange,
+  popRange,
   hardCap = 20000,
 }: {
   tcg?: Tcg;
   priceGrade?: PopulationPriceGrade;
   priceRange?: PopulationPriceRange;
+  popRange?: PopulationCountRange;
   hardCap?: number;
 }): Promise<PopulationRow[]> {
   const rows = await sql<RawRow[]>`
@@ -168,6 +199,7 @@ async function fetchCandidates({
     WHERE 1=1
       ${tcg ? sql`AND i.tcg = ${tcg}` : sql``}
       ${priceFilterFragment(priceGrade, priceRange)}
+      ${popCountFilterFragment(popRange)}
     ORDER BY i.id
     LIMIT ${hardCap}
   `;
@@ -211,6 +243,7 @@ export interface PopulationRankingParams {
   sort?: PopulationSort;
   priceGrade?: PopulationPriceGrade;
   priceRange?: PopulationPriceRange;
+  popRange?: PopulationCountRange;
   limit?: number;
   page?: number;
 }
@@ -225,10 +258,11 @@ export async function getPopulationRanking({
   sort = "psa10_asc",
   priceGrade = "ungraded",
   priceRange,
+  popRange,
   limit = 50,
   page = 1,
 }: PopulationRankingParams): Promise<PopulationRankingResult> {
-  const candidates = await fetchCandidates({ tcg, priceGrade, priceRange });
+  const candidates = await fetchCandidates({ tcg, priceGrade, priceRange, popRange });
   const sorted = sortRows(candidates, sort);
   const offset = (Math.max(1, page) - 1) * limit;
   return { rows: sorted.slice(offset, offset + limit), totalCount: sorted.length };
