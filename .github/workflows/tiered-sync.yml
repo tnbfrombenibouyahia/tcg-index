@@ -21,8 +21,11 @@ name: Tiered grades & sales sync
 # complète tous les ~3 mois. Volume comparable à tout le catalogue EN
 # réparti sur un seul palier hebdomadaire, cf. ingestion/orchestrator.py TIERS.
 #
-# Le référentiel est déjà à jour via daily-sync.yml (quotidien), donc
-# --skip-items partout ici.
+# --skip-items partout ici : le référentiel API TCG a sa propre cadence
+# mensuelle depuis 2026-08-10 (cf. .github/workflows/monthly-items-sync.yml),
+# ni ce workflow ni daily-sync.yml n'en ont besoin -- il n'apporte que
+# `items.release_date`/nouveaux sets, pas les prix/gradation/ventes des items
+# déjà connus (PriceCharting).
 #
 # Horaires décalés le 2026-08-01 (cf. daily-sync.yml pour le contexte complet
 # de l'incident) : tôt dans la nuit heure locale FR/SE (UTC+2 l'été) pour
@@ -93,5 +96,4 @@ jobs:
 
       - run: python -m ingestion.orchestrator --tier ${{ steps.tier.outputs.value }} --skip-items
         env:
-          APITCG_API_KEY: ${{ secrets.APITCG_API_KEY }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}

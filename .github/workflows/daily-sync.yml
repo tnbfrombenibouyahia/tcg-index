@@ -1,7 +1,12 @@
 name: Daily sync
 
-# Référentiel (API TCG) + prix ungraded (PriceCharting) sur tous les sets
-# mappés. Voir ingestion/orchestrator.py pour le détail des étapes.
+# Prix ungraded (PriceCharting) sur tous les sets mappés. Voir
+# ingestion/orchestrator.py pour le détail des étapes.
+#
+# --skip-items depuis 2026-08-10 : le référentiel API TCG a sa propre cadence
+# mensuelle désormais (quota 1000 req/mois épuisé en quelques jours en
+# quotidien, cf. .github/workflows/monthly-items-sync.yml et mémoire projet
+# "apitcg_quota") -- APITCG_API_KEY n'est donc plus nécessaire ici.
 #
 # 01:17 UTC (~03h17 heure d'été FR/SE, UTC+2) plutôt qu'une heure ronde comme
 # avant (06:00 UTC) -- décidé le 2026-08-01 (le run du jour n'avait toujours
@@ -35,7 +40,6 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - run: python -m ingestion.orchestrator
+      - run: python -m ingestion.orchestrator --skip-items
         env:
-          APITCG_API_KEY: ${{ secrets.APITCG_API_KEY }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}

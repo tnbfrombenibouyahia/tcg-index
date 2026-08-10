@@ -9,8 +9,8 @@ usage manuel/debug ; ce script est l'enchaînement pensé pour un cron
 
 Deux natures de sync, pas une seule, à cause du coût très différent des deux
 opérations PriceCharting (cf. pricecharting.py) :
-- quotidien, tous les sets mappés : référentiel (API TCG) + prix ungraded
-  (1 requête HTTP par page de set -- pas cher, ~226 sets en 30 min).
+- quotidien, tous les sets mappés : prix ungraded (1 requête HTTP par page
+  de set -- pas cher, ~226 sets en 30 min).
 - `--tier` : gradation PSA + historique de ventes individuelles eBay/
   TCGPlayer/... (1 requête HTTP PAR CARTE en plus -- tout le catalogue
   (~34k singles) prendrait ~35h, impossible à faire tenir dans un run,
@@ -24,9 +24,20 @@ Le palier "vintage" (36+ mois, ~77% du catalogue Pokémon à lui seul) est en
 plus trop gros pour un seul run même à sa propre fréquence : il est découpé
 en tranches tournantes (`rotation_slices`) réparties sur plusieurs semaines,
 cf. `_current_vintage_slice` et `pricecharting._slice_set_codes`. Les bornes
-d'âge se calculent depuis `items.release_date` (rempli à 100% pour les deux
-TCG par le sync référentiel quotidien) -- pas de liste de sets codée en dur,
-le système suit tout seul les nouvelles sorties.
+d'âge se calculent depuis `items.release_date` (rempli par le sync
+référentiel API TCG, cf. ci-dessous) -- pas de liste de sets codée en dur,
+le système suit tout seul les nouvelles sorties, à la cadence du référentiel.
+
+Référentiel (API TCG, `--items-only`) retiré du run quotidien le 2026-08-10 :
+son quota mensuel (1000 req) s'épuisait en quelques jours malgré le mode
+incrémental (cf. mémoire projet "apitcg_quota"), pour un bénéfice quotidien
+quasi nul -- de nouveaux sets Pokémon/One Piece ne sortent pas chaque jour.
+Passé en cron mensuel (cf. .github/workflows/monthly-items-sync.yml) :
+largement suffisant pour capter les nouvelles sorties, et le prix/la
+gradation/les ventes des items déjà connus n'en dépendent pas (PriceCharting
+matche sur `items` existant, ne le peuple pas). Rattrapable à la main entre
+deux runs mensuels via `python -m ingestion.orchestrator --items-only` (ou
+`ingestion.sources.apitcg` directement pour un seul tcg).
 
 JustTCG n'est volontairement pas appelé ici : en pause depuis l'incident 401
 du 2026-07-29 (cf. mémoire projet), reprise à la main quand voulu via
@@ -483,7 +494,11 @@ def main() -> int:
     )
     parser.add_argument(
         "--skip-items", action="store_true",
-        help="Saute la sync référentiel API TCG (un run --tier n'a pas besoin de la refaire, déjà faite par le run quotidien).",
+        help=(
+            "Saute la sync référentiel API TCG. Toujours passé par daily-sync.yml et tiered-sync.yml "
+            "depuis 2026-08-10 -- le référentiel a sa propre cadence mensuelle (cf. --items-only), le "
+            "run quotidien/--tier n'a plus jamais besoin de le refaire."
+        ),
     )
     parser.add_argument(
         "--ebay-listings", action="store_true",
@@ -501,7 +516,33 @@ def main() -> int:
             "hebdomadaire (cf. .github/workflows/rarity-backfill-sync.yml)."
         ),
     )
+    parser.add_argument(
+        "--items-only", action="store_true",
+        help=(
+            "Lance UNIQUEMENT la sync référentiel API TCG (cf. run_items_sync) et sort -- retiré du run "
+            "quotidien le 2026-08-10 (quota mensuel 1000 req épuisé en quelques jours malgré le mode "
+            "incrémental, cf. mémoire projet 'apitcg_quota'), cadence mensuelle désormais (cf. "
+            ".github/workflows/monthly-items-sync.yml). PriceCharting (run quotidien/--tier) ne dépend "
+            "PAS de ce sync pour les items déjà connus -- seule la détection de nouveaux sets EN en pâtit "
+            "entre deux runs mensuels, rattrapable à la main via `python -m ingestion.sources.apitcg`."
+        ),
+    )
     args = parser.parse_args()
+
+    if args.items_only:
+        started = time.monotonic()
+        had_errors = False
+        try:
+            errors = run_items_sync("monthly")
+            had_errors = bool(errors)
+            for exc in errors:
+                print(f"\n!! Erreur pendant la sync référentiel : {exc}")
+        except Exception as exc:
+            had_errors = True
+            print(f"\n!! Erreur pendant la sync référentiel : {exc}")
+        elapsed = time.monotonic() - started
+        print(f"\n=== Terminé en {elapsed / 60:.1f} min ({'avec erreurs' if had_errors else 'OK'}) ===")
+        return 1 if had_errors else 0
 
     if args.ebay_listings:
         started = time.monotonic()
