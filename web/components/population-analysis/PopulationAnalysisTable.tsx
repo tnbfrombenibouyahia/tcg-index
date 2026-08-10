@@ -1,15 +1,19 @@
 import { getTranslations } from "next-intl/server";
 import type { PopulationRow } from "@/lib/types";
+import { GRADE_LABELS } from "@/lib/constants";
+import type { PopulationPriceGrade } from "@/lib/queries/populationAnalysis";
 import { SortHeader } from "@/components/ui/SortHeader";
 import { PopulationAnalysisTableBody } from "./PopulationAnalysisTableBody";
 
 export async function PopulationAnalysisTable({
   rows,
   sort = "",
+  priceGrade = "ungraded",
   searchParams = new URLSearchParams(),
 }: {
   rows: PopulationRow[];
   sort?: string;
+  priceGrade?: PopulationPriceGrade;
   searchParams?: URLSearchParams;
 }) {
   const t = await getTranslations("populationAnalysis.table");
@@ -31,6 +35,7 @@ export async function PopulationAnalysisTable({
               />
             </th>
             <th className="px-4 py-3">{t("tcg")}</th>
+            <th className="px-4 py-3 text-right">{GRADE_LABELS[priceGrade]}</th>
             <th className="px-4 py-3 text-right">{t("grade6")}</th>
             <th className="px-4 py-3 text-right">{t("grade7")}</th>
             <th className="px-4 py-3 text-right">{t("grade8")}</th>
@@ -57,7 +62,7 @@ export async function PopulationAnalysisTable({
             </th>
           </tr>
         </thead>
-        <PopulationAnalysisTableBody rows={rows} />
+        <PopulationAnalysisTableBody rows={rows} priceGrade={priceGrade} />
       </table>
     </div>
   );

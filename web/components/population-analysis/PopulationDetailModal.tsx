@@ -108,12 +108,24 @@ export function PopulationDetailModal({ row, onClose }: { row: PopulationRow; on
               <p className="mt-2 text-xs text-muted-foreground">{t("asOf", { date: formatDate(row.population.capturedAt) })}</p>
 
               {/* Price context (optional -- population and price are independent pipelines) */}
-              {(row.ungradedPrice != null || row.psa10Price != null) && (
-                <div className="mt-4 grid grid-cols-2 gap-3">
+              {(row.ungradedPrice != null || row.psa8Price != null || row.psa9Price != null || row.psa10Price != null) && (
+                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {row.ungradedPrice != null && (
                     <div>
                       <p className="text-[11px] text-muted-foreground">{t("ungradedPriceLabel")}</p>
                       <p className="text-sm font-semibold tabular-nums">{formatUsd(row.ungradedPrice)}</p>
+                    </div>
+                  )}
+                  {row.psa8Price != null && (
+                    <div>
+                      <p className="text-[11px] text-muted-foreground">PSA 8</p>
+                      <p className="text-sm font-semibold tabular-nums">{formatUsd(row.psa8Price)}</p>
+                    </div>
+                  )}
+                  {row.psa9Price != null && (
+                    <div>
+                      <p className="text-[11px] text-muted-foreground">PSA 9</p>
+                      <p className="text-sm font-semibold tabular-nums">{formatUsd(row.psa9Price)}</p>
                     </div>
                   )}
                   {row.psa10Price != null && (

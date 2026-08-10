@@ -11,11 +11,15 @@ import type { Tcg } from "@/lib/constants";
 // population connue est du même ordre de grandeur que grading_roi_inputs
 // (~14k), largement sous le plafond.
 //
-// `ungradedPrice`/`psa10Price` viennent de `grading_roi_inputs` (déjà
-// matérialisé pour /grading-roi) en LEFT JOIN -- contexte de valeur affiché
-// à côté de la population, jamais un filtre : une carte sans prix gradé
-// connu reste dans le classement (population et prix sont deux pipelines
-// indépendants, pas toujours synchronisés sur les mêmes cartes).
+// `ungradedPrice`/`psa8Price`/`psa9Price`/`psa10Price` viennent de
+// `grading_roi_inputs` (déjà matérialisé pour /grading-roi) en LEFT JOIN --
+// contexte de valeur affiché à côté de la population. Par défaut c'est
+// juste du contexte, jamais un filtre implicite (une carte sans prix gradé
+// connu reste dans le classement) -- SAUF si l'appelant fournit
+// `priceGrade`/`minPrice` (demande utilisateur 2026-08-10 : "afficher
+// uniquement les cartes de minimum X € en loose/PSA8/9/10"), auquel cas le
+// filtre est appliqué en SQL (pas en JS après coup) pour rester correct même
+// si le nombre de candidats dépasse un jour `hardCap`.
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface RawRow {
@@ -28,6 +32,8 @@ interface RawRow {
   code: string | null;
   rarity: string | null;
   ungradedPrice: number | null;
+  psa8Price: number | null;
+  psa9Price: number | null;
   psa10Price: number | null;
   capturedAt: string;
   popGrade6: number;
@@ -49,6 +55,8 @@ function toRow(r: RawRow): PopulationRow {
     code: r.code,
     rarity: r.rarity,
     ungradedPrice: r.ungradedPrice,
+    psa8Price: r.psa8Price,
+    psa9Price: r.psa9Price,
     psa10Price: r.psa10Price,
     population: {
       capturedAt: r.capturedAt,
@@ -62,13 +70,40 @@ function toRow(r: RawRow): PopulationRow {
   };
 }
 
+// Paliers de prix proposés au filtre -- volontairement restreint à
+// loose/PSA8/9/10 (demande utilisateur), pas les 6 grades de
+// price_snapshots.grade (PSA7/9.5 exclus, pas demandés).
+export type PopulationPriceGrade = "ungraded" | "psa8" | "psa9" | "psa10";
+
+// Colonne `grading_roi_inputs` correspondante -- un seul point de vérité
+// pour la correspondance grade -> colonne, réutilisé par le fragment SQL
+// ci-dessous ET par la page (validation du paramètre d'URL).
+export const POPULATION_PRICE_GRADES: readonly PopulationPriceGrade[] = ["ungraded", "psa8", "psa9", "psa10"];
+
+function priceFilterFragment(priceGrade: PopulationPriceGrade, minPrice?: number) {
+  if (!minPrice) return sql``;
+  switch (priceGrade) {
+    case "psa8":
+      return sql`AND lp.psa8_price >= ${minPrice}`;
+    case "psa9":
+      return sql`AND lp.psa9_price >= ${minPrice}`;
+    case "psa10":
+      return sql`AND lp.psa10_price >= ${minPrice}`;
+    case "ungraded":
+    default:
+      return sql`AND lp.ungraded_price >= ${minPrice}`;
+  }
+}
+
 async function fetchCandidates({
   tcg,
-  itemId,
+  priceGrade = "ungraded",
+  minPrice,
   hardCap = 20000,
 }: {
   tcg?: Tcg;
-  itemId?: number;
+  priceGrade?: PopulationPriceGrade;
+  minPrice?: number;
   hardCap?: number;
 }): Promise<PopulationRow[]> {
   const rows = await sql<RawRow[]>`
@@ -77,7 +112,7 @@ async function fetchCandidates({
       FROM population_snapshots
       ORDER BY item_id, captured_at DESC
     ), latest_price AS (
-      SELECT DISTINCT ON (item_id) item_id, ungraded_price, psa10_price
+      SELECT DISTINCT ON (item_id) item_id, ungraded_price, psa8_price, psa9_price, psa10_price
       FROM grading_roi_inputs
       ORDER BY item_id, captured_at DESC
     )
@@ -91,6 +126,8 @@ async function fetchCandidates({
       i.code,
       i.rarity,
       lp.ungraded_price::float8 AS "ungradedPrice",
+      lp.psa8_price::float8     AS "psa8Price",
+      lp.psa9_price::float8     AS "psa9Price",
       lp.psa10_price::float8    AS "psa10Price",
       l.captured_at::text       AS "capturedAt",
       l.pop_grade6::int4        AS "popGrade6",
@@ -103,18 +140,13 @@ async function fetchCandidates({
     JOIN items i ON i.id = l.item_id
     LEFT JOIN latest_price lp ON lp.item_id = l.item_id
     WHERE 1=1
-      ${itemId ? sql`AND i.id = ${itemId}` : sql``}
       ${tcg ? sql`AND i.tcg = ${tcg}` : sql``}
+      ${priceFilterFragment(priceGrade, minPrice)}
     ORDER BY i.id
-    ${itemId ? sql`` : sql`LIMIT ${hardCap}`}
+    LIMIT ${hardCap}
   `;
 
   return rows.map(toRow);
-}
-
-export async function getPopulationForItem(itemId: number): Promise<PopulationRow | null> {
-  const [row] = await fetchCandidates({ itemId });
-  return row ?? null;
 }
 
 export type PopulationSort =
@@ -151,6 +183,8 @@ function sortRows(rows: PopulationRow[], sort?: PopulationSort): PopulationRow[]
 export interface PopulationRankingParams {
   tcg?: Tcg;
   sort?: PopulationSort;
+  priceGrade?: PopulationPriceGrade;
+  minPrice?: number;
   limit?: number;
   page?: number;
 }
@@ -163,10 +197,12 @@ export interface PopulationRankingResult {
 export async function getPopulationRanking({
   tcg,
   sort = "psa10_asc",
+  priceGrade = "ungraded",
+  minPrice,
   limit = 50,
   page = 1,
 }: PopulationRankingParams): Promise<PopulationRankingResult> {
-  const candidates = await fetchCandidates({ tcg });
+  const candidates = await fetchCandidates({ tcg, priceGrade, minPrice });
   const sorted = sortRows(candidates, sort);
   const offset = (Math.max(1, page) - 1) * limit;
   return { rows: sorted.slice(offset, offset + limit), totalCount: sorted.length };

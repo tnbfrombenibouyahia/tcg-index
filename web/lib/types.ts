@@ -318,6 +318,8 @@ export interface PopulationRow {
   code: string | null;
   rarity: string | null;
   ungradedPrice: number | null;
+  psa8Price: number | null;
+  psa9Price: number | null;
   psa10Price: number | null;
   population: PopulationCalc;
 }
