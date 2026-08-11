@@ -409,6 +409,27 @@
     "statMedianPop": "Median population",
     "statMedianPsa10": "Median PSA 10 price",
     "histogramTitle": "Population distribution",
+    "capHeatmapTitle": "Capitalization by grade",
+    "capHeatmapDescription": "Sum of (population × price) at each PSA grade, over the current filtered set -- how much $ value sits at that grade tier. Limited to PSA 8-10, the only grades with a known price.",
+    "capHeatmapLegend": "Darker = higher capitalization",
+    "correlationTitle": "Population × price correlation (PSA10)",
+    "correlationDescription": "Each point is a card: PSA10 population on the x-axis, PSA10 price on the y-axis (log scales). The r coefficient (-1 to 1) measures the correlation on log-transformed values over the full filtered set -- near -1: rarer cards tend to be pricier; near 0: no apparent link.",
+    "correlationEmpty": "Not enough cards with both a population and a PSA10 price to compute a correlation.",
+    "correlationDirection": {
+      "positive": "positive correlation",
+      "negative": "negative correlation",
+      "none": "no correlation"
+    },
+    "correlationStrength": {
+      "veryStrong": "very strong",
+      "strong": "strong",
+      "moderate": "moderate",
+      "weak": "weak",
+      "veryWeak": "near zero"
+    },
+    "correlationSampleSize": "{count} cards",
+    "correlationTooltipPop": "Population: {count}",
+    "correlationAxes": "X: PSA10 population · Y: PSA10 price (both log scale)",
     "table": {
       "card": "Card",
       "language": "Language",

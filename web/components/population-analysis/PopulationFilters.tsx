@@ -70,7 +70,12 @@ export async function PopulationFilters({
   const t = await getTranslations("populationAnalysis");
 
   return (
-    <div className="card-glass sticky top-6 flex flex-col gap-5 rounded-2xl p-5">
+    // `sticky top-6` vit désormais sur le conteneur <aside> parent (cf.
+    // page.tsx, mise en page 50/50 du 2026-08-11) qui regroupe filtres +
+    // analyse -- pas ici, pour ne pas coller CE bloc seul pendant que
+    // PopulationSummary/CapHeatmap/Correlation juste en dessous défilent
+    // indépendamment.
+    <div className="card-glass flex flex-col gap-5 rounded-2xl p-5">
       <div>
         <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("filtersTitle")}</h2>
       </div>

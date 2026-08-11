@@ -4,6 +4,8 @@ import { Pagination } from "@/components/ui/Pagination";
 import { PopulationFilters } from "@/components/population-analysis/PopulationFilters";
 import { PopulationSearchBar } from "@/components/population-analysis/PopulationSearchBar";
 import { PopulationSummary } from "@/components/population-analysis/PopulationSummary";
+import { PopulationCapHeatmap } from "@/components/population-analysis/PopulationCapHeatmap";
+import { PopulationCorrelation } from "@/components/population-analysis/PopulationCorrelation";
 import { PopulationAnalysisTable } from "@/components/population-analysis/PopulationAnalysisTable";
 import { SourceBadges } from "@/components/ui/SourceBadge";
 import {
@@ -51,7 +53,19 @@ const PAGE_SIZE = 50;
 // de droite faisait doublon. Prix Raw + PSA10 ajoutés au tableau à la place
 // (même message utilisateur), toujours affichés côte à côte désormais au
 // lieu d'une seule colonne dont le prix dépendait du filtre "Grade de prix"
-// sélectionné à gauche.
+// sélectionné à gauche, et rendus triables juste après (clic sur l'en-tête).
+//
+// Repensée en 50/50 le 2026-08-11 (nouvelle demande utilisateur, "je te
+// laisse gérer") : listing (recherche + tableau) à droite, critères de
+// sélection ET analyse regroupés dans la moitié gauche -- filtres,
+// PopulationSummary (chiffres-clés + histogramme), puis deux nouveaux blocs
+// demandés dans le même message : PopulationCapHeatmap (grade × TCG, mais en
+// $ de capitalisation -- population × prix à ce grade -- pas juste un
+// comptage comme l'ancien heatmap retiré la veille, donc pas un doublon) et
+// PopulationCorrelation (nuage log-log population×prix PSA10 + coefficient
+// de Pearson). La colonne gauche est généralement plus courte que le
+// tableau (jusqu'à 50 lignes) -- `sticky` pour qu'elle reste visible pendant
+// le scroll du listing.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const VALID_SORTS = new Set<string>([
@@ -114,9 +128,12 @@ export default async function PopulationAnalysisPage({
         <SourceBadges sources={["pricecharting"]} />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[260px_minmax(0,1fr)_340px]">
-        <aside className="xl:self-start">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <aside className="flex flex-col gap-6 lg:sticky lg:top-6 lg:self-start">
           <PopulationFilters tcg={tcg} priceGrade={priceGrade} priceRange={priceRange} popRange={popRange} searchParams={searchParamsForLinks} />
+          <PopulationSummary totalCount={totalCount} stats={stats} />
+          <PopulationCapHeatmap cells={stats.capHeatmap} />
+          <PopulationCorrelation stats={stats.correlation} />
         </aside>
 
         <div className="min-w-0">
@@ -134,10 +151,6 @@ export default async function PopulationAnalysisPage({
             </>
           )}
         </div>
-
-        <aside className="xl:self-start">
-          <PopulationSummary totalCount={totalCount} stats={stats} />
-        </aside>
       </div>
     </div>
   );

@@ -354,10 +354,125 @@ export interface PopulationHistogramBucket {
   count: number;
 }
 
+// Heatmap de CAPITALISATION par grade (demande utilisateur 2026-08-11, colonne
+// "analyse" de gauche) -- PAS un comptage de population comme l'ancien heatmap
+// grade×TCG retiré la veille (jugé redondant avec celui déjà présent dans le
+// tableau) : ici chaque cellule = Σ (population à ce grade × prix à ce grade)
+// sur l'ensemble filtré, un proxy de "combien de valeur $ est immobilisée à ce
+// palier de note". Limité à 8/9/10 -- ce sont les seuls grades pour lesquels on
+// a un prix (grading_roi_inputs ne couvre que ungraded/psa8/psa9/psa10, cf.
+// POPULATION_PRICE_GRADES) ; les grades 6/7 ont une population mais aucun prix
+// connu, donc aucune capitalisation calculable. Une carte sans prix à un grade
+// donné contribue 0 à cette grille (pas d'estimation), plutôt que d'être
+// exclue du dénominateur -- la métrique reste une somme, pas une moyenne.
+const CAP_GRADES = [8, 9, 10] as const;
+export type PopulationCapGrade = (typeof CAP_GRADES)[number];
+
+const CAP_PRICE_KEY: Record<PopulationCapGrade, "psa8Price" | "psa9Price" | "psa10Price"> = {
+  8: "psa8Price",
+  9: "psa9Price",
+  10: "psa10Price",
+};
+const CAP_POP_KEY: Record<PopulationCapGrade, "popGrade8" | "popGrade9" | "popGrade10"> = {
+  8: "popGrade8",
+  9: "popGrade9",
+  10: "popGrade10",
+};
+
+export interface PopulationCapHeatmapCell {
+  tcg: Tcg;
+  grade: PopulationCapGrade;
+  totalCap: number;
+}
+
+function computeCapHeatmap(rows: PopulationRow[]): PopulationCapHeatmapCell[] {
+  const tcgs: Tcg[] = ["pokemon", "one-piece"];
+  const cells: PopulationCapHeatmapCell[] = [];
+  for (const tcg of tcgs) {
+    const tcgRows = rows.filter((r) => r.tcg === tcg);
+    for (const grade of CAP_GRADES) {
+      const priceKey = CAP_PRICE_KEY[grade];
+      const popKey = CAP_POP_KEY[grade];
+      const totalCap = tcgRows.reduce((sum, r) => {
+        const price = r[priceKey];
+        return price == null ? sum : sum + price * r.population[popKey];
+      }, 0);
+      cells.push({ tcg, grade, totalCap });
+    }
+  }
+  return cells;
+}
+
+// Corrélation population × prix PSA10 (demande utilisateur 2026-08-11, même
+// message que le heatmap ci-dessus) -- PSA10 spécifiquement (pas les autres
+// grades) : c'est la paire population/prix la plus complète en base et déjà
+// mise en avant partout ailleurs sur cette page (colonne triable, chiffre-clé
+// "Prix médian PSA 10"). Pearson sur les valeurs LOG-transformées, pas les
+// valeurs brutes -- population et prix suivent tous les deux une distribution
+// à longue traîne (quelques cartes à population/prix énorme, l'immense
+// majorité petite) ; une corrélation linéaire sur les valeurs brutes serait
+// dominée par une poignée d'outliers et ne refléterait pas la relation
+// "typique" carte par carte. `points` échantillonné (max
+// CORRELATION_MAX_POINTS) pour le nuage de points -- pas les N premières
+// lignes (biaiserait vers l'ordre de tri actuel de la table), un pas régulier
+// sur l'ensemble trié par population pour rester représentatif sur toute la
+// plage, tout en gardant `r`/`sampleSize` calculés sur l'ensemble filtré
+// COMPLET (jamais juste l'échantillon affiché).
+const CORRELATION_MAX_POINTS = 400;
+
+export interface PopulationCorrelationPoint {
+  pop: number;
+  price: number;
+}
+
+export interface PopulationCorrelation {
+  r: number | null;
+  sampleSize: number;
+  points: PopulationCorrelationPoint[];
+}
+
+function pearson(xs: number[], ys: number[]): number | null {
+  const n = xs.length;
+  if (n < 2) return null;
+  const meanX = xs.reduce((a, b) => a + b, 0) / n;
+  const meanY = ys.reduce((a, b) => a + b, 0) / n;
+  let num = 0;
+  let denX = 0;
+  let denY = 0;
+  for (let i = 0; i < n; i++) {
+    const dx = xs[i] - meanX;
+    const dy = ys[i] - meanY;
+    num += dx * dy;
+    denX += dx * dx;
+    denY += dy * dy;
+  }
+  if (denX === 0 || denY === 0) return null;
+  return num / Math.sqrt(denX * denY);
+}
+
+function computeCorrelation(rows: PopulationRow[]): PopulationCorrelation {
+  const valid = rows.filter((r) => r.psa10Price != null && r.psa10Price > 0 && r.population.popGrade10 > 0);
+  const r = pearson(
+    valid.map((row) => Math.log(row.population.popGrade10)),
+    valid.map((row) => Math.log(row.psa10Price as number))
+  );
+
+  const sortedByPop = [...valid].sort((a, b) => a.population.popGrade10 - b.population.popGrade10);
+  const step = Math.max(1, Math.floor(sortedByPop.length / CORRELATION_MAX_POINTS));
+  const points: PopulationCorrelationPoint[] = [];
+  for (let i = 0; i < sortedByPop.length; i += step) {
+    points.push({ pop: sortedByPop[i].population.popGrade10, price: sortedByPop[i].psa10Price as number });
+  }
+
+  return { r, sampleSize: valid.length, points };
+}
+
 export interface PopulationStats {
   medianPopTotal: number;
   medianPsa10Price: number | null;
   histogram: PopulationHistogramBucket[];
+  capHeatmap: PopulationCapHeatmapCell[];
+  correlation: PopulationCorrelation;
 }
 
 function computeStats(rows: PopulationRow[]): PopulationStats {
@@ -372,6 +487,8 @@ function computeStats(rows: PopulationRow[]): PopulationStats {
         (r) => r.population.popTotal >= range.min && (range.max == null || r.population.popTotal <= range.max)
       ).length,
     })),
+    capHeatmap: computeCapHeatmap(rows),
+    correlation: computeCorrelation(rows),
   };
 }
 

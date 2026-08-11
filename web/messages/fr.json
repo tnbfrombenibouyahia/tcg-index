@@ -409,6 +409,27 @@
     "statMedianPop": "Population médiane",
     "statMedianPsa10": "Prix médian PSA 10",
     "histogramTitle": "Distribution de la population",
+    "capHeatmapTitle": "Capitalisation par grade",
+    "capHeatmapDescription": "Somme (population × prix) à chaque grade PSA, sur l'ensemble filtré actuel -- combien de valeur $ est immobilisée à ce palier de note. Limité à PSA 8-10, les seuls grades avec un prix connu.",
+    "capHeatmapLegend": "Plus foncé = capitalisation plus élevée",
+    "correlationTitle": "Corrélation population × prix (PSA10)",
+    "correlationDescription": "Chaque point est une carte : population PSA10 en abscisse, prix PSA10 en ordonnée (échelles logarithmiques). Le coefficient r (-1 à 1) mesure la corrélation sur les valeurs log-transformées de l'ensemble filtré complet -- proche de -1 : les cartes les plus rares tendent à être les plus chères ; proche de 0 : pas de lien apparent.",
+    "correlationEmpty": "Pas assez de cartes avec à la fois une population et un prix PSA10 pour calculer une corrélation.",
+    "correlationDirection": {
+      "positive": "corrélation positive",
+      "negative": "corrélation négative",
+      "none": "pas de corrélation"
+    },
+    "correlationStrength": {
+      "veryStrong": "très forte",
+      "strong": "forte",
+      "moderate": "modérée",
+      "weak": "faible",
+      "veryWeak": "quasi nulle"
+    },
+    "correlationSampleSize": "{count} cartes",
+    "correlationTooltipPop": "Population : {count}",
+    "correlationAxes": "Abscisse : population PSA10 · Ordonnée : prix PSA10 (les deux en échelle log)",
     "table": {
       "card": "Carte",
       "language": "Langue",
