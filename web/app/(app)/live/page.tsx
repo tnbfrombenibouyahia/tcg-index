@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { LiveDashboard } from "@/components/live/LiveDashboard";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { getSyncStatus } from "@/lib/queries/syncStatus";
 import { getDataCoverage } from "@/lib/queries/dataCoverage";
 
@@ -17,6 +18,16 @@ import { getDataCoverage } from "@/lib/queries/dataCoverage";
 // `coverage` est un agrégat plein-catalogue (~74k items), calculé une fois
 // côté serveur ici plutôt que re-interrogé à chaque poll 10s côté client
 // (cf. commentaire LiveDashboard.tsx).
+//
+// Tient sur un seul écran sans scroll de page -- demande utilisateur
+// 2026-08-11. Le conteneur est borné à `100dvh - 100px` (la réserve de
+// GlobalDock, cf. AppShellLayout) et passé en `flex column` : la
+// description, auparavant un paragraphe permanent, est repliée dans
+// l'InfoTooltip du fil d'Ariane (même pattern que coverageDescription /
+// scheduleIntro plus bas -- un bloc de texte fixe de moins). LiveDashboard
+// reçoit le reste de la hauteur en `flex: 1` et répartit ses propres
+// sections dedans (cf. son commentaire) plutôt que de laisser la page
+// s'étirer.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default async function LivePage() {
@@ -25,19 +36,24 @@ export default async function LivePage() {
   const t = await getTranslations("live");
 
   return (
-    <div style={{ padding: "0 32px 40px" }}>
+    <div
+      style={{
+        padding: "0 32px 16px",
+        display: "flex",
+        flexDirection: "column",
+        height: "calc(100dvh - 100px)",
+        minHeight: "620px",
+      }}
+    >
       {/* ── Breadcrumbs ────────────────────────────────────────────────────── */}
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "18px 0 12px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "16px 0 10px", flexShrink: 0 }}>
         <span style={{ fontSize: "14px", color: "var(--foreground-muted)", fontWeight: 500, cursor: "pointer" }}>{tNav("home")}</span>
         <span style={{ fontSize: "14px", color: "var(--foreground-subtle)" }}>/</span>
         <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--foreground)", letterSpacing: "-0.01em" }}>
           {t("breadcrumbCurrent")}
         </span>
+        <InfoTooltip text={t("description")} />
       </div>
-
-      <p style={{ fontSize: "12.5px", color: "var(--foreground-muted)", margin: "-4px 0 14px", maxWidth: "640px" }}>
-        {t("description")}
-      </p>
 
       <LiveDashboard initialData={initialData} coverage={coverage} />
     </div>

@@ -44,11 +44,20 @@ function syncRunColumns() {
   `;
 }
 
+// Fenêtre de 3h ajoutée le 2026-08-11 (même incident que le fix 48h de
+// getRecentErrors juste en dessous) : 8 lignes 'running' orphelines (step
+// `prices`, un crash/timeout du workflow avant l'écriture du statut final)
+// sont restées affichées 16h à 2 jours, assez pour à elles seules écraser
+// toute la mise en page de /live. Le step le plus long observé
+// historiquement (grades_sales) plafonne à ~95 min (cf. requête faite en
+// vérifiant ce fix) -- 3h laisse largement la marge pour `prices`, dont on
+// n'a pas d'historique de durée réussie, sans jamais pouvoir masquer un run
+// réellement en cours.
 export async function getRunningSyncs(): Promise<SyncRun[]> {
   const rows = await sql<SyncRunRow[]>`
     SELECT ${syncRunColumns()}
     FROM sync_runs
-    WHERE status = 'running'
+    WHERE status = 'running' AND started_at > now() - interval '3 hours'
     ORDER BY started_at ASC
   `;
   return rows.map(toSyncRun);

@@ -15,9 +15,10 @@ const TCG_LABEL: Record<Tcg, string> = Object.fromEntries(TCGS.map((t) => [t.val
 // Recentré sur le seul cas "quelque chose tourne là" -- demande utilisateur
 // 2026-08-09 (réorganisation de page) : l'état "rien en cours" affichait un
 // bloc entier rien que pour les badges de planning (SCHEDULE_KEYS), qui
-// vivent maintenant dans FreshnessSection aux côtés de la fraîcheur (même
-// logique : "quand" plutôt qu'éclaté en deux endroits). `null` quand rien ne
-// tourne -- le cas courant -- au lieu d'un panneau vide à combler.
+// vivent maintenant dans ScheduleBar (ex-FreshnessSection, cf. son
+// commentaire) -- "quand" reste rassemblé plutôt qu'éclaté en deux endroits.
+// `null` quand rien ne tourne -- le cas courant -- au lieu d'un panneau vide
+// à combler.
 export function RunningNowPanel({ runs: running }: { runs: SyncRun[] }) {
   const t = useTranslations("live");
   const tSteps = useTranslations("live.steps");
@@ -34,7 +35,15 @@ export function RunningNowPanel({ runs: running }: { runs: SyncRun[] }) {
         </h2>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "10px" }}>
+      {/* maxHeight + scroll interne -- constaté le 2026-08-11 en vérifiant le
+          nouveau layout plein-écran de /live : 7 runs "en cours" (en réalité
+          des lignes `running` orphelines vieilles de 16h-2j, cf. discussion
+          avec l'utilisateur) suffisaient à écraser toute la fraîcheur et
+          l'historique en dessous. Ce panneau n'a pas de fenêtre de temps
+          comme ErrorsPanel (cf. getRecentErrors) -- tant que ça reste
+          possible, il ne doit plus pouvoir dépasser ~1 rangée et demie de
+          tuiles quel que soit le nombre d'entrées. */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "10px", maxHeight: "128px", overflowY: "auto" }}>
         {running.map((run) => (
           <div
             key={run.id}

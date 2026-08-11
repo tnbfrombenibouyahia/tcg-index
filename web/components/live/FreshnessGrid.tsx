@@ -23,7 +23,12 @@ export function FreshnessGrid({ freshness }: { freshness: FreshnessCell[] }) {
       >
         {t("freshnessTitle")}
       </h2>
-      <div className="grid gap-3 sm:grid-cols-2">
+      {/* auto-fit sur la largeur réelle du conteneur plutôt que `sm:grid-cols-2`
+          (media query basée sur le viewport) -- depuis le 2026-08-11 ce grid
+          vit dans la colonne étroite (0.8fr) de LiveDashboard à côté de
+          l'historique, pas en pleine largeur de page ; un point de rupture
+          viewport aurait forcé 2 colonnes même dans un espace trop resserré. */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: "12px" }}>
         {TCGS.map(({ value: tcg, label }) => {
           const cells = SEGMENT_ORDER.map(
             (segment) => freshness.find((c) => c.tcg === tcg && c.segment === segment) ?? null

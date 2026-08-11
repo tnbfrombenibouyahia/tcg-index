@@ -47,8 +47,8 @@ export function RunsTimeline({ runs }: { runs: SyncRun[] }) {
   const filtered = useMemo(() => (filter === "all" ? runs : runs.filter((r) => r.status === filter)), [runs, filter]);
 
   return (
-    <section>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", marginBottom: "8px" }}>
+    <section style={{ height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", marginBottom: "8px", flexShrink: 0 }}>
         <h2
           className="text-xs font-semibold uppercase"
           style={{ color: "var(--foreground-muted)", letterSpacing: "0.10em", margin: 0 }}
@@ -81,11 +81,15 @@ export function RunsTimeline({ runs }: { runs: SyncRun[] }) {
       {filtered.length === 0 ? (
         <EmptyState title={t("emptyRunsTitle")} description={t("emptyRunsDescription")} />
       ) : (
-        // Hauteur bornée + scroll interne -- demande utilisateur : la page ne
-        // doit pas s'étirer indéfiniment avec le nombre de runs (jusqu'à 100
-        // affichés), l'historique devient un panneau qu'on scrolle DANS
-        // plutôt qu'une liste qui pousse le bas de page toujours plus loin.
-        <div className="card-glass" style={{ padding: "4px 18px", maxHeight: "32vh", overflowY: "auto" }}>
+        // Hauteur remplie (flex:1) + scroll interne -- demande utilisateur
+        // 2026-08-11 : la page entière ne doit plus scroller du tout, donc
+        // ce panneau prend exactement la hauteur que lui laisse la grille
+        // parente (cf. LiveDashboard.tsx) au lieu d'une fraction de vh fixe
+        // (approche précédente, avant que /live ne devienne un layout
+        // pleine-hauteur) -- l'historique (jusqu'à 100 runs) reste un
+        // panneau qu'on scrolle DANS plutôt qu'une liste qui pousse quoi
+        // que ce soit vers le bas.
+        <div className="card-glass" style={{ padding: "4px 18px", flex: 1, minHeight: 0, overflowY: "auto" }}>
           {filtered.map((run, i) => (
             <div
               key={run.id}
