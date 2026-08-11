@@ -336,6 +336,15 @@ export interface PopulationRow {
   psa9Price: number | null;
   psa10Price: number | null;
   population: PopulationCalc;
+  // Rang percentile (0 = population la plus basse, 1 = la plus haute) au sein
+  // de l'ensemble filtré COMPLET (pas juste la page affichée) -- calculé par
+  // getPopulationRanking, cf. son commentaire. Alimente la heatmap du
+  // tableau : un simple ratio valeur/max serait écrasé par la queue très
+  // longue de la distribution (quelques cartes à population 5 chiffres,
+  // l'immense majorité à 1-2 chiffres) -- un rang percentile reste lisible
+  // quelle que soit la forme de la distribution.
+  grade10Percentile: number;
+  totalPercentile: number;
 }
 
 export interface ItemDetail extends ItemSummary {

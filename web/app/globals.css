@@ -66,6 +66,21 @@
   --chart-axis:    #9AA1AC;
   --bar-muted:     rgba(15, 15, 20, 0.5);
 
+  /* ── Rampe séquentielle (heatmaps -- magnitude continue) ─────────────────
+     Hue séquentiel par défaut de la skill dataviz (bleu, validé), fixe --
+     indépendant de l'univers actif (--accent bascule bleu/rouge selon
+     Pokémon/One Piece, mais un encodage séquentiel reste sur UN seul hue
+     quel que soit le contexte, cf. skill). Utilisée par /population-analysis
+     (heatmap de rareté) -- pas de nouvelle palette inventée, step 450
+     correspond exactement à BAR_COLOR déjà utilisé par SalesHistoryChart. */
+  --heat-100: #cde2fb;
+  --heat-200: #9ec5f4;
+  --heat-300: #6da7ec;
+  --heat-400: #3987e5;
+  --heat-500: #256abf;
+  --heat-600: #184f95;
+  --heat-700: #0d366b;
+
   /* ── Tints neutres (badges, pastilles, segments vides) ───────────────────── */
   --tint-neutral:        rgba(15, 15, 20, 0.06);
   --tint-neutral-strong: rgba(15, 15, 20, 0.12);

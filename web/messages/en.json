@@ -407,6 +407,8 @@
     "description": "Real PSA/CGC graded population by card -- how many copies actually exist at each grade, a scarcity signal independent of price.",
     "methodologyLabel": "Source:",
     "methodology": "Population counts (grades 6-10, PSA + CGC combined) come from PSA/CGC's own published census, scraped from PriceCharting's population report pages -- psacard.com/pop itself blocks automated access. Half-grades (e.g. PSA 9.5) are folded by PSA into the whole grade below. Updated monthly, matching PSA's own census cadence. Sealed products are never graded and never appear here. Common, Uncommon and Promo cards are excluded (both TCGs), along with One Piece pre-release/release-event promo sets and manga alternate-art variants: a population of 2-3 on these just means nobody bothers submitting them, not genuine rarity.",
+    "filtersTitle": "Selection criteria",
+    "filterTcg": "TCG",
     "filterAll": "All TCGs",
     "filterPriceGrade": "Price grade:",
     "filterMinPrice": "Price range:",
@@ -415,6 +417,10 @@
     "count": "{count} cards",
     "emptyTitle": "No population data yet",
     "emptyDescription": "No card currently has published PSA/CGC population data.",
+    "statCount": "Cards",
+    "statMedianPop": "Median population",
+    "statMedianPsa10": "Median PSA 10 price",
+    "histogramTitle": "Population distribution",
     "table": {
       "card": "Card",
       "language": "Language",
@@ -424,7 +430,8 @@
       "grade8": "PSA 8",
       "grade9": "PSA 9",
       "grade10": "PSA 10",
-      "total": "Total"
+      "total": "Total",
+      "heatmapLegend": "Darker = rarer (relative to the current filtered set)"
     },
     "modal": {
       "close": "Close",
@@ -433,6 +440,7 @@
       "totalLabel": "Total (all grades, incl. below PSA 6)",
       "ungradedPriceLabel": "Ungraded price",
       "psa10PriceLabel": "PSA 10 price",
+      "popUnit": "{count, plural, one {# copy} other {# copies}}",
       "salesHistoryTitle": "Sales history",
       "loading": "Loading...",
       "noSales": "No sale recorded yet."

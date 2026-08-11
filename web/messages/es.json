@@ -407,6 +407,8 @@
     "description": "Población PSA/CGC real por carta -- cuántos ejemplares existen realmente en cada grado, una señal de escasez independiente del precio.",
     "methodologyLabel": "Fuente:",
     "methodology": "Los recuentos de población (grados 6-10, PSA + CGC combinados) provienen del censo oficial de PSA/CGC, extraído de las páginas de informe de población de PriceCharting -- psacard.com/pop bloquea el acceso automatizado. Los medios grados (ej. PSA 9.5) son fusionados por PSA en el grado entero inferior. Actualizado mensualmente, alineado con la cadencia del propio censo de PSA. Los productos sellados nunca se gradúan y por tanto nunca aparecen aquí. Las cartas Common, Uncommon y Promo quedan excluidas (ambos TCG), junto con los sets promo pre-release/release-event y las variantes manga de One Piece: una población de 2-3 en estas cartas solo indica que nadie las envía a gradación, no una rareza real.",
+    "filtersTitle": "Criterios de selección",
+    "filterTcg": "TCG",
     "filterAll": "Todos los TCG",
     "filterPriceGrade": "Grado de precio:",
     "filterMinPrice": "Rango de precio:",
@@ -415,6 +417,10 @@
     "count": "{count} cartas",
     "emptyTitle": "Sin datos de población todavía",
     "emptyDescription": "Ninguna carta tiene datos de población PSA/CGC publicados por ahora.",
+    "statCount": "Cartas",
+    "statMedianPop": "Población mediana",
+    "statMedianPsa10": "Precio mediano PSA 10",
+    "histogramTitle": "Distribución de la población",
     "table": {
       "card": "Carta",
       "language": "Idioma",
@@ -424,7 +430,8 @@
       "grade8": "PSA 8",
       "grade9": "PSA 9",
       "grade10": "PSA 10",
-      "total": "Total"
+      "total": "Total",
+      "heatmapLegend": "Más oscuro = más raro (relativo al conjunto filtrado actual)"
     },
     "modal": {
       "close": "Cerrar",
@@ -433,6 +440,7 @@
       "totalLabel": "Total (todas las notas, incl. bajo PSA 6)",
       "ungradedPriceLabel": "Precio sin gradar",
       "psa10PriceLabel": "Precio PSA 10",
+      "popUnit": "{count, plural, one {# ejemplar} other {# ejemplares}}",
       "salesHistoryTitle": "Historial de ventas",
       "loading": "Cargando...",
       "noSales": "Ninguna venta registrada todavía."

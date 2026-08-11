@@ -6,13 +6,16 @@ import type { PopulationRow, SaleRow } from "@/lib/types";
 import { formatDate, formatUsd } from "@/lib/format";
 import { LanguageFlag } from "@/components/ui/LanguageFlag";
 import { SalesHistoryChart } from "@/components/undervalued/SalesHistoryChart";
+import { PopulationGradeChart } from "./PopulationGradeChart";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Modale de détail carte -- ouverte au clic sur une ligne du tableau
 // Population Analysis (cf. PopulationAnalysisTableBody), même langage visuel
 // que CardDetailModal (Undervalued) : image en grand à gauche, infos +
 // détail population à droite, historique de ventes en pleine largeur en
-// dessous.
+// dessous. Graphe population×grade (PopulationGradeChart) ajouté 2026-08-11
+// (demande utilisateur "analyse précise" au clic) à la place de l'ancien
+// mini-diagramme en barres CSS.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function PopulationDetailModal({ row, onClose }: { row: PopulationRow; onClose: () => void }) {
@@ -41,15 +44,6 @@ export function PopulationDetailModal({ row, onClose }: { row: PopulationRow; on
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
   }, [onClose]);
-
-  const breakdown: { label: string; value: number }[] = [
-    { label: "PSA 6", value: row.population.popGrade6 },
-    { label: "PSA 7", value: row.population.popGrade7 },
-    { label: "PSA 8", value: row.population.popGrade8 },
-    { label: "PSA 9", value: row.population.popGrade9 },
-    { label: "PSA 10", value: row.population.popGrade10 },
-  ];
-  const maxCount = Math.max(1, ...breakdown.map((b) => b.value));
 
   return (
     <div
@@ -141,22 +135,7 @@ export function PopulationDetailModal({ row, onClose }: { row: PopulationRow; on
               <h3 className="mb-3 mt-5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 {t("breakdownTitle")}
               </h3>
-              <div className="flex items-end gap-3">
-                {breakdown.map((b) => (
-                  <div key={b.label} className="flex flex-1 flex-col items-center gap-1.5">
-                    <span className="text-xs font-semibold tabular-nums">{b.value.toLocaleString()}</span>
-                    <div
-                      className="w-full rounded-t-sm"
-                      style={{
-                        height: `${Math.max(4, (b.value / maxCount) * 64)}px`,
-                        background: "var(--accent)",
-                        opacity: 0.75,
-                      }}
-                    />
-                    <span className="text-[11px] text-muted-foreground">{b.label}</span>
-                  </div>
-                ))}
-              </div>
+              <PopulationGradeChart population={row.population} prices={{ psa8: row.psa8Price, psa9: row.psa9Price, psa10: row.psa10Price }} />
               <div className="mt-4 flex items-center gap-2 rounded-lg bg-muted/40 px-3 py-2">
                 <span className="text-xs text-muted-foreground">{t("totalLabel")}</span>
                 <span className="text-base font-bold tabular-nums">{row.population.popTotal.toLocaleString()}</span>

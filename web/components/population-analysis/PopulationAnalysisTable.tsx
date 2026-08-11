@@ -64,6 +64,13 @@ export async function PopulationAnalysisTable({
         </thead>
         <PopulationAnalysisTableBody rows={rows} priceGrade={priceGrade} />
       </table>
+      <div className="flex items-center gap-2 border-t border-border px-4 py-2 text-[11px] text-muted-foreground">
+        <span
+          className="inline-block h-2.5 w-8 rounded-full"
+          style={{ background: "linear-gradient(90deg, var(--heat-600), var(--surface-alt))" }}
+        />
+        <span>{t("heatmapLegend")}</span>
+      </div>
     </div>
   );
 }

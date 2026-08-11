@@ -75,7 +75,32 @@ function toRow(r: RawRow): PopulationRow {
       popGrade10: r.popGrade10,
       popTotal: r.popTotal,
     },
+    // Placeholders -- remplacés par `withPercentiles` une fois l'ensemble
+    // filtré complet connu (cf. commentaire sur PopulationRow.grade10Percentile).
+    grade10Percentile: 0,
+    totalPercentile: 0,
   };
+}
+
+// Rang percentile (0..1) de chaque carte au sein de `rows` pour popGrade10 et
+// popTotal -- cf. commentaire de PopulationRow.grade10Percentile pour le
+// pourquoi (min-max linéaire écrasé par la queue longue de la distribution).
+// `rows.length <= 1` : rang neutre (0) plutôt qu'une division par zéro.
+function withPercentiles(rows: PopulationRow[]): PopulationRow[] {
+  if (rows.length <= 1) return rows.map((r) => ({ ...r, grade10Percentile: 0, totalPercentile: 0 }));
+  const rankOf = (key: "popGrade10" | "popTotal") => {
+    const byValue = [...rows].sort((a, b) => a.population[key] - b.population[key]);
+    const rank = new Map<number, number>();
+    byValue.forEach((r, i) => rank.set(r.itemId, i / (byValue.length - 1)));
+    return rank;
+  };
+  const grade10Rank = rankOf("popGrade10");
+  const totalRank = rankOf("popTotal");
+  return rows.map((r) => ({
+    ...r,
+    grade10Percentile: grade10Rank.get(r.itemId) ?? 0,
+    totalPercentile: totalRank.get(r.itemId) ?? 0,
+  }));
 }
 
 // Paliers de prix proposés au filtre -- volontairement restreint à
@@ -276,6 +301,48 @@ function sortRows(rows: PopulationRow[], sort?: PopulationSort): PopulationRow[]
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Agrégats pour la vue "analytique" (demande utilisateur 2026-08-11 : critères
+// de sélection et listing séparés à l'écran + heatmap/graphe). Calculés sur
+// l'ensemble filtré COMPLET (`sorted`, avant la pagination) plutôt que sur la
+// seule page courante -- une médiane ou un histogramme qui changerait de page
+// en page serait trompeur. Coût nul : le tableau complet est déjà en mémoire
+// pour le tri (cf. commentaire d'en-tête sur `hardCap`).
+// ─────────────────────────────────────────────────────────────────────────────
+
+function median(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+export interface PopulationHistogramBucket {
+  range: PopulationCountRange;
+  count: number;
+}
+
+export interface PopulationStats {
+  medianPopTotal: number;
+  medianPsa10Price: number | null;
+  histogram: PopulationHistogramBucket[];
+}
+
+function computeStats(rows: PopulationRow[]): PopulationStats {
+  const popTotals = rows.map((r) => r.population.popTotal);
+  const psa10Prices = rows.map((r) => r.psa10Price).filter((p): p is number => p != null);
+  return {
+    medianPopTotal: median(popTotals),
+    medianPsa10Price: psa10Prices.length ? median(psa10Prices) : null,
+    histogram: POPULATION_COUNT_RANGES.map((range) => ({
+      range,
+      count: rows.filter(
+        (r) => r.population.popTotal >= range.min && (range.max == null || r.population.popTotal <= range.max)
+      ).length,
+    })),
+  };
+}
+
 export interface PopulationRankingParams {
   tcg?: Tcg;
   sort?: PopulationSort;
@@ -289,6 +356,7 @@ export interface PopulationRankingParams {
 export interface PopulationRankingResult {
   rows: PopulationRow[];
   totalCount: number;
+  stats: PopulationStats;
 }
 
 export async function getPopulationRanking({
@@ -302,6 +370,11 @@ export async function getPopulationRanking({
 }: PopulationRankingParams): Promise<PopulationRankingResult> {
   const candidates = await fetchCandidates({ tcg, priceGrade, priceRange, popRange });
   const sorted = sortRows(candidates, sort);
+  const ranked = withPercentiles(sorted);
   const offset = (Math.max(1, page) - 1) * limit;
-  return { rows: sorted.slice(offset, offset + limit), totalCount: sorted.length };
+  return {
+    rows: ranked.slice(offset, offset + limit),
+    totalCount: ranked.length,
+    stats: computeStats(ranked),
+  };
 }

@@ -15,6 +15,28 @@ const PRICE_FIELD: Record<PopulationPriceGrade, "ungradedPrice" | "psa8Price" | 
   psa10: "psa10Price",
 };
 
+// Heatmap de rareté (demande utilisateur 2026-08-11) -- teinte inversée :
+// plus la population est BASSE, plus la cellule est foncée (rampe séquentielle
+// --heat-* de globals.css, cf. son commentaire). Volontairement l'inverse de
+// la convention "plus de couleur = plus de quantité" -- ici c'est la RARETÉ
+// qu'on veut faire ressortir visuellement, pas juste redire le nombre déjà
+// affiché en texte à côté. Légende explicite dans PopulationAnalysisTable
+// (jamais color-alone, cf. skill dataviz).
+//
+// Basé sur le RANG PERCENTILE (0..1, cf. PopulationRow.grade10Percentile),
+// pas un simple ratio valeur/max -- la distribution de population a une
+// queue très longue (quelques cartes à 5 chiffres, l'immense majorité à 1-2
+// chiffres) : un ratio linéaire écrasait quasi toute la page au même niveau
+// d'intensité (constaté en conditions réelles, toutes les cellules à 56%
+// quel que soit le nombre affiché). Le rang percentile reste lisible quelle
+// que soit la forme de la distribution. Plancher/plafond d'opacité pour que
+// le texte reste lisible même à l'extrême le plus foncé.
+function heatStyle(percentile: number): React.CSSProperties {
+  const rarity = 1 - percentile;
+  const pct = Math.round((0.06 + rarity * 0.5) * 100);
+  return { backgroundColor: `color-mix(in srgb, var(--heat-500) ${pct}%, transparent)` };
+}
+
 // ─── Table body, cliquable -- ouvre PopulationDetailModal sur la ligne sélectionnée ──
 export function PopulationAnalysisTableBody({
   rows,
@@ -83,10 +105,10 @@ export function PopulationAnalysisTableBody({
             <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-muted-foreground">
               {r.population.popGrade9.toLocaleString()}
             </td>
-            <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums font-semibold">
+            <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums font-semibold" style={heatStyle(r.grade10Percentile)}>
               {r.population.popGrade10.toLocaleString()}
             </td>
-            <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums font-medium">
+            <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums font-medium" style={heatStyle(r.totalPercentile)}>
               {r.population.popTotal.toLocaleString()}
             </td>
           </tr>
