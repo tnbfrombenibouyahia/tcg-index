@@ -2,7 +2,9 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination } from "@/components/ui/Pagination";
 import { PopulationFilters } from "@/components/population-analysis/PopulationFilters";
+import { PopulationSearchBar } from "@/components/population-analysis/PopulationSearchBar";
 import { PopulationSummary } from "@/components/population-analysis/PopulationSummary";
+import { PopulationHeatmap } from "@/components/population-analysis/PopulationHeatmap";
 import { PopulationAnalysisTable } from "@/components/population-analysis/PopulationAnalysisTable";
 import { SourceBadges } from "@/components/ui/SourceBadge";
 import {
@@ -24,15 +26,25 @@ const PAGE_SIZE = 50;
 // utilisateur 2026-08-10, cf. [[project_population_analysis]]. Filtres prix/
 // population ajoutés le même jour (tranches fixes, cf. PopulationFilters).
 //
-// Mise en page "analytique" (demande utilisateur 2026-08-11, "critères de
+// Mise en page "analytique" (demande utilisateur 2026-08-10, "critères de
 // sélection dans un endroit, listing dans un autre... heatmap ou graphe...
 // analyse précise au clic") : colonne fixe à gauche (PopulationFilters) +
-// contenu à droite (PopulationSummary -- chiffres-clés + histogramme de
-// distribution -- puis le tableau, dont les colonnes PSA10/Total sont
-// teintées en heatmap, cf. PopulationAnalysisTableBody). Chaque ligne ouvre
-// le détail en modale (PopulationDetailModal, graphe population×prix par
-// grade), même convention que les autres pages d'analyse ("Analyse en popup
-// au clic").
+// listing au centre + tableau, dont les colonnes PSA10/Total sont teintées
+// en heatmap (cf. PopulationAnalysisTableBody). Chaque ligne ouvre le détail
+// en modale (PopulationDetailModal, graphe population×prix par grade), même
+// convention que les autres pages d'analyse.
+//
+// Repensée en 3 colonnes le 2026-08-11 (nouvelle demande utilisateur) :
+// "utilise plus la largeur de l'écran, pas tout au centre" -- le conteneur
+// perd son `max-w-7xl mx-auto` (pleine largeur avec juste du padding, même
+// philosophie que /live) -- et "au centre le listing, à droite l'analyse de
+// population (chart + heatmap)" -- PopulationSummary (chiffres-clés +
+// histogramme) et PopulationHeatmap (grade × TCG, nouveau) quittent le
+// dessus du tableau pour une colonne dédiée à droite, sticky comme les
+// filtres à gauche. Barre de recherche (PopulationSearchBar, filtre `?q=`
+// par nom) ajoutée juste au-dessus du tableau, même demande. Texte de
+// méthodologie retiré du panneau de filtres (même demande, "enlève le texte
+// de source") -- il vivait dans PopulationFilters, cf. son historique.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const VALID_SORTS = new Set<string>([
@@ -68,8 +80,11 @@ export default async function PopulationAnalysisPage({
   const pageRaw = Number(Array.isArray(raw.page) ? raw.page[0] : raw.page);
   const page = Number.isInteger(pageRaw) && pageRaw >= 1 ? pageRaw : 1;
 
+  const searchRaw = Array.isArray(raw.q) ? raw.q[0] : raw.q;
+  const search = searchRaw?.trim() || undefined;
+
   const { rows, totalCount, stats } = await getPopulationRanking({
-    tcg, limit: PAGE_SIZE, page, sort, priceGrade, priceRange, popRange,
+    tcg, limit: PAGE_SIZE, page, sort, priceGrade, priceRange, popRange, search,
   });
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
@@ -81,7 +96,7 @@ export default async function PopulationAnalysisPage({
   const locale = await getLocale();
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+    <div className="w-full px-6 py-8 lg:px-10">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
@@ -90,13 +105,13 @@ export default async function PopulationAnalysisPage({
         <SourceBadges sources={["pricecharting"]} />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]">
-        <aside className="lg:self-start">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[260px_minmax(0,1fr)_340px]">
+        <aside className="xl:self-start">
           <PopulationFilters tcg={tcg} priceGrade={priceGrade} priceRange={priceRange} popRange={popRange} searchParams={searchParamsForLinks} />
         </aside>
 
         <div className="min-w-0">
-          <PopulationSummary totalCount={totalCount} stats={stats} />
+          <PopulationSearchBar />
 
           {rows.length === 0 ? (
             <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
@@ -110,6 +125,11 @@ export default async function PopulationAnalysisPage({
             </>
           )}
         </div>
+
+        <aside className="flex flex-col gap-6 xl:self-start">
+          <PopulationSummary totalCount={totalCount} stats={stats} />
+          <PopulationHeatmap cells={stats.heatmap} />
+        </aside>
       </div>
     </div>
   );

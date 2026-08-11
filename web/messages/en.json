@@ -405,8 +405,6 @@
   "populationAnalysis": {
     "title": "Population Analysis",
     "description": "Real PSA/CGC graded population by card -- how many copies actually exist at each grade, a scarcity signal independent of price.",
-    "methodologyLabel": "Source:",
-    "methodology": "Population counts (grades 6-10, PSA + CGC combined) come from PSA/CGC's own published census, scraped from PriceCharting's population report pages -- psacard.com/pop itself blocks automated access. Half-grades (e.g. PSA 9.5) are folded by PSA into the whole grade below. Updated monthly, matching PSA's own census cadence. Sealed products are never graded and never appear here. Common, Uncommon and Promo cards are excluded (both TCGs), along with One Piece pre-release/release-event promo sets and manga alternate-art variants: a population of 2-3 on these just means nobody bothers submitting them, not genuine rarity.",
     "filtersTitle": "Selection criteria",
     "filterTcg": "TCG",
     "filterAll": "All TCGs",
@@ -414,6 +412,8 @@
     "filterMinPrice": "Price range:",
     "filterPriceAll": "Any",
     "filterPopRange": "Population:",
+    "searchPlaceholder": "Search for a card...",
+    "searchAria": "Search for a card in the list",
     "count": "{count} cards",
     "emptyTitle": "No population data yet",
     "emptyDescription": "No card currently has published PSA/CGC population data.",
@@ -421,6 +421,9 @@
     "statMedianPop": "Median population",
     "statMedianPsa10": "Median PSA 10 price",
     "histogramTitle": "Population distribution",
+    "heatmapTitle": "Median population by grade",
+    "heatmapDescription": "Median population (grades 6 to 10) by TCG, over the current filtered set -- a different read than the distribution histogram above, which doesn't break down by grade or TCG.",
+    "heatmapLegend": "Darker = higher median population",
     "table": {
       "card": "Card",
       "language": "Language",

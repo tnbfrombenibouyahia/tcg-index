@@ -405,8 +405,6 @@
   "populationAnalysis": {
     "title": "Análisis de población",
     "description": "Población PSA/CGC real por carta -- cuántos ejemplares existen realmente en cada grado, una señal de escasez independiente del precio.",
-    "methodologyLabel": "Fuente:",
-    "methodology": "Los recuentos de población (grados 6-10, PSA + CGC combinados) provienen del censo oficial de PSA/CGC, extraído de las páginas de informe de población de PriceCharting -- psacard.com/pop bloquea el acceso automatizado. Los medios grados (ej. PSA 9.5) son fusionados por PSA en el grado entero inferior. Actualizado mensualmente, alineado con la cadencia del propio censo de PSA. Los productos sellados nunca se gradúan y por tanto nunca aparecen aquí. Las cartas Common, Uncommon y Promo quedan excluidas (ambos TCG), junto con los sets promo pre-release/release-event y las variantes manga de One Piece: una población de 2-3 en estas cartas solo indica que nadie las envía a gradación, no una rareza real.",
     "filtersTitle": "Criterios de selección",
     "filterTcg": "TCG",
     "filterAll": "Todos los TCG",
@@ -414,6 +412,8 @@
     "filterMinPrice": "Rango de precio:",
     "filterPriceAll": "Todos",
     "filterPopRange": "Población:",
+    "searchPlaceholder": "Buscar una carta...",
+    "searchAria": "Buscar una carta en la lista",
     "count": "{count} cartas",
     "emptyTitle": "Sin datos de población todavía",
     "emptyDescription": "Ninguna carta tiene datos de población PSA/CGC publicados por ahora.",
@@ -421,6 +421,9 @@
     "statMedianPop": "Población mediana",
     "statMedianPsa10": "Precio mediano PSA 10",
     "histogramTitle": "Distribución de la población",
+    "heatmapTitle": "Población mediana por grado",
+    "heatmapDescription": "Población mediana (grados 6 a 10) por TCG, sobre el conjunto filtrado actual -- una lectura distinta al histograma de distribución de arriba, que no distingue por grado ni por TCG.",
+    "heatmapLegend": "Más oscuro = población mediana más alta",
     "table": {
       "card": "Carta",
       "language": "Idioma",

@@ -405,8 +405,6 @@
   "populationAnalysis": {
     "title": "Analyse de population",
     "description": "Population PSA/CGC réelle par carte -- combien d'exemplaires existent vraiment à chaque grade, un signal de rareté indépendant du prix.",
-    "methodologyLabel": "Source :",
-    "methodology": "Les comptages de population (grades 6-10, PSA + CGC combinés) viennent du recensement officiel PSA/CGC, récupéré depuis les pages de rapport de population de PriceCharting -- psacard.com/pop bloque lui-même les accès automatisés. Les demi-grades (ex. PSA 9.5) sont fondus par PSA dans le grade entier inférieur. Mise à jour mensuelle, alignée sur la cadence du recensement PSA lui-même. Le scellé n'est jamais gradé et n'apparaît donc jamais ici. Les cartes Common, Uncommon et Promo sont exclues (deux TCG), ainsi que les sets promo pré-release/release-event et les variantes manga côté One Piece : une population de 2-3 sur ces cartes signale juste que personne ne les envoie en gradation, pas une vraie rareté.",
     "filtersTitle": "Critères de sélection",
     "filterTcg": "TCG",
     "filterAll": "Tous les TCG",
@@ -414,6 +412,8 @@
     "filterMinPrice": "Tranche de prix :",
     "filterPriceAll": "Toutes",
     "filterPopRange": "Population :",
+    "searchPlaceholder": "Rechercher une carte...",
+    "searchAria": "Rechercher une carte dans la liste",
     "count": "{count} cartes",
     "emptyTitle": "Aucune donnée de population",
     "emptyDescription": "Aucune carte n'a de donnée de population PSA/CGC publiée pour l'instant.",
@@ -421,6 +421,9 @@
     "statMedianPop": "Population médiane",
     "statMedianPsa10": "Prix médian PSA 10",
     "histogramTitle": "Distribution de la population",
+    "heatmapTitle": "Population médiane par grade",
+    "heatmapDescription": "Population médiane (grades 6 à 10) par TCG, sur l'ensemble filtré actuel -- une autre lecture que l'histogramme de distribution ci-dessus, qui ne distingue ni le grade ni le TCG.",
+    "heatmapLegend": "Plus foncé = population médiane plus élevée",
     "table": {
       "card": "Carte",
       "language": "Langue",

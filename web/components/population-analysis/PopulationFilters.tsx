@@ -115,10 +115,6 @@ export async function PopulationFilters({
           </FilterPill>
         ))}
       </FilterGroup>
-
-      <div className="border-t border-border pt-4 text-[11px] leading-relaxed text-muted-foreground">
-        <strong className="text-foreground">{t("methodologyLabel")}</strong> {t("methodology")}
-      </div>
     </div>
   );
 }

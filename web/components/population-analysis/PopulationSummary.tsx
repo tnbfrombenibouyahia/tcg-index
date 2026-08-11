@@ -108,7 +108,7 @@ export function PopulationSummary({ totalCount, stats }: { totalCount: number; s
   ];
 
   return (
-    <div className="card-glass mb-6 rounded-2xl p-5">
+    <div className="card-glass rounded-2xl p-5">
       <div className="mb-4 grid grid-cols-3 gap-3">
         {tiles.map((tile) => (
           <div key={tile.label}>
