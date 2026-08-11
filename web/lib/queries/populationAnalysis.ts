@@ -279,8 +279,29 @@ export type PopulationSort =
   | "total_asc"
   | "total_desc"
   | "language_asc"
-  | "language_desc";
+  | "language_desc"
+  | "ungradedPrice_asc"
+  | "ungradedPrice_desc"
+  | "psa10Price_asc"
+  | "psa10Price_desc";
 
+// Nulls (pas de prix connu pour cette carte à ce grade) toujours en fin de
+// classement, quel que soit le sens du tri -- contrairement à popGrade10 où
+// 0 est une vraie donnée (cf. commentaire du tri par défaut plus bas), un
+// prix manquant n'a pas de position numérique sensée : ni "le moins cher"
+// ni "le plus cher".
+function comparePrice(a: number | null, b: number | null, dir: 1 | -1): number {
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+  return (a - b) * dir;
+}
+
+// "Raw" (ungraded) et PSA10 triables (demande utilisateur 2026-08-11, clic
+// sur l'en-tête de ces deux colonnes prix) -- même mécanique SortHeader
+// que psa10_asc/desc (qui trient sur popGrade10, la POPULATION, pas le
+// prix -- noms distincts pour ne pas confondre les deux, cf.
+// PopulationAnalysisTable).
 function sortRows(rows: PopulationRow[], sort?: PopulationSort): PopulationRow[] {
   const sorted = [...rows];
   switch (sort) {
@@ -294,6 +315,14 @@ function sortRows(rows: PopulationRow[], sort?: PopulationSort): PopulationRow[]
       return sorted.sort((a, b) => a.language.localeCompare(b.language) || a.population.popGrade10 - b.population.popGrade10);
     case "language_desc":
       return sorted.sort((a, b) => b.language.localeCompare(a.language) || a.population.popGrade10 - b.population.popGrade10);
+    case "ungradedPrice_asc":
+      return sorted.sort((a, b) => comparePrice(a.ungradedPrice, b.ungradedPrice, 1));
+    case "ungradedPrice_desc":
+      return sorted.sort((a, b) => comparePrice(a.ungradedPrice, b.ungradedPrice, -1));
+    case "psa10Price_asc":
+      return sorted.sort((a, b) => comparePrice(a.psa10Price, b.psa10Price, 1));
+    case "psa10Price_desc":
+      return sorted.sort((a, b) => comparePrice(a.psa10Price, b.psa10Price, -1));
     case "psa10_asc":
     default:
       // Défaut : le plus rare en PSA 10 en premier (y compris 0 -- une carte

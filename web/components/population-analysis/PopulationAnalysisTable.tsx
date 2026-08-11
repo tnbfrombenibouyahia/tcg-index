@@ -36,9 +36,30 @@ export async function PopulationAnalysisTable({
                 2026-08-11) -- remplace l'ancienne colonne unique dont le prix
                 dépendait du filtre "Grade de prix" sélectionné à gauche : plus
                 simple à lire, ce sont les deux prix qui comptent pour la
-                décision de gradation (racheter en loose vs. valeur au top grade). */}
-            <th className="px-4 py-3 text-right">{GRADE_LABELS.ungraded}</th>
-            <th className="px-4 py-3 text-right">{GRADE_LABELS.psa10}</th>
+                décision de gradation (racheter en loose vs. valeur au top grade).
+                Triables (même demande, message suivant) -- sort keys distinctes
+                de psa10_asc/desc (qui trient sur la POPULATION PSA10, pas le
+                prix, cf. sortRows). */}
+            <th className="px-4 py-3 text-right">
+              <SortHeader
+                label={GRADE_LABELS.ungraded}
+                ascValue="ungradedPrice_asc"
+                descValue="ungradedPrice_desc"
+                currentSort={sort}
+                searchParams={searchParams}
+                basePath="/population-analysis"
+              />
+            </th>
+            <th className="px-4 py-3 text-right">
+              <SortHeader
+                label={GRADE_LABELS.psa10}
+                ascValue="psa10Price_asc"
+                descValue="psa10Price_desc"
+                currentSort={sort}
+                searchParams={searchParams}
+                basePath="/population-analysis"
+              />
+            </th>
             <th className="px-4 py-3 text-right">{t("grade6")}</th>
             <th className="px-4 py-3 text-right">{t("grade7")}</th>
             <th className="px-4 py-3 text-right">{t("grade8")}</th>

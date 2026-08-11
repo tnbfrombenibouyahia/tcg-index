@@ -58,6 +58,8 @@ const VALID_SORTS = new Set<string>([
   "psa10_asc", "psa10_desc",
   "total_asc", "total_desc",
   "language_asc", "language_desc",
+  "ungradedPrice_asc", "ungradedPrice_desc",
+  "psa10Price_asc", "psa10Price_desc",
 ]);
 
 export default async function PopulationAnalysisPage({
