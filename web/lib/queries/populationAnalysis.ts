@@ -325,49 +325,10 @@ export interface PopulationHistogramBucket {
   count: number;
 }
 
-// Grille grade (6-10) × TCG -- demande utilisateur 2026-08-11 ("chart +
-// heatmap" dans la colonne d'analyse à droite) : une vue complémentaire à
-// l'histogramme (qui ne dit rien du TCG ni du grade), sur les mêmes données
-// déjà en mémoire (`rows`, l'ensemble filtré complet), pas de requête à
-// part. Médiane plutôt que moyenne -- même raisonnement que
-// medianPopTotal/medianPsa10Price juste au-dessus : une poignée de cartes à
-// population énorme écraserait une moyenne.
-const POPULATION_HEATMAP_GRADES = [6, 7, 8, 9, 10] as const;
-export type PopulationHeatmapGrade = (typeof POPULATION_HEATMAP_GRADES)[number];
-
-export interface PopulationHeatmapCell {
-  tcg: Tcg;
-  grade: PopulationHeatmapGrade;
-  medianPop: number;
-}
-
-const GRADE_KEY: Record<PopulationHeatmapGrade, keyof PopulationRow["population"]> = {
-  6: "popGrade6",
-  7: "popGrade7",
-  8: "popGrade8",
-  9: "popGrade9",
-  10: "popGrade10",
-};
-
-function computeHeatmap(rows: PopulationRow[]): PopulationHeatmapCell[] {
-  const tcgs: Tcg[] = ["pokemon", "one-piece"];
-  const cells: PopulationHeatmapCell[] = [];
-  for (const tcg of tcgs) {
-    const tcgRows = rows.filter((r) => r.tcg === tcg);
-    for (const grade of POPULATION_HEATMAP_GRADES) {
-      const key = GRADE_KEY[grade];
-      const values = tcgRows.map((r) => r.population[key] as number);
-      cells.push({ tcg, grade, medianPop: median(values) });
-    }
-  }
-  return cells;
-}
-
 export interface PopulationStats {
   medianPopTotal: number;
   medianPsa10Price: number | null;
   histogram: PopulationHistogramBucket[];
-  heatmap: PopulationHeatmapCell[];
 }
 
 function computeStats(rows: PopulationRow[]): PopulationStats {
@@ -382,7 +343,6 @@ function computeStats(rows: PopulationRow[]): PopulationStats {
         (r) => r.population.popTotal >= range.min && (range.max == null || r.population.popTotal <= range.max)
       ).length,
     })),
-    heatmap: computeHeatmap(rows),
   };
 }
 

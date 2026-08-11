@@ -4,7 +4,6 @@ import { Pagination } from "@/components/ui/Pagination";
 import { PopulationFilters } from "@/components/population-analysis/PopulationFilters";
 import { PopulationSearchBar } from "@/components/population-analysis/PopulationSearchBar";
 import { PopulationSummary } from "@/components/population-analysis/PopulationSummary";
-import { PopulationHeatmap } from "@/components/population-analysis/PopulationHeatmap";
 import { PopulationAnalysisTable } from "@/components/population-analysis/PopulationAnalysisTable";
 import { SourceBadges } from "@/components/ui/SourceBadge";
 import {
@@ -34,17 +33,25 @@ const PAGE_SIZE = 50;
 // en modale (PopulationDetailModal, graphe population×prix par grade), même
 // convention que les autres pages d'analyse.
 //
-// Repensée en 3 colonnes le 2026-08-11 (nouvelle demande utilisateur) :
-// "utilise plus la largeur de l'écran, pas tout au centre" -- le conteneur
-// perd son `max-w-7xl mx-auto` (pleine largeur avec juste du padding, même
+// Repensée en 3 colonnes le 2026-08-11 (demande utilisateur) : "utilise plus
+// la largeur de l'écran, pas tout au centre" -- le conteneur perd son
+// `max-w-7xl mx-auto` (pleine largeur avec juste du padding, même
 // philosophie que /live) -- et "au centre le listing, à droite l'analyse de
-// population (chart + heatmap)" -- PopulationSummary (chiffres-clés +
-// histogramme) et PopulationHeatmap (grade × TCG, nouveau) quittent le
+// population" -- PopulationSummary (chiffres-clés + histogramme) quitte le
 // dessus du tableau pour une colonne dédiée à droite, sticky comme les
 // filtres à gauche. Barre de recherche (PopulationSearchBar, filtre `?q=`
 // par nom) ajoutée juste au-dessus du tableau, même demande. Texte de
 // méthodologie retiré du panneau de filtres (même demande, "enlève le texte
 // de source") -- il vivait dans PopulationFilters, cf. son historique.
+//
+// Heatmap grade × TCG (ajoutée le même jour dans la colonne de droite)
+// retirée peu après, demande utilisateur suivante ("supprime la heat map") :
+// le tableau a déjà SA heatmap (PSA10/Total teintés par rareté, cf.
+// PopulationAnalysisTableBody) -- celle-là suffisait, la seconde en colonne
+// de droite faisait doublon. Prix Raw + PSA10 ajoutés au tableau à la place
+// (même message utilisateur), toujours affichés côte à côte désormais au
+// lieu d'une seule colonne dont le prix dépendait du filtre "Grade de prix"
+// sélectionné à gauche.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const VALID_SORTS = new Set<string>([
@@ -118,7 +125,7 @@ export default async function PopulationAnalysisPage({
           ) : (
             <>
               <p className="mb-3 text-xs text-muted-foreground">{t("count", { count: totalCount.toLocaleString(locale) })}</p>
-              <PopulationAnalysisTable rows={rows} sort={sort ?? ""} priceGrade={priceGrade} searchParams={searchParamsForLinks} />
+              <PopulationAnalysisTable rows={rows} sort={sort ?? ""} searchParams={searchParamsForLinks} />
               <div className="mt-4">
                 <Pagination page={page} totalPages={totalPages} />
               </div>
@@ -126,9 +133,8 @@ export default async function PopulationAnalysisPage({
           )}
         </div>
 
-        <aside className="flex flex-col gap-6 xl:self-start">
+        <aside className="xl:self-start">
           <PopulationSummary totalCount={totalCount} stats={stats} />
-          <PopulationHeatmap cells={stats.heatmap} />
         </aside>
       </div>
     </div>

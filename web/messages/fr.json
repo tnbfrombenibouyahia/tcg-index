@@ -66,18 +66,6 @@
     "freshnessTitle": "Fraîcheur des données par TCG",
     "tracked": "{count} suivis",
     "noData": "pas de données",
-    "dailyHealthTitle": "Historique quotidien",
-    "dailyHealthIntro": "Un point par jour (UTC) : vert si tous les runs se sont bien terminés, rouge si au moins une erreur, orange si rien n'a tourné ce jour-là.",
-    "dailyHealthLegend": {
-      "ok": "OK",
-      "error": "Erreur",
-      "none": "Aucun run"
-    },
-    "dailyHealthTooltip": {
-      "ok": "{date} — OK",
-      "error": "{date} — erreur",
-      "none": "{date} — aucun run"
-    },
     "runningTitle": "En cours de synchronisation",
     "bothTcgs": "Pokémon & One Piece",
     "startedAt": "démarré {time}",
@@ -421,9 +409,6 @@
     "statMedianPop": "Population médiane",
     "statMedianPsa10": "Prix médian PSA 10",
     "histogramTitle": "Distribution de la population",
-    "heatmapTitle": "Population médiane par grade",
-    "heatmapDescription": "Population médiane (grades 6 à 10) par TCG, sur l'ensemble filtré actuel -- une autre lecture que l'histogramme de distribution ci-dessus, qui ne distingue ni le grade ni le TCG.",
-    "heatmapLegend": "Plus foncé = population médiane plus élevée",
     "table": {
       "card": "Carte",
       "language": "Langue",

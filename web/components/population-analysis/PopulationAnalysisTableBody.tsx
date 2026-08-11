@@ -4,16 +4,8 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import type { PopulationRow } from "@/lib/types";
 import { formatUsd } from "@/lib/format";
-import type { PopulationPriceGrade } from "@/lib/queries/populationAnalysis";
 import { LanguageFlag } from "@/components/ui/LanguageFlag";
 import { PopulationDetailModal } from "./PopulationDetailModal";
-
-const PRICE_FIELD: Record<PopulationPriceGrade, "ungradedPrice" | "psa8Price" | "psa9Price" | "psa10Price"> = {
-  ungraded: "ungradedPrice",
-  psa8: "psa8Price",
-  psa9: "psa9Price",
-  psa10: "psa10Price",
-};
 
 // Heatmap de rareté (demande utilisateur 2026-08-11) -- teinte inversée :
 // plus la population est BASSE, plus la cellule est foncée (rampe séquentielle
@@ -38,15 +30,8 @@ function heatStyle(percentile: number): React.CSSProperties {
 }
 
 // ─── Table body, cliquable -- ouvre PopulationDetailModal sur la ligne sélectionnée ──
-export function PopulationAnalysisTableBody({
-  rows,
-  priceGrade = "ungraded",
-}: {
-  rows: PopulationRow[];
-  priceGrade?: PopulationPriceGrade;
-}) {
+export function PopulationAnalysisTableBody({ rows }: { rows: PopulationRow[] }) {
   const [selected, setSelected] = useState<PopulationRow | null>(null);
-  const priceField = PRICE_FIELD[priceGrade];
 
   return (
     <>
@@ -87,9 +72,14 @@ export function PopulationAnalysisTableBody({
             {/* TCG */}
             <td className="px-4 py-3 capitalize text-muted-foreground">{r.tcg}</td>
 
-            {/* Price at the selected price grade (context for the min-price filter) */}
+            {/* Raw + PSA10, toujours les deux (demande utilisateur 2026-08-11) --
+                cf. commentaire de PopulationAnalysisTable sur pourquoi ces deux-là
+                précisément plutôt que le grade filtré à gauche. */}
             <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums font-medium">
-              {r[priceField] != null ? formatUsd(r[priceField]) : "—"}
+              {r.ungradedPrice != null ? formatUsd(r.ungradedPrice) : "—"}
+            </td>
+            <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums font-medium">
+              {r.psa10Price != null ? formatUsd(r.psa10Price) : "—"}
             </td>
 
             {/* Population by grade */}
