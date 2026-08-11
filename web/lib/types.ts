@@ -115,11 +115,25 @@ export interface FreshnessCell {
   constituents: number | null;
 }
 
+// Un jour par case, façon calendrier de contributions GitHub (demande
+// utilisateur 2026-08-11, "dans le creux qui reste") -- "ok" = au moins un
+// run réussi ce jour-là et aucune erreur, "error" = au moins une erreur,
+// "none" = aucune ligne sync_runs ce jour-là (cron manqué ou avant le début
+// du suivi). Toujours un jour calendaire, y compris les jours sans donnée --
+// cf. getDailyHealth (lib/queries/syncStatus.ts) qui comble les trous.
+export type DailyHealthStatus = "ok" | "error" | "none";
+
+export interface DailyHealthCell {
+  date: string; // 'YYYY-MM-DD', UTC
+  status: DailyHealthStatus;
+}
+
 export interface SyncStatusResponse {
   runningNow: SyncRun[];
   recentRuns: SyncRun[];
   recentErrors: SyncRun[];
   freshness: FreshnessCell[];
+  dailyHealth: DailyHealthCell[];
   fetchedAt: string;
 }
 

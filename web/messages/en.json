@@ -66,6 +66,18 @@
     "freshnessTitle": "Data freshness by TCG",
     "tracked": "{count} tracked",
     "noData": "no data",
+    "dailyHealthTitle": "Daily history",
+    "dailyHealthIntro": "One dot per day (UTC): green if every run finished successfully, red if at least one error, orange if nothing ran that day.",
+    "dailyHealthLegend": {
+      "ok": "OK",
+      "error": "Error",
+      "none": "No run"
+    },
+    "dailyHealthTooltip": {
+      "ok": "{date} — OK",
+      "error": "{date} — error",
+      "none": "{date} — no run"
+    },
     "runningTitle": "Sync in progress",
     "bothTcgs": "Pokémon & One Piece",
     "startedAt": "started {time}",

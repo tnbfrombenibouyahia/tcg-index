@@ -66,6 +66,18 @@
     "freshnessTitle": "Frescura de los datos por TCG",
     "tracked": "{count} seguidos",
     "noData": "sin datos",
+    "dailyHealthTitle": "Historial diario",
+    "dailyHealthIntro": "Un punto por día (UTC): verde si todas las ejecuciones terminaron bien, rojo si hubo al menos un error, naranja si no se ejecutó nada ese día.",
+    "dailyHealthLegend": {
+      "ok": "OK",
+      "error": "Error",
+      "none": "Sin ejecución"
+    },
+    "dailyHealthTooltip": {
+      "ok": "{date} — OK",
+      "error": "{date} — error",
+      "none": "{date} — sin ejecución"
+    },
     "runningTitle": "Sincronización en curso",
     "bothTcgs": "Pokémon y One Piece",
     "startedAt": "iniciado {time}",

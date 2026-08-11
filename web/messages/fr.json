@@ -66,6 +66,18 @@
     "freshnessTitle": "Fraîcheur des données par TCG",
     "tracked": "{count} suivis",
     "noData": "pas de données",
+    "dailyHealthTitle": "Historique quotidien",
+    "dailyHealthIntro": "Un point par jour (UTC) : vert si tous les runs se sont bien terminés, rouge si au moins une erreur, orange si rien n'a tourné ce jour-là.",
+    "dailyHealthLegend": {
+      "ok": "OK",
+      "error": "Erreur",
+      "none": "Aucun run"
+    },
+    "dailyHealthTooltip": {
+      "ok": "{date} — OK",
+      "error": "{date} — erreur",
+      "none": "{date} — aucun run"
+    },
     "runningTitle": "En cours de synchronisation",
     "bothTcgs": "Pokémon & One Piece",
     "startedAt": "démarré {time}",

@@ -1,6 +1,6 @@
 import sql from "@/lib/db";
 import { TCGS } from "@/lib/constants";
-import type { FreshnessCell, SyncRun, SyncStatusResponse } from "@/lib/types";
+import type { DailyHealthCell, DailyHealthStatus, FreshnessCell, SyncRun, SyncStatusResponse } from "@/lib/types";
 
 // Toutes les dates ::text (cf. lib/queries/indices.ts) -- évite l'ambiguïté
 // de fuseau d'un objet JS Date sur une colonne DATE/TIMESTAMPTZ.
@@ -97,6 +97,49 @@ export async function getRecentErrors(limit = 50): Promise<SyncRun[]> {
   return rows.map(toSyncRun);
 }
 
+interface DailyHealthRow {
+  day: string; // 'YYYY-MM-DD', déjà en UTC (cf. requête)
+  hasError: boolean;
+  hasSuccess: boolean;
+}
+
+// Calendrier façon GitHub (demande utilisateur 2026-08-11, "dans le creux
+// qui reste" du nouveau layout plein-écran de /live) : un point par jour sur
+// les `days` derniers jours. Le GROUP BY ne renvoie que les jours avec au
+// moins une ligne sync_runs -- les trous (jour sans aucun run, cron manqué
+// ou avant le début du suivi le 2026-08-09) sont comblés ici en JS plutôt
+// qu'avec generate_series côté SQL, plus simple à lire pour une plage aussi
+// courte (quelques dizaines/centaines de lignes au pire). Bucket en UTC
+// explicite (`AT TIME ZONE 'UTC'`) -- cohérent avec les horaires de cron
+// documentés en dur dans ScheduleBar, tous en UTC.
+export async function getDailyHealth(days = 91): Promise<DailyHealthCell[]> {
+  const since = new Date();
+  since.setUTCDate(since.getUTCDate() - (days - 1));
+  since.setUTCHours(0, 0, 0, 0);
+
+  const rows = await sql<DailyHealthRow[]>`
+    SELECT
+      (started_at AT TIME ZONE 'UTC')::date::text AS day,
+      bool_or(status = 'error') AS "hasError",
+      bool_or(status = 'success') AS "hasSuccess"
+    FROM sync_runs
+    WHERE started_at >= ${since.toISOString()}
+    GROUP BY day
+  `;
+  const byDay = new Map(rows.map((r) => [r.day, r]));
+
+  const cells: DailyHealthCell[] = [];
+  for (let offset = 0; offset < days; offset++) {
+    const d = new Date(since);
+    d.setUTCDate(d.getUTCDate() + offset);
+    const iso = d.toISOString().slice(0, 10);
+    const row = byDay.get(iso);
+    const status: DailyHealthStatus = !row ? "none" : row.hasError ? "error" : row.hasSuccess ? "ok" : "none";
+    cells.push({ date: iso, status });
+  }
+  return cells; // ordre chronologique, du plus ancien (index 0) à aujourd'hui (dernier)
+}
+
 interface ItemsFreshnessRow {
   tcg: string;
   lastFinishedAt: string | null;
@@ -191,11 +234,12 @@ export async function getFreshnessGrid(): Promise<FreshnessCell[]> {
 }
 
 export async function getSyncStatus(): Promise<SyncStatusResponse> {
-  const [runningNow, recentRuns, recentErrors, freshness] = await Promise.all([
+  const [runningNow, recentRuns, recentErrors, freshness, dailyHealth] = await Promise.all([
     getRunningSyncs(),
     getRecentRuns(),
     getRecentErrors(),
     getFreshnessGrid(),
+    getDailyHealth(),
   ]);
-  return { runningNow, recentRuns, recentErrors, freshness, fetchedAt: new Date().toISOString() };
+  return { runningNow, recentRuns, recentErrors, freshness, dailyHealth, fetchedAt: new Date().toISOString() };
 }
