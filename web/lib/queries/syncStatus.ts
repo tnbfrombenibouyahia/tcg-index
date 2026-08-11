@@ -121,12 +121,35 @@ interface DailyHealthRow {
 // qui rendrait les libellés "L M M J V S D" côté composant faux un jour sur
 // sept. La dernière colonne (semaine courante) peut être incomplète --
 // s'arrête à aujourd'hui, jamais de jour futur dans le calendrier.
+// `start` ne recule plus systématiquement de `weeks` semaines pleines
+// (demande utilisateur 2026-08-11, "pas avoir tout le orange") : le suivi
+// n'a démarré que le 2026-08-09 (cf. commentaire ci-dessus), donc une
+// fenêtre fixe de 13 semaines affichait ~88 jours "none" avant la moindre
+// vraie donnée -- presque tout le calendrier en orange. `start` est
+// maintenant le PLUS RÉCENT des deux : le lundi de la semaine `weeks - 1`
+// (comme avant, plafond si le projet tourne depuis longtemps) OU le lundi
+// de la semaine du tout premier `sync_runs` (si le suivi est plus jeune que
+// la fenêtre `weeks`) -- ne montre jamais de jour antérieur au vrai début
+// du suivi.
+async function _trackingStartMonday(): Promise<Date | null> {
+  const [row] = await sql<{ first: string | null }[]>`
+    SELECT min(started_at)::date::text AS first FROM sync_runs
+  `;
+  if (!row?.first) return null;
+  const first = new Date(`${row.first}T00:00:00Z`);
+  const daysSinceMonday = (first.getUTCDay() + 6) % 7;
+  first.setUTCDate(first.getUTCDate() - daysSinceMonday);
+  return first;
+}
+
 export async function getDailyHealth(weeks = 13): Promise<DailyHealthCell[]> {
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
   const daysSinceMonday = (today.getUTCDay() + 6) % 7; // getUTCDay(): 0=dim..6=sam -> 0=lun..6=dim
-  const start = new Date(today);
-  start.setUTCDate(start.getUTCDate() - daysSinceMonday - (weeks - 1) * 7);
+  const fallbackStart = new Date(today);
+  fallbackStart.setUTCDate(fallbackStart.getUTCDate() - daysSinceMonday - (weeks - 1) * 7);
+  const trackingStart = await _trackingStartMonday();
+  const start = trackingStart && trackingStart > fallbackStart ? trackingStart : fallbackStart;
 
   const rows = await sql<DailyHealthRow[]>`
     SELECT

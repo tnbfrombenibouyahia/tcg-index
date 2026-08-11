@@ -6,10 +6,17 @@ import { formatDate } from "@/lib/format";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import type { DailyHealthCell, DailyHealthStatus } from "@/lib/types";
 
+// "none" repassé de l'ambre (#d97706) au gris clair -- demande utilisateur
+// 2026-08-11 ("commencer à partir du vert... pas avoir tout le orange, les
+// autres cases seront grises claires"). Combiné au fix côté
+// getDailyHealth (lib/queries/syncStatus.ts) qui n'affiche plus les jours
+// antérieurs au vrai début du suivi : "none" ne devrait plus représenter
+// qu'un vrai jour sans run après coup (cron manqué), pas 88 jours de
+// remplissage avant que le projet existe.
 const STATUS_COLOR: Record<DailyHealthStatus, string> = {
   ok: "var(--positive)",
   error: "var(--negative)",
-  none: "#d97706", // même ambre que DataCoverageSection (tier 30-69%), pas de token dédié
+  none: "var(--tint-neutral-strong)",
 };
 
 const LEGEND_DOT = 10;
@@ -145,7 +152,6 @@ export function DailyHealthTracker({ cells }: { cells: DailyHealthCell[] }) {
               style={{
                 borderRadius: "2px",
                 background: STATUS_COLOR[cell.status],
-                opacity: cell.status === "none" ? 0.55 : 1,
                 cursor: "default",
               }}
             />
