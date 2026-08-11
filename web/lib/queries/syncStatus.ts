@@ -105,17 +105,28 @@ interface DailyHealthRow {
 
 // Calendrier façon GitHub (demande utilisateur 2026-08-11, "dans le creux
 // qui reste" du nouveau layout plein-écran de /live) : un point par jour sur
-// les `days` derniers jours. Le GROUP BY ne renvoie que les jours avec au
-// moins une ligne sync_runs -- les trous (jour sans aucun run, cron manqué
-// ou avant le début du suivi le 2026-08-09) sont comblés ici en JS plutôt
-// qu'avec generate_series côté SQL, plus simple à lire pour une plage aussi
-// courte (quelques dizaines/centaines de lignes au pire). Bucket en UTC
-// explicite (`AT TIME ZONE 'UTC'`) -- cohérent avec les horaires de cron
-// documentés en dur dans ScheduleBar, tous en UTC.
-export async function getDailyHealth(days = 91): Promise<DailyHealthCell[]> {
-  const since = new Date();
-  since.setUTCDate(since.getUTCDate() - (days - 1));
-  since.setUTCHours(0, 0, 0, 0);
+// `weeks` semaines. Le GROUP BY ne renvoie que les jours avec au moins une
+// ligne sync_runs -- les trous (jour sans aucun run, cron manqué ou avant le
+// début du suivi le 2026-08-09) sont comblés ici en JS plutôt qu'avec
+// generate_series côté SQL, plus simple à lire pour une plage aussi courte
+// (quelques dizaines/centaines de lignes au pire). Bucket en UTC explicite
+// (`AT TIME ZONE 'UTC'`) -- cohérent avec les horaires de cron documentés en
+// dur dans ScheduleBar, tous en UTC.
+//
+// Aligné sur le lundi (2026-08-11, demande utilisateur : ajouter des
+// libellés jour/mois au calendrier) -- `start` recule jusqu'au lundi de la
+// semaine `weeks - 1` avant la semaine courante, pas juste "aujourd'hui -
+// N jours". Sans cet alignement, la ligne 0 de la grille tombe sur un jour
+// de semaine arbitraire (celui d'il y a 90 jours) qui change chaque jour, ce
+// qui rendrait les libellés "L M M J V S D" côté composant faux un jour sur
+// sept. La dernière colonne (semaine courante) peut être incomplète --
+// s'arrête à aujourd'hui, jamais de jour futur dans le calendrier.
+export async function getDailyHealth(weeks = 13): Promise<DailyHealthCell[]> {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const daysSinceMonday = (today.getUTCDay() + 6) % 7; // getUTCDay(): 0=dim..6=sam -> 0=lun..6=dim
+  const start = new Date(today);
+  start.setUTCDate(start.getUTCDate() - daysSinceMonday - (weeks - 1) * 7);
 
   const rows = await sql<DailyHealthRow[]>`
     SELECT
@@ -123,21 +134,19 @@ export async function getDailyHealth(days = 91): Promise<DailyHealthCell[]> {
       bool_or(status = 'error') AS "hasError",
       bool_or(status = 'success') AS "hasSuccess"
     FROM sync_runs
-    WHERE started_at >= ${since.toISOString()}
+    WHERE started_at >= ${start.toISOString()}
     GROUP BY day
   `;
   const byDay = new Map(rows.map((r) => [r.day, r]));
 
   const cells: DailyHealthCell[] = [];
-  for (let offset = 0; offset < days; offset++) {
-    const d = new Date(since);
-    d.setUTCDate(d.getUTCDate() + offset);
+  for (const d = new Date(start); d <= today; d.setUTCDate(d.getUTCDate() + 1)) {
     const iso = d.toISOString().slice(0, 10);
     const row = byDay.get(iso);
     const status: DailyHealthStatus = !row ? "none" : row.hasError ? "error" : row.hasSuccess ? "ok" : "none";
     cells.push({ date: iso, status });
   }
-  return cells; // ordre chronologique, du plus ancien (index 0) à aujourd'hui (dernier)
+  return cells; // ordre chronologique, du plus ancien (lundi, index 0) à aujourd'hui (dernier)
 }
 
 interface ItemsFreshnessRow {

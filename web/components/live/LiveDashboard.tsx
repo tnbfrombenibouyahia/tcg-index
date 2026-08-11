@@ -81,15 +81,18 @@ export function LiveDashboard({ initialData, coverage }: { initialData: SyncStat
           dans la colonne étroite 0.8fr, ses 5 badges de cadence débordaient
           sur 4-5 lignes et écrasaient FreshnessGrid en dessous.
 
-          DailyHealthTracker (calendrier façon GitHub, demande utilisateur
-          2026-08-11 "dans le creux qui reste") vient sous FreshnessGrid dans
-          la même colonne, avec `marginTop: auto` : sur les écrans où
-          FreshnessGrid ne remplit pas toute la hauteur allouée par la grille
-          (typiquement les grands écrans, cf. commentaire ci-dessus sur le
-          "27 pouces"), il vient occuper exactement l'espace vide en bas
-          plutôt que de le laisser blanc -- et repasse en flux normal juste
-          en dessous, avec le scroll interne existant de la colonne, quand
-          il ne reste pas assez de place (ex. 1366×768). */}
+          DailyHealthTracker (calendrier façon GitHub) vient sous
+          FreshnessGrid dans la même colonne. Repensé le 2026-08-11 (nouvelle
+          demande utilisateur : "fraîcheur et historique se rejoignent pour
+          remplir le vide, page propre") -- au lieu d'un `marginTop: auto`
+          qui poussait une carte de taille fixe vers le bas (invisible si le
+          vide était trop petit pour elle), le tracker prend maintenant
+          `flex: 1` et sa grille interne passe en `1fr` (cf. son commentaire) :
+          il s'étire pour occuper EXACTEMENT l'espace qui reste sous
+          FreshnessGrid, quelle que soit la hauteur d'écran. Résultat : la
+          colonne gauche (fraîcheur + calendrier) se termine toujours à la
+          même hauteur que l'historique à droite -- les deux "se rejoignent"
+          au lieu de laisser un vide en dessous de l'une ou l'autre. */}
       <div style={{ flexShrink: 0 }}>
         <DataCoverageSection rows={coverage} />
       </div>
@@ -102,13 +105,11 @@ export function LiveDashboard({ initialData, coverage }: { initialData: SyncStat
       </div>
 
       <div className="grid gap-3.5 lg:grid-cols-[0.8fr_1.2fr]" style={{ flex: 1, minHeight: 0 }}>
-        <div style={{ minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+        <div style={{ minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: "12px" }}>
           <div style={{ flexShrink: 0 }}>
             <FreshnessGrid freshness={data.freshness} />
           </div>
-          <div style={{ flexShrink: 0, marginTop: "auto", paddingTop: "12px" }}>
-            <DailyHealthTracker cells={data.dailyHealth} />
-          </div>
+          <DailyHealthTracker cells={data.dailyHealth} />
         </div>
         <div style={{ minHeight: 0 }}>
           <RunsTimeline runs={data.recentRuns} />
