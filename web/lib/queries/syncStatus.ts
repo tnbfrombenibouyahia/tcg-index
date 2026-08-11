@@ -65,14 +65,23 @@ export async function getRecentRuns(limit = 100): Promise<SyncRun[]> {
 }
 
 // Requête séparée plutôt qu'un simple .filter() côté client sur recentRuns :
-// les erreurs sont rares (13/97 runs au moment d'écrire ceci) et doivent
-// rester visibles même une fois que `recentRuns` aura tourné au-delà de la
-// dernière erreur -- page /live, section debug dédiée.
+// les erreurs sont rares et doivent rester visibles même une fois que
+// `recentRuns` aura tourné au-delà de la dernière erreur -- page /live,
+// section debug dédiée.
+//
+// Fenêtre de 48h ajoutée le 2026-08-11 (demande utilisateur) : sans borne de
+// temps, une rafale d'erreurs déjà résolue (ex. conflits d'écriture
+// CockroachDB corrigés par le backoff de shared.db, ou quota API TCG déjà
+// géré par le sync incrémental) reste affichée indéfiniment tant que
+// personne ne purge `sync_runs` à la main -- ça a fini par polluer la page
+// avec 30 lignes d'un incident vieux de plus d'un jour alors que tout
+// tournait proprement depuis. 48h (pas 24h) pour survivre à un week-end/jour
+// sans cron sans faire disparaître une vraie panne en cours de diagnostic.
 export async function getRecentErrors(limit = 50): Promise<SyncRun[]> {
   const rows = await sql<SyncRunRow[]>`
     SELECT ${syncRunColumns()}
     FROM sync_runs
-    WHERE status = 'error'
+    WHERE status = 'error' AND started_at > now() - interval '48 hours'
     ORDER BY started_at DESC
     LIMIT ${limit}
   `;
