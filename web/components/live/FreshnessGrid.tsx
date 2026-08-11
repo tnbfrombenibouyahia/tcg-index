@@ -10,38 +10,48 @@ import { StatusDot } from "./StatusDot";
 
 const SEGMENT_ORDER: FreshnessSegment[] = ["items", "sealed", "single", "grading"];
 
+// Depuis le 2026-08-11 (demande utilisateur : "supprime l'historique
+// quotidien... remplie la page... fraîcheur des données par TCG à la
+// place"), ce composant occupe SEUL toute la colonne gauche de /live (plus
+// de DailyHealthTracker en dessous, cf. LiveDashboard) : les cartes
+// s'étirent en `flex: 1` (une par TCG, empilées verticalement -- `flex`
+// colonne plutôt que l'ancienne grille `auto-fit` qui les mettait côte à
+// côte, pour qu'elles se partagent toute la hauteur disponible au lieu de
+// se tasser en haut) et leurs 4 lignes internes se répartissent l'espace
+// via `justify-content: space-evenly` plutôt que de rester collées en haut
+// de la carte -- padding et tailles de police augmentés en conséquence
+// (carte plus grande = contenu plus grand, pas juste plus de vide).
 export function FreshnessGrid({ freshness }: { freshness: FreshnessCell[] }) {
   const t = useTranslations("live");
   const tSegments = useTranslations("live.segments");
   const locale = useLocale();
 
   return (
-    <section>
+    <section style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <h2
         className="text-xs font-semibold uppercase"
-        style={{ color: "var(--foreground-muted)", letterSpacing: "0.10em", marginBottom: "8px" }}
+        style={{ color: "var(--foreground-muted)", letterSpacing: "0.10em", marginBottom: "10px", flexShrink: 0 }}
       >
         {t("freshnessTitle")}
       </h2>
-      {/* auto-fit sur la largeur réelle du conteneur plutôt que `sm:grid-cols-2`
-          (media query basée sur le viewport) -- depuis le 2026-08-11 ce grid
-          vit dans la colonne étroite (0.8fr) de LiveDashboard à côté de
-          l'historique, pas en pleine largeur de page ; un point de rupture
-          viewport aurait forcé 2 colonnes même dans un espace trop resserré. */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: "12px" }}>
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: "14px" }}>
         {TCGS.map(({ value: tcg, label }) => {
           const cells = SEGMENT_ORDER.map(
             (segment) => freshness.find((c) => c.tcg === tcg && c.segment === segment) ?? null
           );
           return (
-            <div key={tcg} className="card-glass" style={{ padding: "14px 18px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+            <div
+              key={tcg}
+              className="card-glass"
+              style={{ flex: 1, minHeight: 0, padding: "22px 28px", display: "flex", flexDirection: "column" }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px", flexShrink: 0 }}>
                 <TcgIcon tcg={tcg} />
-                <span style={{ fontSize: "13.5px", fontWeight: 700, color: "var(--foreground)", letterSpacing: "-0.01em" }}>
+                <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--foreground)", letterSpacing: "-0.01em" }}>
                   {label}
                 </span>
               </div>
-              <div style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", justifyContent: "space-evenly" }}>
                 {SEGMENT_ORDER.map((segment, i) => {
                   const cell = cells[i];
                   const tone = getFreshnessTone(cell?.lastUpdated ?? null);
@@ -52,23 +62,23 @@ export function FreshnessGrid({ freshness }: { freshness: FreshnessCell[] }) {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
-                        padding: "7px 0",
+                        padding: "10px 0",
                         borderTop: i === 0 ? "none" : "1px solid var(--border)",
                       }}
                     >
-                      <span style={{ fontSize: "13px", color: "var(--foreground)", fontWeight: 500 }}>
+                      <span style={{ fontSize: "14.5px", color: "var(--foreground)", fontWeight: 500 }}>
                         {tSegments(segment)}
                       </span>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                         {cell?.constituents ? (
-                          <span style={{ fontSize: "11px", color: "var(--foreground-subtle)" }}>
+                          <span style={{ fontSize: "12px", color: "var(--foreground-subtle)" }}>
                             {t("tracked", { count: cell.constituents.toLocaleString(locale) })}
                           </span>
                         ) : null}
-                        <span style={{ fontSize: "12px", color: "var(--foreground-muted)" }}>
+                        <span style={{ fontSize: "13px", color: "var(--foreground-muted)" }}>
                           {cell?.lastUpdated ? formatRelativeTime(cell.lastUpdated, locale) : t("noData")}
                         </span>
-                        <StatusDot color={TONE_COLORS[tone]} size={7} />
+                        <StatusDot color={TONE_COLORS[tone]} size={8} />
                       </div>
                     </div>
                   );

@@ -7,7 +7,6 @@ import type { DataCoverageRow, SyncStatusResponse } from "@/lib/types";
 import { ErrorsPanel } from "./ErrorsPanel";
 import { ScheduleBar } from "./ScheduleBar";
 import { FreshnessGrid } from "./FreshnessGrid";
-import { DailyHealthTracker } from "./DailyHealthTracker";
 import { DataCoverageSection } from "./DataCoverageSection";
 import { RunningNowPanel } from "./RunningNowPanel";
 import { RunsTimeline } from "./RunsTimeline";
@@ -81,18 +80,14 @@ export function LiveDashboard({ initialData, coverage }: { initialData: SyncStat
           dans la colonne étroite 0.8fr, ses 5 badges de cadence débordaient
           sur 4-5 lignes et écrasaient FreshnessGrid en dessous.
 
-          DailyHealthTracker (calendrier façon GitHub) vient sous
-          FreshnessGrid dans la même colonne. Repensé le 2026-08-11 (nouvelle
-          demande utilisateur : "fraîcheur et historique se rejoignent pour
-          remplir le vide, page propre") -- au lieu d'un `marginTop: auto`
-          qui poussait une carte de taille fixe vers le bas (invisible si le
-          vide était trop petit pour elle), le tracker prend maintenant
-          `flex: 1` et sa grille interne passe en `1fr` (cf. son commentaire) :
-          il s'étire pour occuper EXACTEMENT l'espace qui reste sous
-          FreshnessGrid, quelle que soit la hauteur d'écran. Résultat : la
-          colonne gauche (fraîcheur + calendrier) se termine toujours à la
-          même hauteur que l'historique à droite -- les deux "se rejoignent"
-          au lieu de laisser un vide en dessous de l'une ou l'autre. */}
+          DailyHealthTracker (calendrier façon GitHub) SUPPRIMÉ le 2026-08-11
+          (demande utilisateur suivante : "supprime l'historique quotidien...
+          remplie la page... fraîcheur des données par TCG à la place") --
+          FreshnessGrid occupe maintenant seule la colonne gauche, en
+          `flex: 1` (au lieu de `flexShrink: 0` + un tracker en dessous) :
+          ses cartes par TCG s'étirent pour occuper tout l'espace qui reste
+          sous ScheduleBar, cf. FreshnessGrid pour comment chaque carte se
+          répartit la hauteur disponible. */}
       <div style={{ flexShrink: 0 }}>
         <DataCoverageSection rows={coverage} />
       </div>
@@ -105,11 +100,8 @@ export function LiveDashboard({ initialData, coverage }: { initialData: SyncStat
       </div>
 
       <div className="grid gap-3.5 lg:grid-cols-[0.8fr_1.2fr]" style={{ flex: 1, minHeight: 0 }}>
-        <div style={{ minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: "12px" }}>
-          <div style={{ flexShrink: 0 }}>
-            <FreshnessGrid freshness={data.freshness} />
-          </div>
-          <DailyHealthTracker cells={data.dailyHealth} />
+        <div style={{ minHeight: 0 }}>
+          <FreshnessGrid freshness={data.freshness} />
         </div>
         <div style={{ minHeight: 0 }}>
           <RunsTimeline runs={data.recentRuns} />
