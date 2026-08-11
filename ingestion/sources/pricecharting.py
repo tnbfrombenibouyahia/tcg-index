@@ -1395,9 +1395,28 @@ _UPSERT_SALES_SQL = """
 # [[project_limitlesstcg_rarity_backfill]]) donc pas encore de tier :
 # la couper immédiatement l'empêcherait à jamais d'être capturée avant
 # même d'avoir eu la chance d'être classée comme "carte d'intérêt".
+#
+# `language = 'EN'` (ajouté 2026-08-10, bug constaté via /population-analysis) :
+# cette requête est TOUJOURS appelée avec un set_code de PRICECHARTING_SET_SLUGS
+# (le mapping EN) et une page PriceCharting EN (fetch_all_console_rows /
+# fetch_all_pop_set_rows sur ce même slug) -- elle ne doit donc matcher que des
+# items EN. Sans ce filtre, One Piece (où le JP réutilise le MÊME set_code que
+# l'EN, contrairement à Pokémon qui a un set_code JP-natif séparé, cf.
+# PRICECHARTING_JP_SEALED_SLUGS) mélangeait les deux catalogues dans
+# `singles_by_number` -- et les singles JP, créés directement depuis le texte
+# scrapé de PriceCharting (`_map_jp_single_row_to_item`), matchent quasi
+# toujours mieux qu'un item EN équivalent (nom apitcg différent, ex. "Roronoa
+# Zoro (025)" avec le numéro entre parenthèses -- pris à tort pour un
+# qualificatif de variante par `_qualifier_tokens`) même quand la ligne
+# PriceCharting scrapée est bien la version EN de la carte. Constaté en
+# conditions réelles : `population_snapshots` OP01-025 (Romance Dawn)
+# matchait sur les 2 items JP "Roronoa Zoro"/"[Alternate Art]" plutôt que sur
+# les 2 items EN, alors que la page scrapée était bien `/pop/set/one-piece-
+# romance-dawn` (l'EN). Sans risque côté Pokémon (vérifié : aucun set_code EN
+# n'y mélange les langues) -- le JP y a son propre set_code, jamais partagé.
 _ITEMS_FOR_SET_SQL = """
     SELECT id, category, code, name FROM items
-    WHERE tcg = %s AND set_code = %s
+    WHERE tcg = %s AND set_code = %s AND language = 'EN'
       AND NOT (tcg = 'pokemon' AND category = 'single'
                AND rarity IS NOT NULL AND interest_tier IS NULL)
 """
@@ -1413,10 +1432,12 @@ _ITEMS_FOR_SET_SQL = """
 # d'un set vintage n'a jamais de interest_tier, par design, cf. commentaire
 # ci-dessus). La rareté d'une carte n'a aucun rapport avec sa rareté de
 # POPULATION gradée -- un simple commun vintage peut très bien n'avoir que
-# 2 exemplaires connus en PSA 10.
+# 2 exemplaires connus en PSA 10. `language = 'EN'` : même raison exacte
+# que sur `_ITEMS_FOR_SET_SQL` ci-dessus (One Piece EN/JP partagent le même
+# set_code, cf. son commentaire pour le détail complet et l'exemple constaté).
 _ALL_ITEMS_FOR_SET_SQL = """
     SELECT id, category, code, name FROM items
-    WHERE tcg = %s AND set_code = %s
+    WHERE tcg = %s AND set_code = %s AND language = 'EN'
 """
 
 
