@@ -373,17 +373,16 @@ def run_population_sync(run_type: str) -> None:
     scraper plus souvent ne rapporterait rien de neuf.
 
     Volet JP (ajouté 2026-08-12, cf. `sync_population_for_jp_set`) : PriceCharting
-    publie aussi une page population par set JAPONAIS -- scopé à One Piece
-    UNIQUEMENT pour l'instant (demande utilisateur explicite : "One Piece
-    d'abord", Pokémon JP dans un tour séparé -- 373 sets vs 56, pas encore
-    backfillé/vérifié). Étendre à `tcg=None` (les deux TCG) une fois Pokémon
-    JP traité. Un seul run `sync_runs` pour EN+JP OP combinés -- même
-    granularité que le reste de cette fonction."""
+    publie aussi une page population par set JAPONAIS -- One Piece backfillé
+    en premier (demande utilisateur "One Piece d'abord"), Pokémon JP (373
+    sets, vs 56 côté One Piece) backfillé le même jour dans un tour séparé,
+    `tcg=None` couvre maintenant les deux TCG. Un seul run `sync_runs` pour
+    EN+JP combinés -- même granularité que le reste de cette fonction."""
     print("\n=== Population PSA+CGC (PriceCharting) ===")
     run_id = start_run(run_type, "population")
     try:
         results = pricecharting.sync_all_mapped_population()
-        results += pricecharting.sync_all_mapped_jp_population(tcg="one-piece")
+        results += pricecharting.sync_all_mapped_jp_population()
     except Exception as exc:
         finish_run(run_id, status="error", detail=str(exc))
         raise
