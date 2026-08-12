@@ -333,6 +333,35 @@ export interface PopulationRow {
   totalPercentile: number;
 }
 
+// Repli de recherche sur /population-analysis (demande utilisateur
+// 2026-08-12, cf. [[project_population_analysis]]) : une carte qui a un
+// PRIX connu (grading_roi_inputs) mais aucune ligne population_snapshots --
+// jamais mélangée à PopulationRow (pas de champ `population`, volontairement
+// distinct plutôt que `population: PopulationCalc | null` partout, pour ne
+// pas fragiliser tri/percentiles/heatmap/stats qui supposent tous une
+// population réelle sur l'ensemble principal). N'apparaît QUE quand une
+// recherche texte ne renvoie AUCUN résultat côté population -- jamais dans
+// le listing par défaut, cf. getPopulationRanking. `priceChartingUrl` pointe
+// vers une recherche PriceCharting (pas une URL produit devinée -- trop
+// fragile à construire nous-mêmes, cf. commentaire de la fonction qui la
+// construit) : la carte cherchée est garantie d'apparaître en tête des
+// résultats, même quand PriceCharting lui-même n'a aucune population à
+// publier pour ce tirage précis (le cas qui a motivé cette fonctionnalité).
+export interface PopulationPriceOnlyRow {
+  itemId: number;
+  name: string;
+  imageUrl: string | null;
+  tcg: Tcg;
+  language: string;
+  setCode: string | null;
+  code: string | null;
+  ungradedPrice: number | null;
+  psa8Price: number | null;
+  psa9Price: number | null;
+  psa10Price: number | null;
+  priceChartingUrl: string;
+}
+
 export interface ItemDetail extends ItemSummary {
   releaseDate: string | null;
   latestPrices: ItemPriceEntry[];

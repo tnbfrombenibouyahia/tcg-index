@@ -7,6 +7,7 @@ import { PopulationSummary } from "@/components/population-analysis/PopulationSu
 import { PopulationCapHeatmap } from "@/components/population-analysis/PopulationCapHeatmap";
 import { PopulationCorrelation } from "@/components/population-analysis/PopulationCorrelation";
 import { PopulationAnalysisTable } from "@/components/population-analysis/PopulationAnalysisTable";
+import { PopulationPriceOnlyFallback } from "@/components/population-analysis/PopulationPriceOnlyFallback";
 import { SourceBadges } from "@/components/ui/SourceBadge";
 import {
   getPopulationRanking,
@@ -106,7 +107,7 @@ export default async function PopulationAnalysisPage({
   const searchRaw = Array.isArray(raw.q) ? raw.q[0] : raw.q;
   const search = searchRaw?.trim() || undefined;
 
-  const { rows, totalCount, stats } = await getPopulationRanking({
+  const { rows, totalCount, stats, priceOnlyFallback } = await getPopulationRanking({
     tcg, limit: PAGE_SIZE, page, sort, priceGrade, priceRange, popRange, search,
   });
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
@@ -140,7 +141,14 @@ export default async function PopulationAnalysisPage({
           <PopulationSearchBar />
 
           {rows.length === 0 ? (
-            <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
+            priceOnlyFallback && priceOnlyFallback.length > 0 ? (
+              <div className="flex flex-col gap-3">
+                <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
+                <PopulationPriceOnlyFallback rows={priceOnlyFallback} />
+              </div>
+            ) : (
+              <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
+            )
           ) : (
             <>
               <p className="mb-3 text-xs text-muted-foreground">{t("count", { count: totalCount.toLocaleString(locale) })}</p>

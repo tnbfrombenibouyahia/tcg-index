@@ -1,5 +1,5 @@
 import sql from "@/lib/db";
-import type { PopulationRow } from "@/lib/types";
+import type { PopulationRow, PopulationPriceOnlyRow } from "@/lib/types";
 import type { Tcg } from "@/lib/constants";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -283,6 +283,107 @@ async function fetchCandidates({
   return rows.map(toRow);
 }
 
+// Lien "voir sur PriceCharting" du repli de recherche ci-dessous -- une
+// recherche PriceCharting (`/search-products?q=...`), PAS une URL produit
+// devinée (`/game/{set-slug}/{card-slug}`). Construire le slug produit
+// nous-mêmes serait fragile (vérifié à la main : ponctuation, apostrophes,
+// mise en forme du titre PriceCharting pas toujours déductible du nom en
+// base) et risquerait un 404. La recherche, elle, est fiable par
+// construction : testée en conditions réelles sur "Roronoa Zoro Alternate
+// Art Manga OP06-118" -- renvoie la bonne fiche produit EN ET JP en tête de
+// résultats à chaque fois. `type=prices` = catégorie par défaut de
+// PriceCharting (cartes à collectionner y compris TCG), pas besoin de
+// filtrer davantage.
+function buildPriceChartingSearchUrl(name: string, code: string | null): string {
+  const q = [name, code].filter((part): part is string => Boolean(part)).join(" ");
+  return `https://www.pricecharting.com/search-products?q=${encodeURIComponent(q)}&type=prices`;
+}
+
+// Repli de recherche (demande utilisateur 2026-08-12, cf.
+// [[project_population_analysis]] : "au moins affiche le prix et fait en
+// sorte que je puisse le reach sur la page psa pop mais si c'est null") --
+// UNIQUEMENT appelée par getPopulationRanking quand une recherche texte ne
+// renvoie AUCUNE carte côté population (jamais dans le listing par défaut :
+// la page reste "population = axe principal", décision explicite, cf.
+// commentaire d'en-tête du fichier). Ancrée sur `items` + `grading_roi_inputs`
+// (le prix) plutôt que sur `population_snapshots` comme fetchCandidates --
+// `LEFT JOIN population_snapshots ... WHERE p.item_id IS NULL` exclut
+// justement les cartes qui apparaîtraient déjà dans le listing principal
+// (pas de doublon). Réutilise `_EXCLUDE_LOW_INTEREST_ITEMS_SQL` (même
+// exclusions Common/Uncommon/Promo/pré-release) -- pas de raison que le
+// repli montre des cartes que le listing principal aurait de toute façon
+// écartées. `hardCap` volontairement bas (25, pas 20000) : c'est un repli
+// d'affichage pour une poignée de résultats de recherche, pas un classement
+// à parcourir/trier/paginer comme fetchCandidates.
+async function fetchPriceOnlyFallback({
+  tcg,
+  search,
+  hardCap = 25,
+}: {
+  tcg?: Tcg;
+  search: string;
+  hardCap?: number;
+}): Promise<PopulationPriceOnlyRow[]> {
+  const rows = await sql<
+    Array<{
+      itemId: number;
+      name: string;
+      imageUrl: string | null;
+      tcg: string;
+      language: string;
+      setCode: string | null;
+      code: string | null;
+      ungradedPrice: number | null;
+      psa8Price: number | null;
+      psa9Price: number | null;
+      psa10Price: number | null;
+    }>
+  >`
+    WITH latest_price AS (
+      SELECT DISTINCT ON (item_id) item_id, ungraded_price, psa8_price, psa9_price, psa10_price
+      FROM grading_roi_inputs
+      ORDER BY item_id, captured_at DESC
+    )
+    SELECT
+      i.id::int4                AS "itemId",
+      i.name,
+      i.image_url               AS "imageUrl",
+      i.tcg,
+      i.language,
+      i.set_code                AS "setCode",
+      i.code,
+      lp.ungraded_price::float8 AS "ungradedPrice",
+      lp.psa8_price::float8     AS "psa8Price",
+      lp.psa9_price::float8     AS "psa9Price",
+      lp.psa10_price::float8    AS "psa10Price"
+    FROM items i
+    JOIN latest_price lp ON lp.item_id = i.id
+    LEFT JOIN population_snapshots p ON p.item_id = i.id
+    WHERE p.item_id IS NULL
+      ${_EXCLUDE_LOW_INTEREST_ITEMS_SQL}
+      ${tcg ? sql`AND i.tcg = ${tcg}` : sql``}
+      AND i.name ILIKE ${"%" + search + "%"}
+      AND (lp.ungraded_price IS NOT NULL OR lp.psa8_price IS NOT NULL OR lp.psa9_price IS NOT NULL OR lp.psa10_price IS NOT NULL)
+    ORDER BY COALESCE(lp.psa10_price, lp.psa9_price, lp.psa8_price, lp.ungraded_price) DESC NULLS LAST
+    LIMIT ${hardCap}
+  `;
+
+  return rows.map((r) => ({
+    itemId: r.itemId,
+    name: r.name,
+    imageUrl: r.imageUrl,
+    tcg: r.tcg as Tcg,
+    language: r.language,
+    setCode: r.setCode,
+    code: r.code,
+    ungradedPrice: r.ungradedPrice,
+    psa8Price: r.psa8Price,
+    psa9Price: r.psa9Price,
+    psa10Price: r.psa10Price,
+    priceChartingUrl: buildPriceChartingSearchUrl(r.name, r.code),
+  }));
+}
+
 export type PopulationSort =
   | "psa10_asc"
   | "psa10_desc"
@@ -517,6 +618,12 @@ export interface PopulationRankingResult {
   rows: PopulationRow[];
   totalCount: number;
   stats: PopulationStats;
+  // Rempli UNIQUEMENT quand `search` est fourni et que le classement
+  // population (`rows`) est vide -- cf. fetchPriceOnlyFallback. `undefined`
+  // (pas juste un tableau vide) dans tous les autres cas, pour que l'appelant
+  // distingue "pas de recherche / la recherche a des résultats" de "recherche
+  // sans résultat, voici un repli" sans avoir à re-vérifier `search`/`rows`.
+  priceOnlyFallback?: PopulationPriceOnlyRow[];
 }
 
 export async function getPopulationRanking({
@@ -533,9 +640,13 @@ export async function getPopulationRanking({
   const sorted = sortRows(candidates, sort);
   const ranked = withPercentiles(sorted);
   const offset = (Math.max(1, page) - 1) * limit;
-  return {
+  const result: PopulationRankingResult = {
     rows: ranked.slice(offset, offset + limit),
     totalCount: ranked.length,
     stats: computeStats(ranked),
   };
+  if (search?.trim() && ranked.length === 0) {
+    result.priceOnlyFallback = await fetchPriceOnlyFallback({ tcg, search: search.trim() });
+  }
+  return result;
 }
