@@ -302,10 +302,15 @@ function buildPriceChartingSearchUrl(name: string, code: string | null): string 
 // Repli de recherche (demande utilisateur 2026-08-12, cf.
 // [[project_population_analysis]] : "au moins affiche le prix et fait en
 // sorte que je puisse le reach sur la page psa pop mais si c'est null") --
-// UNIQUEMENT appelée par getPopulationRanking quand une recherche texte ne
-// renvoie AUCUNE carte côté population (jamais dans le listing par défaut :
-// la page reste "population = axe principal", décision explicite, cf.
-// commentaire d'en-tête du fichier). Ancrée sur `items` + `grading_roi_inputs`
+// appelée par getPopulationRanking dès qu'une recherche texte est active,
+// EN PLUS du classement population habituel (jamais dans le listing par
+// défaut SANS recherche : la page reste "population = axe principal" pour
+// le parcours libre, décision explicite, cf. commentaire d'en-tête du
+// fichier). Additif et pas seulement "si zéro résultat" -- une recherche
+// large comme "manga" trouve déjà des cartes AVEC population (7 en base),
+// ce qui ne doit pas masquer les nombreuses autres cartes Manga qui
+// matchent le nom mais n'ont pas de population, cf. commentaire de
+// getPopulationRanking. Ancrée sur `items` + `grading_roi_inputs`
 // (le prix) plutôt que sur `population_snapshots` comme fetchCandidates --
 // `LEFT JOIN population_snapshots ... WHERE p.item_id IS NULL` exclut
 // justement les cartes qui apparaîtraient déjà dans le listing principal
@@ -618,11 +623,11 @@ export interface PopulationRankingResult {
   rows: PopulationRow[];
   totalCount: number;
   stats: PopulationStats;
-  // Rempli UNIQUEMENT quand `search` est fourni et que le classement
-  // population (`rows`) est vide -- cf. fetchPriceOnlyFallback. `undefined`
-  // (pas juste un tableau vide) dans tous les autres cas, pour que l'appelant
-  // distingue "pas de recherche / la recherche a des résultats" de "recherche
-  // sans résultat, voici un repli" sans avoir à re-vérifier `search`/`rows`.
+  // Rempli dès que `search` est fourni, EN PLUS de `rows` (pas seulement
+  // quand `rows` est vide -- cf. commentaire dans getPopulationRanking pour
+  // le pourquoi de ce revirement). `undefined` (pas un tableau vide) quand
+  // aucune recherche n'est active, pour que l'appelant distingue "pas de
+  // recherche" de "recherche sans repli à afficher" sans re-vérifier `search`.
   priceOnlyFallback?: PopulationPriceOnlyRow[];
 }
 
@@ -645,7 +650,17 @@ export async function getPopulationRanking({
     totalCount: ranked.length,
     stats: computeStats(ranked),
   };
-  if (search?.trim() && ranked.length === 0) {
+  // Repli ADDITIF, pas seulement "si zéro résultat" (correction 2026-08-12,
+  // constat utilisateur : chercher "manga" trouvait déjà 7 cartes avec une
+  // vraie population -- Shanks/Ace/Gol.D.Roger/Sabo/Luffy -- donc `ranked`
+  // n'était jamais vide et le repli ne se déclenchait JAMAIS pour les ~71
+  // autres cartes Manga sans population -- Zoro/Nami/Law/etc. -- alors
+  // qu'elles matchent tout autant la recherche). Se déclenche donc dès
+  // qu'une recherche est active, qu'il y ait ou non des résultats côté
+  // population -- `fetchPriceOnlyFallback` exclut déjà nativement tout item
+  // qui a une ligne `population_snapshots` (`WHERE p.item_id IS NULL`), donc
+  // aucun risque de doublon avec `rows` ci-dessus.
+  if (search?.trim()) {
     result.priceOnlyFallback = await fetchPriceOnlyFallback({ tcg, search: search.trim() });
   }
   return result;

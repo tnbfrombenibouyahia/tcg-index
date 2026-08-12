@@ -140,15 +140,22 @@ export default async function PopulationAnalysisPage({
         <div className="min-w-0">
           <PopulationSearchBar />
 
+          {/* Repli de recherche : ADDITIF (demande utilisateur 2026-08-12,
+              corrigé après un premier essai trop restrictif -- "manga"
+              trouve déjà 7 cartes avec population, ce qui masquait
+              entièrement le repli sous l'ancienne condition "seulement si
+              rows est vide") -- son propre bloc bornée en hauteur/scrollable
+              (jamais dans `rows` lui-même : fetchPriceOnlyFallback exclut
+              nativement tout item déjà présent côté population), affiché
+              QUE `rows` soit vide ou non. */}
+          {priceOnlyFallback && priceOnlyFallback.length > 0 && (
+            <div className="mb-3" style={{ maxHeight: "240px", overflowY: "auto" }}>
+              <PopulationPriceOnlyFallback rows={priceOnlyFallback} />
+            </div>
+          )}
+
           {rows.length === 0 ? (
-            priceOnlyFallback && priceOnlyFallback.length > 0 ? (
-              <div className="flex flex-col gap-3">
-                <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
-                <PopulationPriceOnlyFallback rows={priceOnlyFallback} />
-              </div>
-            ) : (
-              <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
-            )
+            <EmptyState title={t("emptyTitle")} description={t("emptyDescription")} />
           ) : (
             <>
               <p className="mb-3 text-xs text-muted-foreground">{t("count", { count: totalCount.toLocaleString(locale) })}</p>
