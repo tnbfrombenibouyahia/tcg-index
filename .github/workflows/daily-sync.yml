@@ -18,19 +18,36 @@ name: Daily sync
 # repos programmés à :00). Pas littéralement minuit local : minuit CEST =
 # 22:00 UTC, ce qui aurait fait chevaucher le jour calendaire UTC précédent
 # -- sans incidence ici (pas de contrainte de jour de semaine), gardé simple.
+#
+# Incident 2026-08-12 : malgré le décalage +1h22 du 08-10 (cf. tiered-sync.yml),
+# retard de scheduling GitHub Actions ce soir-là (~1h45-2h11 sur les 3 crons de
+# la nuit) -- Daily sync et Tiered `hot` ont quand même tourné en même temps
+# (~1h18 de recouvrement avec `recent` en plus) et se sont marchés dessus sur
+# les tables d'agrégats (indices/undervalued/sealed_ev/volume), `hot` a
+# épuisé ses 10 retries CockroachDB et est sorti en erreur. Le calage horaire
+# ne peut pas fiabiliser un scheduler qu'on ne contrôle pas -- ajout d'un
+# `concurrency` group partagé avec tiered-sync.yml : la 2e run en conflit est
+# mise en file (pas annulée) au lieu d'écrire en parallèle, quel que soit le
+# retard du jour. Le compteur de timeout-minutes ne décompte que le temps
+# d'exécution, pas l'attente en file (doc GitHub) -- sans risque de cascade.
 on:
   schedule:
     - cron: "17 1 * * *"  # ~03:17 heure locale FR/SE (été)
   workflow_dispatch: {}
 
+concurrency:
+  group: pricecharting-sync
+  cancel-in-progress: false
+
 jobs:
   sync:
     runs-on: ubuntu-latest
-    # 90 min (était 60) depuis l'ajout du scellé JP + ventes individuelles
-    # (2026-08-01, cf. orchestrator.py run_price_sync) : ~380 items JP à 1
-    # requête chacun + pause polie ajoutent ~20-25 min au run quotidien,
-    # ce qui aurait rapproché dangereusement l'ancien plafond de 60 min.
-    timeout-minutes: 90
+    # 90 -> 120 min le 2026-08-12 : le run du 08-12 (sans collision avant la
+    # fin) a quand même dépassé les 90 min de peu (cancelled à 363/429 sets
+    # JP singles) -- le catalogue JP a grossi au-delà des ~380 items prévus
+    # au dimensionnement initial du 08-01. 120 min laisse de la marge pour la
+    # croissance du catalogue + l'attente éventuelle en concurrency group.
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 

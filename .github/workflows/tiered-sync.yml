@@ -49,6 +49,19 @@ name: Tiered grades & sales sync
 # pas y compter chaque nuit : hot démarre maintenant à 03:05 UTC, largement
 # après le pire cas de daily-sync (90 min de timeout -> fin au plus tard
 # 02:47 UTC).
+#
+# Incident 2026-08-12 : le calage horaire ci-dessus suppose un scheduling
+# GitHub Actions ponctuel, ce qui n'a pas tenu (retard ~1h45-2h11 cette
+# nuit-là) -- daily-sync, `hot` et `recent` ont fini par tourner en même
+# temps malgré l'espacement, `hot` a épuisé ses retries CockroachDB en
+# écrivant sur les mêmes tables d'agrégats que les deux autres et est sorti
+# en erreur (cf. daily-sync.yml pour le détail). Ajout d'un `concurrency`
+# group partagé avec daily-sync.yml : quel que soit le retard du jour, une
+# seule run écrit à la fois sur les agrégats, les autres (y compris entre
+# paliers de CE workflow, ex. hot+recent le même lundi/mercredi/vendredi)
+# sont mises en file plutôt qu'annulées ou lancées en parallèle. Le calage
+# horaire ci-dessus reste utile (limite la profondeur de la file la plupart
+# des nuits) mais n'est plus le seul filet.
 on:
   schedule:
     - cron: "05 3 * * *"      # hot : quotidien, ~05:05 heure locale
@@ -64,6 +77,10 @@ on:
         type: choice
         options: [hot, recent, established, vintage, jp_singles]
         default: hot
+
+concurrency:
+  group: pricecharting-sync
+  cancel-in-progress: false
 
 jobs:
   sync:
