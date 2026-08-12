@@ -1875,6 +1875,124 @@ def sync_all_mapped_population(tcg: str | None = None) -> list[dict]:
     return results
 
 
+# Miroir de `_ALL_ITEMS_FOR_SET_SQL` ci-dessus, côté JAPONAIS -- utilisée
+# uniquement par `sync_population_for_jp_set`. `language = 'JP'` fait tout le
+# travail de scoping : One Piece JP réutilise le même `set_code` que l'EN
+# (distingué seulement par cette colonne, cf. commentaire de
+# `_ITEMS_FOR_SET_SQL` plus haut) tandis que Pokémon JP a son propre
+# namespace `pokemon-jp-*` -- les deux cas passent par la même requête sans
+# branchement supplémentaire par TCG.
+_ALL_JP_ITEMS_FOR_SET_SQL = """
+    SELECT id, category, code, name FROM items
+    WHERE tcg = %s AND set_code = %s AND language = 'JP'
+"""
+
+
+def sync_population_for_jp_set(set_code: str, tcg: str) -> dict:
+    """Version JAPONAISE de `sync_population_for_set` -- même mécanique
+    (scrape `/pop/set/{slug}`, matching par numéro de carte extrait du titre +
+    `_best_single_match` pour départager les variantes), mais sur
+    `PRICECHARTING_JP_ALL_SLUGS` (superset de `PRICECHARTING_JP_SEALED_SLUGS`,
+    couvre tous les sets avec des singles JP connus en base, pas seulement
+    ceux avec du scellé) et `_ALL_JP_ITEMS_FOR_SET_SQL` (`language = 'JP'`) au
+    lieu des variantes EN.
+
+    Découvert 2026-08-12 (question utilisateur "pourquoi je n'ai que des
+    cartes anglaises sur /population-analysis") : PriceCharting publie bien
+    une page population dédiée par set JAPONAIS, même format que côté EN
+    (vérifié en direct sur `/pop/set/one-piece-japanese-wings-of-the-captain` :
+    128 lignes, grades 6-10 + total). Jusqu'ici jamais exploitée -- les items
+    JP existent pourtant déjà en base (créés par `sync_jp_singles_items_for_set`),
+    donc `/population-analysis` ne pouvait mécaniquement montrer que la
+    moitié EN de chaque carte via son `JOIN population_snapshots`."""
+    slug = PRICECHARTING_JP_ALL_SLUGS.get(set_code)
+    if not slug:
+        raise ValueError(
+            f"Pas de mapping PriceCharting JP pour set_code={set_code!r}. "
+            f"Ajoute-le dans PRICECHARTING_JP_ALL_SLUGS."
+        )
+
+    rows = fetch_all_pop_set_rows(slug)
+
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(_ALL_JP_ITEMS_FOR_SET_SQL, (tcg, set_code))
+            items = [
+                {"id": r[0], "category": r[1], "code": r[2], "name": r[3]}
+                for r in cur.fetchall()
+            ]
+
+        singles_by_number: dict[int, list[dict]] = {}
+        for it in items:
+            if it["category"] != "single":
+                continue
+            n = _code_numerator(it["code"])
+            if n is not None:
+                singles_by_number.setdefault(n, []).append(it)
+
+        matches = []
+        unmatched = []
+        for row in rows:
+            number = _extract_number(row["title"])
+            if number is None:
+                continue  # scellé -- pas de population carte à matcher
+            candidates = singles_by_number.get(number)
+            item = _best_single_match(row["title"], candidates) if candidates else None
+            if item is None:
+                unmatched.append(row["title"])
+                continue
+            matches.append((row, item))
+
+        today = date.today()
+        canonical_rows = _select_canonical_rows(matches)
+        pop_rows = [
+            (
+                item_id, today, row["pop_grade6"], row["pop_grade7"], row["pop_grade8"],
+                row["pop_grade9"], row["pop_grade10"], row["pop_total"], "pricecharting",
+            )
+            for item_id, row in canonical_rows.items()
+        ]
+
+        if pop_rows:
+            with conn.cursor() as cur:
+                execute_values(cur, _UPSERT_POPULATION_SNAPSHOTS_SQL, pop_rows)
+                conn.commit()
+    finally:
+        conn.close()
+
+    return {
+        "set_code": set_code,
+        "pricecharting_slug": slug,
+        "rows_scraped": len(rows),
+        "rows_matched": len(pop_rows),
+        "rows_unmatched": len(unmatched),
+        "unmatched_titles": unmatched,
+    }
+
+
+def sync_all_mapped_jp_population(tcg: str | None = None) -> list[dict]:
+    """Équivalent JP de `sync_all_mapped_population` -- boucle sur
+    `PRICECHARTING_JP_ALL_SLUGS` au lieu de `PRICECHARTING_SET_SLUGS`."""
+    set_codes = [sc for sc in PRICECHARTING_JP_ALL_SLUGS if tcg is None or _tcg_from_set_code(sc) == tcg]
+    results = []
+    for i, set_code in enumerate(set_codes):
+        if i > 0:
+            time.sleep(MIN_SECONDS_BETWEEN_REQUESTS)
+        try:
+            stats = sync_population_for_jp_set(set_code, _tcg_from_set_code(set_code))
+            ratio = stats["rows_matched"] / stats["rows_scraped"] if stats["rows_scraped"] else 0.0
+            print(
+                f"[{i+1}/{len(set_codes)}] {set_code} -> {stats['pricecharting_slug']}: "
+                f"{stats['rows_matched']}/{stats['rows_scraped']} matchés ({ratio:.0%})"
+            )
+            results.append({**stats, "error": None})
+        except Exception as exc:
+            print(f"[{i+1}/{len(set_codes)}] {set_code}: ERREUR {exc}")
+            results.append({"set_code": set_code, "error": str(exc)})
+    return results
+
+
 # Cartes spéciales sans numéro qui passeraient à tort le filtre "pas de numéro
 # = scellé" ci-dessous (constaté en conditions réelles : "DON!! Card [Alternate
 # Art]" sur Fist of Divine Speed/Romance Dawn, "DON Card [Personnage]" --sans
@@ -2357,6 +2475,14 @@ def main():
         ),
     )
     parser.add_argument(
+        "--jp-population", action="store_true",
+        help=(
+            "Population PSA+CGC réelle côté JAPONAIS (PRICECHARTING_JP_ALL_SLUGS, "
+            "items language='JP') -- pendant JP de --population, cf. "
+            "sync_population_for_jp_set. 1 requête/set, --fetch-grades sans effet ici."
+        ),
+    )
+    parser.add_argument(
         "--jp-sealed", action="store_true",
         help=(
             "Scellé JAPONAIS (PRICECHARTING_JP_SEALED_SLUGS) au lieu du flux EN habituel : "
@@ -2387,6 +2513,31 @@ def main():
         scope = args.tcg or "tous"
         print(f"== Sync population PriceCharting (tcg={scope}) ==")
         results = sync_all_mapped_population(args.tcg)
+        errors = [r for r in results if r["error"]]
+        ok = [r for r in results if not r["error"]]
+        total_scraped = sum(r["rows_scraped"] for r in ok)
+        total_matched = sum(r["rows_matched"] for r in ok)
+        print(f"\n=== Bilan : {len(ok)} sets OK, {len(errors)} erreurs ===")
+        print(f"Total: {total_matched}/{total_scraped} lignes matchées ({total_matched/total_scraped:.0%})" if total_scraped else "Aucune ligne scrapée.")
+        if errors:
+            print("\nErreurs :")
+            for r in errors:
+                print(f"  {r['set_code']}: {r['error']}")
+        return
+
+    if args.jp_population:
+        if args.set_code:
+            tcg = args.tcg or _tcg_from_set_code(args.set_code)
+            print(f"== Sync population JP PriceCharting pour set_code={args.set_code} ==")
+            stats = sync_population_for_jp_set(args.set_code, tcg)
+            print(f"Scrapé: {stats['rows_scraped']}, matché: {stats['rows_matched']}, non-matché: {stats['rows_unmatched']}")
+            if stats["unmatched_titles"]:
+                print("Non matchés:", stats["unmatched_titles"])
+            return
+
+        scope = args.tcg or "tous"
+        print(f"== Sync population JP PriceCharting (tcg={scope}) ==")
+        results = sync_all_mapped_jp_population(args.tcg)
         errors = [r for r in results if r["error"]]
         ok = [r for r in results if not r["error"]]
         total_scraped = sum(r["rows_scraped"] for r in ok)
