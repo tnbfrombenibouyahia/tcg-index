@@ -24,10 +24,12 @@ import type { Tcg } from "@/lib/constants";
 // candidats dépasse un jour `hardCap`.
 //
 // Exclusion PERMANENTE (pas un filtre désactivable) : Common/Uncommon/Promo
-// + sets pré-release/variantes Manga côté One Piece, cf.
-// `_EXCLUDE_LOW_INTEREST_ITEMS_SQL` ci-dessous -- demande utilisateur, un
-// pop_total de 2-3 sur ces cartes ne signale rien (personne ne les envoie
-// en gradation), pas une vraie rareté.
+// + sets pré-release côté One Piece, cf. `_EXCLUDE_LOW_INTEREST_ITEMS_SQL`
+// ci-dessous -- demande utilisateur, un pop_total de 2-3 sur ces cartes ne
+// signale rien (personne ne les envoie en gradation), pas une vraie
+// rareté. Le volet "variantes Manga" de cette exclusion a été retiré le
+// 2026-08-12 (cf. commentaire de la constante) une fois le jeu de données
+// plus large après backfill JP.
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface RawRow {
@@ -183,8 +185,8 @@ function popCountFilterFragment(range?: PopulationCountRange) {
 
 // Exclusion permanente des cartes "que personne n'envoie en gradation"
 // (demande utilisateur -- pas un pill désactivable comme les autres
-// filtres). Trois volets, chacun vérifié en base avant d'être ajouté (pas
-// de supposition) :
+// filtres). Chaque volet vérifié en base avant d'être ajouté (pas de
+// supposition) :
 //
 // 1. Common/Uncommon (Pokémon + One Piece, 2026-08-10) : pop_total moyen
 //    105/56 Pokémon, 5/4 One Piece, contre 995+ dès Holo Rare côté Pokémon
@@ -194,22 +196,30 @@ function popCountFilterFragment(range?: PopulationCountRange) {
 //    cf. point 3). `rarity IS NULL` reste ADMIS (carte pas encore classée,
 //    même raisonnement que le filtre équivalent côté pricecharting.py) --
 //    seule une valeur explicitement connue est exclue.
-// 3. One Piece uniquement, deux volets supplémentaires demandés le même
-//    jour ("les promo et aussi les manga dans One Piece") :
-//    - Sets pré-release/release-event (One Piece n'a pas de rareté "Promo"
-//      dédiée -- ces cartes promo y sont identifiées par set_code, pas par
-//      rareté, ex. `one-piece-kingdoms-of-intrigue-pre-release-cards`).
-//      Repérées en base : même après l'exclusion Common/Uncommon, 8 Super
-//      Rare + 4 Leader de ces sets restaient dans le classement avec un
-//      pop_total moyen de 1-27 -- même signal "personne ne grade ça" que
-//      les deux premiers volets.
-//    - Variantes "[Manga]" (alternate art façon manga plutôt qu'anime,
-//      identifiées dans le NOM de la carte, pas un champ dédié) : 2 cartes
-//      seulement en base, pop_total 1-3 chacune.
+// 3. One Piece uniquement, sets pré-release/release-event (One Piece n'a
+//    pas de rareté "Promo" dédiée -- ces cartes promo y sont identifiées
+//    par set_code, pas par rareté, ex.
+//    `one-piece-kingdoms-of-intrigue-pre-release-cards`). Repérées en
+//    base : même après l'exclusion Common/Uncommon, 8 Super Rare + 4
+//    Leader de ces sets restaient dans le classement avec un pop_total
+//    moyen de 1-27 -- même signal "personne ne grade ça" que les deux
+//    premiers volets.
+//
+// Volet "[Manga]" RETIRÉ le 2026-08-12 (revirement explicite -- l'exclusion
+// avait été ajoutée sur la base de seulement 2 cartes Manga en base,
+// pop_total 1-3 chacune ; le backfill JP la même session a fait passer ce
+// nombre à 78, dont 7 avec une vraie population non-nulle jusqu'à 75 --
+// signal "personne ne grade ça" plus valide du tout). Vérifié directement
+// sur PriceCharting (pages /pop/item/ individuelles, pas seulement notre
+// scrape par set) que la quasi-totalité des impressions Manga (ex. Zoro
+// [Alternate Art Manga] OP06-118, Nami [Manga] OP01-016) ont un total "-"
+// sur les 10 grades PSA ET CGC -- un vrai manque de données côté source,
+// pas un artefact de notre filtre ; retirer le filtre ne les fait donc PAS
+// apparaître, seules les 7 cartes Manga qui ont une vraie population le
+// font.
 const _EXCLUDE_LOW_INTEREST_ITEMS_SQL = sql`
   AND (i.rarity IS NULL OR i.rarity NOT IN ('Common', 'Uncommon', 'Promo'))
   AND NOT (i.tcg = 'one-piece' AND (i.set_code ILIKE '%pre-release%' OR i.set_code ILIKE '%release-event%'))
-  AND NOT (i.tcg = 'one-piece' AND i.name ILIKE '%manga%')
 `;
 
 async function fetchCandidates({
