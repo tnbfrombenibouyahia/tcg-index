@@ -52,7 +52,7 @@ from datetime import date
 import requests
 from psycopg2.extras import execute_values
 
-from shared.db import get_connection
+from shared.db import get_connection, retry_on_serialization_failure
 
 BASE_URL = "https://api.ebay.com"
 TOKEN_URL = f"{BASE_URL}/identity/v1/oauth2/token"
@@ -215,6 +215,16 @@ def sync_active_listings_for_tcg(
         # déjà commitées aux tours suivants -- ON CONFLICT DO NOTHING absorbe
         # l'erreur mais gaspille de la bande passante en O(n²) sur un run de
         # ~1300 items. Même pattern que justtcg.py (rows remis à zéro par chunk).
+        #
+        # `retry_on_serialization_failure` (ajouté 2026-08-13, cf.
+        # ebay-listings-sync.yml pour l'incident complet) -- ce flush n'avait
+        # jusque-là AUCUN filet contre les conflits d'écriture CockroachDB,
+        # contrairement aux calculs d'agrégats de orchestrator.py qui en sont
+        # déjà équipés. `execute_values` + `commit()` rejoués tels quels sont
+        # sûrs à retenter : `ON CONFLICT ... DO NOTHING` rend le flush
+        # idempotent, et une SerializationFailure annule déjà la transaction
+        # en cours côté serveur (rien à nettoyer sur `cur`/`conn` avant de
+        # rejouer).
         batch: list[tuple] = []
         rows_written = 0
         errors = []
@@ -232,15 +242,14 @@ def sync_active_listings_for_tcg(
                 batch.append((item["id"], today, "ebay", "all", "ungraded", total))
 
                 if len(batch) >= 100:
-                    execute_values(cur, _UPSERT_ACTIVE_LISTINGS_SQL, batch)
-                    conn.commit()
+                    _flush = batch
+                    retry_on_serialization_failure(lambda b=_flush: (execute_values(cur, _UPSERT_ACTIVE_LISTINGS_SQL, b), conn.commit()))
                     rows_written += len(batch)
                     print(f"  {i + 1}/{len(items)} items traités, {rows_written} lignes upsertées jusqu'ici.")
                     batch = []
 
             if batch:
-                execute_values(cur, _UPSERT_ACTIVE_LISTINGS_SQL, batch)
-                conn.commit()
+                retry_on_serialization_failure(lambda b=batch: (execute_values(cur, _UPSERT_ACTIVE_LISTINGS_SQL, b), conn.commit()))
                 rows_written += len(batch)
     finally:
         conn.close()
