@@ -1,3 +1,11 @@
+-- 2026-08-16 : migration CockroachDB -> Cloud SQL (Postgres 16, cf.
+-- cardquant-handoff-adapte.md). `STORING (...)` (syntaxe CockroachDB pour
+-- un index couvrant) remplacé par l'équivalent standard Postgres
+-- `INCLUDE (...)` sur les 3 index concernés (idx_price_snapshots_item_grade_captured,
+-- idx_sales_grade_date, idx_sales_item_date) -- même comportement (colonnes
+-- supplémentaires stockées dans l'index pour éviter un lookup table), rien
+-- d'autre dans ce fichier n'est spécifique à CockroachDB.
+
 -- Référentiel : ce qu'on suit
 CREATE TABLE items (
   id            BIGSERIAL PRIMARY KEY,
@@ -41,7 +49,7 @@ CREATE TABLE price_snapshots (
 -- ORDER BY : le DISTINCT ON peut alors streamer sans étape de tri séparée
 -- (cf. idx_sales_grade_date ci-dessus, même incident 2026-08-06).
 CREATE INDEX IF NOT EXISTS idx_price_snapshots_item_grade_captured
-    ON price_snapshots (item_id, grade, captured_at DESC, created_at DESC) STORING (price);
+    ON price_snapshots (item_id, grade, captured_at DESC, created_at DESC) INCLUDE (price);
 
 -- Ventes individuelles (PriceCharting -- table "Sold Listings" des pages carte) :
 -- append-only, grain différent de price_snapshots (une ligne par transaction
@@ -70,21 +78,21 @@ CREATE TABLE sales (
 -- item_id) -- sans index, plein scan de `sales` (1M+ lignes) à chaque
 -- chargement de /divergence ou /grading-roi, mesuré à ~3.3-3.9s de requête
 -- pure (cf. discussion 2026-08-06, lenteur signalée par l'utilisateur).
--- STORING (item_id, price) évite un lookup vers la table principale pour
+-- INCLUDE (item_id, price) évite un lookup vers la table principale pour
 -- chaque ligne matchée. Ramène /divergence à ~0.7s de requête (indexé,
 -- ~1% de la table scannée au lieu de 100%).
 CREATE INDEX IF NOT EXISTS idx_sales_grade_date
-    ON sales (grade, sale_date) STORING (item_id, price);
+    ON sales (grade, sale_date) INCLUDE (item_id, price);
 
 -- Requêtes bornées à UN item (fiche produit /catalog/[id] : historique de
 -- ventes + fenêtre 30/90j pour le bloc "Liquidité", cf. mémoire projet
 -- "pokecardex_image_source" § liquidité/sell-through) filtrent par item_id
 -- + sale_date -- aucun des index ci-dessus n'a item_id en tête, donc plein
 -- scan des 1M+ lignes à chaque chargement de fiche (confirmé par EXPLAIN,
--- 2026-08-07). STORING (price, grade, marketplace) évite le lookup table
+-- 2026-08-07). INCLUDE (price, grade, marketplace) évite le lookup table
 -- principale pour les colonnes déjà affichées par ces deux usages.
 CREATE INDEX IF NOT EXISTS idx_sales_item_date
-    ON sales (item_id, sale_date DESC) STORING (price, grade, marketplace);
+    ON sales (item_id, sale_date DESC) INCLUDE (price, grade, marketplace);
 
 -- Supply active (pas un prix/une transaction) : comptage de listings actifs
 -- (auction + fixed-price) par item, proxy de pression vendeuse ("combien de
@@ -337,3 +345,24 @@ CREATE TABLE index_values (
   created_at    TIMESTAMPTZ DEFAULT now(),
   UNIQUE (index_code, captured_at)
 );
+
+-- Cache de prix à la demande pour le micro-service de verdict (pricing_api/,
+-- appelé par l'extension navigateur). Contrairement à `price_snapshots`
+-- (photo quotidienne, append-only, alimentée par le batch d'ingestion cron),
+-- `prices` est un CACHE MUTABLE à TTL : une ligne = le dernier prix connu
+-- pour (item_id, source, grade), rafraîchie par UPSERT quand `fetched_at`
+-- dépasse PRICE_CACHE_TTL_HOURS (cf. .env.example, pricing/cache.py) --
+-- jamais un historique ici, ne pas confondre avec price_snapshots qui reste
+-- la source de vérité pour l'historique/les indices.
+CREATE TABLE IF NOT EXISTS prices (
+  id          BIGSERIAL PRIMARY KEY,
+  item_id     BIGINT NOT NULL REFERENCES items(id),
+  source      TEXT NOT NULL,        -- 'pricecharting', 'cardmarket', 'ebay_sold'
+  grade       TEXT NOT NULL DEFAULT 'ungraded',  -- même vocabulaire que price_snapshots.grade
+  price       NUMERIC(12,2) NOT NULL,
+  currency    TEXT NOT NULL,
+  fetched_at  TIMESTAMPTZ NOT NULL DEFAULT now(),  -- utilisé pour le TTL
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (item_id, source, grade)
+);
+CREATE INDEX IF NOT EXISTS idx_prices_item ON prices (item_id);

@@ -1,0 +1,16 @@
+.git
+.github
+.env
+.env.*
+!.env.example
+web/
+tests/
+__pycache__/
+*.pyc
+.pytest_cache
+db/__pycache__
+ingestion/__pycache__
+ingestion/_probe_output
+index/__pycache__
+shared/__pycache__
+*.md

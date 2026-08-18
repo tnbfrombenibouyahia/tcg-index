@@ -1,455 +1,358 @@
-# TCG Market Index — Handoff Doc
+CardQuant Project
+Extension navigateur + site d'analyse quantitative pour cartes à collectionner (Pokémon, One Piece — EN/JP). Document de référence : produit, principes, architecture, sources, schéma et formules — avant le premier commit.
 
-Document de cadrage pour démarrer le build dans l'IDE. Objectif : construire un
-« indice de marché » type finance pour les TCG (Pokémon, One Piece, puis autres),
-couvrant **cartes ET scellé**, avec méthodologie publique.
+Stack : Cloud SQL (Postgres) · Cloud Run Jobs + Cloud Scheduler · Firebase (Auth, Firestore, Storage, App Hosting) · calculs rejoués à chaque run, jamais incrémental.
 
-> **Mise à jour 2026-07-30** : les sections ci-dessous sont le document de
-> cadrage d'origine (gardé tel quel pour la trace du raisonnement). L'état
-> réel du build est documenté en section 11, en fin de doc.
+01 — Le produit
+L'extension est le produit principal, consulté en direct sur une annonce ; le site est la couche d'analyse avancée derrière un compte.
 
----
+Extension navigateur — verdict en direct sur une annonce. Panneau latéral coulissant (type MetaMask, pas un popup classique) : identifie la carte (image ou titre), affiche dernières transactions, liquidité, ventes en cours, prix moyen EN/JP, score d'opportunité, ROI gradation, calculateur d'arbitrage, liens directs vers les annonces trouvées et un bouton "plus d'informations" vers le site. Compte requis avant toute utilisation.
 
-## 1. Le projet en une phrase
+Site — couche premium, analyse quantitative type Bloomberg. Connexion pour débloquer l'extension (si techniquement possible), cartes/sets à suivre, sous-cote/surcote structurelle, analyse plus poussée que l'extension seule.
 
-Un « Bloomberg du marché TCG » : des indices (base 100) qui suivent l'évolution
-du marché Pokémon / One Piece dans son ensemble — scellé (displays, ETB) et cartes —
-avec sous-indices par TCG, par série, par langue, et analyse de corrélations.
+Fonctionnalité	Où	Donnée requise
+Identification carte (image/titre)	Extension	nouveau pipeline, 2 passages — voir cascade ci-dessous
+Verdict ponctuel (bonne affaire ?)	Extension	prices, servi par le backend pricing_api
+Liquidité (carte/set)	Extension + site	sales + active_listings — requête directe, aucun stockage dédié
+ROI gradation	Extension	price_snapshots par grade — calcul côté client
+Calculateur d'arbitrage	Extension	prix de référence + saisie utilisateur (achat/livraison/douane) — calcul client, rien à stocker
+Sous-cote/surcote structurelle	Site	opportunity_scores (§06)
+Connexion extension ↔ site	Les deux	Firebase Authentication, Google Sign-In uniquement — accès 100% gratuit pour l'instant
+Historique de recherche	Les deux	search_history (§06)
+Cascade de reconnaissance d'image — deux passages, pas trois
+OCR (Google Cloud Vision TEXT_DETECTION — nativement GCP, palier gratuit réel) extrait le texte imprimé (nom, numéro de carte — souvent quasi unique à lui seul), envoyé dans le pipeline de matching (regex sur code officiel + repli fuzzy nom/set/rareté).
+Si l'OCR échoue (glare, angle, coque de gradation) : recherche par similarité visuelle — embedding léger type CLIP auto-hébergé sur Cloud Run, comparé aux images de référence du catalogue via pgvector (extension à activer sur Cloud SQL, pas un nouveau service).
+Pas de 3ᵉ passage vision Claude : un modèle multimodal payant par appel casserait la sobriété de tout le reste de l'archi pour un gain marginal. Si les deux passages échouent, l'extension répond "non identifiée" plutôt que d'escalader vers un coût. Ne jamais deviner : un score sous le seuil de confiance renvoie les candidats plutôt qu'un choix arbitraire.
+02 — Principes de conception
+Dix règles posées dès le premier commit — chacune répond à un risque concret et mesurable.
 
-### Positionnement (décisions déjà prises)
-- **Produit public, gratuit, communautaire.** Pas de monétisation.
-- **Modèle A : indice transformé.** On ne redistribue pas les prix bruts carte-par-carte
-  d'une source. On publie *notre indice* (produit dérivé), avec la méthodo expliquée.
-  Les prix bruts sont un *input* de calcul, jamais l'output affiché.
-- **Méthodologie publique** : le calcul de l'indice est documenté et transparent.
+Cache dès le jour 1, invalidé en fin d'ingestion. Sans cache, le volume de lecture scale avec le trafic, pas avec la fréquence réelle de changement de la donnée. Route qui lit la DB → cache réchauffé une fois par nuit, jamais retouché entre deux runs.
+Plafond de dépense avec marge, alertes actives dès la création. Un plafond réglé pile sur le seuil gratuit, sans alerte, bloque le service sans préavis. Marge au-dessus du seuil + alertes 50/75/100% actives avant le premier run.
+Un seul concurrency: group sur tous les crons qui écrivent. Le calage horaire seul ne protège jamais d'un scheduler externe qu'on ne contrôle pas. Posé avant le premier run planifié.
+Gradation/ventes toujours hors du batch nocturne. Servie à la demande — carte consultée = carte scrapée, jamais en proactif sur un catalogue que personne ne regarde en entier.
+Référentiel au rythme du quota, jamais quotidien. Un quota mensuel serré s'épuise vite pour un bénéfice quasi nul. Cadence mensuelle dès le départ.
+Secrets résolus en code, jamais un chemin figé. Résolu dynamiquement à chaque exécution, jamais une valeur figée qui peut fuiter d'une machine à l'autre.
+Une colonne = un usage identifié avant l'ajout. L'usage se justifie avant la migration, pas après avoir mesuré le gâchis.
+Rotation par item, jamais par catégorie entière. Tranches tournantes sur un pool d'items commun, choisies par une fonction stable du temps — jamais un lot entier sauté, jamais d'état à stocker.
+Sources interchangeables derrière la même interface. Si une source devient indisponible, une autre prend le relais sans migration de schéma.
+Vinted mis de côté explicitement, pas oublié. Le schéma (active_listings.marketplace) accepte déjà la valeur — juste une sonde à faire le jour où le sujet revient.
+03 — Architecture & flux
+La fraîcheur perçue (ce que voit l'utilisateur) et la fraîcheur de la source (quand la donnée a été capturée) sont deux choses séparées. La seconde est plafonnée par la cadence d'ingestion — scraper plus souvent qu'une fois par nuit ne rapporte rien de neuf sur un marché qui ne bouge pas à la minute. La première ne coûte rien à améliorer : un cache réchauffé juste après l'ingestion sert une donnée aussi fraîche que celle de cette nuit, à volume de lecture illimité, sans jamais retoucher la base. Les confondre est le piège le plus commun d'une architecture sans cache.
 
----
+Levier 1 — fraîcheur de la source, plafonnée par l'ingestion. Un run par nuit, tout le catalogue, EN + JP.
+Levier 2 — fraîcheur perçue, gratuite au-delà de l'ingestion. Un cache réchauffé après chaque run sert un nombre illimité de visiteurs sans coût marginal.
+Le flux
+Sources (PriceCharting EN+JP, eBay listings, Vinted à venir)
+    │  écrit 1x/nuit, upsert
+    ▼
+Postgres (brut append-only + dérivé recalculé)
+    │  recalcule
+    ▼
+Cache (Firestore, réchauffé fin d'ingestion, TTL ~24h)
+    │  lit
+    ▼
+Front (Next.js)
+Le front ne lit jamais Postgres directement — même le dérivé passe par le cache. Chemin séparé, optionnel : gradation/ventes à la demande, déclenché quand une carte est consultée dans l'extension, indépendant du batch nocturne (même source parfois, jamais la même table que le batch).
 
-## 2. Principe d'architecture (règle d'or)
+04 — Sources & calendrier
+Sources
+Site	Rôle	Méthode	Contrainte
+apitcg.com	Référentiel — items, sets, rareté partielle, images	API REST	quota 1000 req/mois — impose la cadence mensuelle
+pricecharting.com	Prix EN+JP (batch), gradation PSA + population (à la demande)	scraping HTML	pas d'API — 1 req/set en batch, 1 req/carte à la demande
+eBay Browse API	Listings actifs — supply/pression vendeuse	API REST · OAuth2	5000 req/jour — rotation par tranche
+LimitlessTCG · Bulbapedia · TCGdex	Backfill de la rareté	scraping · API MediaWiki	cadence alignée sur le référentiel mensuel
+Google Cloud Vision	OCR — identification carte par image	API REST	palier gratuit 1000 unités/mois — à la demande
+Vinted	Même rôle que eBay (profondeur de marché)	—	mis de côté pour l'instant, décision explicite
+Jobs et horaires
+Job	Portée	Cadence	Charge dominante
+Prix EN + JP	Tout le catalogue	chaque nuit, 02:00	1 requête/set — ~226 sets, moins de 90 min
+Listings actifs eBay	Tout le catalogue scellé, pool commun aux deux TCG	chaque nuit, 03:30, par tranche tournante	2 requêtes/item — tranches sous quota
+Référentiel + rareté	Tout le catalogue	le 1er du mois, 04:30	contraint par le quota apitcg
+Fuseau : Europe/Paris, déclaré directement à Cloud Scheduler (pas de calcul de décalage été/hiver à faire à la main).
 
-Flux **strictement unidirectionnel** :
+Pourquoi 02:00 puis 03:30, pas plus serré : le job Prix a un budget de jusqu'à 90 min — démarrer eBay à 03:30 laisse la marge complète avant de toucher les mêmes tables d'agrégats. Le vrai filet reste le concurrency: group partagé (§02), pas le calage horaire seul : un soir où Prix déborde, la 2ᵉ run attend en file plutôt que d'écrire en parallèle. Cloud Scheduler n'a pas de file d'attente mutualisée entre projets comme un scheduler communautaire — pas besoin de choisir une minute non ronde pour éviter un engorgement à l'heure pile.
 
-```
-[Ingestion]  ->  [Postgres]  ->  [Calcul indice]  ->  [API + Front]
- sources          append-only     job séparé          Next.js
-```
+Pourquoi une rotation par item, pas une alternance par jeu : Pokémon scellé seul (4 737 items, tous âges) demande 9 474 requêtes — plus que le quota quotidien (5000), même sur une journée entièrement dédiée. One Piece (EN+JP, 627 items+) tient seul en ~1 254+ requêtes et gâcherait le reste d'une journée réservée. La bonne maille est l'item, pas le TCG : pool commun Pokémon + One Piece découpé en tranches tournantes, choisies par date.today().toordinal() // 7 % N — sans état stocké. ~5 tranches de ~1150 items (2300 requêtes/nuit, large marge sous 5000) : chaque nuit touche un peu des deux TCG, cycle complet tous les 5 jours, marge prête pour Vinted plus tard sans retoucher le découpage.
 
-- Les prix bruts **entrent** (ingestion) et sont archivés **append-only** (jamais d'UPDATE).
-- L'indice se **calcule** à partir des prix archivés (job séparé, rejouable).
-- Le front ne lit **que** l'indice, jamais `price_snapshots` directement.
+Couverture d'images pour la reconnaissance visuelle (§01) : déjà mesurée sur ce catalogue — 32 502/32 529 items Pokémon (99,9%) et 7 200/7 200 One Piece (100%) ont une image_url exploitable via apitcg/TCGPlayer. Le passage 2 de la cascade a de quoi fonctionner dès le premier jour.
 
-Pourquoi séparer ingestion et calcul : quand on affinera la méthodo, on veut
-**recalculer tout l'historique sans re-scraper**. Les prix bruts archivés le permettent.
+05 — GCP
+Tout sur GCP, base de données comprise. Ce qui garde la sobriété intacte n'a jamais été le choix du cloud : c'est le cache qui empêche le front de taper la DB à chaque page vue (§03), et ça reste vrai quel que soit l'hébergeur de Postgres.
 
-Pourquoi append-only : **l'historique est l'actif du projet.** Personne ne nous le
-donnera rétroactivement. Il se construit snapshot par snapshot à partir du jour 1.
+Service	Rôle	Palier gratuit	Coût réel estimé
+Cloud SQL (PostgreSQL)	Base de données — db-f1-micro	aucun palier gratuit	~12-14€/mois (compute + 10 Go, europe-west3)
+Cloud Run Jobs	Batch nightly (prix + eBay) + job mensuel	240 000 vCPU-s + 450 000 GiB-s/mois	0€
+Cloud Run (service)	Gradation/ventes à la demande — pricing_api	2M requêtes + 180 000 vCPU-s/mois	0€ à cette échelle
+Cloud Scheduler	Déclenche les 3 jobs	3 jobs gratuits/mois/compte	0€ — exactement 3 jobs
+Secret Manager	DATABASE_URL, clés apitcg/eBay	6 versions actives gratuites	0€
+Artifact Registry + Cloud Build	Images de conteneur	paliers gratuits	0€
+Cloud Logging	Observabilité des jobs	50 Go/mois gratuits	0€
+Budget + Pub/Sub + Cloud Function	Coupe-circuit budget	alertes gratuites, 10 Go/mois	0€
+Firestore (Spark)	Cache de lecture	50k lectures + 20k écritures/jour	0€
+Firebase Authentication	Compte utilisateur — Google Sign-In	50 000 utilisateurs actifs/mois	0€
+Cloud Storage	Avatars uploadés	5 Gio gratuits	0€
+Firebase App Hosting	Le site — Next.js SSR sur Cloud Run	10 Gio bande passante/mois	0€
+Total : ≈ 12-14€/mois. Cloud SQL est la seule ligne facturée dès le premier euro — les onze autres services restent dans leur palier gratuit à cette échelle. Le coupe-circuit budget devient d'autant plus nécessaire que GCP n'offre aucun plafond dur par défaut.
 
----
+Pourquoi Firestore plutôt que Memorystore : Memorystore n'a aucun palier gratuit et facture la capacité provisionnée à la seconde, utilisée ou non — même 1 Gio en tier Basic tourne autour de 35€/mois, à lui seul plus que tout le budget. Firestore a un palier gratuit réel, taillé pour un trafic qui lit beaucoup et écrit peu.
 
-## 3. Sources de données
+Le plafond de connexions Cloud SQL (25 sur db-f1-micro) n'est pas un risque ici : ça l'aurait été si le front tapait Postgres à chaque page vue. Mais l'architecture (§03) fait l'inverse — le front ne lit que Firestore. Seuls le job d'ingestion et le réchauffage du cache ouvrent une connexion à la base.
 
-### Constat de fond
-Aucune API ne *produit* la donnée : toutes scrapent Cardmarket / TCGPlayer en amont
-et livrent du JSON propre. Le choix porte sur : couverture scellé, historique fourni,
-licence, multi-langues. Notre indice transformé reste notre production quelle que soit
-la source du prix brut.
+Hébergement du site — Firebase App Hosting, pas Firebase Hosting tout court : ce dernier est pensé pour du statique/SPA, le SSR n'y passe que par des règles de proxy bricolées. App Hosting est conçu pour du Next.js avec App Router, tourne sur Cloud Run, intégration native à Auth/Storage/Firestore. Seule réserve : sa région la plus proche est europe-west4 (Pays-Bas), pas europe-west3 (Francfort) où vit Cloud SQL — décalage de latence mineur, absorbé sans drame puisque le front lit Firestore et non Postgres sur l'immense majorité des requêtes.
 
-### Combo retenu (à valider par le test ci-dessous)
-| Couche | Source | Rôle |
-|---|---|---|
-| **Référentiel** | **API TCG** (apitcg.com, open source) | Catalogue : quel item existe, set, langue, carte vs scellé |
-| **Prix + historique** | **JustTCG** (justtcg.com) | Prix, historique (7d/30d/90d/180d/1y), filtre « Sealed » natif, licence dérivés OK |
+Ce qui ferait bouger ce chiffre : une croissance du catalogue au-delà de ~66 vCPU-h/mois de batch, un trafic de cache qui dépasse le palier gratuit Firestore, ou db-f1-micro qui devient trop juste. Premier signe à surveiller : le compteur de connexions actives sur Cloud SQL, qui doit rester proche de zéro hors des fenêtres de batch.
 
-- Docs API TCG : https://docs.apitcg.com/
-- Docs JustTCG : https://justtcg.com/docs
+06 — Le schéma
+Trois strates, dix tables : référentiel (peu volatile), mesures brutes (append-only, jamais d'UPDATE), calculs dérivés (rejoués, jamais mis à jour en place) — plus une strate de compte.
 
-### Plan B (si le scellé JustTCG est trop peu profond)
-- **pokemon-api.com** — agrège Cardmarket EUR + eBay gradé + TCGPlayer, riche sur multi-marché.
-  À brancher *uniquement pour le scellé*, en gardant JustTCG pour les cartes.
-  C'est un module d'ingestion de plus, même interface, même table `price_snapshots`,
-  juste un `source` différent.
+-- ============================================================
+-- CardQuant -- schéma cible (3 strates : référentiel / brut / dérivé)
+-- Postgres (Cloud SQL) -- refresh uniforme, sans palier par ancienneté
+-- ============================================================
 
-### Écartées
-- **cardmarketapi.com / tcg-cardmarket-api.com** : proxys de scraping, 1 appel = 1 carte,
-  cache compté dans le quota, pas d'historique profond. Explosent tout quota gratuit sur
-  un indice large.
-- **eBay API** : usage hors licence (destinée à faire du business SUR eBay, pas à bâtir
-  un indice) + accès Buy APIs réservé aux partenaires.
-
-### Mise à jour — troisième source ajoutée en cours de build : PriceCharting (scraping)
-
-JustTCG s'est révélé peu fiable en usage réel : quota gratuit trop bas pour
-suivre tout le catalogue (100 req/jour, 20 items/requête — voir §11), et un
-incident où l'API a renvoyé `401 INVALID_API_KEY` en pleine session malgré une
-clé valide et un quota loin d'être atteint (bug côté leur infra, jamais
-totalement élucidé).
-
-**PriceCharting.com** (pas d'API officielle, scraping HTML — `robots.txt`
-autorise `/game/` et `/console/`) s'est avéré supérieur sur plusieurs points :
-pas de quota, une seule requête récupère tout un set (scellé + singles), et
-les pages carte individuelles exposent les **valeurs gradées PSA** (7 à 10),
-une donnée qu'aucune des deux API n'offre. C'est devenu la source de prix
-principale ; JustTCG reste en place mais en pause (cf. §11).
-
----
-
-## 4. TEST À FAIRE AVANT DE CODER L'ARCHI (bloquant)
-
-> **Fait.** Réserve 1 et 2 validées pour Pokémon (échantillon élargi à 6 sets
-> réels) : scellé 87% avec historique exploitable, singles 80%, `tcgplayer.id`
-> présent sur 100% des produits API TCG. One Piece non testé via ce combo —
-> le pivot vers PriceCharting (§3) l'a rendu obsolète pour ce TCG.
-
-Deux réserves à lever avec les tiers gratuits, sur un échantillon de **2-3 sets récents
-Pokémon + One Piece** :
-
-### Réserve 1 — Profondeur du scellé chez JustTCG
-Le filtre « Sealed » existe, mais est-ce que **tous les displays/ETB par set et par langue**
-remontent avec un **historique exploitable**, ou juste une poignée de produits populaires ?
-- [ ] Requêter la liste des produits scellés sur 2-3 sets récents
-- [ ] Compter combien de displays/ETB remontent
-- [ ] Vérifier que chacun a un historique (pas juste un prix spot)
-- **Si trop peu profond → activer le plan B (pokemon-api.com) pour le scellé.**
-
-### Réserve 2 — Identifiant partagé entre API TCG et JustTCG
-Pour relier une entrée référentiel (API TCG) à son prix (JustTCG), il faut une clé fiable.
-- [ ] Vérifier si les deux exposent un **ID Cardmarket ou TCGPlayer** commun
-- [ ] Si oui → matcher dessus (propre)
-- [ ] Si non → matcher sur nom + set + numéro (fragile, prévoir couche de réconciliation)
-
-> Une heure de manipulation décide si le combo tient tel quel ou s'il faut un 3e larron.
-
----
-
-## 5. Schéma de base (Postgres) — MVP
-
-Trois tables suffisent pour le MVP (+ `sales`, ajoutée le 2026-07-30, cf. plus bas).
-
-> **Schéma réel au 2026-07-30** (a évolué depuis la version d'origine
-> ci-dessous — colonnes ajoutées en gras dans les commentaires) :
-
-```sql
--- Référentiel : ce qu'on suit
+-- Référentiel : ce qu'on suit. Peuplé 1x/mois (1er du mois), jamais
+-- par le run nocturne -- un nouveau produit n'apparaît pas plus vite
+-- que le cycle mensuel, et le prix des produits déjà connus n'en
+-- dépend pas.
 CREATE TABLE items (
   id            BIGSERIAL PRIMARY KEY,
-  external_id   TEXT NOT NULL,        -- id chez la source de référentiel
-  source        TEXT NOT NULL,        -- 'apitcg'
-  cardmarket_id TEXT,                 -- clé de jointure vers les prix si dispo
-  tcgplayer_id  TEXT,                 -- idem
-  tcg           TEXT NOT NULL,        -- 'pokemon', 'one-piece'
-  category      TEXT NOT NULL,        -- 'sealed', 'single' (granularité display/etb pas dispo côté source)
-  set_code      TEXT,                 -- set / série
-  release_date  DATE,                 -- AJOUTÉ : date de sortie du set (NULL si bucket non-standard)
-  code          TEXT,                 -- AJOUTÉ : numéro de carte (format varie par TCG, cf. §11)
-  image_url     TEXT,                 -- AJOUTÉ : image produit, référence le CDN externe (pas de ré-hébergement)
-  language      TEXT NOT NULL,        -- 'EN' ou 'JP' uniquement (FR écarté, cf. §11)
+  external_id   TEXT NOT NULL,
+  source        TEXT NOT NULL,
+  tcg           TEXT NOT NULL,
+  category      TEXT NOT NULL,
+  set_code      TEXT,
+  release_date  DATE,
+  code          TEXT,
+  image_url     TEXT,
+  language      TEXT NOT NULL,
   name          TEXT NOT NULL,
+  rarity        TEXT,
   created_at    TIMESTAMPTZ DEFAULT now(),
   UNIQUE (source, external_id)
 );
+CREATE INDEX idx_items_tcg_category ON items (tcg, category);
 
--- Prix bruts : append-only, jamais d'UPDATE
+-- Prix bruts : append-only, jamais d'UPDATE. Rempli chaque nuit,
+-- tout le catalogue, EN + JP -- un seul job, pas de palier hot/
+-- recent/vintage. `grade` reste 'ungraded' pour ce chemin nocturne ;
+-- une valeur graded (psa7..psa10) n'apparaît que via le chemin à la
+-- demande (même table, écrivain différent).
 CREATE TABLE price_snapshots (
   id            BIGSERIAL PRIMARY KEY,
   item_id       BIGINT NOT NULL REFERENCES items(id),
-  captured_at   DATE NOT NULL,        -- jour du snapshot
+  captured_at   DATE NOT NULL,
   price         NUMERIC(12,2) NOT NULL,
-  currency      TEXT NOT NULL,        -- 'USD' en pratique (sources = TCGPlayer/PriceCharting)
-  volume        INTEGER,             -- nb de ventes si dispo, sinon NULL (jamais rempli pour l'instant)
-  source        TEXT NOT NULL,        -- 'justtcg', 'pricecharting'
-  grade         TEXT NOT NULL DEFAULT 'ungraded',  -- AJOUTÉ : 'ungraded'/'psa7'..'psa10', toujours 'ungraded' pour le scellé
+  currency      TEXT NOT NULL,
+  source        TEXT NOT NULL,
+  grade         TEXT NOT NULL DEFAULT 'ungraded',
   created_at    TIMESTAMPTZ DEFAULT now(),
-  UNIQUE (item_id, captured_at, source, grade)   -- un prix par item/jour/source/grade
+  UNIQUE (item_id, captured_at, source, grade)
 );
+CREATE INDEX idx_price_snapshots_item ON price_snapshots (item_id, captured_at DESC);
 
--- AJOUTÉ 2026-07-30 : ventes individuelles (PriceCharting, table "Sold
--- Listings" des pages carte -- eBay/TCGPlayer/Goldin/Heritage/PWCC...).
--- Grain différent de price_snapshots : une ligne par transaction réelle, pas
--- par jour. Sert à calculer du volume par TCG/set/carte/année/personnage
--- (via jointure sur items) -- pas encore utilisé par un calcul, juste
--- archivé pour l'instant.
+-- Supply active : comptage de listings, pas un prix. Rempli chaque
+-- nuit par tranche tournante (pool commun EN+JP, cf. §04) --
+-- `marketplace` accepte déjà 'vinted' pour que son ajout futur ne
+-- touche ni schéma ni requêtes.
+CREATE TABLE active_listings (
+  id             BIGSERIAL PRIMARY KEY,
+  item_id        BIGINT NOT NULL REFERENCES items(id),
+  captured_at    DATE NOT NULL,
+  marketplace    TEXT NOT NULL,        -- 'ebay' | 'vinted' (à venir)
+  buying_option  TEXT NOT NULL DEFAULT 'all',
+  grade          TEXT NOT NULL DEFAULT 'ungraded',
+  listing_count  INTEGER NOT NULL,
+  created_at     TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (item_id, captured_at, marketplace, buying_option, grade)
+);
+CREATE INDEX idx_active_listings_item ON active_listings (item_id, captured_at DESC);
+
+-- Ventes individuelles : append-only, MAIS pas remplie par un batch
+-- nocturne -- écrite uniquement quand une carte est effectivement
+-- consultée (chemin à la demande, cf. §03). L'historique reste un
+-- actif qui s'accumule, juste au rythme du trafic réel plutôt que du
+-- catalogue entier.
 CREATE TABLE sales (
   id                BIGSERIAL PRIMARY KEY,
   item_id           BIGINT NOT NULL REFERENCES items(id),
   sale_date         DATE NOT NULL,
   price             NUMERIC(12,2) NOT NULL,
   currency          TEXT NOT NULL DEFAULT 'USD',
-  grade             TEXT NOT NULL DEFAULT 'ungraded',  -- même vocabulaire que price_snapshots.grade (PSA7-10 uniquement, cf. §11)
-  marketplace       TEXT NOT NULL,        -- 'ebay', 'tcgplayer', 'goldin', 'heritage', 'pwcc'...
-  external_sale_id  TEXT NOT NULL,        -- id de l'annonce chez le marketplace -- clé naturelle de dédup
+  grade             TEXT NOT NULL DEFAULT 'ungraded',
+  marketplace       TEXT NOT NULL,
+  external_sale_id  TEXT NOT NULL,
   title             TEXT,
-  source            TEXT NOT NULL DEFAULT 'pricecharting',
   created_at        TIMESTAMPTZ DEFAULT now(),
   UNIQUE (marketplace, external_sale_id)
 );
+CREATE INDEX idx_sales_item_date ON sales (item_id, sale_date DESC);
 
--- Indice calculé : l'output, ce que le front lit (PAS ENCORE CONSTRUIT, cf. §11)
+-- Cache mutable à TTL pour le verdict à la demande (équivalent
+-- pricing_api) -- seule table du schéma qui subit un vrai UPDATE.
+-- Jamais un historique : une ligne = le dernier prix connu par
+-- item/source/grade, réchauffée quand `fetched_at` expire.
+CREATE TABLE prices (
+  id          BIGSERIAL PRIMARY KEY,
+  item_id     BIGINT NOT NULL REFERENCES items(id),
+  source      TEXT NOT NULL,
+  grade       TEXT NOT NULL DEFAULT 'ungraded',
+  price       NUMERIC(12,2) NOT NULL,
+  currency    TEXT NOT NULL,
+  fetched_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (item_id, source, grade)
+);
+CREATE INDEX idx_prices_item ON prices (item_id);
+
+-- Indice calculé : l'unique table dérivée que le front lit -- et
+-- seulement via le cache Firestore, jamais Postgres directement (cf.
+-- diagramme §03). Recalculée en entier après chaque run nocturne,
+-- jamais mise à jour en place.
 CREATE TABLE index_values (
   id            BIGSERIAL PRIMARY KEY,
-  index_code    TEXT NOT NULL,        -- 'PKM_DISPLAYS', 'PKM_SINGLES', 'OP_DISPLAYS'...
+  index_code    TEXT NOT NULL,
   captured_at   DATE NOT NULL,
-  value         NUMERIC(12,4) NOT NULL,  -- niveau en points (base 100)
-  constituents  INTEGER NOT NULL,     -- nb d'items dans l'indice ce jour-là
+  value         NUMERIC(12,4) NOT NULL,
+  constituents  INTEGER NOT NULL,
   created_at    TIMESTAMPTZ DEFAULT now(),
   UNIQUE (index_code, captured_at)
 );
-```
 
-### Points clés du schéma
-- `UNIQUE` sur `price_snapshots` → protège des doublons si un job tourne deux fois.
-- `volume` nullable → ne bloque pas quand la source ne le donne pas.
-- `cardmarket_id` / `tcgplayer_id` sur `items` → clé de jointure vers les prix (cf. réserve 2).
-- `index_values` totalement découplée des prix bruts → le front ne connaît pas `price_snapshots`.
+-- Score structurel de sous-cote/surcote (signal B, cf. §07) -- PAS
+-- le verdict ponctuel de l'extension (signal A, table `prices`) : un
+-- signal persistant, recalculé chaque nuit, qui compare la valeur
+-- théorique d'une carte (rareté × popularité du personnage) à son
+-- prix marché réel. collector_factor/demand_factor fixés à 1.0 en
+-- MVP -- non modélisés, pas bloquant pour démarrer.
+CREATE TABLE opportunity_scores (
+  id                    BIGSERIAL PRIMARY KEY,
+  item_id               BIGINT NOT NULL REFERENCES items(id),
+  captured_at           DATE NOT NULL,
+  pull_cost             NUMERIC(12,2),
+  character_multiplier  NUMERIC(6,4),
+  collector_factor      NUMERIC(6,4) DEFAULT 1.0,
+  demand_factor         NUMERIC(6,4) DEFAULT 1.0,
+  theoretical_value     NUMERIC(12,2) NOT NULL,
+  market_price          NUMERIC(12,2) NOT NULL,
+  opportunity_score     NUMERIC(10,4) NOT NULL,
+  created_at            TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (item_id, captured_at)
+);
+CREATE INDEX idx_opportunity_score ON opportunity_scores (captured_at DESC, opportunity_score DESC);
 
-### Devises
-eBay/US en USD, Cardmarket en EUR. **Ne pas convertir à l'ingestion.** Stocker le prix
-dans sa devise d'origine, convertir au moment du calcul d'indice avec un taux qu'on
-snapshote aussi (sinon on ne peut pas rejouer l'historique). Prévoir une petite table
-`fx_rates (date, currency, rate)` quand on en arrivera là.
+-- Comptes utilisateurs : auth déléguée à Firebase Authentication
+-- (Google Sign-In) -- cette table ne stocke JAMAIS de mot de passe,
+-- juste le profil CardQuant en plus de ce que Firebase gère déjà
+-- (uid, email). Accès gratuit pour l'instant (décision explicite) :
+-- pas de colonne plan/abonnement tant que le modèle payant n'est pas
+-- tranché avant le lancement -- à ajouter à ce moment-là, pas avant.
+CREATE TABLE users (
+  id            BIGSERIAL PRIMARY KEY,
+  firebase_uid  TEXT NOT NULL,
+  display_name  TEXT,
+  avatar_url    TEXT,          -- Cloud Storage, upload custom (pas juste la photo Google)
+  created_at    TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (firebase_uid)
+);
 
----
+-- Historique de recherche par utilisateur -- alimente "dernières
+-- recherches" dans l'extension/le site. Append-only comme le reste
+-- du schéma : pas de fenêtre de rétention imposée ici, à purger plus
+-- tard si le volume devient un sujet, pas un problème au lancement.
+CREATE TABLE search_history (
+  id           BIGSERIAL PRIMARY KEY,
+  user_id      BIGINT NOT NULL REFERENCES users(id),
+  item_id      BIGINT NOT NULL REFERENCES items(id),
+  searched_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_search_history_user ON search_history (user_id, searched_at DESC);
 
-## 6. Stack technique
+-- Journal d'exécution : une ligne par étape de job (3 jobs, pas de
+-- tiers) -- même rôle d'observabilité qu'un dashboard de fraîcheur
+-- "/live", sans la complexité des paliers par ancienneté.
+CREATE TABLE sync_runs (
+  id            BIGSERIAL PRIMARY KEY,
+  run_type      TEXT NOT NULL,        -- 'nightly_prices' | 'nightly_listings' | 'monthly_referential'
+  status        TEXT NOT NULL DEFAULT 'running',
+  started_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  finished_at   TIMESTAMPTZ,
+  rows_written  INTEGER,
+  detail        TEXT,
+  created_at    TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX idx_sync_runs_started ON sync_runs (started_at DESC);
+Relations
+Table	Strate	Relation
+items	Référentiel	racine — toutes les autres tables référencent item_id
+price_snapshots	Brut	item_id → items.id
+active_listings	Brut	item_id → items.id
+sales	Brut — rempli à la demande	item_id → items.id
+prices	Cache mutable (TTL)	item_id → items.id
+index_values	Dérivé	aucune FK — agrège price_snapshots par index_code
+opportunity_scores	Dérivé	item_id → items.id
+users	Référentiel (compte)	aucune FK — firebase_uid pointe vers Firebase Auth, hors Postgres
+search_history	Brut	user_id → users.id, item_id → items.id
+sync_runs	Journal	aucune FK — observabilité des 3 jobs
+Pas de colonne palier, pas de matérialisation par précaution. Le ROI gradation se calcule en live côté client (§07), inutile de le matérialiser. Le score structurel (opportunity_scores) est un signal produit confirmé, pas une hypothèse à trancher plus tard. Pas de table pour l'arbitrage : calculateur 100% côté client, rien à stocker.
 
-| Brique | Choix | Note |
-|---|---|---|
-| Ingestion | **Python** | Un module par source, interface commune `fetch() -> list[PriceRow]` |
-| Scraping | **requests + BeautifulSoup4** | Ajouté pour PriceCharting (§3) — pas de blocage observé, Selenium jamais nécessaire |
-| Calcul indice | **Python** | Script séparé, lit `price_snapshots`, écrit `index_values` — **pas encore codé** |
-| Base | **Postgres (Supabase)** | Connexion via le *connection pooler* Supavisor, pas la connexion directe (IPv6-only, cf. §11) |
-| API + Front | **Next.js** | Routes API lisent `index_values` + pages — **pas encore codé** |
-| Charts | **Lightweight Charts** (TradingView, OSS) | Look « finance » gratuit ; Recharts si plus simple |
-| Hébergement | **VPS** (Hetzner ~5€/mois) ou Postgres managé + Vercel | Postgres déjà sur Supabase |
-| Cron | **GitHub Actions** planifié (gratuit, versionné) | ✅ en place depuis le 2026-07-30 (`.github/workflows/`, cf. §11) |
+07 — Les formules
+Cinq signaux, verrouillés avant d'écrire le SQL, pas après.
 
-Pas d'Airflow, pas de Kafka : quelques milliers d'items une fois par jour = un script
-de ~200 lignes.
+A — Verdict ponctuel (extension)
 
----
+ratio = prix_affiché / prix_de_référence
+prix_de_référence = médiane des ventes récentes comparables. < 0.85 vert (bonne affaire) · 0.85–1.15 jaune (prix normal) · > 1.15 rouge (survendu). Seuils calibrés et validés en conditions réelles — configurables (.env), pas à retuner sans donnée contraire.
 
-## 7. Structure du repo
+B — Score structurel (site, sous-cote/surcote persistante)
 
-> **Réel au 2026-07-30** (✅ = existe, ⬜ = pas encore codé) :
+score = valeur_théorique / prix_marché
+valeur_théorique = pull_cost × character_multiplier × collector_factor × demand_factor
+pull_cost = prix_du_pack × (1/taux_de_pull), taux_de_pull dérivé du nombre de cartes de cette rareté dans le set. collector_factor et demand_factor fixés à 1.0 en MVP — non modélisés, pas bloquant pour démarrer, à affiner avec un vrai signal de demande plus tard. Score > 1 = carte sous-cotée.
 
-```
-/ingestion
-  /sources
-    apitcg.py         ✅ référentiel : peuple/maj items (sync_items), + client brut (list_sets/list_products)
-    justtcg.py         ✅ prix scellé récent, en pause (incident 401, cf. §11)
-    pricecharting.py   ✅ AJOUTÉ — scraping : prix set + singles + gradation PSA, pas dans le plan d'origine
-    base.py            ✅ interface PriceRow (déclarative, pas strictement suivie — cf. note ci-dessous)
-  probe_combo.py       ✅ sonde de validation Réserve 1/2 (§4), réutilisable via CLI
-  orchestrator.py      ✅ AJOUTÉ 2026-07-30 — enchaîne référentiel + prix, appelé par le cron GitHub Actions
-/.github/workflows
-  daily-sync.yml         ✅ référentiel + prix ungraded, quotidien (06:00 UTC)
-  grades-and-sales.yml   ✅ gradation PSA + historique de ventes, sets récents, 3x/semaine (lun/mer/ven 03:00 UTC)
-/index
-  calculate.py         ⬜ pas encore codé
-  methodology.py        ⬜ pas encore codé — méthodologie toujours à définir (§8, session dédiée à venir)
-/web                    ⬜ pas encore codé (next.js)
-/db
-  schema.sql           ✅ à jour (§5)
-  apply_schema.py      ✅ AJOUTÉ — applique schema.sql via DATABASE_URL
-  migrations/           ⬜ pas de dossier séparé — évolutions faites en ALTER TABLE ad hoc pour l'instant
-/shared
-  db.py                ✅ connexion partagée (psycopg2 + pooler Supabase)
-```
+ROI gradation (extension, calcul côté client)
 
-Note sur `base.py` : l'idée d'origine (un `fetch()` générique consommé par un
-orchestrateur central) n'a pas survécu telle quelle — `apitcg.py` et
-`pricecharting.py` écrivent directement en base depuis leur propre
-`sync_*()`/`main()`, chacun avec sa logique de matching/dédup spécifique à sa
-source. Pas de perte de découplage réelle (le schéma reste la seule interface
-partagée), juste pas d'orchestrateur unique pour l'instant.
+ROI = (valeur_attendue − prix_ungraded − frais) / (prix_ungraded + frais)
+valeur_attendue = Σ P(grade=g) × prix_marché(grade=g)
+P(grade=g) vient de la distribution historique des notes — cascade carte → set+rareté → set → tcg jusqu'au niveau qui a assez de ventes gradées pour être fiable. Recalculable en direct côté client quand l'utilisateur change ses hypothèses.
 
-### Interface commune des sources (à respecter)
-Chaque source de prix expose la même signature, pour que l'orchestrateur soit agnostique
-et qu'ajouter une source (plan B) ne touche ni le schéma ni le calcul :
+Liquidité (extension + site)
 
-```python
-# ingestion/sources/base.py
-from dataclasses import dataclass
-from datetime import date
+liquidité = ventes(30j) / annonces_actives_moyennes(30j)
+Affichée en clair ("12 ventes / 30j · 4 annonces actives") plutôt qu'en score opaque — le ratio reste calculable derrière pour trier/filtrer.
 
-@dataclass
-class PriceRow:
-    external_id: str      # id de l'item chez la source de prix
-    price: float
-    currency: str
-    captured_at: date
-    volume: int | None
-    source: str
+Calculateur d'arbitrage (extension, 100% côté client)
 
-def fetch() -> list[PriceRow]:
-    ...
-```
+bénéfice = prix_revente_moyen − (prix_achat + livraison + douane)
+prix_achat/livraison/douane saisis par l'utilisateur. prix_revente_moyen = le même prix de référence que le verdict ponctuel (A) — aucune donnée en plus à collecter, rien n'est stocké côté serveur.
 
----
+Indice global (site — signal agrégé, construit sur tout ce qui précède)
 
-## 8. Méthodologie d'indice (À FAIRE ENSEMBLE — pas encore figée)
+poids_i(t) = [volume_i(t) × liquidité_i(t)] / Σ_j [volume_j(t) × liquidité_j(t)]
+indice(t)  = indice(t-1) × Σ_i [poids_i(t-1) × (prix_i(t) / prix_i(t-1))]
+Base 100 au jour de lancement — pas base 0 : une lecture en pourcentage ("+43% depuis le lancement") a besoin d'un niveau de départ non nul. Pondéré par volume × liquidité (réutilise la formule liquidité ci-dessus) plutôt qu'équipondéré — une carte peu échangée, dont le prix est souvent bruité justement parce qu'elle se vend peu, pèse moins sur l'indice.
 
-C'est le **cœur de valeur** du projet, à traiter séparément du code de plomberie.
-Décisions à trancher avant de coder `methodology.py` :
+Le chaînage se résout par construction, pas par un correctif ponctuel. Les poids se recalculent chaque jour à partir de ceux de la veille (méthode Laspeyres chaînée) — quand une nouvelle carte ou un nouveau set entre dans l'univers, il entre avec son propre poids au jour J, sans saut artificiel ni facteur de chaînage à coder à part.
 
-- **Base 100 à une date de référence.** L'indice s'exprime en points, pas en euros.
-  Permet d'agréger un display à 90€ et une carte à 3€ sans que l'un écrase l'autre.
-- **Pondération.** Pour le MVP : **équipondéré au sein de chaque catégorie**, avec
-  **sous-indices séparés** (displays / cartes) plutôt qu'un chiffre mélangé.
-  (Pondéré par volume = mieux mais besoin du volume ; par capitalisation = tirage inconnu, écarté.)
-- **Chaînage (piège technique).** Quand un nouveau set entre dans l'univers, ne pas
-  l'ajouter brutalement (créerait un saut artificiel). Ajuster un facteur de chaînage
-  pour que l'indice reste continu. À coder dès le départ, sinon l'historique devient
-  inexploitable dès le premier nouveau set (~2 mois vu le rythme de sorties).
+Tout en USD, aucune conversion. items.language (EN/JP) reste la vraie distinction produit — deux impressions physiques, deux historiques de prix — mais aucune table fx_rates : toute source non-USD (Vinted, à terme) convertit une fois à l'écriture, jamais à la lecture — même règle pour sales.
 
-> Prochaine session dédiée : formules concrètes (niveau, facteur de chaînage, sous-indices)
-> avec exemple chiffré.
+08 — Interface
+Maquette statique validant la structure avant d'écrire le moindre composant : CardQuant Terminal — les 4 écrans en interactif. Prix et volumes illustratifs, pas des données de marché réelles.
 
----
+Écran	Surface	Contenu clé
+Dashboard	Site	Indice global (graphique), aperçu watchlist, recherches récentes
+Watchlist	Site	Table triable/filtrable des scores d'opportunité (§07)
+Fiche carte	Site	Historique de prix, liquidité, ventes récentes, ROI gradation interactif — point d'atterrissage du bouton extension
+Panneau extension	Extension	Verdict ponctuel, stats rapides, calculateur d'arbitrage, liens vers les annonces trouvées
+Direction visuelle : système "Terminal". Manrope + IBM Plex Mono, verre dépoli, thème clair unique — un choix assumé : desk de trading pour cartes à collectionner, chiffres en monospace, accent de couleur par univers (bleu Pokémon / rouge One Piece). Le composant propre à ce produit : le chrome du panneau extension (§01), qui n'a d'équivalent nulle part ailleurs dans le système.
 
-## 9. Ordre de construction recommandé
+09 — Publication extension
+Chrome Web Store, extension Google — le canal visé dès le départ. Une partie de cette checklist est un vrai goulot d'étranglement de mise en prod : la review peut prendre de quelques heures à plusieurs semaines selon les permissions demandées, indépendamment de la qualité du code livré.
 
-1. ✅ **[TEST]** Valider le combo API TCG + JustTCG (section 4) — Pokémon validé, One Piece court-circuité par le pivot PriceCharting.
-2. ✅ `db/schema.sql` — créer les tables (schéma étendu depuis, cf. §5).
-3. ✅ `ingestion/sources/apitcg.py` — peupler `items` (référentiel) — **Pokémon et One Piece**, anglais uniquement (cf. §11).
-4. 🟡 `ingestion/sources/justtcg.py` — fait puis **mis en pause** (incident 401, §11) ; `pricecharting.py` a pris le relais comme source de prix principale (pas prévu dans le plan d'origine).
-5. ✅ `orchestrator.py` + cron — **fait le 2026-07-30**. `ingestion/orchestrator.py` enchaîne référentiel + prix ; deux workflows GitHub Actions planifiés (`.github/workflows/`) : quotidien (référentiel + prix ungraded, tous les sets mappés) et hebdomadaire (gradation PSA, sets récents uniquement — trop coûteux en requêtes pour du quotidien). Nécessite les secrets repo `APITCG_API_KEY` et `DATABASE_URL` (pooler !) pour tourner.
-6. ⬜ `index/methodology.py` + `calculate.py` — **pas commencé**, discussion dédiée prévue en prochaine session.
-7. ⬜ `web/` — pas commencé.
-8. ⬜ Itérer : corrélations, sous-indices par série/langue, volume.
-
-> Le point 5 était prioritaire dans le temps : chaque jour sans snapshot est un jour
-> d'historique perdu à jamais. **Résolu le 2026-07-30** (cf. point 5 et §11) — reste
-> à activer les secrets GitHub et vérifier le premier run réel.
-
----
-
-## 10. Rappels de cadrage
-
-- Le front ne lit **jamais** les prix bruts. Uniquement `index_values`.
-- On **empile**, on n'écrase jamais un prix.
-- On stocke la devise d'origine, on convertit au calcul.
-- Ajouter une source = un module derrière l'interface commune, rien d'autre à toucher.
-- L'historique est l'actif. Le front est cosmétique.
-
----
-
-## 11. État actuel (2026-07-30)
-
-### Infra
-- Postgres hébergé sur **Supabase**. `DATABASE_URL` doit pointer sur le
-  *connection pooler* (`aws-0-*.pooler.supabase.com:6543`), pas la connexion
-  directe (`db.*.supabase.co:5432`) — cette dernière est IPv6-only et ne
-  fonctionne pas sur un réseau sans route IPv6.
-- Repo Git initialisé et poussé : **https://github.com/tnbfrombenibouyahia/tcg-index** (privé).
-  `.env` exclu via `.gitignore` (clés API + mot de passe DB jamais commités).
-
-### Référentiel (`items`)
-| TCG | Items | Sealed | Singles | Avec image |
-|---|---|---|---|---|
-| Pokémon | 32 529 | 4 722 | 27 764 (~) | 32 502 (99,9%) |
-| One Piece | 7 200 | 627 | 6 573 | 7 200 (100%) |
-
-Anglais uniquement pour l'instant (API TCG, via TCGPlayer, ne couvre pas le
-japonais). **Décision de scope langues** : anglais + japonais visés à terme
-(marchés distincts, sous-indices séparés — pas de tentative de relier une
-carte EN à son équivalent JP), **français écarté** (marché Cardmarket, mal
-couvert par TCGPlayer/PriceCharting, source fiable pas identifiée).
-
-### Prix (`price_snapshots`)
-| Source | État | Couverture |
-|---|---|---|
-| JustTCG | **En pause** — `401 INVALID_API_KEY` en pleine session le 2026-07-29 malgré clé valide et quota loin d'être atteint ; cause jamais confirmée (probable incident côté leur infra). 435 items Pokémon scellé déjà en base (historique 7j chacun), rien perdu, reprise possible à tout moment (upsert idempotent). | Pokémon scellé récent uniquement |
-| PriceCharting | Actif, source principale | Pokémon : 17 962 items avec prix (2 496 avec ≥1 palier gradé) ; One Piece : 4 203 items (583 gradés). 150/217 sets Pokémon mappés, 76/84 One Piece (mapping manuel set_code ↔ slug PriceCharting, pas de découverte automatique). |
-
-Gradation PSA (`grade` sur `price_snapshots`, ajouté le 2026-07-30, sur
-demande explicite) : 10 128 lignes gradées (psa7: 456, psa8: 899, psa9:
-2 841, psa9.5: 2 894, psa10: 3 038), scope volontairement limité aux sets
-sortis dans les 18 derniers mois (1 requête HTTP par carte côté
-PriceCharting — tout le catalogue prendrait ~12h).
-
-### Décisions prises pendant le build (pas dans le cadrage d'origine)
-- **Prix scellé PriceCharting** : la colonne `used_price` ("Ungraded") sert de
-  référence pour le scellé aussi, pas `new_price` ("factory sealed") —
-  contre-intuitif mais confirmé sur données réelles (`new_price` souvent vide
-  ou incohérent, la majorité du volume de vente scellé semble catégorisé
-  "Used" côté source).
-- **Images** : `items.image_url` référence directement le CDN externe
-  (TCGPlayer via API TCG, PriceCharting en fallback documenté) — pas de
-  ré-hébergement, donc pas de sujet de droits d'image ni de stockage.
-
-### Ventes individuelles (`sales`, ajouté le 2026-07-30)
-Chaque page carte individuelle PriceCharting a aussi une table "Sold
-Listings" (date / titre / prix) par palier de gradation, en plus des prix
-déjà scrapés — vérifié en conditions réelles sur Charizard #4 Base Set (373
-ventes, 2023-12-09 → aujourd'hui, marketplaces au-delà d'eBay/TCGPlayer :
-Goldin, Heritage, PWCC). Comme c'est la même page que celle déjà visitée
-pour la gradation PSA, `fetch_card_details()` remplace l'ancien
-`fetch_card_grades()` et extrait les deux en une seule requête HTTP —
-aucun coût réseau supplémentaire.
-
-- Scope identique à la gradation : sets des 18 derniers mois, singles
-  uniquement (pas le scellé, pas vérifié si les pages scellé ont cette table).
-- Vocabulaire de grade limité à PSA7-10 + ungraded (mêmes 6 onglets que
-  `price_snapshots.grade`) — les onglets CGC/BGS/SGC/TAG/ACE et les grades
-  bruts 1-6 existent sur la page mais sont ignorés (hors scope PSA décidé
-  précédemment, pas de raison de l'élargir ici).
-- Dédup sur `(marketplace, external_sale_id)` (id natif de l'annonce, ex.
-  `ebay-157845176074`) — rejouable sans doublons, testé en conditions réelles
-  (rerun identique → même nombre de lignes en base).
-- **Limite découverte en marge** : chaque onglet de gradation semble plafonné
-  à ~30 ventes visibles (pas de pagination trouvée). Sur une carte à ~1
-  vente/semaine, ce plafond correspond à peu près à 7 mois d'historique — au
-  delà, les ventes plus anciennes ne sont juste plus récupérables. C'est
-  pour ça que le cron tourne 3x/semaine plutôt qu'1x : espacer davantage
-  risque de perdre des ventes sur les cartes à volume plus élevé.
-- Devise : USD figé en dur pour l'ingestion (comme `price_snapshots`) —
-  décision explicite de ne traiter la conversion/l'affichage multi-devise que
-  côté `web/` plus tard, pas à l'ingestion.
-- Objectif : permettre un calcul de volume par TCG / set / carte / année /
-  personnage via jointure sur `items`, sans scraping supplémentaire par
-  dimension — pas encore branché sur `index/calculate.py` (toujours pas codé).
-
-### Orchestration & cron (ajouté le 2026-07-30, mis à jour le même jour)
-- `ingestion/orchestrator.py` : enchaîne référentiel (API TCG, pokemon +
-  one-piece) puis prix (PriceCharting, tous les sets mappés). `--grades`
-  ajoute, sur les sets récents, la gradation PSA **et** l'historique de
-  ventes (même requête HTTP, cf. ci-dessus) ; `--skip-items` saute le
-  référentiel (utilisé par le run grades/ventes, déjà fait par le quotidien).
-- Deux workflows GitHub Actions (`.github/workflows/`) :
-  - `daily-sync.yml` : tous les jours à 06:00 UTC — référentiel + prix ungraded.
-  - `grades-and-sales.yml` : lundi/mercredi/vendredi à 03:00 UTC — gradation
-    PSA + ventes, sets récents (1 requête/carte, trop coûteux en quotidien ;
-    3x/semaine plutôt qu'1x à cause du plafond ~30 ventes/onglet, cf.
-    ci-dessus).
-  - Les deux ont aussi `workflow_dispatch` pour un déclenchement manuel.
-- **Committé et poussé sur `main`** (commit `0cdc1a9`, 2026-07-30) :
-  `orchestrator.py`, les deux workflows, la table `sales`, `fetch_card_details`.
-  Les deux crons sont donc actifs côté GitHub (planning pris en compte dès
-  le push), mais vont échouer tant que l'étape suivante n'est pas faite.
-- **Reste à faire côté GitHub avant que ça tourne pour de vrai** : ajouter les
-  secrets du repo (Settings > Secrets and variables > Actions)
-  `APITCG_API_KEY` et `DATABASE_URL` (le pooler Supabase, pas la connexion
-  directe — cf. §11 infra). Sans ça, le premier run planifié (ou lancé à la
-  main via `workflow_dispatch`) échoue faute de credentials. JustTCG n'est
-  pas appelé par le cron (toujours en pause, reprise manuelle uniquement).
-- Chaque sync est déjà idempotente (upsert / `ON CONFLICT DO NOTHING`) : un
-  run manqué ou rejoué ne crée pas de doublons — vérifié en conditions
-  réelles pour `sales` aussi.
-- Storage Supabase : plan **Free (500 MB)** utilisé délibérément pendant la
-  phase d'évaluation (upgrade Pro seulement si l'app montre de la valeur).
-  À ~140 MB/mois de croissance mesurée (31 MB au 2026-07-30), le quota se
-  remplit en ~3-4 mois — `orchestrator.py` affiche la taille de la base à
-  chaque run (`print_storage_usage()`) pour le voir venir dans les logs
-  Actions plutôt que d'être surpris par un run qui échoue faute de place.
-- Pas encore vérifié : le tout premier run réel en conditions Actions (temps
-  d'exécution, quota de minutes GitHub sur le repo privé — 2000 min/mois côté
-  gratuit, à surveiller si les runs traînent).
-
-### Connu, pas résolu
-- Méthodologie d'indice (§8) : toujours à définir, session dédiée à venir —
-  `sales` donne maintenant la matière pour une pondération par volume, mais
-  rien n'est branché.
-- JustTCG : blocage non résolu, à retenter/contacter le support si besoin.
-- `web/` et `index/` : dossiers vides, rien de commencé.
-- `sales` : scope singles/sets récents uniquement pour l'instant, pas testé
-  sur le scellé.
+Compte développeur — 5$, une fois. Frais unique (pas par extension), couvre tout ce qui sera publié plus tard sous ce compte. À faire tôt : c'est un blocage administratif, pas technique.
+Manifest V3 obligatoire. Le Store n'accepte plus de nouvelle soumission en Manifest V2. Service worker événementiel, pas de background page persistante — ça conditionne directement comment le panneau extension (§08) écoute les pages et communique avec le backend.
+Permissions scopées aux domaines réels, jamais un joker. https://www.ebay.com/* et équivalents explicites — pas <all_urls>. Une permission large ralentit la review et affiche un avertissement dissuasif à l'installation.
+Panneau strictement additif. Ne jamais masquer, modifier ou réécrire le contenu de la page hôte, aucune injection publicitaire ou de lien affilié — les règles anti-"ad injection"/"deceptive install" de Chrome ciblent précisément ce type d'extension.
+Politique de confidentialité publiée + déclaration "Privacy practices". Obligatoire dès qu'il y a compte utilisateur ou lecture de contenu de page — les deux sont vrais ici.
+Connexion Google dans l'extension ≠ connexion Google sur le site. Un simple redirect OAuth web ne marche pas dans une extension. Passe par chrome.identity (getAuthToken ou launchWebAuthFlow), à intégrer avec Firebase Auth (§05) — un vrai travail d'intégration.
+Tester en privé avant la review publique. Chrome permet de charger l'extension en local (mode développeur) ou de la distribuer à des testeurs de confiance sans passer par la review publique.
+CardQuant · document de référence

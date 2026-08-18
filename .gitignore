@@ -5,3 +5,5 @@ __pycache__/
 
 .vercel
 .env*
+firebase-debug.log
+.pytest_cache/

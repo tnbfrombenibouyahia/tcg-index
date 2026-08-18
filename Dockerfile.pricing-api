@@ -1,0 +1,26 @@
+# Image du micro-service de verdict (pricing_api/) -- Cloud Run service
+# (contrairement à ingestion/, un Job : celui-ci répond en HTTP à la demande,
+# appelé par l'extension navigateur, cf. cardquant-handoff-adapte.md §04-05).
+#
+# Dépend de tout `ingestion/` (pas juste pricing/) : pricing/matching.py
+# importe ingestion.sources.limitlesstcg, pricing/sources/pricecharting_source.py
+# importe ingestion.sources.pricecharting -- même empreinte de code que
+# l'image d'ingestion, mais servie en HTTP au lieu d'un batch. `index/` non
+# nécessaire (jamais importé par cette chaîne).
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY shared/ shared/
+COPY ingestion/ ingestion/
+COPY pricing/ pricing/
+COPY pricing_api/ pricing_api/
+
+# Cloud Run fournit le port d'écoute via $PORT (8080 par défaut) -- forme
+# shell (pas exec) pour que la variable soit interpolée au démarrage.
+CMD uvicorn pricing_api.main:app --host 0.0.0.0 --port $PORT

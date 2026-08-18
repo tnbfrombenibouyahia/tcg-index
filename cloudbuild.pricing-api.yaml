@@ -1,0 +1,14 @@
+# Nécessaire car `gcloud builds submit --tag` n'accepte un Dockerfile que
+# s'il s'appelle exactement "Dockerfile" -- celui-ci s'appelle Dockerfile.pricing-api
+# pour coexister avec le Dockerfile de l'image d'ingestion à la racine du repo.
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - build
+      - -f
+      - Dockerfile.pricing-api
+      - -t
+      - europe-west3-docker.pkg.dev/cardquant-tcg/cardquant-images/pricing-api:latest
+      - .
+images:
+  - europe-west3-docker.pkg.dev/cardquant-tcg/cardquant-images/pricing-api:latest

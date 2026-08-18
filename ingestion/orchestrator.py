@@ -67,7 +67,7 @@ from index import volume as index_volume
 from index.methodology import INDEX_DEFINITIONS
 from ingestion import rarity_inherit
 from ingestion.sources import apitcg, bulbapedia, ebay, limitlesstcg, pricecharting, tcgdex
-from shared.db import get_connection, retry_on_serialization_failure
+from shared.db import get_connection, ingestion_writer_lock, retry_on_serialization_failure
 from shared.sync_log import finish_run, start_run
 
 TCGS = ["pokemon", "one-piece"]
@@ -502,16 +502,19 @@ def run_volume_calculation(run_type: str) -> None:
 
 
 def print_storage_usage() -> None:
-    """Visibilité dans le log du cron sur la taille de la base -- Supabase Free
-    plafonne à 500 MB (cf. mémoire projet) et l'historique s'accumule chaque
-    jour sans jamais être purgé (append-only)."""
+    """Visibilité dans le log du cron sur la taille de la base -- l'historique
+    s'accumule chaque jour sans jamais être purgé (append-only). 10 Go
+    provisionnés sur Cloud SQL (db-f1-micro, cf. cardquant-handoff-adapte.md
+    §01) depuis la migration du 2026-08-16, pas de palier gratuit ici
+    (contrairement à l'ancien Supabase Free 500 MB) -- le chiffre affiché
+    reste le seuil réel à surveiller, juste plus haut qu'avant."""
     try:
         conn = get_connection()
         try:
             with conn.cursor() as cur:
                 cur.execute("SELECT pg_size_pretty(pg_database_size(current_database()))")
                 size = cur.fetchone()[0]
-            print(f"\nTaille de la base : {size} (plan Free = 500 MB)")
+            print(f"\nTaille de la base : {size} (10 Go provisionnés, Cloud SQL)")
         finally:
             conn.close()
     except Exception as exc:
@@ -606,7 +609,10 @@ def main() -> int:
         started = time.monotonic()
         had_errors = False
         try:
-            run_ebay_listings_sync("weekly")
+            # Même groupe de verrou que le run quotidien/--tier ci-dessous :
+            # écrit sur les mêmes tables d'agrégats (cf. shared/db.py::ingestion_writer_lock).
+            with ingestion_writer_lock():
+                run_ebay_listings_sync("weekly")
         except Exception as exc:
             had_errors = True
             print(f"\n!! Erreur pendant la sync eBay active listings : {exc}")
@@ -650,43 +656,49 @@ def main() -> int:
         # ~95%. L'erreur reste visible ci-dessus et dans sync_runs (status
         # "error" par tcg, cf. run_items_sync) pour qui veut la voir.
 
-    try:
-        errors = run_price_sync(tier=args.tier, run_type=run_type)
-        had_errors = had_errors or bool(errors)
-    except Exception as exc:
-        had_errors = True
-        print(f"\n!! Erreur pendant la sync prix : {exc}")
-
-    try:
-        retry_on_serialization_failure(lambda: run_index_calculation(run_type))
-    except Exception as exc:
-        had_errors = True
-        print(f"\n!! Erreur pendant le calcul des indices : {exc}")
-
-    try:
-        retry_on_serialization_failure(lambda: run_sealed_ev_calculation(run_type))
-    except Exception as exc:
-        had_errors = True
-        print(f"\n!! Erreur pendant le calcul du ratio EV des scellés : {exc}")
-
-    try:
-        retry_on_serialization_failure(lambda: run_undervalued_calculation(run_type))
-    except Exception as exc:
-        had_errors = True
-        print(f"\n!! Erreur pendant le calcul des scores undervalued : {exc}")
-
-    if args.tier is not None:
+    # Verrou autour de tout ce qui touche aux tables d'agrégats partagées avec
+    # --tier/--ebay-listings (indices/undervalued/sealed_ev/volume/
+    # grading_roi_inputs) -- cf. shared/db.py::ingestion_writer_lock, remplace
+    # le `concurrency: group: pricecharting-sync` de GitHub Actions. La sync
+    # référentiel ci-dessus reste hors verrou : ne touche jamais ces tables.
+    with ingestion_writer_lock():
         try:
-            retry_on_serialization_failure(lambda: run_volume_calculation(run_type))
+            errors = run_price_sync(tier=args.tier, run_type=run_type)
+            had_errors = had_errors or bool(errors)
         except Exception as exc:
             had_errors = True
-            print(f"\n!! Erreur pendant le calcul du volume : {exc}")
+            print(f"\n!! Erreur pendant la sync prix : {exc}")
 
         try:
-            retry_on_serialization_failure(lambda: run_grading_roi_inputs_calculation(run_type))
+            retry_on_serialization_failure(lambda: run_index_calculation(run_type))
         except Exception as exc:
             had_errors = True
-            print(f"\n!! Erreur pendant le calcul des ingrédients ROI de gradation : {exc}")
+            print(f"\n!! Erreur pendant le calcul des indices : {exc}")
+
+        try:
+            retry_on_serialization_failure(lambda: run_sealed_ev_calculation(run_type))
+        except Exception as exc:
+            had_errors = True
+            print(f"\n!! Erreur pendant le calcul du ratio EV des scellés : {exc}")
+
+        try:
+            retry_on_serialization_failure(lambda: run_undervalued_calculation(run_type))
+        except Exception as exc:
+            had_errors = True
+            print(f"\n!! Erreur pendant le calcul des scores undervalued : {exc}")
+
+        if args.tier is not None:
+            try:
+                retry_on_serialization_failure(lambda: run_volume_calculation(run_type))
+            except Exception as exc:
+                had_errors = True
+                print(f"\n!! Erreur pendant le calcul du volume : {exc}")
+
+            try:
+                retry_on_serialization_failure(lambda: run_grading_roi_inputs_calculation(run_type))
+            except Exception as exc:
+                had_errors = True
+                print(f"\n!! Erreur pendant le calcul des ingrédients ROI de gradation : {exc}")
 
     print_storage_usage()
 

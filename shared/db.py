@@ -2,6 +2,7 @@
 
 Une seule variable d'environnement : DATABASE_URL (cf. .env.example).
 """
+import contextlib
 import os
 import random
 import time
@@ -26,17 +27,76 @@ import psycopg2.errors
 # magasin de certs de la machine. Toute valeur sslrootcert déjà présente
 # dans DATABASE_URL est retirée avant d'imposer celle-ci, pour ne jamais
 # la dupliquer (psycopg2/libpq n'aiment pas un paramètre en double).
+#
+# 2026-08-16 : ce bundle certifi ne vaut que pour verify-ca/verify-full
+# (CockroachDB Cloud, certificat public standard). Cloud SQL (nouvelle
+# cible, cf. cardquant-handoff-adapte.md) présente un certificat signé par
+# une autorité interne à Google, absente de tout bundle de CA public --
+# forcer sslrootcert dessus fait échouer la connexion (`certificate verify
+# failed`) même avec le bon mot de passe. On ne l'injecte donc plus que
+# quand DATABASE_URL demande explicitement verify-ca/verify-full ; les
+# autres modes (`require`, utilisé par Cloud SQL) passent sans rootcert --
+# toujours chiffré en transit, juste sans vérification d'identité du
+# certificat, cohérent avec ce que fait déjà tout script de ce repo qui se
+# connecte directement à Cloud SQL (cf. db/migrate_data_to_cloudsql.py).
 
 
-def _dsn_without_sslrootcert(raw_dsn: str) -> str:
+def _dsn_without_sslrootcert(raw_dsn: str) -> tuple[str, str | None]:
     parts = urlsplit(raw_dsn)
-    query = [(k, v) for k, v in parse_qsl(parts.query, keep_blank_values=True) if k != "sslrootcert"]
-    return urlunsplit(parts._replace(query=urlencode(query)))
+    query = parse_qsl(parts.query, keep_blank_values=True)
+    sslmode = next((v for k, v in query if k == "sslmode"), None)
+    query = [(k, v) for k, v in query if k != "sslrootcert"]
+    return urlunsplit(parts._replace(query=urlencode(query))), sslmode
 
 
 def get_connection():
-    dsn = _dsn_without_sslrootcert(os.environ["DATABASE_URL"])
-    return psycopg2.connect(dsn, sslrootcert=certifi.where())
+    dsn, sslmode = _dsn_without_sslrootcert(os.environ["DATABASE_URL"])
+    if sslmode in ("verify-ca", "verify-full"):
+        return psycopg2.connect(dsn, sslrootcert=certifi.where())
+    return psycopg2.connect(dsn)
+
+
+# ---------------------------------------------------------------------------
+# Verrou applicatif (remplace `concurrency: group` de GitHub Actions)
+# ---------------------------------------------------------------------------
+# 2026-08-16 : sous Cloud Run Jobs + Cloud Scheduler (cf. cardquant-handoff-adapte.md
+# §04), plus de `concurrency: group: pricecharting-sync` -- ce filet GitHub
+# Actions évitait justement à daily-sync/tiered-sync/ebay-listings-sync de
+# s'écrire dessus sur les mêmes tables d'agrégats (indices/undervalued/
+# sealed_ev/volume/grading_roi_inputs), après plusieurs incidents réels
+# (2026-08-10, 2026-08-12, 2026-08-13, cf. commentaires de ces 3 workflows).
+# Cloud Scheduler n'a pas d'équivalent natif entre Job resources différentes.
+#
+# `pg_advisory_lock` (bloquant, PAS `pg_try_advisory_lock`) reproduit
+# exactement la sémantique `cancel-in-progress: false` : une run qui ne peut
+# pas prendre le verrou ATTEND (mise en file), elle n'échoue pas et n'annule
+# rien. Verrou tenu par sa propre connexion dédiée (nécessaire : PostgreSQL
+# libère les verrous de session à la fermeture de la connexion, jamais
+# transactionnels ici -- le lock doit survivre à travers tout l'appel, pas
+# juste une transaction) et libéré explicitement en sortie, connexion fermée
+# après. Clé fixe (hashtext du nom du groupe) plutôt que l'id de la table :
+# c'est UN SEUL verrou pour les 3 jobs concernés (même groupe logique que
+# `pricecharting-sync` côté GitHub Actions), pas un verrou par table.
+_INGESTION_WRITER_LOCK_KEY = "pricecharting-sync"  # même nom que l'ancien concurrency group
+
+
+@contextlib.contextmanager
+def ingestion_writer_lock():
+    """À poser autour de tout run qui touche aux tables d'agrégats partagées
+    (prix quotidien, --tier, --ebay-listings) -- cf. commentaire ci-dessus.
+    Bloque jusqu'à obtention du verrou (peut attendre plusieurs dizaines de
+    minutes si une autre run tourne encore, exactement comme la file
+    d'attente `concurrency` group qu'il remplace)."""
+    conn = get_connection()
+    conn.autocommit = True
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT pg_advisory_lock(hashtext(%s))", (_INGESTION_WRITER_LOCK_KEY,))
+        yield
+    finally:
+        with conn.cursor() as cur:
+            cur.execute("SELECT pg_advisory_unlock(hashtext(%s))", (_INGESTION_WRITER_LOCK_KEY,))
+        conn.close()
 
 
 # ---------------------------------------------------------------------------
