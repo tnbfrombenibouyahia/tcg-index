@@ -1,0 +1,99 @@
+/* CardQuant -- panneau latéral coulissant injecté sur les pages annonce
+   eBay (cf. content.js). Strictement scopé sous #cardquant-root : ne
+   redéfinit rien de la page hôte (cf. `all: initial`/`all: unset`
+   ci-dessous, contre l'héritage accidentel de styles eBay). */
+
+#cardquant-root {
+  all: initial;
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  z-index: 2147483647; /* max z-index -- toujours au-dessus du contenu hôte */
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+#cardquant-tab {
+  all: unset;
+  position: absolute;
+  top: 24px;
+  right: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #3b82f6; /* --accent-pokemon, cf. web/app/globals.css */
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: 8px 0 0 8px;
+  cursor: pointer;
+  box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.15);
+}
+#cardquant-tab.cardquant-green {
+  background: #16a34a;
+}
+#cardquant-tab.cardquant-yellow {
+  background: #d97706;
+}
+#cardquant-tab.cardquant-red {
+  background: #dc2626; /* --accent-onepiece, cf. web/app/globals.css */
+}
+
+#cardquant-card {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 320px;
+  height: 100%;
+  background: rgba(248, 250, 252, 0.92);
+  backdrop-filter: blur(12px); /* "verre dépoli", cf. tcg-index-handoff.md §08 */
+  -webkit-backdrop-filter: blur(12px);
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12);
+  padding: 72px 20px 20px;
+  box-sizing: border-box;
+  color: #1a1a1a;
+  font-size: 13px;
+  line-height: 1.5;
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+  overflow-y: auto;
+}
+
+#cardquant-root.cardquant-open #cardquant-card {
+  transform: translateX(0);
+}
+
+#cardquant-card .cardquant-card-name {
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+#cardquant-card .cardquant-verdict-label {
+  font-family: "IBM Plex Mono", ui-monospace, monospace; /* cf. §08 */
+  font-size: 16px;
+  margin: 0 0 16px;
+}
+#cardquant-card dl {
+  margin: 0 0 16px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 8px;
+}
+#cardquant-card dt {
+  color: rgba(26, 26, 26, 0.6);
+}
+#cardquant-card dd {
+  margin: 0;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  text-align: right;
+}
+#cardquant-card .cardquant-error {
+  color: #dc2626;
+}
+#cardquant-card .cardquant-todo {
+  color: rgba(26, 26, 26, 0.5);
+  font-size: 11px;
+  margin-top: 24px;
+}

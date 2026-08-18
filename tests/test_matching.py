@@ -156,18 +156,35 @@ class TestIdentifyCard:
         assert result.status == "matched"
         assert result.strategy == "fuzzy_name_rarity"
 
-    def test_image_url_only_is_not_implemented_stub(self):
+    def test_image_url_falls_back_to_ocr_then_code_lookup(self, monkeypatch):
+        card = _card(1, "Izo", "ST22-002")
+        monkeypatch.setattr("pricing.matching.extract_text_from_image",
+                             lambda url: "IZO ST22-002 SR ONE PIECE FOIL LP")
+        monkeypatch.setattr("pricing.matching.fetch_items_by_code", lambda code: [card])
+
         result = identify_card(image_url="https://example.com/listing.jpg")
+
+        assert result.status == "matched"
+        assert result.card is card
+
+    def test_image_url_with_no_ocr_text_is_not_found(self, monkeypatch):
+        monkeypatch.setattr("pricing.matching.extract_text_from_image", lambda url: None)
+
+        result = identify_card(image_url="https://example.com/listing.jpg")
+
         assert result.status == "not_found"
-        assert result.message is not None and "image" in result.message.lower()
+        assert result.message is not None and "ocr" in result.message.lower()
 
     def test_text_takes_priority_over_image_url(self, monkeypatch):
         card = _card(1, "Izo", "ST22-002")
         monkeypatch.setattr("pricing.matching.fetch_items_by_code", lambda code: [card])
+        called = []
+        monkeypatch.setattr("pricing.matching.extract_text_from_image", lambda url: called.append(url))
 
         result = identify_card(text="IZO ST22-002 SR", image_url="https://example.com/listing.jpg")
 
         assert result.status == "matched"
+        assert not called  # OCR jamais appelé quand text est fourni
 
     def test_nothing_provided_is_not_found(self):
         result = identify_card()

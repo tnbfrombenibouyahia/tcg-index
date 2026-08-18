@@ -24,6 +24,7 @@ import unicodedata
 
 from ingestion.sources.limitlesstcg import ONE_PIECE_KNOWN_RARITIES
 from pricing.models import Card, MatchResult
+from pricing.ocr import extract_text_from_image
 from pricing.repository import fetch_items_by_code, fetch_items_by_name_tokens
 
 # Priorité 1 : code officiel One Piece, insensible à la casse (spec).
@@ -163,28 +164,37 @@ def fuzzy_match_by_name_and_rarity(text: str) -> MatchResult:
     return MatchResult(status="matched", card=best, confidence=best_score, strategy="fuzzy_name_rarity")
 
 
-def identify_card(text: str | None = None, image_url: str | None = None) -> MatchResult:
-    """Point d'entrée public. Priorité 1 : code OP/ST/EB/Pxx-xxx (+
-    désambiguïsation qualificatif si plusieurs items partagent le code).
-    Priorité 2 (fallback) : nom + rareté approximatifs.
+def _match_text(text: str) -> MatchResult:
+    """Priorité 1 : code OP/ST/EB/Pxx-xxx (+ désambiguïsation qualificatif
+    si plusieurs items partagent le code). Priorité 2 (fallback) : nom +
+    rareté approximatifs. Factorisé hors de `identify_card` pour être
+    partagé entre le texte fourni tel quel et le texte extrait par OCR."""
+    code = extract_one_piece_code(text)
+    if code:
+        candidates = fetch_items_by_code(code)
+        if not candidates:
+            return MatchResult(status="not_found", strategy="code",
+                                message=f"Code {code} reconnu mais absent du référentiel.")
+        return disambiguate_candidates(text, candidates)
+    return fuzzy_match_by_name_and_rarity(text)
 
-    `image_url` : accepté par l'API mais NON implémenté dans cette
-    itération (aucune stratégie d'analyse d'image n'est décrite dans la
-    spec, seulement des stratégies texte) -- stub explicite. Si `text` est
-    aussi fourni, `image_url` est simplement ignoré (le texte prime).
-    TODO(vision) : brancher un OCR (ex. Tesseract/Cloud Vision) ou un modèle
-    multimodal le jour où l'extension doit identifier une carte à partir
-    d'une image seule (annonce sans titre exploitable)."""
+
+def identify_card(text: str | None = None, image_url: str | None = None) -> MatchResult:
+    """Point d'entrée public. `text` prioritaire s'il est fourni (titre
+    d'annonce, en général plus fiable qu'un OCR). Sinon, `image_url` :
+    passage 1 de la cascade (§01 du handoff) -- OCR Cloud Vision
+    (pricing/ocr.py), le texte détecté est ensuite matché exactement comme
+    un `text` fourni directement (même pipeline code/fuzzy).
+
+    Pas de passage 2 (similarité visuelle/CLIP) dans cette itération : si
+    l'OCR ne trouve rien, `identify_card` répond `not_found` plutôt que
+    d'escalader -- cohérent avec "ne jamais deviner" (§01)."""
     if text:
-        code = extract_one_piece_code(text)
-        if code:
-            candidates = fetch_items_by_code(code)
-            if not candidates:
-                return MatchResult(status="not_found", strategy="code",
-                                    message=f"Code {code} reconnu mais absent du référentiel.")
-            return disambiguate_candidates(text, candidates)
-        return fuzzy_match_by_name_and_rarity(text)
+        return _match_text(text)
     if image_url:
-        return MatchResult(status="not_found", strategy=None,
-                            message="Identification par image non implémentée dans cette itération (stub).")
+        ocr_text = extract_text_from_image(image_url)
+        if not ocr_text:
+            return MatchResult(status="not_found", strategy=None,
+                                message="Aucun texte détecté sur l'image (OCR).")
+        return _match_text(ocr_text)
     return MatchResult(status="not_found", strategy=None, message="Ni texte ni image_url fournis.")
