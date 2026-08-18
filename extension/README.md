@@ -23,10 +23,13 @@ Fait :
   (`accounts:signInWithIdp`) — aucun SDK à bundler. Le panneau affiche un
   bouton "Se connecter avec Google" tant qu'aucune session n'existe dans
   `chrome.storage.local`.
-  - ⚠️ **Gate client uniquement** : `pricing_api` ne vérifie encore aucun
-    jeton côté serveur (n'importe qui peut appeler `/verdict` directement).
-    À durcir avant publication si la gratuité "compte requis" doit être
-    autre chose qu'un simple mur d'UX.
+  - ✅ **Vérifié côté serveur** : `pricing_api` exige désormais un en-tête
+    `Authorization: Bearer <id_token>` valide (cf. `pricing/auth.py`,
+    vérification via l'API REST Identity Toolkit `accounts:lookup`) --
+    `/verdict` répond `401` sans jeton ou avec un jeton invalide/expiré,
+    ce n'est plus un mur d'UX uniquement. `background.js` rafraîchit le
+    jeton automatiquement via `securetoken.googleapis.com` s'il est proche
+    de l'expiration (1h de durée de vie, cf. `lib/auth.js::getValidIdToken`).
   - ⚠️ **Étape manuelle requise avant que la connexion fonctionne** :
     enregistrer `https://diipacpliojnijgdhcgjkjhlipednoch.chromiumapp.org/`
     dans la liste "Authorized redirect URIs" du client OAuth Web déjà
@@ -40,7 +43,6 @@ Fait :
     local fonctionnel).
 
 Pas fait (hors scope de ce scaffold) :
-- Durcissement serveur de l'auth (cf. ⚠️ ci-dessus).
 - ROI gradation, liquidité, calculateur d'arbitrage (§07) — décrits comme
   calculs côté client dans le handoff, pas encore implémentés ici.
 - Vinted, Cardmarket — seul eBay est scopé dans `manifest.json` pour

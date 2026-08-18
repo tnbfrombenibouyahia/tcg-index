@@ -76,7 +76,16 @@ async function signIn() {
   const data = await res.json();
   if (!res.ok) throw new Error(data.error?.message || "Échec de l'échange Firebase.");
 
-  const session = { uid: data.localId, email: data.email, displayName: data.displayName || null };
+  const session = {
+    uid: data.localId,
+    email: data.email,
+    displayName: data.displayName || null,
+    idToken: data.idToken,
+    refreshToken: data.refreshToken,
+    // Marge de 60s : jamais tenter d'appeler pricing_api avec un jeton sur
+    // le point d'expirer pile pendant l'aller-retour réseau.
+    expiresAt: Date.now() + Number(data.expiresIn) * 1000 - 60_000,
+  };
   await chrome.storage.local.set({ [SESSION_STORAGE_KEY]: session });
   return session;
 }
@@ -88,4 +97,42 @@ async function getSession() {
 
 async function signOut() {
   await chrome.storage.local.remove(SESSION_STORAGE_KEY);
+}
+
+async function refreshIdToken(session) {
+  const res = await fetch(`https://securetoken.googleapis.com/v1/token?key=${FIREBASE_WEB_API_KEY}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: session.refreshToken }),
+  });
+  if (!res.ok) {
+    // Refresh token révoqué/expiré (cf. doc Firebase -- rare mais possible
+    // après une longue inactivité) : la session n'est plus récupérable,
+    // il faut se reconnecter.
+    await signOut();
+    return null;
+  }
+  // securetoken.googleapis.com répond en snake_case, contrairement à
+  // accounts:signInWithIdp (camelCase) -- deux API Identity Toolkit
+  // distinctes, deux conventions de nommage différentes.
+  const data = await res.json();
+  const updated = {
+    ...session,
+    idToken: data.id_token,
+    refreshToken: data.refresh_token,
+    expiresAt: Date.now() + Number(data.expires_in) * 1000 - 60_000,
+  };
+  await chrome.storage.local.set({ [SESSION_STORAGE_KEY]: updated });
+  return updated.idToken;
+}
+
+/** Jeton prêt à l'emploi pour Authorization: Bearer <token> sur
+ * pricing_api, rafraîchi automatiquement s'il est expiré/proche de
+ * l'être. null si aucune session (jamais connecté, ou refresh token
+ * révoqué -- signOut() déjà appelé dans ce cas par refreshIdToken). */
+async function getValidIdToken() {
+  const session = await getSession();
+  if (!session) return null;
+  if (Date.now() < session.expiresAt) return session.idToken;
+  return refreshIdToken(session);
 }

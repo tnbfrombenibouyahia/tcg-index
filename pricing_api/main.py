@@ -13,9 +13,10 @@ from dotenv import load_dotenv
 load_dotenv()  # avant tout import qui lit os.environ à l'import (shared.db),
                 # même ordre que db/apply_schema.py.
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+from pricing.auth import verify_id_token
 from pricing.matching import identify_card
 from pricing.models import Card
 from pricing_api.schemas import CardCandidateOut, SourcePriceOut, VerdictRequest, VerdictResponse
@@ -33,13 +34,29 @@ def _card_out(card: Card, confidence: float) -> CardCandidateOut:
                              set_code=card.set_code, rarity=card.rarity, confidence=confidence)
 
 
+def require_user(authorization: str | None = Header(default=None)) -> dict:
+    """"Compte requis avant toute utilisation" (§01/§09) appliqué ici, pas
+    seulement côté extension (cf. extension/README.md -- avant ce commit,
+    la gate n'existait que côté client). `authorization` : en-tête
+    `Authorization: Bearer <id_token Firebase>` posé par
+    extension/background.js. 401 si absent ou invalide/expiré -- jamais
+    d'exception non gérée, un jeton qui échoue la vérification est un cas
+    attendu (session expirée), pas une panne serveur."""
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Authentification requise (en-tête Authorization manquant).")
+    user = verify_id_token(authorization.split(" ", 1)[1])
+    if user is None:
+        raise HTTPException(status_code=401, detail="Session invalide ou expirée.")
+    return user
+
+
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
 
 
 @app.post("/verdict", response_model=VerdictResponse)
-def post_verdict(req: VerdictRequest) -> VerdictResponse:
+def post_verdict(req: VerdictRequest, _user: dict = Depends(require_user)) -> VerdictResponse:
     match = identify_card(text=req.text, image_url=req.image_url)
 
     if match.status != "matched":

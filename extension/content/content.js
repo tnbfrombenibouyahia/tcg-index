@@ -138,6 +138,10 @@
 
     const response = await sendMessage({ type: "CARDQUANT_GET_VERDICT", text: title, displayedPrice });
     if (!response || !response.ok) {
+      if (response?.reason === "auth") {
+        panel.setSignedOut("Session expirée, reconnecte-toi.");
+        return;
+      }
       panel.setError("Verdict indisponible (pricing_api injoignable).");
       return;
     }

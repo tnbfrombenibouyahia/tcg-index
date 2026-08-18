@@ -33,18 +33,35 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       return true;
 
     case "CARDQUANT_GET_VERDICT":
-      fetch(`${PRICING_API_URL}/verdict`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: message.text,
-          displayed_price: message.displayedPrice,
-          grade: message.grade || "ungraded",
-        }),
-      })
-        .then((res) => res.json())
-        .then((data) => sendResponse({ ok: true, data }))
-        .catch((err) => sendResponse({ ok: false, error: String(err) }));
+      getValidIdToken()
+        .then((idToken) => {
+          if (!idToken) {
+            // Pas de session (ou refresh token révoqué, cf. lib/auth.js)
+            // -- reason "auth" distingue explicitement ce cas d'une panne
+            // réseau pour que content.js rebascule sur l'écran de connexion.
+            sendResponse({ ok: false, reason: "auth" });
+            return;
+          }
+          return fetch(`${PRICING_API_URL}/verdict`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+            body: JSON.stringify({
+              text: message.text,
+              displayed_price: message.displayedPrice,
+              grade: message.grade || "ungraded",
+            }),
+          }).then((res) => {
+            if (res.status === 401) {
+              // Jeton rejeté par pricing_api malgré un refresh local
+              // réussi (ex. compte désactivé côté Firebase) -- même
+              // traitement que l'absence de session.
+              sendResponse({ ok: false, reason: "auth" });
+              return;
+            }
+            return res.json().then((data) => sendResponse({ ok: true, data }));
+          });
+        })
+        .catch((err) => sendResponse({ ok: false, reason: "network", error: String(err) }));
       return true;
 
     default:
