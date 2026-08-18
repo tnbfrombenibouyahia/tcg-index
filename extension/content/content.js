@@ -9,9 +9,11 @@
  * scraping de ce repo (cf. ingestion/sources/*) : eBay change son markup
  * sans préavis, à ajuster ici si le panneau reste vide sur une annonce.
  *
- * TODO(auth) : le panneau répond aujourd'hui sans vérifier de session --
- * "compte requis avant toute utilisation" (§01/§09 du handoff) suppose
- * chrome.identity + Firebase Auth, pas encore branché ici.
+ * "Compte requis avant toute utilisation" (§01/§09) : le panneau exige une
+ * session (cf. lib/auth.js, relayée par background.js -- chrome.identity
+ * n'est pas accessible depuis un content script) avant d'appeler
+ * pricing_api. Aucune vérification côté serveur pour l'instant : la
+ * gate est uniquement client -- cf. TODO dans extension/README.md.
  */
 (function () {
   const TITLE_SELECTORS = ["h1.x-item-title__mainTitle span.ux-textspans", "h1.x-item-title__mainTitle"];
@@ -38,6 +40,16 @@
     return Number.isFinite(value) ? value : null;
   }
 
+  function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function sendMessage(message) {
+    return new Promise((resolve) => chrome.runtime.sendMessage(message, resolve));
+  }
+
   function buildPanel() {
     const root = document.createElement("div");
     root.id = "cardquant-root";
@@ -50,7 +62,7 @@
 
     const card = document.createElement("div");
     card.id = "cardquant-card";
-    card.innerHTML = '<div id="cardquant-body">Analyse en cours…</div>';
+    card.innerHTML = '<div id="cardquant-body">Chargement…</div>';
 
     root.append(tab, card);
 
@@ -61,34 +73,44 @@
     }
     tab.addEventListener("click", () => setOpen(!open));
 
+    const body = () => card.querySelector("#cardquant-body");
+
     return {
       root,
       toggle: () => setOpen(!open),
+      setOpen,
+      onClick(selector, handler) {
+        card.addEventListener("click", (e) => {
+          if (e.target.closest(selector)) handler();
+        });
+      },
       setError(message) {
-        card.querySelector("#cardquant-body").innerHTML =
-          `<p class="cardquant-error">${escapeHtml(message)}</p>`;
+        body().innerHTML = `<p class="cardquant-error">${escapeHtml(message)}</p>`;
+      },
+      setSignedOut(errorMessage) {
+        tab.classList.remove("cardquant-green", "cardquant-yellow", "cardquant-red");
+        body().innerHTML = `
+          <p>Connexion Google requise avant de voir le verdict d'une annonce.</p>
+          ${errorMessage ? `<p class="cardquant-error">${escapeHtml(errorMessage)}</p>` : ""}
+          <button type="button" class="cardquant-signin">Se connecter avec Google</button>
+        `;
       },
       setVerdict(data) {
         setOpen(true);
         tab.classList.remove("cardquant-green", "cardquant-yellow", "cardquant-red");
         if (data.verdict) tab.classList.add(`cardquant-${data.verdict}`);
-        card.querySelector("#cardquant-body").innerHTML = renderVerdict(data);
+        body().innerHTML = renderVerdict(data);
       },
     };
   }
 
-  function escapeHtml(text) {
-    const div = document.createElement("div");
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
   function renderVerdict(data) {
+    const footer = '<button type="button" class="cardquant-signout">Se déconnecter</button>';
     if (data.status === "ambiguous") {
-      return `<p>Plusieurs cartes possibles (${data.candidates.length}) — identification manuelle nécessaire.</p>`;
+      return `<p>Plusieurs cartes possibles (${data.candidates.length}) — identification manuelle nécessaire.</p>${footer}`;
     }
     if (data.status !== "matched" || !data.card) {
-      return `<p>${escapeHtml(data.message || "Carte non identifiée.")}</p>`;
+      return `<p>${escapeHtml(data.message || "Carte non identifiée.")}</p>${footer}`;
     }
     const label = VERDICT_LABELS[data.verdict] || data.verdict || "—";
     const ref = data.reference_price != null ? `${data.reference_price.toFixed(2)} $` : "—";
@@ -101,7 +123,34 @@
         <dt>Prix de référence</dt><dd>${ref}</dd>
       </dl>
       <p class="cardquant-todo">ROI gradation, liquidité et calculateur d'arbitrage : à venir (cf. extension/README.md).</p>
+      ${footer}
     `;
+  }
+
+  async function requestVerdict(panel) {
+    const title = queryFirstText(TITLE_SELECTORS);
+    const displayedPrice = parsePrice(queryFirstText(PRICE_SELECTORS));
+
+    if (!title || displayedPrice == null) {
+      panel.setError("Titre ou prix introuvable sur cette page (sélecteurs à ajuster ?).");
+      return;
+    }
+
+    const response = await sendMessage({ type: "CARDQUANT_GET_VERDICT", text: title, displayedPrice });
+    if (!response || !response.ok) {
+      panel.setError("Verdict indisponible (pricing_api injoignable).");
+      return;
+    }
+    panel.setVerdict(response.data);
+  }
+
+  async function refresh(panel) {
+    const { session } = (await sendMessage({ type: "CARDQUANT_GET_SESSION" })) || {};
+    if (!session) {
+      panel.setSignedOut();
+      return;
+    }
+    await requestVerdict(panel);
   }
 
   const panel = buildPanel();
@@ -111,22 +160,20 @@
     if (message.type === "CARDQUANT_TOGGLE_PANEL") panel.toggle();
   });
 
-  const title = queryFirstText(TITLE_SELECTORS);
-  const displayedPrice = parsePrice(queryFirstText(PRICE_SELECTORS));
-
-  if (!title || displayedPrice == null) {
-    panel.setError("Titre ou prix introuvable sur cette page (sélecteurs à ajuster ?).");
-    return;
-  }
-
-  chrome.runtime.sendMessage(
-    { type: "CARDQUANT_GET_VERDICT", text: title, displayedPrice },
-    (response) => {
-      if (!response || !response.ok) {
-        panel.setError("Verdict indisponible (pricing_api injoignable).");
-        return;
-      }
-      panel.setVerdict(response.data);
+  panel.onClick(".cardquant-signin", async () => {
+    panel.setOpen(true);
+    const result = await sendMessage({ type: "CARDQUANT_SIGN_IN" });
+    if (!result || !result.ok) {
+      panel.setSignedOut(result?.error || "Connexion impossible.");
+      return;
     }
-  );
+    await requestVerdict(panel);
+  });
+
+  panel.onClick(".cardquant-signout", async () => {
+    await sendMessage({ type: "CARDQUANT_SIGN_OUT" });
+    panel.setSignedOut();
+  });
+
+  refresh(panel);
 })();

@@ -17,11 +17,30 @@ Fait :
   CSP de la page hôte.
 - Panneau coulissant (glassmorphisme clair, cf. §08), onglet replié coloré
   vert/jaune/rouge une fois le verdict connu.
+- **Compte requis avant utilisation (§01/§09)** : `lib/auth.js` fait
+  `chrome.identity.launchWebAuthFlow` (Google) puis échange le `id_token`
+  contre une session Firebase via l'API REST Identity Toolkit
+  (`accounts:signInWithIdp`) — aucun SDK à bundler. Le panneau affiche un
+  bouton "Se connecter avec Google" tant qu'aucune session n'existe dans
+  `chrome.storage.local`.
+  - ⚠️ **Gate client uniquement** : `pricing_api` ne vérifie encore aucun
+    jeton côté serveur (n'importe qui peut appeler `/verdict` directement).
+    À durcir avant publication si la gratuité "compte requis" doit être
+    autre chose qu'un simple mur d'UX.
+  - ⚠️ **Étape manuelle requise avant que la connexion fonctionne** :
+    enregistrer `https://diipacpliojnijgdhcgjkjhlipednoch.chromiumapp.org/`
+    dans la liste "Authorized redirect URIs" du client OAuth Web déjà
+    provisionné par Firebase (Google Cloud Console → APIs & Services →
+    Identifiants → client `606137510344-03e55c2usplh7urnvslctfiu83rul4si`).
+    Aucune API publique pour cette étape (confirmé pendant ce chantier).
+    Cet ID d'extension vient de la clé figée dans `manifest.json` (`key`) —
+    il **changera** à la publication sur le Store (Chrome assigne un ID
+    définitif à la création de la fiche), il faudra alors ajouter la
+    nouvelle URI de redirection en plus (pas à la place, pour garder le dev
+    local fonctionnel).
 
 Pas fait (hors scope de ce scaffold) :
-- Compte requis avant utilisation (`chrome.identity` + Firebase Auth,
-  §05/§09 du handoff) — le panneau répond aujourd'hui sans vérifier de
-  session.
+- Durcissement serveur de l'auth (cf. ⚠️ ci-dessus).
 - ROI gradation, liquidité, calculateur d'arbitrage (§07) — décrits comme
   calculs côté client dans le handoff, pas encore implémentés ici.
 - Vinted, Cardmarket — seul eBay est scopé dans `manifest.json` pour

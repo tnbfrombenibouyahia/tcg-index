@@ -97,3 +97,23 @@
   font-size: 11px;
   margin-top: 24px;
 }
+#cardquant-card .cardquant-signin,
+#cardquant-card .cardquant-signout {
+  all: unset;
+  display: inline-block;
+  margin-top: 16px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+#cardquant-card .cardquant-signin {
+  background: #3b82f6;
+  color: #fff;
+}
+#cardquant-card .cardquant-signout {
+  color: rgba(26, 26, 26, 0.5);
+  font-size: 11px;
+  text-decoration: underline;
+}
