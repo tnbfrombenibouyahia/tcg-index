@@ -581,7 +581,10 @@
       "password": "Password",
       "submitLogin": "Log in",
       "submitSignup": "Create my account",
-      "disclaimer": "Accounts aren't live yet — this is a preview of what's coming."
+      "signingIn": "Signing in…",
+      "signInError": "Sign-in failed. Please try again.",
+      "emailComingSoon": "Email sign-in coming soon — use Google for now.",
+      "disclaimer": "Secure sign-in via your Google account (Firebase Authentication)."
     }
   },
   "landing": {

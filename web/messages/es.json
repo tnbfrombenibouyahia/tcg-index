@@ -581,7 +581,10 @@
       "password": "Contraseña",
       "submitLogin": "Iniciar sesión",
       "submitSignup": "Crear mi cuenta",
-      "disclaimer": "Las cuentas todavía no están activas — esto es un adelanto de lo que viene."
+      "signingIn": "Iniciando sesión…",
+      "signInError": "Error al iniciar sesión. Inténtalo de nuevo.",
+      "emailComingSoon": "Inicio de sesión por correo próximamente — usa Google por ahora.",
+      "disclaimer": "Inicio de sesión seguro con tu cuenta de Google (Firebase Authentication)."
     }
   },
   "landing": {

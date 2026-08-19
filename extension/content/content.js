@@ -10,10 +10,12 @@
  * sans préavis, à ajuster ici si le panneau reste vide sur une annonce.
  *
  * "Compte requis avant toute utilisation" (§01/§09) : le panneau exige une
- * session (cf. lib/auth.js, relayée par background.js -- chrome.identity
- * n'est pas accessible depuis un content script) avant d'appeler
- * pricing_api. Aucune vérification côté serveur pour l'instant : la
- * gate est uniquement client -- cf. TODO dans extension/README.md.
+ * session avant d'appeler pricing_api (vérifiée aussi côté serveur, cf.
+ * pricing/auth.py). La connexion se fait sur le site (tcgindex.vercel.app),
+ * pas ici -- "Se connecter" ouvre un onglet ; une fois connecté là-bas, la
+ * session est relayée à l'extension (cf. background.js) et ce panneau se
+ * met à jour tout seul (chrome.storage.onChanged ci-dessous), sans qu'il
+ * faille revenir cliquer sur cet onglet.
  */
 (function () {
   const TITLE_SELECTORS = ["h1.x-item-title__mainTitle span.ux-textspans", "h1.x-item-title__mainTitle"];
@@ -115,9 +117,9 @@
       setSignedOut(errorMessage) {
         tab.classList.remove("cardquant-green", "cardquant-yellow", "cardquant-red");
         body().innerHTML = `
-          <p>Connexion Google requise avant de voir le verdict d'une annonce.</p>
+          <p>Connexion requise avant de voir le verdict d'une annonce.</p>
           ${errorMessage ? `<p class="cardquant-error">${escapeHtml(errorMessage)}</p>` : ""}
-          <button type="button" class="cardquant-signin">Se connecter avec Google</button>
+          <button type="button" class="cardquant-signin">Se connecter sur CardQuant</button>
         `;
       },
       setVerdict(data, original) {
@@ -214,19 +216,27 @@
     if (message.type === "CARDQUANT_TOGGLE_PANEL") panel.toggle();
   });
 
-  panel.onClick(".cardquant-signin", async () => {
-    panel.setOpen(true);
-    const result = await sendMessage({ type: "CARDQUANT_SIGN_IN" });
-    if (!result || !result.ok) {
-      panel.setSignedOut(result?.error || "Connexion impossible.");
-      return;
-    }
-    await requestVerdict(panel);
+  panel.onClick(".cardquant-signin", () => {
+    // Ouvre le site dans un nouvel onglet -- la connexion (Google Sign-In)
+    // s'y fait réellement (cf. web/components/auth/AuthModal.tsx), puis la
+    // session est relayée ici automatiquement (cf. chrome.storage.onChanged
+    // ci-dessous, jamais besoin de revenir cliquer sur cet onglet).
+    sendMessage({ type: "CARDQUANT_OPEN_SITE_LOGIN" });
   });
 
   panel.onClick(".cardquant-signout", async () => {
     await sendMessage({ type: "CARDQUANT_SIGN_OUT" });
     panel.setSignedOut();
+  });
+
+  // Le site relaie la session dès la connexion (cf. background.js
+  // onMessageExternal) -- ce listener capte l'écriture dans
+  // chrome.storage.local qui en résulte et relance le verdict sans que
+  // l'utilisateur ait besoin de revenir sur cet onglet ni de re-cliquer.
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === "local" && "cardquant_session" in changes && changes.cardquant_session.newValue) {
+      requestVerdict(panel);
+    }
   });
 
   refresh(panel);

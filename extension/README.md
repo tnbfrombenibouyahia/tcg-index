@@ -24,30 +24,39 @@ Fait :
   devise non reconnue (ni `$`/`€`/`£`) est refusée plutôt que devinée.
 - Panneau coulissant (glassmorphisme clair, cf. §08), onglet replié coloré
   vert/jaune/rouge une fois le verdict connu.
-- **Compte requis avant utilisation (§01/§09)** : `lib/auth.js` fait
-  `chrome.identity.launchWebAuthFlow` (Google) puis échange le `id_token`
-  contre une session Firebase via l'API REST Identity Toolkit
-  (`accounts:signInWithIdp`) — aucun SDK à bundler. Le panneau affiche un
-  bouton "Se connecter avec Google" tant qu'aucune session n'existe dans
-  `chrome.storage.local`.
-  - ✅ **Vérifié côté serveur** : `pricing_api` exige désormais un en-tête
+- **Compte requis avant utilisation (§01/§09)** : la connexion (Google
+  Sign-In) se fait sur **le site** (`web/components/auth/AuthModal.tsx`,
+  `signInWithPopup` + Firebase Auth JS SDK), pas dans l'extension. "Se
+  connecter sur CardQuant" dans le panneau ouvre `tcgindex.vercel.app/
+  ?cardquant_login=1` dans un nouvel onglet (`background.js`) ; une fois
+  connecté là-bas, le site relaie la session à l'extension via
+  `chrome.runtime.sendMessage` (`web/lib/cardquant-extension.ts`), reçue
+  ici par `chrome.runtime.onMessageExternal` (`background.js`) et stockée
+  (`lib/auth.js::storeExternalSession`). Le panneau se met à jour tout seul
+  dès que la session arrive (`chrome.storage.onChanged`, cf.
+  `content/content.js`) — pas besoin de revenir cliquer sur l'onglet eBay.
+  - Pourquoi pas une connexion dans l'extension elle-même (implémentation
+    précédente, `chrome.identity.launchWebAuthFlow`, jusqu'au 2026-08-19) :
+    ça dupliquait la logique de connexion (déjà nécessaire sur le site pour
+    le dashboard) dans l'extension — deux chemins à maintenir pour un seul
+    compte. Un seul chemin (le site), l'extension ne fait plus que le
+    recevoir et le rafraîchir.
+  - ✅ **Vérifié côté serveur** : `pricing_api` exige un en-tête
     `Authorization: Bearer <id_token>` valide (cf. `pricing/auth.py`,
     vérification via l'API REST Identity Toolkit `accounts:lookup`) --
-    `/verdict` répond `401` sans jeton ou avec un jeton invalide/expiré,
-    ce n'est plus un mur d'UX uniquement. `background.js` rafraîchit le
-    jeton automatiquement via `securetoken.googleapis.com` s'il est proche
-    de l'expiration (1h de durée de vie, cf. `lib/auth.js::getValidIdToken`).
-  - ⚠️ **Étape manuelle requise avant que la connexion fonctionne** :
-    enregistrer `https://diipacpliojnijgdhcgjkjhlipednoch.chromiumapp.org/`
-    dans la liste "Authorized redirect URIs" du client OAuth Web déjà
-    provisionné par Firebase (Google Cloud Console → APIs & Services →
-    Identifiants → client `606137510344-03e55c2usplh7urnvslctfiu83rul4si`).
-    Aucune API publique pour cette étape (confirmé pendant ce chantier).
-    Cet ID d'extension vient de la clé figée dans `manifest.json` (`key`) —
-    il **changera** à la publication sur le Store (Chrome assigne un ID
-    définitif à la création de la fiche), il faudra alors ajouter la
-    nouvelle URI de redirection en plus (pas à la place, pour garder le dev
-    local fonctionnel).
+    `/verdict` répond `401` sans jeton ou avec un jeton invalide/expiré, ce
+    n'est pas qu'un mur d'UX. `background.js` rafraîchit le jeton
+    automatiquement via `securetoken.googleapis.com` s'il est proche de
+    l'expiration (1h de durée de vie, cf. `lib/auth.js::getValidIdToken`).
+  - ⚠️ **Couplage à surveiller à la publication Store** : le relais
+    (`externally_connectable` du manifest + `CARDQUANT_EXTENSION_ID` codé
+    en dur dans `web/lib/cardquant-extension.ts`) référence l'ID d'extension
+    actuel (`diipacpliojnijgdhcgjkjhlipednoch`, stable en dev grâce à la clé
+    figée dans `manifest.json`). Chrome assigne un ID définitif à la
+    publication sur le Store — il faudra alors mettre à jour cette constante
+    côté site **et redéployer le site** (pas juste un réglage Console cette
+    fois), sans quoi le relais silencieusement ne fait plus rien (jamais
+    d'erreur bloquante par design, cf. docstring de `relaySessionToExtension`).
 
 Pas fait (hors scope de ce scaffold) :
 - ROI gradation, liquidité, calculateur d'arbitrage (§07) — décrits comme
@@ -72,7 +81,10 @@ Pas fait (hors scope de ce scaffold) :
    `chrome-extension://<id>` (visible sur `chrome://extensions` une fois
    l'extension chargée) à `PRICING_API_CORS_ORIGINS` dans `.env` avant de
    relancer le service.
-3. Recharger l'extension après chaque modification (bouton ↻ sur la carte
+3. Pour pointer vers un site local (`npm run dev` dans `web/`) plutôt que
+   `tcgindex.vercel.app` : modifier `SITE_URL` dans `lib/config.js` vers
+   `http://localhost:3000` (déjà couvert par `externally_connectable`).
+4. Recharger l'extension après chaque modification (bouton ↻ sur la carte
    de l'extension dans `chrome://extensions`), puis rafraîchir l'onglet eBay.
 
 ## Icônes

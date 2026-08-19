@@ -73,8 +73,18 @@ export function LandingPage({
   const router = useRouter();
 
   const [universe, setUniverse] = useState<Tcg>(initialUniverse);
-  const [authOpen, setAuthOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<AuthMode>("signup");
+  // Initialiseurs paresseux plutôt qu'un useEffect + setState au montage
+  // (règle react-hooks/set-state-in-effect) : la page (Server Component,
+  // app/page.tsx) ne lit pas searchParams pour rester statiquement rendue --
+  // ce paramètre n'a de sens que côté client, lu une seule fois ici. Garde
+  // `typeof window` : ces initialiseurs tournent aussi côté serveur (SSR),
+  // où `window` n'existe pas -- rendu serveur toujours "fermé", le client
+  // ouvre la modale immédiatement s'il y a `?cardquant_login=1` dans l'URL
+  // (extension navigateur, cf. extension/background.js).
+  const [authOpen, setAuthOpen] = useState(
+    () => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("cardquant_login") === "1"
+  );
+  const [authMode, setAuthMode] = useState<AuthMode>("login");
 
   const [scrollRot, setScrollRot] = useState(0);
   const [tiltX, setTiltX] = useState(0);

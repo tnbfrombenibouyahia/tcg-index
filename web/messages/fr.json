@@ -581,7 +581,10 @@
       "password": "Mot de passe",
       "submitLogin": "Se connecter",
       "submitSignup": "Créer mon compte",
-      "disclaimer": "Les comptes ne sont pas encore actifs — ceci est un aperçu de ce qui arrive."
+      "signingIn": "Connexion en cours…",
+      "signInError": "La connexion a échoué. Réessaie.",
+      "emailComingSoon": "Connexion par e-mail bientôt disponible — utilise Google pour l'instant.",
+      "disclaimer": "Connexion sécurisée via ton compte Google (Firebase Authentication)."
     }
   },
   "landing": {

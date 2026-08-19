@@ -1,13 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { auth } from "@/lib/firebase-client";
+import { relaySessionToExtension } from "@/lib/cardquant-extension";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Modale connexion/inscription -- visuel uniquement (décision utilisateur du
-// 2026-08-07, cf. mémoire projet "project_terminal_redesign") : aucun backend
-// d'auth, le formulaire ne crée aucun compte. Composant contrôlé, partagé
-// entre l'avatar du dashboard (AuthTrigger.tsx) et les CTA de la landing page
-// (header + hero) -- même modale, deux points d'entrée.
+// Modale connexion/inscription -- Google Sign-In réel depuis le 2026-08-19
+// (Firebase Authentication, cf. tcg-index-handoff.md §05). Email/mot de
+// passe reste visuel pour l'instant (décision utilisateur du 2026-08-07,
+// cf. mémoire projet "project_terminal_redesign") -- formulaire désactivé
+// plutôt que factice, pour ne pas laisser un chemin qui a l'air de marcher
+// à côté d'un chemin Google qui marche vraiment. Composant contrôlé,
+// partagé entre l'avatar du dashboard (AuthTrigger.tsx) et les CTA de la
+// landing page (header + hero) -- même modale, deux points d'entrée.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type AuthMode = "login" | "signup";
@@ -23,13 +30,33 @@ export function AuthModal({
   mode: AuthMode;
   onClose: () => void;
   onModeChange: (mode: AuthMode) => void;
-  /** Appelé en plus de la fermeture quand le formulaire (factice) est soumis --
+  /** Appelé en plus de la fermeture après une connexion Google réussie --
    *  ex. la landing page enchaîne vers /dashboard plutôt que de juste fermer. */
   onSubmit?: () => void;
 }) {
   const t = useTranslations("dashboard.auth");
+  const [signingIn, setSigningIn] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!open) return null;
+
+  async function handleGoogleSignIn() {
+    setSigningIn(true);
+    setError(null);
+    try {
+      const result = await signInWithPopup(auth, new GoogleAuthProvider());
+      // Best-effort, ne bloque jamais la connexion sur le site elle-même
+      // si l'extension n'est pas installée ou que le relais échoue (cf.
+      // lib/cardquant-extension.ts).
+      await relaySessionToExtension(result.user);
+      onSubmit?.();
+      onClose();
+    } catch {
+      setError(t("signInError"));
+    } finally {
+      setSigningIn(false);
+    }
+  }
 
   return (
     <div
@@ -83,6 +110,8 @@ export function AuthModal({
 
         <button
           type="button"
+          onClick={handleGoogleSignIn}
+          disabled={signingIn}
           style={{
             display: "flex",
             alignItems: "center",
@@ -94,8 +123,9 @@ export function AuthModal({
             border: "1px solid var(--border)",
             fontSize: "13.5px",
             fontWeight: 700,
-            cursor: "pointer",
-            marginBottom: "18px",
+            cursor: signingIn ? "default" : "pointer",
+            opacity: signingIn ? 0.7 : 1,
+            marginBottom: "10px",
             background: "var(--surface-alt)",
             color: "var(--foreground)",
           }}
@@ -109,28 +139,28 @@ export function AuthModal({
               background: "conic-gradient(#4285F4 0deg 90deg, #34A853 90deg 180deg, #FBBC05 180deg 270deg, #EA4335 270deg 360deg)",
             }}
           />
-          {t("continueWithGoogle")}
+          {signingIn ? t("signingIn") : t("continueWithGoogle")}
         </button>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "0 0 18px" }}>
+        {error && (
+          <p style={{ fontSize: "12px", color: "#ef4444", textAlign: "center", marginBottom: "10px" }}>{error}</p>
+        )}
+
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "8px 0 18px" }}>
           <div style={{ flex: 1, height: "1px", background: "var(--border)" }} />
           <span style={{ fontSize: "10.5px", color: "var(--foreground-muted)", letterSpacing: "0.5px" }}>{t("or")}</span>
           <div style={{ flex: 1, height: "1px", background: "var(--border)" }} />
         </div>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            onSubmit?.();
-            onClose();
-          }}
-        >
+        {/* Email/mot de passe : désactivé plutôt que factice (cf. commentaire
+            en tête de fichier) -- pas de backend pour ce chemin-là encore. */}
+        <fieldset disabled style={{ border: "none", padding: 0, margin: 0, opacity: 0.5 }}>
           <label style={fieldLabelStyle}>{t("email")}</label>
           <input type="email" placeholder="vous@exemple.com" style={inputStyle} />
           <label style={fieldLabelStyle}>{t("password")}</label>
           <input type="password" placeholder="••••••••" style={inputStyle} />
           <button
-            type="submit"
+            type="button"
             style={{
               width: "100%",
               padding: "12px",
@@ -140,14 +170,17 @@ export function AuthModal({
               fontWeight: 700,
               fontSize: "14px",
               textAlign: "center",
-              cursor: "pointer",
+              cursor: "not-allowed",
               border: "none",
               marginTop: "4px",
             }}
           >
             {mode === "signup" ? t("submitSignup") : t("submitLogin")}
           </button>
-        </form>
+        </fieldset>
+        <p style={{ fontSize: "10.5px", color: "var(--foreground-muted)", textAlign: "center", marginTop: "10px", lineHeight: 1.5 }}>
+          {t("emailComingSoon")}
+        </p>
 
         <p style={{ fontSize: "10.5px", color: "var(--foreground-muted)", textAlign: "center", marginTop: "14px", lineHeight: 1.5 }}>
           {t("disclaimer")}
