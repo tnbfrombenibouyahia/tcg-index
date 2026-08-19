@@ -15,6 +15,13 @@ Fait :
 - Appel `POST /verdict` sur `pricing_api` (signal A, §07-A) depuis le
   service worker plutôt que le content script, pour ne pas dépendre de la
   CSP de la page hôte.
+- **Conversion de devise (`lib/fx.js`)** : `pricing_api` ne raisonne qu'en
+  USD (PriceCharting, seule source MVP, cf. `shared/verdict.py`). Le
+  panneau détecte `$`/`€`/`£` sur la page et convertit vers l'USD (taux
+  BCE via api.frankfurter.dev, gratuit, sans clé, mis en cache 6h) avant
+  d'appeler `/verdict` — le montant d'origine reste affiché entre
+  parenthèses pour que la conversion soit visible, jamais implicite. Une
+  devise non reconnue (ni `$`/`€`/`£`) est refusée plutôt que devinée.
 - Panneau coulissant (glassmorphisme clair, cf. §08), onglet replié coloré
   vert/jaune/rouge une fois le verdict connu.
 - **Compte requis avant utilisation (§01/§09)** : `lib/auth.js` fait
@@ -47,12 +54,6 @@ Pas fait (hors scope de ce scaffold) :
   calculs côté client dans le handoff, pas encore implémentés ici.
 - Vinted, Cardmarket — seul eBay (14 domaines pays, cf. `manifest.json`)
   est scopé pour l'instant.
-- **Conversion de devise** : `pricing_api` compare toujours à un prix de
-  référence en USD (PriceCharting, seule source MVP, cf. `shared/verdict.py`).
-  Le panneau détecte la devise affichée (`$`/`€`/`£`) et refuse
-  explicitement une devise ≠ USD plutôt que d'afficher un verdict
-  silencieusement faux — donc pas de verdict du tout sur ebay.fr/.de/...
-  tant qu'aucune conversion n'est branchée côté serveur.
 - Identification par image (upload/capture depuis le panneau) — le back-end
   (`pricing/ocr.py`) sait déjà faire l'OCR, rien côté extension ne l'appelle
   encore (aujourd'hui seul le titre de l'annonce est envoyé).

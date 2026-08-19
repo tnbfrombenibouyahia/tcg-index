@@ -8,7 +8,7 @@
 //      émis depuis la page hôte (ebay.com) serait soumis à la CSP de cette
 //      page ; un fetch émis depuis ce service worker ne l'est pas (contexte
 //      extension, cf. host_permissions du manifest).
-importScripts("lib/config.js", "lib/auth.js");
+importScripts("lib/config.js", "lib/auth.js", "lib/fx.js");
 
 chrome.action.onClicked.addListener((tab) => {
   if (tab.id !== undefined) {
@@ -33,8 +33,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       return true;
 
     case "CARDQUANT_GET_VERDICT":
-      getValidIdToken()
-        .then((idToken) => {
+      (async () => {
+        try {
+          const idToken = await getValidIdToken();
           if (!idToken) {
             // Pas de session (ou refresh token révoqué, cf. lib/auth.js)
             // -- reason "auth" distingue explicitement ce cas d'une panne
@@ -42,26 +43,37 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             sendResponse({ ok: false, reason: "auth" });
             return;
           }
-          return fetch(`${PRICING_API_URL}/verdict`, {
+
+          let usdPrice;
+          try {
+            usdPrice = await toUsd(message.displayedPrice, message.currency);
+          } catch {
+            sendResponse({ ok: false, reason: "fx" });
+            return;
+          }
+
+          const res = await fetch(`${PRICING_API_URL}/verdict`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
             body: JSON.stringify({
               text: message.text,
-              displayed_price: message.displayedPrice,
+              displayed_price: usdPrice,
               grade: message.grade || "ungraded",
             }),
-          }).then((res) => {
-            if (res.status === 401) {
-              // Jeton rejeté par pricing_api malgré un refresh local
-              // réussi (ex. compte désactivé côté Firebase) -- même
-              // traitement que l'absence de session.
-              sendResponse({ ok: false, reason: "auth" });
-              return;
-            }
-            return res.json().then((data) => sendResponse({ ok: true, data }));
           });
-        })
-        .catch((err) => sendResponse({ ok: false, reason: "network", error: String(err) }));
+          if (res.status === 401) {
+            // Jeton rejeté par pricing_api malgré un refresh local réussi
+            // (ex. compte désactivé côté Firebase) -- même traitement que
+            // l'absence de session.
+            sendResponse({ ok: false, reason: "auth" });
+            return;
+          }
+          const data = await res.json();
+          sendResponse({ ok: true, data, convertedFrom: message.currency !== "USD" ? message.currency : null });
+        } catch (err) {
+          sendResponse({ ok: false, reason: "network", error: String(err) });
+        }
+      })();
       return true;
 
     default:

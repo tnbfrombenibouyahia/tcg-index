@@ -50,7 +50,8 @@
     "https://www.ebay.pl/*",
     "https://pricing-api-606137510344.europe-west3.run.app/*",
     "http://127.0.0.1:8001/*",
-    "https://identitytoolkit.googleapis.com/*"
+    "https://identitytoolkit.googleapis.com/*",
+    "https://api.frankfurter.dev/*"
   ],
   "permissions": ["identity", "storage"],
   "icons": {

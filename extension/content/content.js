@@ -120,16 +120,18 @@
           <button type="button" class="cardquant-signin">Se connecter avec Google</button>
         `;
       },
-      setVerdict(data) {
+      setVerdict(data, original) {
         setOpen(true);
         tab.classList.remove("cardquant-green", "cardquant-yellow", "cardquant-red");
         if (data.verdict) tab.classList.add(`cardquant-${data.verdict}`);
-        body().innerHTML = renderVerdict(data);
+        body().innerHTML = renderVerdict(data, original);
       },
     };
   }
 
-  function renderVerdict(data) {
+  const CURRENCY_SYMBOLS = { USD: "$", EUR: "€", GBP: "£" };
+
+  function renderVerdict(data, original) {
     const footer = '<button type="button" class="cardquant-signout">Se déconnecter</button>';
     if (data.status === "ambiguous") {
       return `<p>Plusieurs cartes possibles (${data.candidates.length}) — identification manuelle nécessaire.</p>${footer}`;
@@ -139,7 +141,13 @@
     }
     const label = VERDICT_LABELS[data.verdict] || data.verdict || "—";
     const ref = data.reference_price != null ? `${data.reference_price.toFixed(2)} $` : "—";
-    const displayed = data.displayed_price != null ? `${data.displayed_price.toFixed(2)} $` : "—";
+    // Converti côté background (lib/fx.js) si l'annonce n'était pas en USD --
+    // on réaffiche le montant/devise d'origine entre parenthèses pour que la
+    // conversion reste visible plutôt qu'implicite.
+    const displayed = data.displayed_price != null
+      ? `${data.displayed_price.toFixed(2)} $` +
+        (original ? ` (${original.amount.toFixed(2)} ${CURRENCY_SYMBOLS[original.currency] || original.currency})` : "")
+      : "—";
     return `
       <p class="cardquant-card-name">${escapeHtml(data.card.name)}${data.card.code ? " · " + escapeHtml(data.card.code) : ""}</p>
       <p class="cardquant-verdict-label">${escapeHtml(label)}</p>
@@ -162,27 +170,32 @@
       return;
     }
 
-    // pricing_api ne fait aucune conversion de devise (cf. shared/verdict.py
-    // -- prix de référence PriceCharting exclusivement en USD) : comparer un
-    // prix EUR/GBP tel quel produirait un verdict silencieusement faux
-    // plutôt qu'une erreur visible. On refuse explicitement au lieu de
-    // deviner, même philosophie que le reste du matching (§01 du handoff).
+    // pricing_api ne raisonne qu'en USD (prix de référence PriceCharting,
+    // cf. shared/verdict.py) : une devise non détectée ne peut pas être
+    // convertie de façon fiable -- on refuse plutôt que de deviner (même
+    // philosophie que le reste du matching, §01 du handoff). Une devise
+    // détectée (EUR/GBP/...) est convertie côté background (lib/fx.js)
+    // avant l'appel à l'API.
     const currency = detectCurrency(rawPrice);
-    if (currency && currency !== "USD") {
-      panel.setError(`Devise ${currency} non prise en charge pour l'instant (comparaison fiable uniquement en USD).`);
+    if (!currency) {
+      panel.setError("Devise non reconnue sur cette page -- comparaison impossible.");
       return;
     }
 
-    const response = await sendMessage({ type: "CARDQUANT_GET_VERDICT", text: title, displayedPrice });
+    const response = await sendMessage({ type: "CARDQUANT_GET_VERDICT", text: title, displayedPrice, currency });
     if (!response || !response.ok) {
       if (response?.reason === "auth") {
         panel.setSignedOut("Session expirée, reconnecte-toi.");
         return;
       }
+      if (response?.reason === "fx") {
+        panel.setError(`Conversion ${currency} → USD indisponible pour l'instant, réessaie plus tard.`);
+        return;
+      }
       panel.setError("Verdict indisponible (pricing_api injoignable).");
       return;
     }
-    panel.setVerdict(response.data);
+    panel.setVerdict(response.data, response.convertedFrom ? { amount: displayedPrice, currency } : null);
   }
 
   async function refresh(panel) {
