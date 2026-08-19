@@ -31,13 +31,38 @@
 
   function parsePrice(raw) {
     if (!raw) return null;
-    // "US $12.99", "12,99 EUR", ... -- retire les séparateurs de milliers,
-    // prend le dernier nombre plausible (évite de capter un "1" isolé
-    // appartenant au symbole monétaire plutôt qu'au montant).
-    const matches = raw.replace(/,/g, "").match(/\d+\.?\d*/g);
+    // Formats vus en pratique : "US $12.99" (point décimal, virgule =
+    // milliers) sur ebay.com, "127,00 EUR" ou "1.234,56 EUR" (virgule
+    // décimale, point = milliers) sur ebay.fr/.de/... -- une seule règle
+    // "retire la virgule" (l'ancienne implémentation) transforme "127,00"
+    // en 12700, une erreur x100 silencieuse sur tout site européen.
+    const matches = raw.match(/[\d.,]+/g);
     if (!matches) return null;
-    const value = parseFloat(matches[matches.length - 1]);
+    let numStr = matches[matches.length - 1];
+    const lastComma = numStr.lastIndexOf(",");
+    const lastDot = numStr.lastIndexOf(".");
+    if (lastComma > -1 && lastDot > -1) {
+      // Les deux séparateurs présents -- celui qui apparaît en dernier est
+      // le décimal ("1.234,56" EU vs "1,234.56" US).
+      numStr = lastComma > lastDot
+        ? numStr.replace(/\./g, "").replace(",", ".")
+        : numStr.replace(/,/g, "");
+    } else if (lastComma > -1) {
+      // Une seule virgule : décimale si exactement 2 chiffres suivent
+      // (format EU "127,00"), sinon séparateur de milliers ("1,234").
+      const decimals = numStr.length - lastComma - 1;
+      numStr = decimals === 2 ? numStr.replace(",", ".") : numStr.replace(/,/g, "");
+    }
+    const value = parseFloat(numStr);
     return Number.isFinite(value) ? value : null;
+  }
+
+  function detectCurrency(raw) {
+    if (!raw) return null;
+    if (/\$|USD/i.test(raw)) return "USD";
+    if (/€|EUR/i.test(raw)) return "EUR";
+    if (/£|GBP/i.test(raw)) return "GBP";
+    return null;
   }
 
   function escapeHtml(text) {
@@ -129,10 +154,22 @@
 
   async function requestVerdict(panel) {
     const title = queryFirstText(TITLE_SELECTORS);
-    const displayedPrice = parsePrice(queryFirstText(PRICE_SELECTORS));
+    const rawPrice = queryFirstText(PRICE_SELECTORS);
+    const displayedPrice = parsePrice(rawPrice);
 
     if (!title || displayedPrice == null) {
       panel.setError("Titre ou prix introuvable sur cette page (sélecteurs à ajuster ?).");
+      return;
+    }
+
+    // pricing_api ne fait aucune conversion de devise (cf. shared/verdict.py
+    // -- prix de référence PriceCharting exclusivement en USD) : comparer un
+    // prix EUR/GBP tel quel produirait un verdict silencieusement faux
+    // plutôt qu'une erreur visible. On refuse explicitement au lieu de
+    // deviner, même philosophie que le reste du matching (§01 du handoff).
+    const currency = detectCurrency(rawPrice);
+    if (currency && currency !== "USD") {
+      panel.setError(`Devise ${currency} non prise en charge pour l'instant (comparaison fiable uniquement en USD).`);
       return;
     }
 

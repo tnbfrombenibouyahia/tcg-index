@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "CardQuant",
   "short_name": "CardQuant",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Verdict en direct sur les annonces de cartes One Piece TCG : bonne affaire, prix normal ou survendu, en un coup d'œil.",
   "action": {
     "default_title": "CardQuant — afficher/masquer le panneau"
@@ -12,7 +12,22 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://www.ebay.com/itm/*"],
+      "matches": [
+        "https://www.ebay.com/itm/*",
+        "https://www.ebay.fr/itm/*",
+        "https://www.ebay.de/itm/*",
+        "https://www.ebay.co.uk/itm/*",
+        "https://www.ebay.it/itm/*",
+        "https://www.ebay.es/itm/*",
+        "https://www.ebay.ca/itm/*",
+        "https://www.ebay.com.au/itm/*",
+        "https://www.ebay.at/itm/*",
+        "https://www.ebay.ch/itm/*",
+        "https://www.ebay.ie/itm/*",
+        "https://www.ebay.nl/itm/*",
+        "https://www.ebay.be/itm/*",
+        "https://www.ebay.pl/itm/*"
+      ],
       "js": ["content/content.js"],
       "css": ["content/panel.css"],
       "run_at": "document_idle"
@@ -20,6 +35,19 @@
   ],
   "host_permissions": [
     "https://www.ebay.com/*",
+    "https://www.ebay.fr/*",
+    "https://www.ebay.de/*",
+    "https://www.ebay.co.uk/*",
+    "https://www.ebay.it/*",
+    "https://www.ebay.es/*",
+    "https://www.ebay.ca/*",
+    "https://www.ebay.com.au/*",
+    "https://www.ebay.at/*",
+    "https://www.ebay.ch/*",
+    "https://www.ebay.ie/*",
+    "https://www.ebay.nl/*",
+    "https://www.ebay.be/*",
+    "https://www.ebay.pl/*",
     "https://pricing-api-606137510344.europe-west3.run.app/*",
     "http://127.0.0.1:8001/*",
     "https://identitytoolkit.googleapis.com/*"

@@ -45,8 +45,14 @@ Fait :
 Pas fait (hors scope de ce scaffold) :
 - ROI gradation, liquidité, calculateur d'arbitrage (§07) — décrits comme
   calculs côté client dans le handoff, pas encore implémentés ici.
-- Vinted, Cardmarket — seul eBay est scopé dans `manifest.json` pour
-  l'instant.
+- Vinted, Cardmarket — seul eBay (14 domaines pays, cf. `manifest.json`)
+  est scopé pour l'instant.
+- **Conversion de devise** : `pricing_api` compare toujours à un prix de
+  référence en USD (PriceCharting, seule source MVP, cf. `shared/verdict.py`).
+  Le panneau détecte la devise affichée (`$`/`€`/`£`) et refuse
+  explicitement une devise ≠ USD plutôt que d'afficher un verdict
+  silencieusement faux — donc pas de verdict du tout sur ebay.fr/.de/...
+  tant qu'aucune conversion n'est branchée côté serveur.
 - Identification par image (upload/capture depuis le panneau) — le back-end
   (`pricing/ocr.py`) sait déjà faire l'OCR, rien côté extension ne l'appelle
   encore (aujourd'hui seul le titre de l'annonce est envoyé).
