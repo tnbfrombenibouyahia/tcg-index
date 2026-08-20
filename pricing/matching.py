@@ -112,18 +112,56 @@ def _dice(a: frozenset, b: frozenset) -> float:
     return 2 * len(a & b) / (len(a) + len(b))
 
 
+# Un code (items.code) peut être partagé par une dizaine de lignes du
+# référentiel à la fois : variantes (Parallel/Manga/Alternate Art/Reprint/
+# Anniversary...) ET langues (EN/JP) d'un même numéro de carte -- cas réel
+# mesuré (annonce eBay 157610454970, OP06-118) : 11 items en base pour ce
+# seul code, 6 EN + 5 JP. items.language distingue déjà ça -- un indice
+# "JP"/"Japanese" ou "EN"/"English" dans le texte libre coupe la moitié des
+# candidats avant même de comparer les qualificatifs de variante.
+_LANGUAGE_HINT_TOKENS = {"EN": {"en", "english"}, "JP": {"jp", "japanese"}}
+
+
+def _detect_language_hint(text: str) -> str | None:
+    tokens = frozenset(_normalize_name(text).split())
+    for language, hints in _LANGUAGE_HINT_TOKENS.items():
+        if tokens & hints:
+            return language
+    return None
+
+
 def disambiguate_candidates(text: str, candidates: list[Card]) -> MatchResult:
     """Pure (pas de DB) : départage plusieurs items partageant le même code
-    par similarité du contenu des qualificatifs entre crochets/parenthèses
-    du texte libre vs. du nom candidat. Ne devine jamais : renvoie
-    status='ambiguous' si le meilleur score est sous le seuil ou s'il y a
-    égalité -- même philosophie que pricecharting.py::_best_single_match."""
+    en deux temps. 1) Filtre par langue si le texte en mentionne une
+    (EN/JP) -- additif, pas exclusif : si le filtre viderait le pool (aucun
+    candidat dans cette langue, donnée suspecte), on retombe sur tous les
+    candidats plutôt que de perdre le match, même principe que le repli de
+    recherche Population Analysis (cf. git log). 2) Similarité du
+    qualificatif de variante (Parallel/Manga/Alternate Art...) : entre
+    crochets/parenthèses du texte libre COMME avant, mais aussi en toutes
+    lettres ailleurs dans le texte, restreint au vocabulaire propre à CES
+    candidats (jamais tout mot du titre -- une annonce "PSA 10 One Piece
+    ..." ne doit pas faire gagner un candidat dont le nom contient
+    "One Piece" par coïncidence). Cas réel qui a motivé ce 2e point :
+    annonce "... Manga Alt Art OP06 [#118]", qualificatif en clair, jamais
+    entre crochets -- le catalogue le note "[Alternate Art Manga]".
+    Ne devine jamais : renvoie status='ambiguous' si le meilleur score est
+    sous le seuil ou s'il y a égalité -- même philosophie que
+    pricecharting.py::_best_single_match."""
     if len(candidates) == 1:
         return MatchResult(status="matched", card=candidates[0], confidence=1.0, strategy="code")
 
-    text_qual = _qualifier_tokens(text)
+    language_hint = _detect_language_hint(text)
+    pool = [c for c in candidates if c.language == language_hint] if language_hint else candidates
+    if not pool:
+        pool = candidates
+
+    candidate_vocab = frozenset().union(*(_qualifier_tokens(c.name) for c in pool))
+    text_tokens = frozenset(_normalize_name(text).split())
+    text_qual = _qualifier_tokens(text) | (text_tokens & candidate_vocab)
+
     scored = sorted(
-        ((_dice(text_qual, _qualifier_tokens(c.name)), c) for c in candidates),
+        ((_dice(text_qual, _qualifier_tokens(c.name)), c) for c in pool),
         key=lambda pair: pair[0], reverse=True,
     )
     best_score, best = scored[0]

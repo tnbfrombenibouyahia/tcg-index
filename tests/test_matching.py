@@ -12,9 +12,9 @@ from pricing.matching import (
 from pricing.models import Card
 
 
-def _card(id, name, code, set_code="one-piece-starter-deck-22-ace-newgate", rarity="Super Rare"):
+def _card(id, name, code, set_code="one-piece-starter-deck-22-ace-newgate", rarity="Super Rare", language="EN"):
     return Card(id=id, name=name, code=code, set_code=set_code, tcg="one-piece",
-                category="single", language="EN", rarity=rarity)
+                category="single", language=language, rarity=rarity)
 
 
 class TestExtractOnePieceCode:
@@ -111,6 +111,50 @@ class TestDisambiguateCandidates:
         assert result.status == "ambiguous"
         assert len(result.candidates) == 3
         assert result.card is None
+
+    def test_language_hint_filters_candidates_before_scoring(self):
+        # Cas réel : annonce eBay 157610454970, OP06-118 -- 11 items en
+        # base pour ce seul code (6 EN + 5 JP), qualificatif de variante
+        # ("Manga Alt Art") écrit en clair, jamais entre crochets. Sans le
+        # filtre langue, "Roronoa Zoro" (EN, sans qualificatif) et son
+        # équivalent JP sans qualificatif finissent à égalité de score --
+        # ambigu. Avec le filtre "JP" détecté dans le texte, seuls les
+        # candidats JP restent en lice, et le qualificatif en clair
+        # ("Manga Alt Art" ~ "[Alternate Art Manga]") tranche clairement.
+        en_base = _card(1, "Roronoa Zoro", "OP06-118", language="EN")
+        en_alt_manga = _card(2, "Roronoa Zoro (Alternate Art) (Manga)", "OP06-118", language="EN")
+        jp_base = _card(3, "Roronoa Zoro", "OP06-118", language="JP")
+        jp_alt_manga = _card(4, "Roronoa Zoro [Alternate Art Manga]", "OP06-118", language="JP")
+        jp_alt_only = _card(5, "Roronoa Zoro [Alternate Art]", "OP06-118", language="JP")
+        text = "PSA 10 One Piece JP Roronoa Zoro Manga Alt Art OP06 [#118]"
+
+        result = disambiguate_candidates(text, [en_base, en_alt_manga, jp_base, jp_alt_manga, jp_alt_only])
+
+        assert result.status == "matched"
+        assert result.card is jp_alt_manga
+
+    def test_language_hint_filter_is_additive_not_exclusive(self):
+        # Aucun candidat dans la langue détectée (donnée suspecte/absente,
+        # ici aucun candidat JP alors que le texte mentionne "JP") -- repli
+        # sur tous les candidats plutôt que de perdre le match, même
+        # principe que le repli de recherche Population Analysis.
+        base = _card(1, "Izo", "ST22-002", language="EN")
+        parallel = _card(2, "Izo (Parallel)", "ST22-002", language="EN")
+        text = "Izo (Parallel) ST22-002 JP"
+        result = disambiguate_candidates(text, [base, parallel])
+        assert result.status == "matched"
+        assert result.card is parallel
+
+    def test_unbracketed_qualifier_words_are_recognized(self):
+        # Le qualificatif du texte libre n'est pas toujours entre crochets
+        # (cf. test_language_hint_filters_candidates_before_scoring) --
+        # vérifié isolément ici, sans filtre langue en jeu.
+        base = _card(1, "Izo", "ST22-002")
+        parallel = _card(2, "Izo (Parallel)", "ST22-002")
+        text = "Izo ST22-002 Parallel Super Rare One Piece Near Mint"  # "Parallel" en clair
+        result = disambiguate_candidates(text, [base, parallel])
+        assert result.status == "matched"
+        assert result.card is parallel
 
 
 class TestFuzzyMatchByNameAndRarity:
