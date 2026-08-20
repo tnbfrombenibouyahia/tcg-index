@@ -141,12 +141,15 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
   });
 }
 
-// Singleton via globalThis (même garde-fou qu'avant, cf. historique du
-// fichier) : en dev, chaque hot-reload réimporte ce module -- sans cette
-// garde, chaque édition redémarrerait un connecteur + un pool sans jamais
-// fermer les précédents. Top-level await : module server-only (jamais
-// importé par un composant "use client"), Next.js/Node le supporte pour
-// ESM côté serveur.
+// Singleton via globalThis, TOUJOURS (pas seulement hors production comme
+// l'ancienne version Supabase de ce fichier) : `next build` réévalue ce
+// module plusieurs fois au sein du même worker lors de la collecte des
+// pages (une fois par route qui l'importe, directement ou non), et sans ce
+// garde-fou chaque réévaluation retente startLocalProxy() sur le MÊME
+// chemin de socket -- EADDRINUSE dès la 2e tentative (constaté en
+// conditions réelles sur Vercel le 2026-08-20). L'ancienne restriction
+// "hors production" supposait un process = une évaluation en prod, vraie
+// pour un import applicatif classique, fausse pour cette phase de build.
 declare global {
   var __pgClient: ReturnType<typeof postgres> | undefined;
 }
@@ -155,8 +158,6 @@ const sql =
   globalThis.__pgClient ??
   (await withTimeout(createClient(), 15_000, "Cloud SQL Connector : startLocalProxy n'a pas répondu sous 15s."));
 
-if (process.env.NODE_ENV !== "production") {
-  globalThis.__pgClient = sql;
-}
+globalThis.__pgClient = sql;
 
 export default sql;
