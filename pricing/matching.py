@@ -28,7 +28,23 @@ from pricing.ocr import extract_text_from_image
 from pricing.repository import fetch_items_by_code, fetch_items_by_name_tokens
 
 # Priorité 1 : code officiel One Piece, insensible à la casse (spec).
-ONE_PIECE_CODE_RE = re.compile(r"\b(OP|ST|EB|P)\d{2}-\d{3}\b", re.IGNORECASE)
+# Deux formes acceptées, mêmes contraintes (2 chiffres de set, 3 de carte,
+# jamais moins/plus) : "OP10-105" (forme officielle, tiret) et
+# "OP06 [#118]" / "OP06 #118" (forme vue en usage réel sur des annonces
+# eBay -- espace puis numéro préfixé "#", entre crochets ou non, cf.
+# item réel https://www.ebay.com/itm/157610454970 : titre "... OP06 [#118]",
+# aucun tiret, la 1ère forme ratait ce cas et retombait en fuzzy name-only,
+# 11 candidats "Roronoa Zoro" sans code pour trancher).
+ONE_PIECE_CODE_RE = re.compile(
+    r"\b(?:OP|ST|EB|P)\d{2}-\d{3}\b"
+    r"|\b(?:OP|ST|EB|P)\d{2}\s*\[#\d{3}\]"
+    r"|\b(?:OP|ST|EB|P)\d{2}\s*#\d{3}\b",
+    re.IGNORECASE,
+)
+# Reconstruit "OP06-118" à partir du fragment capté ci-dessus, quelle que
+# soit la forme d'origine -- un seul point de normalisation vers le format
+# canonique stocké dans items.code.
+_CODE_DIGITS_RE = re.compile(r"(OP|ST|EB|P)(\d{2}).*?(\d{3})", re.IGNORECASE)
 
 _QUALIFIER_RE = re.compile(r"[\(\[]([^\)\]]*)[\)\]]")
 # Même seuil que pricecharting.py::_QUALIFIER_MATCH_THRESHOLD -- cohérence
@@ -64,18 +80,26 @@ def _normalize_name(text: str) -> str:
 
 
 def extract_one_piece_code(text: str) -> str | None:
-    """Premier code OP/ST/EB/Pxx-xxx trouvé, normalisé en majuscules
-    (items.code est stocké en majuscules, ex. 'OP10-105'). None si aucun."""
+    """Premier code OP/ST/EB/Pxx-xxx trouvé (forme officielle ou "OP06
+    [#118]", cf. ONE_PIECE_CODE_RE), normalisé en majuscules ET vers le
+    format canonique à tiret (items.code est stocké ainsi, ex. 'OP10-105').
+    None si aucun."""
     m = ONE_PIECE_CODE_RE.search(text)
-    return m.group(0).upper() if m else None
+    if not m:
+        return None
+    digits = _CODE_DIGITS_RE.match(m.group(0))
+    prefix, set_num, card_num = digits.group(1), digits.group(2), digits.group(3)
+    return f"{prefix.upper()}{set_num}-{card_num}"
 
 
 def _qualifier_tokens(text: str) -> frozenset:
     """Mots dans les qualificatifs entre crochets/parenthèses, en ignorant
     les contenus purement numériques (ex. 'Cavendish (105)' -- le nombre
     entre parenthèses est un numéro apitcg, pas un qualificatif de variante
-    Parallel/Alt-art/Manga, cf. données réelles item_id 98406)."""
-    contents = [c for c in _QUALIFIER_RE.findall(text) if not c.strip().isdigit()]
+    Parallel/Alt-art/Manga, cf. données réelles item_id 98406) -- y compris
+    préfixés d'un '#' (ex. 'OP06 [#118]', cf. ONE_PIECE_CODE_RE) : même
+    numéro de carte, pas une variante non plus."""
+    contents = [c for c in _QUALIFIER_RE.findall(text) if not c.strip().lstrip("#").isdigit()]
     return frozenset(_normalize_name(" ".join(contents)).split())
 
 

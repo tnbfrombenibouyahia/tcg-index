@@ -43,6 +43,21 @@ class TestExtractOnePieceCode:
     def test_no_code_in_plain_text(self):
         assert extract_one_piece_code("Monkey D Luffy Leader near mint") is None
 
+    def test_finds_bracket_hash_form(self):
+        # Forme vue en usage réel (annonce eBay 157610454970) -- espace puis
+        # numéro préfixé "#" entre crochets, aucun tiret.
+        text = "PSA 10 One Piece JP Roronoa Zoro Manga Alt Art OP06 [#118]"
+        assert extract_one_piece_code(text) == "OP06-118"
+
+    def test_finds_hash_form_without_brackets(self):
+        assert extract_one_piece_code("Some Card OP06 #118 Alt Art") == "OP06-118"
+
+    def test_bracket_hash_form_rejects_single_digit_set(self):
+        assert extract_one_piece_code("OP6 [#118]") is None
+
+    def test_bracket_hash_form_rejects_two_digit_card_number(self):
+        assert extract_one_piece_code("OP06 [#18]") is None
+
 
 class TestQualifierTokens:
     def test_purely_numeric_qualifier_is_ignored(self):
@@ -55,6 +70,12 @@ class TestQualifierTokens:
 
     def test_bracket_qualifier_is_captured(self):
         assert _qualifier_tokens("Izo [Manga]") == frozenset({"manga"})
+
+    def test_hash_prefixed_numeric_qualifier_is_ignored(self):
+        # "[#118]" est le numéro de carte capté par ONE_PIECE_CODE_RE (forme
+        # bracket-hash), pas un qualificatif de variante -- même traitement
+        # que le "(105)" purement numérique ci-dessus.
+        assert _qualifier_tokens("Roronoa Zoro OP06 [#118]") == frozenset()
 
 
 class TestDisambiguateCandidates:
