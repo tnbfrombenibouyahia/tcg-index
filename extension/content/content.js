@@ -138,7 +138,24 @@
     if (data.status === "ambiguous") {
       return `<p>Plusieurs cartes possibles (${data.candidates.length}) — identification manuelle nécessaire.</p>${footer}`;
     }
-    if (data.status !== "matched" || !data.card) {
+    // "ok" = succès (cf. shared/verdict.py::compute_verdict_for_card,
+    // pricing_api/main.py::post_verdict -- status=outcome.status). Toute
+    // autre valeur ("not_found", "card_not_found", "no_reference_price")
+    // n'est PAS "carte non identifiée" par défaut : "no_reference_price"
+    // veut dire que la carte a bien été trouvée (data.card présent), juste
+    // sans prix de référence -- afficher le nom plutôt que prétendre que
+    // l'identification a échoué (bug trouvé en test réel le 2026-08-20 :
+    // ce fichier vérifiait status === "matched", qui n'existe jamais dans
+    // la réponse finale -- "matched" est le statut interne d'identify_card,
+    // pas celui de /verdict).
+    if (data.status === "no_reference_price" && data.card) {
+      return `
+        <p class="cardquant-card-name">${escapeHtml(data.card.name)}${data.card.code ? " · " + escapeHtml(data.card.code) : ""}</p>
+        <p>Carte identifiée, mais aucun prix de référence disponible pour l'instant.</p>
+        ${footer}
+      `;
+    }
+    if (data.status !== "ok" || !data.card) {
       return `<p>${escapeHtml(data.message || "Carte non identifiée.")}</p>${footer}`;
     }
     const label = VERDICT_LABELS[data.verdict] || data.verdict || "—";
