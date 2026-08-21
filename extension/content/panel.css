@@ -1,7 +1,16 @@
 /* CardQuant -- panneau latéral coulissant injecté sur les pages annonce
    eBay (cf. content.js). Strictement scopé sous #cardquant-root : ne
    redéfinit rien de la page hôte (cf. `all: initial`/`all: unset`
-   ci-dessous, contre l'héritage accidentel de styles eBay). */
+   ci-dessous, contre l'héritage accidentel de styles eBay).
+
+   Tokens alignés sur le design system du site ("TCG Terminal", cf.
+   web/app/globals.css) -- même verre dépoli, mêmes couleurs positive/
+   negative, même mono pour les chiffres -- pour que le panneau se sente
+   comme une extension du site plutôt qu'un widget à part. Redéfinis ici
+   en dur (préfixe --cq-) : un content script ne peut pas hériter des
+   custom properties de tcgindex.vercel.app, il tourne dans le DOM d'eBay.
+   Accent = rouge One Piece uniquement (--accent-onepiece côté site) --
+   cette extension ne couvre que ce jeu (cf. manifest.json). */
 
 #cardquant-root {
   all: initial;
@@ -10,7 +19,30 @@
   right: 0;
   height: 100vh;
   z-index: 2147483647; /* max z-index -- toujours au-dessus du contenu hôte */
-  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Toujours clair, quel que soit le thème du navigateur/OS ou de la page
+     hôte -- sans ça, le "dark mode" forcé de certains navigateurs repeint
+     les zones plates non reconnues comme "déjà stylées" (constaté en test :
+     le bas du panneau vire au noir alors que son fond réel reste blanc,
+     cf. getComputedStyle -- l'inversion est un filtre de rendu, invisible
+     depuis le CSS). */
+  color-scheme: light;
+
+  --cq-foreground:        #14171C;
+  --cq-foreground-muted:  #68707C;
+  --cq-foreground-subtle: #9AA1AC;
+  --cq-border:            rgba(15, 15, 20, 0.10);
+  --cq-border-soft:       rgba(15, 15, 20, 0.07);
+  --cq-tint-neutral:      rgba(15, 15, 20, 0.06);
+  --cq-positive:          #15803D;
+  --cq-negative:          #DC2626;
+  --cq-warn:              #B45309;
+  --cq-radius:            16px;
+  --cq-radius-sm:         8px;
+  --cq-font-sans: -apple-system, "Segoe UI", Roboto, sans-serif;
+  --cq-font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  font-family: var(--cq-font-sans);
+  color: var(--cq-foreground);
 }
 
 #cardquant-tab {
@@ -23,22 +55,32 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #3b82f6; /* --accent-pokemon, cf. web/app/globals.css */
+  background: var(--cq-foreground); /* neutre tant qu'aucun verdict n'est connu */
   color: #fff;
+  font-family: var(--cq-font-sans);
   font-weight: 700;
   font-size: 13px;
+  letter-spacing: 0.2px;
   border-radius: 8px 0 0 8px;
   cursor: pointer;
-  box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: -2px 2px 10px rgba(15, 15, 20, 0.22);
+  transition: background 0.15s ease;
+}
+#cardquant-tab:hover {
+  filter: brightness(1.08);
+}
+#cardquant-tab:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -4px;
 }
 #cardquant-tab.cardquant-green {
-  background: #16a34a;
+  background: var(--cq-positive);
 }
 #cardquant-tab.cardquant-yellow {
-  background: #d97706;
+  background: var(--cq-warn);
 }
 #cardquant-tab.cardquant-red {
-  background: #dc2626; /* --accent-onepiece, cf. web/app/globals.css */
+  background: var(--cq-negative);
 }
 
 #cardquant-card {
@@ -47,73 +89,552 @@
   right: 0;
   width: 320px;
   height: 100%;
-  background: rgba(248, 250, 252, 0.92);
-  backdrop-filter: blur(12px); /* "verre dépoli", cf. tcg-index-handoff.md §08 */
-  -webkit-backdrop-filter: blur(12px);
-  border-left: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12);
-  padding: 72px 20px 20px;
+  /* Pas de backdrop-filter : le panneau s'affiche sur des pages eBay dont
+     le contenu derrière n'est jamais contrôlé (image sombre, pub, etc.) --
+     un vrai flou de fond serait imprévisible (et confirmé instable dans
+     certains navigateurs en mode sombre forcé -- rendu noir constaté). Un
+     fond quasi opaque reste lisible quel que soit l'hôte, cf. commentaire
+     original de ce fichier. */
+  background: linear-gradient(165deg, #ffffff, #f7f8f9);
+  border-left: 1px solid var(--cq-border);
+  box-shadow: -8px 0 32px rgba(15, 15, 20, 0.16);
   box-sizing: border-box;
-  color: #1a1a1a;
   font-size: 13px;
   line-height: 1.5;
   transform: translateX(100%);
   transition: transform 0.25s ease;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 #cardquant-root.cardquant-open #cardquant-card {
   transform: translateX(0);
 }
 
-#cardquant-card .cardquant-card-name {
+/* -- Header persistant : marque + statut d'identification (distinct du
+   verdict de prix, cf. .cardquant-pill plus bas) -- "le badge te dit en 1
+   coup d'œil si l'extension a fait son job". */
+.cardquant-header {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 72px 20px 12px;
+  background: linear-gradient(180deg, rgba(247, 248, 249, 0.98) 80%, rgba(247, 248, 249, 0));
+  flex: 0 0 auto;
+}
+.cardquant-brand {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--cq-foreground-subtle);
+}
+.cardquant-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
   font-weight: 700;
-  margin: 0 0 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--cq-tint-neutral);
+  color: var(--cq-foreground-muted);
+  white-space: nowrap;
 }
-#cardquant-card .cardquant-verdict-label {
-  font-family: "IBM Plex Mono", ui-monospace, monospace; /* cf. §08 */
-  font-size: 16px;
+.cardquant-status::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.cardquant-status--positive {
+  background: color-mix(in srgb, var(--cq-positive) 15%, transparent);
+  color: var(--cq-positive);
+}
+.cardquant-status--warn {
+  background: color-mix(in srgb, var(--cq-warn) 15%, transparent);
+  color: var(--cq-warn);
+}
+.cardquant-status--negative {
+  background: color-mix(in srgb, var(--cq-negative) 15%, transparent);
+  color: var(--cq-negative);
+}
+.cardquant-status--pending::before {
+  animation: cardquant-pulse 1.4s ease-in-out infinite;
+}
+
+#cardquant-body {
+  padding: 4px 20px 20px;
+  flex: 1 1 auto;
+}
+
+#cardquant-body p {
+  margin: 0 0 12px;
+}
+
+#cardquant-body .cardquant-card-name {
+  font-weight: 700;
+  font-size: 14px;
+  margin: 0 0 2px;
+}
+#cardquant-body .cardquant-card-qualifier {
+  color: var(--cq-foreground-muted);
+  font-size: 11.5px;
+  margin: 0 0 12px;
+}
+
+/* -- Badges de métadonnées (langue, set, grade éditable). */
+.cardquant-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
   margin: 0 0 16px;
 }
-#cardquant-card dl {
-  margin: 0 0 16px;
+.cardquant-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--cq-tint-neutral);
+  color: var(--cq-foreground-muted);
+  white-space: nowrap;
+}
+.cardquant-badge--sm {
+  font-size: 10px;
+  padding: 2px 7px;
+}
+
+/* Grade éditable : select natif habillé en pill, crayon superposé --
+   fallback utilisateur simple (cf. tcg-index-handoff.md §07) plutôt qu'un
+   dropdown maison, pour rester robuste sur une page hôte qu'on ne
+   contrôle pas. */
+.cardquant-grade-wrap {
+  position: relative;
+  padding: 0;
+  background: color-mix(in srgb, var(--cq-foreground) 8%, transparent);
+}
+.cardquant-grade-select {
+  all: unset;
+  font-family: var(--cq-font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--cq-foreground);
+  padding: 4px 22px 4px 9px;
+  cursor: pointer;
+  appearance: none;
+}
+.cardquant-grade-pencil {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: var(--cq-foreground-subtle);
+  pointer-events: none;
+}
+
+/* -- Verdict : pill tintée, même idiome que GradingRoiWidget.tsx côté site
+   (fond = accent à 15% d'opacité, texte = accent plein) plutôt qu'un
+   simple texte mono. */
+.cardquant-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--cq-font-sans);
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 5px 11px;
+  border-radius: 999px;
+  margin: 0 0 18px;
+}
+.cardquant-pill::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.cardquant-pill--green {
+  background: color-mix(in srgb, var(--cq-positive) 15%, transparent);
+  color: var(--cq-positive);
+}
+.cardquant-pill--yellow {
+  background: color-mix(in srgb, var(--cq-warn) 15%, transparent);
+  color: var(--cq-warn);
+}
+.cardquant-pill--red {
+  background: color-mix(in srgb, var(--cq-negative) 15%, transparent);
+  color: var(--cq-negative);
+}
+
+#cardquant-body dl {
+  margin: 0;
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 4px 8px;
+  gap: 7px 8px;
+  padding: 12px 0;
+  border-top: 1px solid var(--cq-border-soft);
 }
-#cardquant-card dt {
-  color: rgba(26, 26, 26, 0.6);
+#cardquant-body dt {
+  color: var(--cq-foreground-muted);
+  font-size: 12px;
+  align-self: center;
 }
-#cardquant-card dd {
+#cardquant-body dd {
   margin: 0;
-  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-family: var(--cq-font-mono);
+  font-variant-numeric: tabular-nums;
   text-align: right;
 }
-#cardquant-card .cardquant-error {
-  color: #dc2626;
+
+/* -- Sections génériques (score, analyse de prix, liquidité, langue,
+   display) -- même rythme vertical partout, séparées par un filet fin. */
+.cardquant-section {
+  padding: 16px 0;
+  border-top: 1px solid var(--cq-border-soft);
 }
-#cardquant-card .cardquant-todo {
-  color: rgba(26, 26, 26, 0.5);
+.cardquant-section:first-of-type {
+  padding-top: 0;
+  border-top: none;
+}
+.cardquant-section-title {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--cq-foreground-subtle);
+  margin: 0 0 10px;
+}
+.cardquant-section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.cardquant-section-header .cardquant-section-title {
+  margin: 0;
+}
+.cardquant-gauge-label {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* -- Jauge d'opportunité : score 0-100 calculé côté serveur (cf.
+   pricing/opportunity_score.py) -- ce fichier ne fait que positionner un
+   curseur, jamais le calcul. État grisé/indéterminé si aucun prix de
+   référence n'est disponible (cf. renderGauge). */
+.cardquant-gauge {
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  margin: 10px 0 6px;
+  background: linear-gradient(90deg, var(--cq-negative), var(--cq-warn), var(--cq-positive));
+}
+.cardquant-gauge--indeterminate {
+  background: var(--cq-tint-neutral);
+}
+.cardquant-gauge-cursor {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--cq-foreground);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 1px 3px rgba(15, 15, 20, 0.3);
+}
+.cardquant-gauge-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--cq-foreground-subtle);
+}
+.cardquant-gauge-note {
+  margin: 8px 0 0;
   font-size: 11px;
-  margin-top: 24px;
+  color: var(--cq-foreground-subtle);
 }
-#cardquant-card .cardquant-signin,
-#cardquant-card .cardquant-signout {
-  all: unset;
-  display: inline-block;
-  margin-top: 16px;
-  padding: 8px 14px;
-  border-radius: 6px;
-  cursor: pointer;
+
+.cardquant-muted-inline {
+  color: var(--cq-foreground-subtle);
+  font-weight: 400;
+}
+
+/* "Analyse de prix" est déjà un .cardquant-section (filet + padding
+   propres) -- sans ceci, le <dl> générique (#cardquant-body dl plus haut)
+   ajoute son propre filet juste sous le titre de section, un doublon
+   visuel à quelques px du filet du haut de section. */
+.cardquant-analysis-list {
+  border-top: none;
+  padding-top: 0;
+}
+
+/* -- Liquidité : 2 compteurs + label déjà décidé côté serveur (cf.
+   pricing/liquidity.py) -- active_listings peut être "—" (jamais scrapé
+   pour une carte seule aujourd'hui), à ne jamais confondre visuellement
+   avec un vrai 0. */
+.cardquant-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.cardquant-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--cq-border-soft);
+  border-radius: var(--cq-radius-sm);
+  background: rgba(255, 255, 255, 0.5);
+}
+.cardquant-stat-value {
+  font-family: var(--cq-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+  font-weight: 700;
+}
+.cardquant-stat-label {
+  font-size: 10.5px;
+  color: var(--cq-foreground-muted);
+}
+.cardquant-liquidity-status {
+  margin: 10px 0 0;
   font-size: 12px;
   font-weight: 600;
 }
-#cardquant-card .cardquant-signin {
-  background: #3b82f6;
-  color: #fff;
+
+/* -- Comparaison par langue : la ligne de l'annonce courante est mise en
+   évidence (bordure pleine) parmi ses langues sœurs. */
+.cardquant-lang-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
-#cardquant-card .cardquant-signout {
-  color: rgba(26, 26, 26, 0.5);
+.cardquant-lang-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--cq-border-soft);
+  border-radius: var(--cq-radius-sm);
+}
+.cardquant-lang-row--current {
+  border-color: color-mix(in srgb, var(--cq-foreground) 25%, transparent);
+  background: rgba(255, 255, 255, 0.6);
+}
+.cardquant-lang-name {
+  font-size: 12px;
+  font-weight: 600;
+}
+.cardquant-lang-price {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  font-family: var(--cq-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+.cardquant-lang-pct {
+  font-size: 10.5px;
+  font-weight: 700;
+}
+.cardquant-arbitrage-note {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  color: var(--cq-foreground-muted);
+}
+
+.cardquant-sealed-price {
+  font-family: var(--cq-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* -- CTA vers la fiche complète du site (/catalog/[id], cf. background.js
+   ::CARDQUANT_OPEN_CARD -- SITE_URL n'est connu que là-bas). */
+.cardquant-cta {
+  all: unset;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  text-align: center;
+  margin: 4px 0;
+  padding: 11px 16px;
+  border-radius: var(--cq-radius-sm);
+  background: var(--cq-foreground);
+  color: #fff;
+  font-family: var(--cq-font-sans);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+.cardquant-cta:hover {
+  filter: brightness(1.15);
+}
+.cardquant-cta:focus-visible {
+  outline: 2px solid var(--cq-foreground);
+  outline-offset: 2px;
+}
+
+/* -- Utilitaires de couleur : habillent des tons déjà décidés/fournis par
+   pricing_api (verdict, label de liquidité, sens de l'écart de prix entre
+   langues) -- ne réintroduisent aucun nouveau seuil ici. */
+.cardquant-positive { color: var(--cq-positive); }
+.cardquant-negative { color: var(--cq-negative); }
+.cardquant-warn { color: var(--cq-warn); }
+.cardquant-muted { color: var(--cq-foreground-subtle); }
+
+.cardquant-error {
+  background: color-mix(in srgb, var(--cq-negative) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cq-negative) 22%, transparent);
+  color: var(--cq-negative);
+  padding: 10px 12px;
+  border-radius: var(--cq-radius-sm);
+  font-size: 12.5px;
+}
+
+.cardquant-todo {
+  color: var(--cq-foreground-subtle);
+  font-size: 11px;
+  margin-top: 16px;
+}
+
+/* -- Candidats (statut "ambiguous") : jusqu'à 8, déjà triés par
+   pricing/matching.py, miniature à l'appui -- picker cliquable, cf.
+   content.js::selectCandidate. Le texte seul ne suffit pas toujours à
+   distinguer une variante (Manga/Alternate Art/Parallel...) ; l'image le
+   fait en un coup d'œil, à l'humain de trancher plutôt qu'un score. */
+.cardquant-candidate-list {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cardquant-candidate {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border: 1px solid var(--cq-border-soft);
+  border-radius: var(--cq-radius-sm);
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+}
+.cardquant-candidate:hover,
+.cardquant-candidate:focus-visible {
+  border-color: var(--cq-border);
+  background: rgba(255, 255, 255, 0.85);
+}
+.cardquant-candidate:focus-visible {
+  outline: 2px solid var(--cq-foreground-subtle);
+  outline-offset: 1px;
+}
+.cardquant-candidate-thumb {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: var(--cq-tint-neutral);
+}
+.cardquant-candidate-thumb--empty {
+  border: 1px dashed var(--cq-border);
+}
+.cardquant-candidate-info {
+  min-width: 0; /* laisse cardquant-candidate-name tronquer plutôt que déborder */
+}
+.cardquant-candidate-name {
+  font-weight: 600;
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cardquant-candidate-meta {
+  color: var(--cq-foreground-muted);
+  font-family: var(--cq-font-mono);
+  font-size: 11px;
+  margin-top: 2px;
+}
+.cardquant-candidate-more {
+  color: var(--cq-foreground-subtle);
+  font-size: 11.5px;
+  margin: 0 0 12px;
+}
+
+/* -- Squelette de chargement -- mime la mise en page finale plutôt qu'un
+   simple "Chargement…" perdu en haut d'un panneau vide. */
+.cardquant-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cardquant-skeleton-bar {
+  height: 12px;
+  border-radius: 6px;
+  background: var(--cq-tint-neutral);
+  animation: cardquant-pulse 1.4s ease-in-out infinite;
+}
+.cardquant-skeleton-bar--wide { width: 78%; height: 16px; }
+.cardquant-skeleton-bar--pill { width: 40%; height: 20px; border-radius: 999px; }
+.cardquant-skeleton-bar--half { width: 55%; }
+
+@keyframes cardquant-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+#cardquant-body .cardquant-signin,
+#cardquant-body .cardquant-signout {
+  all: unset;
+  cursor: pointer;
+  font-family: var(--cq-font-sans);
+}
+#cardquant-body .cardquant-signin {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 14px;
+  padding: 9px 16px;
+  border-radius: 999px; /* cf. .pill-ink côté site */
+  background: var(--cq-foreground);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  transition: filter 0.15s ease;
+}
+#cardquant-body .cardquant-signin:hover {
+  filter: brightness(1.15);
+}
+#cardquant-body .cardquant-signout {
+  display: inline-block;
+  margin-top: 18px;
+  color: var(--cq-foreground-subtle);
   font-size: 11px;
   text-decoration: underline;
+  text-underline-offset: 2px;
+}
+#cardquant-body .cardquant-signout:hover {
+  color: var(--cq-foreground-muted);
+}
+#cardquant-body .cardquant-signin:focus-visible,
+#cardquant-body .cardquant-signout:focus-visible {
+  outline: 2px solid var(--cq-foreground);
+  outline-offset: 2px;
+  border-radius: 4px;
 }

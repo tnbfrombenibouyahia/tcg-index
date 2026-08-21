@@ -12,6 +12,12 @@ class VerdictRequest(BaseModel):
     image_url: str | None = None
     displayed_price: float
     grade: str = "ungraded"
+    # Sélection manuelle par l'utilisateur dans le picker du panneau
+    # (candidat cliqué sur un statut 'ambiguous' précédent) -- quand
+    # présent, court-circuite identify_card() entièrement : l'identité
+    # n'est plus à deviner, elle est confirmée par un humain (cf.
+    # pricing_api/main.py::post_verdict).
+    selected_card_id: int | None = None
 
     @field_validator("grade")
     @classmethod
@@ -27,12 +33,54 @@ class CardCandidateOut(BaseModel):
     code: str | None
     set_code: str | None
     rarity: str | None
+    language: str  # 'EN' | 'JP' | 'FR' -- cf. pricing/models.py::Card, requis pour l'affichage extension (panneau v2)
     confidence: float
+    # Miniature pour le picker de désambiguïsation -- None si le
+    # référentiel n'a pas d'image pour cet item (rare, cf. couverture
+    # mesurée dans tcg-index-handoff.md §04 : 99,9%/100% des items ont une
+    # image_url exploitable).
+    image_url: str | None = None
 
 
 class SourcePriceOut(BaseModel):
     source: str
     grade: str
+    price: float
+    currency: str
+
+
+class SalesStatsOut(BaseModel):
+    """Moy. 3 / moy. 10 dernières ventes -- cf. pricing/sales_stats.py.
+    sample_size_* < 3/10 signale une moyenne partielle (peu de ventes
+    connues), à afficher tel quel plutôt que masqué."""
+    avg_last_3: float | None
+    avg_last_10: float | None
+    sample_size_3: int
+    sample_size_10: int
+    currency: str | None  # None si aucune vente exploitable
+
+
+class LiquidityOut(BaseModel):
+    """cf. pricing/liquidity.py -- label déjà décidé côté serveur, l'UI
+    n'a qu'à l'afficher."""
+    sales_last_90d: int
+    # None = jamais scrapé pour cet item/grade (PAS "0 annonce active" --
+    # active_listings ne couvre aujourd'hui que le scellé, cf.
+    # pricing/repository.py::fetch_latest_active_listing_count)
+    active_listings: int | None
+    sales_per_month: float
+    label: str  # 'liquide' | 'modere' | 'illiquide'
+
+
+class LanguageComparisonOut(BaseModel):
+    language: str
+    card_id: int
+    price: float | None  # None si aucun prix connu pour cette langue (pas d'équivalent trouvé)
+    currency: str | None
+    is_current_listing: bool  # true pour la ligne de l'annonce affichée
+
+
+class SealedDisplayPriceOut(BaseModel):
     price: float
     currency: str
 
@@ -47,3 +95,14 @@ class VerdictResponse(BaseModel):
     grade: str
     sources_compared: list[SourcePriceOut] = []
     message: str | None = None
+
+    # Signaux étendus (maquette panneau v2) -- tous None/vides si la carte
+    # n'a pas pu être identifiée (status != 'ok' et != 'no_reference_price').
+    # opportunity_score reste None même carte identifiée si aucune source de
+    # prix n'a répondu (status='no_reference_price') : jamais deviné sans
+    # prix de référence, cf. shared/verdict.py::compute_extended_signals.
+    opportunity_score: int | None = None
+    sales_stats: SalesStatsOut | None = None
+    liquidity: LiquidityOut | None = None
+    language_comparison: list[LanguageComparisonOut] = []
+    sealed_display_price: SealedDisplayPriceOut | None = None

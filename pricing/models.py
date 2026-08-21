@@ -22,6 +22,14 @@ class Card:
     category: str
     language: str
     rarity: str | None
+    # Optionnel (défaut None) pour ne pas casser les Card(...) existants
+    # (tests, autres appelants) qui ne le passent pas -- cf.
+    # pricing/repository.py::_row_to_card pour le seul chemin qui le peuple
+    # réellement. Sert le picker de désambiguïsation (panneau extension) :
+    # miniature par candidat quand le texte seul ne suffit pas (ex.
+    # variantes "Manga"/"Alternate Art" visuellement distinctes mais non
+    # nommées ainsi dans le titre de l'annonce).
+    image_url: str | None = None
 
 
 @dataclass

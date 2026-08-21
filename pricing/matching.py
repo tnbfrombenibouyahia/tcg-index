@@ -98,8 +98,22 @@ def _qualifier_tokens(text: str) -> frozenset:
     entre parenthèses est un numéro apitcg, pas un qualificatif de variante
     Parallel/Alt-art/Manga, cf. données réelles item_id 98406) -- y compris
     préfixés d'un '#' (ex. 'OP06 [#118]', cf. ONE_PIECE_CODE_RE) : même
-    numéro de carte, pas une variante non plus."""
-    contents = [c for c in _QUALIFIER_RE.findall(text) if not c.strip().lstrip("#").isdigit()]
+    numéro de carte, pas une variante non plus. Même exclusion pour un code
+    officiel complet entre parenthèses (ex. 'Nami (OP01-016) (Manga)',
+    item_id 36989 -- deux groupes, le 1er est un doublon du code, pas un
+    qualificatif) : sans ce filtre, ces tokens de code se retrouvent dans le
+    vocabulaire de désambiguïsation et gonflent artificiellement le score
+    Dice de CE candidat sur n'importe quel texte contenant le même code --
+    or le code est de fait présent dans tout texte qui arrive ici (c'est lui
+    qui a déclenché la recherche), donc systématiquement en commun. Cas réel
+    qui a motivé ce filtre : annonce eBay 206461711271, 'Nami OP01-016
+    Manga Alt Art ... Japan' matchée à tort sur la ligne EN 36989 (Dice 0.6)
+    plutôt que la bonne ligne JP 'Nami [Manga]' 72523 (Dice 0.25, qualificatif
+    propre)."""
+    contents = [
+        c for c in _QUALIFIER_RE.findall(text)
+        if not c.strip().lstrip("#").isdigit() and not ONE_PIECE_CODE_RE.fullmatch(c.strip())
+    ]
     return frozenset(_normalize_name(" ".join(contents)).split())
 
 
@@ -117,9 +131,12 @@ def _dice(a: frozenset, b: frozenset) -> float:
 # Anniversary...) ET langues (EN/JP) d'un même numéro de carte -- cas réel
 # mesuré (annonce eBay 157610454970, OP06-118) : 11 items en base pour ce
 # seul code, 6 EN + 5 JP. items.language distingue déjà ça -- un indice
-# "JP"/"Japanese" ou "EN"/"English" dans le texte libre coupe la moitié des
-# candidats avant même de comparer les qualificatifs de variante.
-_LANGUAGE_HINT_TOKENS = {"EN": {"en", "english"}, "JP": {"jp", "japanese"}}
+# "JP"/"Japanese"/"Japan" ou "EN"/"English" dans le texte libre coupe la
+# moitié des candidats avant même de comparer les qualificatifs de variante.
+# "Japan" (pas seulement "Japanese") ajouté après un cas réel où le filtre
+# ne se déclenchait pas (annonce eBay 206461711271, "... Comic Parallel
+# Japan") et laissait les 19 candidats EN+JP en lice.
+_LANGUAGE_HINT_TOKENS = {"EN": {"en", "english"}, "JP": {"jp", "japanese", "japan"}}
 
 
 def _detect_language_hint(text: str) -> str | None:
