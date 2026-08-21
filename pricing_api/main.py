@@ -40,7 +40,8 @@ if _cors_origins:
 
 def _card_out(card: Card, confidence: float) -> CardCandidateOut:
     return CardCandidateOut(card_id=card.id, name=card.name, code=card.code, set_code=card.set_code,
-                             rarity=card.rarity, language=card.language, confidence=confidence)
+                             rarity=card.rarity, language=card.language, confidence=confidence,
+                             image_url=card.image_url)
 
 
 def _extended_out(signals: ExtendedSignals) -> dict:
@@ -95,16 +96,25 @@ def health() -> dict:
 
 @app.post("/verdict", response_model=VerdictResponse)
 def post_verdict(req: VerdictRequest, _user: dict = Depends(require_user)) -> VerdictResponse:
-    match = identify_card(text=req.text, image_url=req.image_url)
+    if req.selected_card_id is not None:
+        # Picker de désambiguïsation (panneau extension) : l'utilisateur a
+        # cliqué un candidat sur un verdict 'ambiguous' précédent --
+        # identité confirmée par un humain, identify_card() court-circuité
+        # entièrement (jamais re-deviner ce qui vient d'être choisi).
+        # confidence=1.0, pas 0.0 : contrairement à un candidat non
+        # sélectionné, celui-ci n'est plus une hypothèse.
+        card_id, confidence = req.selected_card_id, 1.0
+    else:
+        match = identify_card(text=req.text, image_url=req.image_url)
+        if match.status != "matched":
+            return VerdictResponse(
+                status=match.status,
+                candidates=[_card_out(c, 0.0) for c in match.candidates],
+                displayed_price=req.displayed_price, grade=req.grade, message=match.message,
+            )
+        card_id, confidence = match.card.id, match.confidence
 
-    if match.status != "matched":
-        return VerdictResponse(
-            status=match.status,
-            candidates=[_card_out(c, 0.0) for c in match.candidates],
-            displayed_price=req.displayed_price, grade=req.grade, message=match.message,
-        )
-
-    outcome = compute_verdict_for_card(req.displayed_price, match.card.id, req.grade)
+    outcome = compute_verdict_for_card(req.displayed_price, card_id, req.grade)
 
     # Signaux étendus dès que la carte est connue, même sans prix de
     # référence (status='no_reference_price') -- moy. ventes/liquidité/
@@ -118,13 +128,13 @@ def post_verdict(req: VerdictRequest, _user: dict = Depends(require_user)) -> Ve
             outcome.card, req.grade,
             reference_price=outcome.verdict.reference_price if outcome.verdict else None,
             ratio=outcome.verdict.ratio if outcome.verdict else None,
-            confidence=match.confidence,
+            confidence=confidence,
         )
         extended = _extended_out(signals)
 
     return VerdictResponse(
         status=outcome.status,
-        card=_card_out(outcome.card, match.confidence) if outcome.card else None,
+        card=_card_out(outcome.card, confidence) if outcome.card else None,
         verdict=outcome.verdict.label if outcome.verdict else None,
         reference_price=outcome.verdict.reference_price if outcome.verdict else None,
         displayed_price=req.displayed_price, grade=req.grade,

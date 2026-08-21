@@ -12,6 +12,12 @@ class VerdictRequest(BaseModel):
     image_url: str | None = None
     displayed_price: float
     grade: str = "ungraded"
+    # Sélection manuelle par l'utilisateur dans le picker du panneau
+    # (candidat cliqué sur un statut 'ambiguous' précédent) -- quand
+    # présent, court-circuite identify_card() entièrement : l'identité
+    # n'est plus à deviner, elle est confirmée par un humain (cf.
+    # pricing_api/main.py::post_verdict).
+    selected_card_id: int | None = None
 
     @field_validator("grade")
     @classmethod
@@ -29,6 +35,11 @@ class CardCandidateOut(BaseModel):
     rarity: str | None
     language: str  # 'EN' | 'JP' | 'FR' -- cf. pricing/models.py::Card, requis pour l'affichage extension (panneau v2)
     confidence: float
+    # Miniature pour le picker de désambiguïsation -- None si le
+    # référentiel n'a pas d'image pour cet item (rare, cf. couverture
+    # mesurée dans tcg-index-handoff.md §04 : 99,9%/100% des items ont une
+    # image_url exploitable).
+    image_url: str | None = None
 
 
 class SourcePriceOut(BaseModel):

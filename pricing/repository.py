@@ -8,14 +8,14 @@ from datetime import date
 from pricing.models import Card
 from shared.db import get_connection
 
-_CARD_COLUMNS = "id, name, code, set_code, tcg, category, language, rarity"
+_CARD_COLUMNS = "id, name, code, set_code, tcg, category, language, rarity, image_url"
 _SALES_STATS_LIMIT = 10  # borne haute -- moy. 3 ET moy. 10 se calculent sur la même liste (cf. pricing/sales_stats.py)
 
 
 def _row_to_card(row: tuple) -> Card:
     return Card(
         id=row[0], name=row[1], code=row[2], set_code=row[3],
-        tcg=row[4], category=row[5], language=row[6], rarity=row[7],
+        tcg=row[4], category=row[5], language=row[6], rarity=row[7], image_url=row[8],
     )
 
 

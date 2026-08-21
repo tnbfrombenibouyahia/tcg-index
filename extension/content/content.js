@@ -189,6 +189,29 @@
           if (el) handler(el);
         });
       },
+      // Activation clavier (Entrée/Espace) des éléments role="button" qui
+      // ne sont pas des <button>/<select> natifs -- ex. cardquant-candidate
+      // (picker de désambiguïsation) : un <li> cliquable a besoin de ça
+      // pour être utilisable au clavier, contrairement aux autres contrôles
+      // du panneau qui sont déjà des éléments natifs focusables.
+      onKeydown(selector, handler) {
+        card.addEventListener("keydown", (e) => {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          const el = e.target.closest(selector);
+          if (!el) return;
+          e.preventDefault();
+          handler(el);
+        });
+      },
+      // "error" (échec de chargement d'une <img>) ne remonte jamais par
+      // bubbling -- écoute en phase de capture, seul moyen de la déléguer
+      // comme les autres événements du panneau (cf. onClick/onChange).
+      onImgError(selector, handler) {
+        card.addEventListener("error", (e) => {
+          const el = e.target.closest?.(selector);
+          if (el) handler(el);
+        }, true);
+      },
       setError(message) {
         setStatus("Erreur", "negative");
         body().innerHTML = `<p class="cardquant-error">${escapeHtml(message)}</p>`;
@@ -237,12 +260,32 @@
     return `${n} ${word}${n > 1 ? "s" : ""}`;
   }
 
+  // Picker de désambiguïsation : chaque candidat est cliquable (data-card-id)
+  // -- un clic relance /verdict avec selectedCardId, cf. requestVerdict et
+  // background.js::CARDQUANT_GET_VERDICT. La miniature (image_url, cf.
+  // pricing_api/schemas.py::CardCandidateOut) est le signal qui manque au
+  // texte seul pour trancher des variantes comme "Manga"/"Alternate Art" --
+  // même philosophie que le reste du matcher (jamais deviner), déplacée
+  // vers l'humain plutôt que vers un score de confiance.
   function renderCandidate(c) {
     const meta = [c.code, c.rarity].filter(Boolean).join(" · ");
+    // Masquée au chargement en échec plutôt que l'icône "cassée" du
+    // navigateur (cf. onImgError plus bas, écoute déléguée -- pas d'attribut
+    // onerror inline, cohérent avec le reste du fichier qui n'utilise jamais
+    // de handler inline sur le HTML injecté) -- l'hôte
+    // (product-images.tcgplayer.com/storage.googleapis.com) est hors du
+    // contrôle de cette extension, une image qui échoue à charger ne doit
+    // jamais bloquer le picker.
+    const thumb = c.image_url
+      ? `<img class="cardquant-candidate-thumb" src="${escapeHtml(c.image_url)}" alt="" loading="lazy">`
+      : `<div class="cardquant-candidate-thumb cardquant-candidate-thumb--empty" aria-hidden="true"></div>`;
     return `
-      <li class="cardquant-candidate">
-        <div class="cardquant-candidate-name">${escapeHtml(c.name)}</div>
-        ${meta ? `<div class="cardquant-candidate-meta">${escapeHtml(meta)}</div>` : ""}
+      <li class="cardquant-candidate" data-card-id="${c.card_id}" role="button" tabindex="0">
+        ${thumb}
+        <div class="cardquant-candidate-info">
+          <div class="cardquant-candidate-name">${escapeHtml(c.name)}</div>
+          ${meta ? `<div class="cardquant-candidate-meta">${escapeHtml(meta)}</div>` : ""}
+        </div>
       </li>
     `;
   }
@@ -479,13 +522,16 @@
   function renderVerdict(data, original, currentGrade) {
     const footer = '<button type="button" class="cardquant-signout">Se déconnecter</button>';
     if (data.status === "ambiguous") {
-      // Les 2 plus probables (déjà triées par pricing/matching.py, meilleur
-      // score en premier) plutôt qu'un mur de résultats -- le reste reste
-      // compté, pas listé (pas de picker derrière, cf. extension/README.md).
-      const top = data.candidates.slice(0, 2);
+      // Jusqu'à 8 (déjà triés par pricing/matching.py, meilleur score en
+      // premier), miniature à l'appui -- assez pour trancher visuellement
+      // les cas réels observés (Manga/Alternate Art/Parallel... souvent
+      // indissociables au texte seul, cf. commit matching). Au-delà, un
+      // mur de vignettes cesserait d'aider plus qu'il n'encombre ; le
+      // reste reste compté, pas listé.
+      const top = data.candidates.slice(0, 8);
       const rest = data.candidates.length - top.length;
       return `
-        <p>Plusieurs cartes possibles — les plus probables :</p>
+        <p>Plusieurs cartes possibles — clique la bonne :</p>
         <ul class="cardquant-candidate-list">${top.map(renderCandidate).join("")}</ul>
         ${rest > 0 ? `<p class="cardquant-candidate-more">+ ${pluralFr(rest, "autre")} possible${rest > 1 ? "s" : ""} au total.</p>` : ""}
         ${footer}
@@ -516,7 +562,21 @@
   let currentGrade = "ungraded";
   let gradeManuallySet = false;
 
-  async function requestVerdict(panel) {
+  // Carte confirmée via le picker de désambiguïsation (renderCandidate),
+  // s'il y en a une -- "sticky" pour le reste de la session de cet onglet :
+  // un changement de grade après sélection doit continuer à interroger LA
+  // carte choisie, jamais retomber sur identify_card() et perdre le choix
+  // de l'utilisateur (cf. le onChange du grade select plus bas).
+  let confirmedCardId = null;
+
+  // `selectedCardId` : carte cliquée dans le picker de désambiguïsation
+  // (renderCandidate) -- titre/prix/devise/grade viennent toujours du DOM
+  // comme d'habitude (rien de spécifique à l'identité de la carte), mais
+  // pricing_api saute identify_card() entièrement côté serveur quand il est
+  // présent (cf. background.js, pricing_api/main.py::post_verdict). Défaut
+  // = la carte déjà confirmée, s'il y en a une (voir confirmedCardId).
+  async function requestVerdict(panel, selectedCardId = confirmedCardId) {
+    if (selectedCardId != null) confirmedCardId = selectedCardId;
     panel.setLoading();
     const title = queryFirstText(TITLE_SELECTORS);
     const rawPrice = queryFirstText(PRICE_SELECTORS);
@@ -545,6 +605,7 @@
 
     const response = await sendMessage({
       type: "CARDQUANT_GET_VERDICT", text: title, displayedPrice, currency, grade: currentGrade,
+      selectedCardId,
     });
     if (!response || !response.ok) {
       if (response?.reason === "auth") {
@@ -589,6 +650,17 @@
     await sendMessage({ type: "CARDQUANT_SIGN_OUT" });
     panel.setSignedOut();
   });
+
+  // Picker de désambiguïsation : clic (ou Entrée/Espace, cf. onKeydown) sur
+  // un candidat -> relance /verdict directement sur cette carte, sans
+  // repasser par identify_card() (cf. requestVerdict, background.js).
+  const selectCandidate = (el) => {
+    const cardId = el.getAttribute("data-card-id");
+    if (cardId) requestVerdict(panel, Number(cardId));
+  };
+  panel.onClick(".cardquant-candidate", selectCandidate);
+  panel.onKeydown(".cardquant-candidate", selectCandidate);
+  panel.onImgError(".cardquant-candidate-thumb", (el) => el.remove());
 
   panel.onClick(".cardquant-cta", (el) => {
     const cardId = el.getAttribute("data-card-id");

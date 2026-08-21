@@ -513,9 +513,11 @@
   margin-top: 16px;
 }
 
-/* -- Candidats (statut "ambiguous") : les 2 plus probables (déjà triés
-   par pricing/matching.py) plutôt qu'un mur de résultats -- cf.
-   extension/README.md pour le contexte. */
+/* -- Candidats (statut "ambiguous") : jusqu'à 8, déjà triés par
+   pricing/matching.py, miniature à l'appui -- picker cliquable, cf.
+   content.js::selectCandidate. Le texte seul ne suffit pas toujours à
+   distinguer une variante (Manga/Alternate Art/Parallel...) ; l'image le
+   fait en un coup d'œil, à l'humain de trancher plutôt qu'un score. */
 .cardquant-candidate-list {
   margin: 0 0 12px;
   padding: 0;
@@ -525,14 +527,44 @@
   gap: 6px;
 }
 .cardquant-candidate {
-  padding: 9px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
   border: 1px solid var(--cq-border-soft);
   border-radius: var(--cq-radius-sm);
   background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+}
+.cardquant-candidate:hover,
+.cardquant-candidate:focus-visible {
+  border-color: var(--cq-border);
+  background: rgba(255, 255, 255, 0.85);
+}
+.cardquant-candidate:focus-visible {
+  outline: 2px solid var(--cq-foreground-subtle);
+  outline-offset: 1px;
+}
+.cardquant-candidate-thumb {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: var(--cq-tint-neutral);
+}
+.cardquant-candidate-thumb--empty {
+  border: 1px dashed var(--cq-border);
+}
+.cardquant-candidate-info {
+  min-width: 0; /* laisse cardquant-candidate-name tronquer plutôt que déborder */
 }
 .cardquant-candidate-name {
   font-weight: 600;
   font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .cardquant-candidate-meta {
   color: var(--cq-foreground-muted);

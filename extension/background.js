@@ -81,6 +81,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
               text: message.text,
               displayed_price: usdPrice,
               grade: message.grade || "ungraded",
+              // Carte confirmée via le picker de désambiguïsation (cf.
+              // content.js::requestVerdict) -- identify_card() court-
+              // circuité côté serveur quand présent.
+              selected_card_id: message.selectedCardId ?? null,
             }),
           });
           if (res.status === 401) {
