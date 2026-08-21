@@ -1,0 +1,179 @@
+"""Tests des signaux étendus du panneau extension v2 : pure
+(pricing/sales_stats.py, pricing/liquidity.py, pricing/opportunity_score.py)
+puis orchestration (shared/verdict.py::compute_extended_signals, DB
+monkeypatchée -- même style que tests/test_verdict.py).
+"""
+from pricing.liquidity import compute_liquidity, liquidity_label
+from pricing.models import Card
+from pricing.opportunity_score import compute_opportunity_score
+from pricing.sales_stats import compute_sales_stats
+from shared import verdict
+
+
+def _card(**overrides):
+    defaults = dict(id=1, name="Izo", code="ST22-002", set_code="one-piece-starter-deck-22-ace-newgate",
+                     tcg="one-piece", category="single", language="EN", rarity="Super Rare")
+    defaults.update(overrides)
+    return Card(**defaults)
+
+
+class TestComputeSalesStats:
+    def test_empty_list_returns_none_stats(self):
+        stats = compute_sales_stats([])
+        assert stats.avg_last_3 is None
+        assert stats.avg_last_10 is None
+        assert stats.sample_size_3 == 0
+        assert stats.currency is None
+
+    def test_averages_over_available_sales(self):
+        sales = [(10.0, "USD"), (12.0, "USD"), (8.0, "USD")]
+        stats = compute_sales_stats(sales)
+        assert stats.avg_last_3 == 10.0
+        assert stats.avg_last_10 == 10.0
+        assert stats.sample_size_3 == 3
+        assert stats.sample_size_10 == 3
+
+    def test_partial_sample_when_fewer_than_3_sales(self):
+        stats = compute_sales_stats([(10.0, "USD")])
+        assert stats.avg_last_3 == 10.0
+        assert stats.sample_size_3 == 1
+
+    def test_never_mixes_currencies(self):
+        # La plus récente (1re du tuple, cf. fetch_recent_sales) fixe la
+        # devise -- les autres devises sont ignorées, jamais fondues dans
+        # la moyenne (même principe que shared/verdict.py côté sources).
+        sales = [(10.0, "USD"), (100.0, "EUR"), (12.0, "USD")]
+        stats = compute_sales_stats(sales)
+        assert stats.currency == "USD"
+        assert stats.sample_size_3 == 2
+        assert stats.avg_last_3 == 11.0
+
+
+class TestLiquidity:
+    def test_label_thresholds(self):
+        assert liquidity_label(3.1) == "liquide"
+        assert liquidity_label(3.0) == "modere"  # borne haute inclusive côté modéré
+        assert liquidity_label(1.0) == "modere"  # borne basse inclusive côté modéré
+        assert liquidity_label(0.9) == "illiquide"
+
+    def test_compute_liquidity_preserves_none_active_listings(self):
+        # None = jamais scrapé (singles pas couverts en v1) -- ne doit
+        # jamais devenir 0 en traversant compute_liquidity.
+        metrics = compute_liquidity(sales_last_90d=14, active_listings=None)
+        assert metrics.active_listings is None
+        assert metrics.sales_last_90d == 14
+        assert round(metrics.sales_per_month, 1) == 4.7
+        assert metrics.label == "liquide"
+
+
+class TestOpportunityScore:
+    def test_fair_price_full_confidence_no_liquidity_is_near_50_scaled_by_weights(self):
+        # ratio=1 (prix pile au marché) -> composante prix = 50 ; liquidité
+        # nulle -> composante liquidité = 0 ; confiance pleine -> composante
+        # confiance = 100. Score = 0.6*50 + 0.25*0 + 0.15*100 = 45.
+        score = compute_opportunity_score(ratio=1.0, sales_per_month=0.0, confidence=1.0)
+        assert score == 45
+
+    def test_cheap_liquid_confident_scores_high(self):
+        score = compute_opportunity_score(ratio=0.7, sales_per_month=5.0, confidence=1.0)
+        assert score > 80
+
+    def test_expensive_scores_low(self):
+        # ratio=1.3 -> composante prix déjà clampée à 0 (plancher) : le
+        # score restant vient uniquement de liquidité+confiance (25+15=40),
+        # nettement sous la ligne de base "prix pile au marché" (45, cf.
+        # test_fair_price_full_confidence_no_liquidity_is_near_50_scaled_by_weights).
+        score = compute_opportunity_score(ratio=1.3, sales_per_month=5.0, confidence=1.0)
+        assert score == 40
+
+    def test_low_confidence_dampens_score(self):
+        confident = compute_opportunity_score(ratio=0.7, sales_per_month=5.0, confidence=1.0)
+        unsure = compute_opportunity_score(ratio=0.7, sales_per_month=5.0, confidence=0.3)
+        assert unsure < confident
+
+    def test_score_always_clamped_0_100(self):
+        assert compute_opportunity_score(ratio=0.0, sales_per_month=100.0, confidence=1.0) <= 100
+        assert compute_opportunity_score(ratio=5.0, sales_per_month=0.0, confidence=0.0) >= 0
+
+
+class TestComputeExtendedSignals:
+    def test_opportunity_score_none_without_ratio(self, monkeypatch):
+        card = _card()
+        monkeypatch.setattr(verdict, "fetch_recent_sales", lambda *a, **k: [])
+        monkeypatch.setattr(verdict, "count_sales_since", lambda *a, **k: 0)
+        monkeypatch.setattr(verdict, "fetch_latest_active_listing_count", lambda *a, **k: None)
+        monkeypatch.setattr(verdict, "fetch_language_siblings", lambda *a, **k: [])
+        monkeypatch.setattr(verdict, "fetch_latest_price_snapshot", lambda *a, **k: None)
+        monkeypatch.setattr(verdict, "fetch_sealed_display_for_set", lambda *a, **k: None)
+
+        signals = verdict.compute_extended_signals(card, "ungraded", reference_price=None, ratio=None)
+
+        assert signals.opportunity_score is None
+        assert signals.liquidity.sales_last_90d == 0
+
+    def test_opportunity_score_computed_when_ratio_known(self, monkeypatch):
+        card = _card()
+        monkeypatch.setattr(verdict, "fetch_recent_sales", lambda *a, **k: [])
+        monkeypatch.setattr(verdict, "count_sales_since", lambda *a, **k: 12)
+        monkeypatch.setattr(verdict, "fetch_latest_active_listing_count", lambda *a, **k: None)
+        monkeypatch.setattr(verdict, "fetch_language_siblings", lambda *a, **k: [])
+        monkeypatch.setattr(verdict, "fetch_latest_price_snapshot", lambda *a, **k: None)
+        monkeypatch.setattr(verdict, "fetch_sealed_display_for_set", lambda *a, **k: None)
+
+        signals = verdict.compute_extended_signals(card, "ungraded", reference_price=10.0, ratio=0.8, confidence=1.0)
+
+        assert signals.opportunity_score is not None
+
+    def test_language_comparison_includes_current_and_siblings(self, monkeypatch):
+        card = _card()
+        sibling = _card(id=2, language="JP")
+        monkeypatch.setattr(verdict, "fetch_recent_sales", lambda *a, **k: [])
+        monkeypatch.setattr(verdict, "count_sales_since", lambda *a, **k: 0)
+        monkeypatch.setattr(verdict, "fetch_latest_active_listing_count", lambda *a, **k: None)
+        monkeypatch.setattr(verdict, "fetch_language_siblings", lambda c: [sibling])
+        monkeypatch.setattr(verdict, "fetch_latest_price_snapshot", lambda item_id, grade: (15.0, "USD") if item_id == 2 else None)
+        monkeypatch.setattr(verdict, "fetch_sealed_display_for_set", lambda *a, **k: None)
+
+        signals = verdict.compute_extended_signals(card, "ungraded", reference_price=10.0, ratio=1.0)
+
+        assert len(signals.language_comparison) == 2
+        current, jp = signals.language_comparison
+        assert current.is_current_listing is True
+        assert current.language == "EN"
+        assert current.price == 10.0
+        assert jp.is_current_listing is False
+        assert jp.language == "JP"
+        assert jp.price == 15.0
+
+    def test_sibling_without_known_price_has_none_price_not_zero(self, monkeypatch):
+        card = _card()
+        sibling = _card(id=2, language="JP")
+        monkeypatch.setattr(verdict, "fetch_recent_sales", lambda *a, **k: [])
+        monkeypatch.setattr(verdict, "count_sales_since", lambda *a, **k: 0)
+        monkeypatch.setattr(verdict, "fetch_latest_active_listing_count", lambda *a, **k: None)
+        monkeypatch.setattr(verdict, "fetch_language_siblings", lambda c: [sibling])
+        monkeypatch.setattr(verdict, "fetch_latest_price_snapshot", lambda item_id, grade: None)
+        monkeypatch.setattr(verdict, "fetch_sealed_display_for_set", lambda *a, **k: None)
+
+        signals = verdict.compute_extended_signals(card, "ungraded", reference_price=10.0, ratio=1.0)
+
+        jp = signals.language_comparison[1]
+        assert jp.price is None
+        assert jp.currency is None
+
+    def test_sealed_display_skipped_for_sealed_items(self, monkeypatch):
+        # Le display lui-même ne se compare pas à "un display du même set" --
+        # fetch_sealed_display_for_set ne doit même pas être appelée.
+        sealed_card = _card(category="sealed_display", code=None)
+        called = []
+        monkeypatch.setattr(verdict, "fetch_recent_sales", lambda *a, **k: [])
+        monkeypatch.setattr(verdict, "count_sales_since", lambda *a, **k: 0)
+        monkeypatch.setattr(verdict, "fetch_latest_active_listing_count", lambda *a, **k: None)
+        monkeypatch.setattr(verdict, "fetch_language_siblings", lambda c: [])
+        monkeypatch.setattr(verdict, "fetch_latest_price_snapshot", lambda *a, **k: None)
+        monkeypatch.setattr(verdict, "fetch_sealed_display_for_set", lambda *a, **k: called.append(a))
+
+        signals = verdict.compute_extended_signals(sealed_card, "ungraded", reference_price=None, ratio=None)
+
+        assert called == []
+        assert signals.sealed_display_price is None

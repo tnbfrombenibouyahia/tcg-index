@@ -22,8 +22,15 @@ Fait :
   d'appeler `/verdict` — le montant d'origine reste affiché entre
   parenthèses pour que la conversion soit visible, jamais implicite. Une
   devise non reconnue (ni `$`/`€`/`£`) est refusée plutôt que devinée.
-- Panneau coulissant (glassmorphisme clair, cf. §08), onglet replié coloré
-  vert/jaune/rouge une fois le verdict connu.
+- Panneau coulissant repris sur le design system du site ("TCG Terminal",
+  cf. `web/app/globals.css`) : mêmes couleurs positive/negative, même mono
+  pour les chiffres, pills tintées façon `GradingRoiWidget.tsx`. Header
+  persistant (statut d'identification, distinct du verdict) + ligne
+  d'écart annonce/référence (magnitude calculée en JS, seuils décidés côté
+  serveur). Onglet replié coloré vert/jaune/rouge une fois le verdict
+  connu. Pas de `backdrop-filter` : le fond réel de la page hôte (eBay)
+  n'est jamais contrôlé, un flou de fond serait imprévisible -- fond quasi
+  opaque à la place (cf. commentaire en tête de `content/panel.css`).
 - **Compte requis avant utilisation (§01/§09)** : la connexion (Google
   Sign-In) se fait sur **le site** (`web/components/auth/AuthModal.tsx`,
   `signInWithPopup` + Firebase Auth JS SDK), pas dans l'extension. "Se
@@ -58,9 +65,34 @@ Fait :
     fois), sans quoi le relais silencieusement ne fait plus rien (jamais
     d'erreur bloquante par design, cf. docstring de `relaySessionToExtension`).
 
+- **Panneau v2 (score, moy. ventes, liquidité, comparaison langue, display
+  scellé, grade éditable)** : contrat étendu (`pricing_api/schemas.py`),
+  calculs dédiés côté serveur (`pricing/sales_stats.py`,
+  `pricing/liquidity.py`, `pricing/opportunity_score.py`), orchestrés par
+  `shared/verdict.py::compute_extended_signals` (séparé de
+  `compute_verdict_for_card`, cf. son docstring) et branchés dans
+  `content/content.js`. Frontière respectée : le content script ne capte
+  que titre/prix/grade (+ fallback select de grade, auto-détecté puis
+  éditable par l'utilisateur, redéclenche `/verdict` au changement) ; tout
+  le reste (score 0-100, moy. 3/10 ventes, liquidité, prix par langue, prix
+  du display) vient de la réponse `/verdict`, jamais recalculé côté client.
+  Testé via un harness jsdom ponctuel (pas de suite JS permanente dans ce
+  repo) sur les statuts ok/no_reference_price/ambiguous/not_found + les 2
+  interactions (changement de grade, clic CTA) — aucune erreur JS, aucun
+  fragment "undefined"/"NaN" dans le rendu.
+  - ⚠️ **Limite connue, prioritaire à lever** : `active_listings` (compteur
+    "en vente active" du bloc Liquidité) ne couvre aujourd'hui QUE le
+    scellé côté ingestion (`ingestion/sources/ebay.py`) — pour une carte
+    seule, ce compteur est toujours `None` (affiché "—", jamais un faux
+    `0`, cf. `pricing/repository.py::fetch_latest_active_listing_count`).
+    Sans ce chiffre, la carte "seule" (le cœur d'usage réel de
+    l'extension) reste incomplète sur ce point précis — à traiter en
+    étendant l'ingestion eBay Browse API aux singles, pas juste un
+    ajustement d'affichage.
+
 Pas fait (hors scope de ce scaffold) :
-- ROI gradation, liquidité, calculateur d'arbitrage (§07) — décrits comme
-  calculs côté client dans le handoff, pas encore implémentés ici.
+- ROI gradation, calculateur d'arbitrage (§07) — décrits comme calculs
+  côté client dans le handoff, pas encore implémentés ici.
 - Vinted, Cardmarket — seul eBay (14 domaines pays, cf. `manifest.json`)
   est scopé pour l'instant.
 - Identification par image (upload/capture depuis le panneau) — le back-end

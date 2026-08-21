@@ -39,6 +39,17 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       chrome.tabs.create({ url: `${SITE_URL}/?cardquant_login=1` }).then(() => sendResponse({ ok: true }));
       return true;
 
+    // Bouton "Analyse complète sur CardQuant" du panneau -- SITE_URL n'est
+    // connu que dans ce contexte (lib/config.js n'est chargé que par
+    // background.js, cf. manifest.json content_scripts qui ne charge que
+    // content/content.js), d'où le passage par message plutôt qu'un lien
+    // <a> direct construit côté content script. Fiche produit = /catalog/[id]
+    // (web/app/(app)/catalog/[id]/page.tsx), pas une URL slug jeu/set/langue :
+    // card_id suffit, déjà connu de la réponse /verdict.
+    case "CARDQUANT_OPEN_CARD":
+      chrome.tabs.create({ url: `${SITE_URL}/catalog/${message.cardId}` }).then(() => sendResponse({ ok: true }));
+      return true;
+
     case "CARDQUANT_SIGN_OUT":
       signOut().then(() => sendResponse({ ok: true }));
       return true;

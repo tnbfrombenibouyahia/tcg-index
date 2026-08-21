@@ -19,8 +19,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from pricing.auth import verify_id_token
 from pricing.matching import identify_card
 from pricing.models import Card
-from pricing_api.schemas import CardCandidateOut, SourcePriceOut, VerdictRequest, VerdictResponse
-from shared.verdict import compute_verdict_for_card
+from pricing_api.schemas import (
+    CardCandidateOut,
+    LanguageComparisonOut,
+    LiquidityOut,
+    SalesStatsOut,
+    SealedDisplayPriceOut,
+    SourcePriceOut,
+    VerdictRequest,
+    VerdictResponse,
+)
+from shared.verdict import ExtendedSignals, compute_extended_signals, compute_verdict_for_card
 
 app = FastAPI(title="tcg-index pricing API")
 
@@ -30,8 +39,37 @@ if _cors_origins:
 
 
 def _card_out(card: Card, confidence: float) -> CardCandidateOut:
-    return CardCandidateOut(card_id=card.id, name=card.name, code=card.code,
-                             set_code=card.set_code, rarity=card.rarity, confidence=confidence)
+    return CardCandidateOut(card_id=card.id, name=card.name, code=card.code, set_code=card.set_code,
+                             rarity=card.rarity, language=card.language, confidence=confidence)
+
+
+def _extended_out(signals: ExtendedSignals) -> dict:
+    """Aplatit ExtendedSignals vers les champs top-level de VerdictResponse
+    (cf. pricing_api/schemas.py) -- séparé de _card_out pour rester lisible,
+    un champ dataclass -> un champ Pydantic à la fois."""
+    sales_stats = SalesStatsOut(
+        avg_last_3=signals.sales_stats.avg_last_3, avg_last_10=signals.sales_stats.avg_last_10,
+        sample_size_3=signals.sales_stats.sample_size_3, sample_size_10=signals.sales_stats.sample_size_10,
+        currency=signals.sales_stats.currency,
+    ) if signals.sales_stats else None
+    liquidity = LiquidityOut(
+        sales_last_90d=signals.liquidity.sales_last_90d, active_listings=signals.liquidity.active_listings,
+        sales_per_month=signals.liquidity.sales_per_month, label=signals.liquidity.label,
+    ) if signals.liquidity else None
+    sealed_display_price = SealedDisplayPriceOut(
+        price=signals.sealed_display_price.price, currency=signals.sealed_display_price.currency,
+    ) if signals.sealed_display_price else None
+    return dict(
+        opportunity_score=signals.opportunity_score,
+        sales_stats=sales_stats,
+        liquidity=liquidity,
+        language_comparison=[
+            LanguageComparisonOut(language=e.language, card_id=e.card_id, price=e.price,
+                                   currency=e.currency, is_current_listing=e.is_current_listing)
+            for e in signals.language_comparison
+        ],
+        sealed_display_price=sealed_display_price,
+    )
 
 
 def require_user(authorization: str | None = Header(default=None)) -> dict:
@@ -67,6 +105,23 @@ def post_verdict(req: VerdictRequest, _user: dict = Depends(require_user)) -> Ve
         )
 
     outcome = compute_verdict_for_card(req.displayed_price, match.card.id, req.grade)
+
+    # Signaux étendus dès que la carte est connue, même sans prix de
+    # référence (status='no_reference_price') -- moy. ventes/liquidité/
+    # comparaison langue ne dépendent pas de `outcome.verdict`, seul
+    # opportunity_score en a besoin et gère lui-même son absence (cf.
+    # shared/verdict.py::compute_extended_signals).
+    extended = dict(opportunity_score=None, sales_stats=None, liquidity=None,
+                    language_comparison=[], sealed_display_price=None)
+    if outcome.card is not None:
+        signals = compute_extended_signals(
+            outcome.card, req.grade,
+            reference_price=outcome.verdict.reference_price if outcome.verdict else None,
+            ratio=outcome.verdict.ratio if outcome.verdict else None,
+            confidence=match.confidence,
+        )
+        extended = _extended_out(signals)
+
     return VerdictResponse(
         status=outcome.status,
         card=_card_out(outcome.card, match.confidence) if outcome.card else None,
@@ -77,4 +132,5 @@ def post_verdict(req: VerdictRequest, _user: dict = Depends(require_user)) -> Ve
             SourcePriceOut(source=q.source, grade=q.grade, price=q.price, currency=q.currency)
             for q in outcome.sources_compared
         ],
+        **extended,
     )

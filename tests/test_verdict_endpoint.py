@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 
 from pricing.models import Card, MatchResult
 from pricing_api.main import app
-from shared.verdict import Verdict, VerdictOutcome
+from shared.verdict import ExtendedSignals, Verdict, VerdictOutcome
 
 client = TestClient(app)
 
@@ -51,6 +51,7 @@ class TestPostVerdict:
             sources_compared=[],
         )
         monkeypatch.setattr("pricing_api.main.compute_verdict_for_card", lambda *a, **k: outcome)
+        monkeypatch.setattr("pricing_api.main.compute_extended_signals", lambda *a, **k: ExtendedSignals(opportunity_score=72))
 
         resp = client.post("/verdict", json={"text": "IZO ST22-002 SR", "displayed_price": 8.0, "grade": "ungraded"},
                             headers=AUTH_HEADERS)
@@ -61,6 +62,7 @@ class TestPostVerdict:
         assert body["verdict"] == "green"
         assert body["card"]["card_id"] == 1
         assert body["reference_price"] == 10.0
+        assert body["opportunity_score"] == 72
 
     def test_ambiguous_match_returns_candidates_without_verdict(self, monkeypatch):
         monkeypatch.setattr("pricing_api.main.verify_id_token", lambda token: {"uid": "u1", "email": "u@example.com"})

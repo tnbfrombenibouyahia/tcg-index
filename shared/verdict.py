@@ -12,12 +12,26 @@ shared/sync_log.py n'ont aujourd'hui aucune dépendance vers leurs frères).
 import os
 import statistics
 from dataclasses import dataclass, field
+from datetime import date, timedelta
 
 from pricing.cache import get_price_with_cache
+from pricing.liquidity import LiquidityMetrics, compute_liquidity
 from pricing.models import Card, PriceQuote
-from pricing.repository import fetch_card_by_id
+from pricing.opportunity_score import compute_opportunity_score
+from pricing.repository import (
+    count_sales_since,
+    fetch_card_by_id,
+    fetch_language_siblings,
+    fetch_latest_active_listing_count,
+    fetch_latest_price_snapshot,
+    fetch_recent_sales,
+    fetch_sealed_display_for_set,
+)
+from pricing.sales_stats import SalesStats, compute_sales_stats
 from pricing.sources.base import PriceSource
 from pricing.sources.pricecharting_source import PriceChartingSource
+
+_LIQUIDITY_WINDOW_DAYS = 90
 
 _DEFAULT_GREEN_MAX_RATIO = 0.85
 _DEFAULT_YELLOW_MAX_RATIO = 1.15
@@ -102,3 +116,95 @@ def compute_verdict_for_card(displayed_price: float, card_id: int, grade: str = 
 
     verdict = classify(displayed_price, reference, grade)
     return VerdictOutcome(status="ok", card=card, verdict=verdict, sources_compared=quotes)
+
+
+@dataclass
+class LanguageComparisonEntry:
+    language: str
+    card_id: int
+    price: float | None      # None si aucun prix connu pour cette langue -- jamais deviné
+    currency: str | None
+    is_current_listing: bool
+
+
+@dataclass
+class ExtendedSignals:
+    """Signaux de la maquette extension au-delà du verdict ponctuel : score
+    d'opportunité, moy. ventes, liquidité, comparaison par langue, prix du
+    display scellé. Séparé de VerdictOutcome à dessein (cf.
+    compute_extended_signals)."""
+    opportunity_score: int | None = None
+    sales_stats: SalesStats | None = None
+    liquidity: LiquidityMetrics | None = None
+    language_comparison: list[LanguageComparisonEntry] = field(default_factory=list)
+    sealed_display_price: PriceQuote | None = None
+
+
+def _build_language_comparison(card: Card, grade: str, *, current_price: float | None) -> list[LanguageComparisonEntry]:
+    """La ligne de la langue courante réutilise `current_price` (déjà
+    calculé par compute_verdict_for_card -- source PriceCharting live, plus
+    fraîche qu'un price_snapshot nocturne) plutôt que de re-requêter ; les
+    langues sœurs n'ont pas de verdict en cours, price_snapshots (dernier
+    connu) est leur seule source ici. Carte sans équivalent dans une langue
+    donnée -> pas de ligne pour elle (pas de fabrication d'une entrée à 0)."""
+    current = LanguageComparisonEntry(
+        language=card.language, card_id=card.id,
+        price=current_price, currency="USD" if current_price is not None else None,
+        is_current_listing=True,
+    )
+    siblings = []
+    for sibling in fetch_language_siblings(card):
+        snapshot = fetch_latest_price_snapshot(sibling.id, grade)
+        price, currency = snapshot if snapshot is not None else (None, None)
+        siblings.append(LanguageComparisonEntry(
+            language=sibling.language, card_id=sibling.id, price=price, currency=currency, is_current_listing=False,
+        ))
+    return [current, *siblings]
+
+
+def compute_extended_signals(card: Card, grade: str, *, reference_price: float | None = None,
+                              ratio: float | None = None, confidence: float = 1.0) -> ExtendedSignals:
+    """Signaux additionnels de la maquette extension -- délibérément séparé
+    de compute_verdict_for_card : celui-ci reste focalisé "prix vs
+    référence" (réutilisable par un futur script batch qui n'a besoin
+    d'aucun de ces signaux), celui-ci fait les requêtes DB en plus
+    seulement quand l'appelant (pricing_api) en a besoin.
+
+    `reference_price`/`ratio` : déjà calculés par compute_verdict_for_card /
+    classify() quand un verdict existe (outcome.verdict.reference_price /
+    .ratio) -- None si status='no_reference_price' (carte connue, aucune
+    source de prix n'a répondu) : opportunity_score reste alors None
+    (jamais deviné sans prix de référence), mais moy. ventes/liquidité/
+    comparaison langue restent calculables (ne dépendent pas de `ratio`).
+    `confidence` : confiance d'identification (pricing.matching), 0-1."""
+    recent_sales = fetch_recent_sales(card.id, grade)
+    sales_stats = compute_sales_stats(recent_sales)
+
+    sales_last_90d = count_sales_since(card.id, grade, date.today() - timedelta(days=_LIQUIDITY_WINDOW_DAYS))
+    active_listings = fetch_latest_active_listing_count(card.id, grade)
+    liquidity = compute_liquidity(sales_last_90d, active_listings)
+
+    language_comparison = _build_language_comparison(card, grade, current_price=reference_price)
+
+    sealed_display_price = None
+    if card.category == "single":
+        display_item = fetch_sealed_display_for_set(card.tcg, card.set_code, card.language)
+        if display_item is not None:
+            snapshot = fetch_latest_price_snapshot(display_item.id, "ungraded")
+            if snapshot is not None:
+                price, currency = snapshot
+                sealed_display_price = PriceQuote(source="price_snapshots", grade="ungraded",
+                                                    price=price, currency=currency)
+
+    opportunity_score = (
+        compute_opportunity_score(ratio, liquidity.sales_per_month, confidence)
+        if ratio is not None else None
+    )
+
+    return ExtendedSignals(
+        opportunity_score=opportunity_score,
+        sales_stats=sales_stats,
+        liquidity=liquidity,
+        language_comparison=language_comparison,
+        sealed_display_price=sealed_display_price,
+    )
