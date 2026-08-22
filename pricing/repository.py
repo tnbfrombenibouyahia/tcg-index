@@ -110,11 +110,14 @@ def count_sales_since(item_id: int, grade: str, since: date) -> int:
 
 def fetch_latest_active_listing_count(item_id: int, grade: str) -> int | None:
     """None si aucune ligne (jamais scrapé pour cet item/grade) -- PAS 0.
-    LIMITE CONNUE : `active_listings` ne couvre aujourd'hui que le scellé
-    (grade toujours 'ungraded', cf. commentaire de la table dans
-    db/schema.sql -- "seul le scellé est synchronisé") -- pour un single,
-    ceci renvoie None tant que l'ingestion n'est pas étendue aux singles.
-    L'appelant ne doit jamais confondre ce None avec "0 annonce active"."""
+    Couvre scellé ET single depuis le 2026-08-22 (cf.
+    ingestion/sources/ebay.py::sync_active_listings_for_tcg,
+    category='single' branché sur EBAY_SINGLES_SYNC_JOBS dans
+    orchestrator.py) -- Pokémon + One Piece, EN + JP. Un single peut encore
+    renvoyer None un moment après ce commit : la rotation par tranches
+    (~15 jours pour couvrir tout le pool, cf. orchestrator.py) n'a pas
+    forcément déjà atteint cet item précis. L'appelant ne doit jamais
+    confondre ce None avec "0 annonce active"."""
     conn = get_connection()
     try:
         with conn.cursor() as cur:

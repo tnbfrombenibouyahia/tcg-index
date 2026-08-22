@@ -103,6 +103,46 @@ def _current_vintage_slice(num_slices: int) -> int:
     return (date.today().toordinal() // 7) % num_slices
 
 
+_EBAY_SINGLES_SKIP_WEEKDAY = 3  # jeudi (date.weekday() : 0=lundi ... 6=dimanche) -- jour du scellé
+
+
+def _thursdays_before(ordinal: int) -> int:
+    """Nombre de jeudis strictement avant le jour de rang `ordinal`
+    (`date.toordinal()`), depuis l'époque proleptic Gregorian de Python
+    (toordinal=1 est un lundi -- donc le premier jeudi est toordinal=4, puis
+    tous les 7 jours). Validé par une comparaison brute-force sur ~3000
+    jours avant d'être posé ici (mismatches=0) -- une première version basée
+    sur `toordinal() // 7` combiné à `date.weekday()` avait un bug d'un jour
+    (les blocs de `toordinal() // 7` commencent un dimanche, pas un lundi,
+    un décalage invisible tant qu'on ne le teste pas sur un passage de
+    semaine)."""
+    return max(0, (ordinal - 5) // 7 + 1) if ordinal >= 5 else 0
+
+
+def _current_ebay_singles_slice(num_slices: int) -> int:
+    """Rotation QUOTIDIENNE (pas hebdomadaire comme `_current_vintage_slice`)
+    -- un cran par jour RÉELLEMENT déclenché, cf. EBAY_SINGLES_SYNC_JOBS. Le
+    jeudi est exclu du cron (déjà pris par le scellé, cf. run_ebay_listings_sync
+    -- rester loin du quota 5000 req/jour eBay les deux jobs combinés ce
+    jour-là). Une rotation naïve sur `date.today().toordinal() % num_slices`
+    daterait le cran du jeudi manqué de façon irrégulière selon `num_slices`
+    (dépend de pgcd(num_slices, 7)) -- pas le "jamais un lot entier sauté"
+    voulu (cf. principe §02 handoff). `eligible_rank` (rang du jour parmi
+    tous les jours NON-jeudi depuis l'époque, cf. `_thursdays_before`) avance
+    d'exactement 1 par déclenchement réel (jamais 0 ni 2 le même jour),
+    reste stateless (dérivé de date.today(), même esprit que
+    `_current_vintage_slice`)."""
+    today = date.today()
+    if today.weekday() == _EBAY_SINGLES_SKIP_WEEKDAY:
+        raise ValueError(
+            "Pas de tranche singles le jeudi -- ce jour est dédié au scellé "
+            "(cf. EBAY_SYNC_JOBS), le cron ne devrait jamais appeler ceci ce jour-là."
+        )
+    ordinal = today.toordinal()
+    eligible_rank = ordinal - _thursdays_before(ordinal)
+    return eligible_rank % num_slices
+
+
 def run_items_sync(run_type: str) -> list[Exception]:
     """Un tcg qui échoue (quota, timeout...) ne doit pas empêcher l'autre
     d'être tenté -- avant ce fix, une exception ici remontait et coupait la
@@ -290,6 +330,68 @@ def run_ebay_listings_sync(run_type: str) -> None:
             continue
         n_errors = len(stats["errors"])
         detail = f"{language} : {stats['items_processed']} item(s), {stats['rows_written']} ligne(s)"
+        if n_errors:
+            detail += f", {n_errors} erreur(s)"
+        print(f"  {detail}")
+        finish_run(run_id, status="error" if n_errors else "success", rows_written=stats["rows_written"], detail=detail)
+
+
+# Les 4 combinaisons TCG/langue pour le pool singles (cf. mémoire projet
+# "ebay_singles_liquidity", 2026-08-22) -- contrairement à EBAY_SYNC_JOBS
+# (scellé), pas de `since_months` : le volume (68 202 items au moment
+# d'écrire ceci) est trop gros pour qu'un scope par âge change grand-chose,
+# et JP n'a de toute façon pas de `release_date` exploitable (cf. mémoire
+# "jp_singles_tracking") -- la rotation par tranches ci-dessous est le seul
+# levier qui marche pour les 4 à la fois.
+EBAY_SINGLES_SYNC_JOBS: list[tuple[str, str]] = [
+    ("pokemon", "EN"),
+    ("pokemon", "JP"),
+    ("one-piece", "EN"),
+    ("one-piece", "JP"),
+]
+
+# `num_slices` PARTAGÉ entre les 4 pools (pas un compte différent par pool) :
+# comme chaque pool est tranché par le même modulo sur `item_id`, la taille
+# de sa tranche quotidienne reste naturellement proportionnelle à sa taille
+# totale -- pokemon EN/JP (les deux plus gros, ~28-30k chacun) et one-piece
+# EN/JP (~3.8-6.6k) sont donc déjà équilibrés sans calcul par pool. 15
+# tranches × ~4547 items/jour en moyenne (68202/15) tient large sous les
+# 5000/jour eBay (marge ~10%, cf. principe §02 handoff) MÊME cumulé avec un
+# éventuel retry du même jour ; cycle complet en 15 déclenchements réels
+# (~2.5 semaines, cf. _current_ebay_singles_slice -- jeudi exclu).
+EBAY_SINGLES_NUM_SLICES = 15
+
+
+def run_ebay_singles_listings_sync(run_type: str) -> None:
+    """Comptage de listings actifs eBay pour les SINGLES (cf. mémoire projet
+    "ebay_singles_liquidity") -- pendant de `run_ebay_listings_sync` (scellé),
+    mais rotation par tranches obligatoire ici (68 202 items, largement plus
+    que le quota quotidien 5000, contrairement au scellé qui tient en un
+    seul run). Un seul `slice_index` calculé pour tout l'appel (pas un par
+    pool) : les 4 pools avancent ensemble, cf. EBAY_SINGLES_NUM_SLICES pour
+    pourquoi ça reste équilibré sans tranche dédiée par pool. Appelé
+    séparément de --ebay-listings (cf. `main`, flag
+    `--ebay-listings-singles`) : cron dédié quotidien (jeudi exclu, cf.
+    _current_ebay_singles_slice), sans lien avec le système de paliers
+    PriceCharting (TIERS) ni avec le cron hebdomadaire du scellé."""
+    slice_index = _current_ebay_singles_slice(EBAY_SINGLES_NUM_SLICES)
+    print(f"\n=== eBay : listings actifs (singles, tranche {slice_index + 1}/{EBAY_SINGLES_NUM_SLICES}) ===")
+    for tcg, language in EBAY_SINGLES_SYNC_JOBS:
+        print(f"-- {tcg} / {language} --")
+        run_id = start_run(run_type, "active_listings_singles", tcg=tcg, tier=f"{slice_index + 1}/{EBAY_SINGLES_NUM_SLICES}")
+        try:
+            stats = ebay.sync_active_listings_for_tcg(
+                tcg, category="single", since_months=None, language=language,
+                slice_index=slice_index, num_slices=EBAY_SINGLES_NUM_SLICES,
+            )
+        except Exception as exc:
+            finish_run(run_id, status="error", detail=str(exc))
+            print(f"  ! erreur : {exc}")
+            continue
+        n_errors = len(stats["errors"])
+        detail = f"{language} : {stats['items_processed']} item(s), {stats['rows_written']} ligne(s)"
+        if stats.get("skipped"):
+            detail += f", {stats['skipped']} sauté(s) (sans code)"
         if n_errors:
             detail += f", {n_errors} erreur(s)"
         print(f"  {detail}")
@@ -544,9 +646,17 @@ def main() -> int:
     parser.add_argument(
         "--ebay-listings", action="store_true",
         help=(
-            "Lance UNIQUEMENT la sync eBay active listings (cf. run_ebay_listings_sync) et sort -- "
+            "Lance UNIQUEMENT la sync eBay active listings SCELLÉ (cf. run_ebay_listings_sync) et sort -- "
             "n'entre pas dans le pipeline prix/index quotidien, nouvelle source indépendante à cadence "
-            "hebdomadaire (cf. .github/workflows/ebay-listings-sync.yml)."
+            "hebdomadaire (Cloud Scheduler job 'ebay-listings')."
+        ),
+    )
+    parser.add_argument(
+        "--ebay-listings-singles", action="store_true",
+        help=(
+            "Lance UNIQUEMENT la sync eBay active listings SINGLES (cf. run_ebay_singles_listings_sync) "
+            "et sort -- pool trop gros (68 202 items) pour un run unique, rotation par tranches, cadence "
+            "quotidienne jeudi exclu (Cloud Scheduler, cf. _current_ebay_singles_slice)."
         ),
     )
     parser.add_argument(
@@ -616,6 +726,19 @@ def main() -> int:
         except Exception as exc:
             had_errors = True
             print(f"\n!! Erreur pendant la sync eBay active listings : {exc}")
+        elapsed = time.monotonic() - started
+        print(f"\n=== Terminé en {elapsed / 60:.1f} min ({'avec erreurs' if had_errors else 'OK'}) ===")
+        return 1 if had_errors else 0
+
+    if args.ebay_listings_singles:
+        started = time.monotonic()
+        had_errors = False
+        try:
+            with ingestion_writer_lock():
+                run_ebay_singles_listings_sync("daily")
+        except Exception as exc:
+            had_errors = True
+            print(f"\n!! Erreur pendant la sync eBay active listings (singles) : {exc}")
         elapsed = time.monotonic() - started
         print(f"\n=== Terminé en {elapsed / 60:.1f} min ({'avec erreurs' if had_errors else 'OK'}) ===")
         return 1 if had_errors else 0
