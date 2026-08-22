@@ -453,12 +453,28 @@
   };
 
   // active_listings peut être `null` -- PAS 0 -- quand l'annonce active
-  // n'a jamais été scrapée pour cette carte (aujourd'hui limité au scellé
-  // côté ingestion, cf. pricing/repository.py::fetch_latest_active_listing_count).
-  // Afficher "—" plutôt qu'un faux 0 est la seule option honnête ici.
-  function renderLiquidity(liquidity) {
+  // n'a jamais été scrapée pour cet item/grade
+  // (cf. pricing/repository.py::fetch_latest_active_listing_count). Afficher
+  // "—" plutôt qu'un faux 0 est la seule option honnête ici. Deux raisons
+  // distinctes possibles, cf. le message affiché selon `grade` :
+  // - ungraded : suivi bien étendu aux singles (2026-08-22) mais rotation
+  //   par tranches sur tout le catalogue (~2,5 semaines/cycle, cf.
+  //   orchestrator.py::EBAY_SINGLES_NUM_SLICES) -- cet item précis n'est
+  //   peut-être juste pas encore repassé dans son tour.
+  // - gradé (psa7..psa10) : `active_listings` ne suit QUE grade='ungraded'
+  //   en v1, quel que soit l'avancement de la rotation (cf.
+  //   ingestion/sources/ebay.py -- CONDITION_GRADED existe pour un futur
+  //   découpage par tier PSA, jamais branché) -- limite structurelle, pas
+  //   une question de temps.
+  function renderLiquidity(liquidity, grade) {
     if (!liquidity) return "";
     const status = LIQUIDITY_STATUS[liquidity.label] || { text: liquidity.label, tone: "muted" };
+    let note = "";
+    if (liquidity.active_listings == null) {
+      note = grade === "ungraded"
+        ? "<p class=\"cardquant-todo\">Annonces actives : pas encore scrapées pour cette carte -- rotation en cours sur tout le catalogue (~2,5 semaines pour un cycle complet).</p>"
+        : "<p class=\"cardquant-todo\">Annonces actives : suivi pas encore étendu aux cartes gradées (ungraded uniquement pour l'instant).</p>";
+    }
     return `
       <div class="cardquant-section">
         <p class="cardquant-section-title">Liquidité · 3 derniers mois</p>
@@ -473,9 +489,7 @@
           </div>
         </div>
         <p class="cardquant-liquidity-status cardquant-${status.tone}">${escapeHtml(status.text)} · ~${liquidity.sales_per_month.toFixed(1)} ventes/mois</p>
-        ${liquidity.active_listings == null
-          ? '<p class="cardquant-todo">Annonces actives : suivi pas encore étendu aux cartes seules (scellé uniquement pour l\'instant).</p>'
-          : ""}
+        ${note}
       </div>
     `;
   }
@@ -715,7 +729,7 @@
       ${hasVerdict ? `<p class="cardquant-pill cardquant-pill--${data.verdict}">${escapeHtml(VERDICT_LABELS[data.verdict] || data.verdict)}</p>` : ""}
       ${renderGauge(data.opportunity_score)}
       ${renderPriceAnalysis(data, original)}
-      ${renderLiquidity(data.liquidity)}
+      ${renderLiquidity(data.liquidity, data.grade)}
       ${renderLanguageComparison(data.language_comparison)}
       ${renderSealedDisplay(data.sealed_display_price)}
       ${renderGradingRoi(data.grading_roi_inputs)}
