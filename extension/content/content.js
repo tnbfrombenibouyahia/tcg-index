@@ -452,14 +452,17 @@
     illiquide: { text: "Marché illiquide", tone: "negative" },
   };
 
-  // active_listings peut être `null` -- PAS 0 -- quand l'annonce active
-  // n'a jamais été scrapée pour cet item/grade
-  // (cf. pricing/repository.py::fetch_latest_active_listing_count). Afficher
-  // "—" plutôt qu'un faux 0 est la seule option honnête ici. Depuis
-  // l'extension au gradé (2026-08-22), ungraded ET gradé suivent la MÊME
-  // logique de rotation -- `null` veut toujours dire "pas encore repassé
-  // dans son tour" (~5 semaines/cycle complet), jamais "structurellement
-  // pas suivi" (c'était le cas avant ce commit, plus maintenant).
+  // active_listings peut être `null` -- PAS 0 -- cf.
+  // pricing/repository.py::fetch_latest_active_listing_count. Afficher "—"
+  // plutôt qu'un faux 0 est la seule option honnête ici. Depuis le passage
+  // à la demande (2026-08-22, cf. pricing/active_listings_source.py -- un
+  // premier essai en batch par rotation, ~5 semaines/cycle, a été retiré la
+  // même semaine : trop lent pour aider une vraie décision d'achat), un
+  // single avec un `code` est scrapé EN DIRECT au moment de cette
+  // consultation si pas déjà fait aujourd'hui -- `null` ne veut donc plus
+  // dire "en attente de rotation", juste : échec ponctuel du scrape (quota
+  // eBay, réseau...) ou carte sans `code` exploitable (scellé/single, même
+  // garde que le reste du matching -- "ne jamais deviner").
   //
   // 'graded' (valeur unique en base pour toute note PSA) = toutes notes
   // confondues, PAS une note précise -- eBay ne permet pas de filtrer plus
@@ -471,7 +474,7 @@
     const status = LIQUIDITY_STATUS[liquidity.label] || { text: liquidity.label, tone: "muted" };
     const isGraded = grade !== "ungraded";
     const note = liquidity.active_listings == null
-      ? "<p class=\"cardquant-todo\">Annonces actives : pas encore scrapées pour cette carte -- rotation en cours sur tout le catalogue (~5 semaines pour un cycle complet).</p>"
+      ? "<p class=\"cardquant-todo\">Annonces actives : indisponibles pour cette carte pour le moment.</p>"
       : "";
     return `
       <div class="cardquant-section">
