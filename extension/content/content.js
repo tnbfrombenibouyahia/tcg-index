@@ -664,6 +664,30 @@
     return `<button type="button" class="cardquant-cta" data-card-id="${cardId}">Analyse complète sur CardQuant ↗</button>`;
   }
 
+  const CARDMARKET_GAME_SLUG = "OnePiece"; // vérifié en conditions réelles le 2026-08-22 (www.cardmarket.com/en/OnePiece)
+
+  // Lien de double-vérification manuelle -- demande utilisateur (2026-08-22) :
+  // pas d'ID CardMarket exploitable en base (items.cardmarket_id existe mais
+  // n'est jamais rempli par apitcg.com pour ce catalogue, cf.
+  // pricing/sources/cardmarket_source.py), donc pas de lien produit exact
+  // possible sans deviner un slug -- une recherche CardMarket plutôt qu'un
+  // lien produit inventé (même principe "ne jamais deviner" que le reste du
+  // matching, §01). `card.code` (ex. "OP13-037") donne des résultats bien
+  // plus précis que le nom seul -- vérifié en conditions réelles : la
+  // recherche par code ne remonte QUE les vraies reprises de cette carte (5
+  // résultats, toutes "Roronoa Zoro (OP13-037)"), alors que le nom seul
+  // dilue sur toute carte contenant les mêmes mots. Repli sur le nom pour le
+  // scellé (pas de `code`, cf. pricing/repository.py::fetch_language_siblings).
+  function buildCardmarketSearchUrl(card) {
+    const query = card.code || card.name;
+    return `https://www.cardmarket.com/en/${CARDMARKET_GAME_SLUG}/Products/Search?searchString=${encodeURIComponent(query)}`;
+  }
+
+  function renderCardmarketLink(card) {
+    const url = buildCardmarketSearchUrl(card);
+    return `<a class="cardquant-cardmarket-link" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Vérifier sur Cardmarket ↗</a>`;
+  }
+
   // Vue commune "carte identifiée" (statuts 'ok' et 'no_reference_price') --
   // tous les blocs sont défensifs (rien affiché si la donnée n'est pas là),
   // cf. pricing_api/schemas.py pour ce qui est None dans quel cas.
@@ -680,6 +704,7 @@
       ${renderGradingRoi(data.grading_roi_inputs)}
       ${renderArbitrageCalculator(data)}
       ${renderCta(data.card.card_id)}
+      ${renderCardmarketLink(data.card)}
       <button type="button" class="cardquant-signout">Se déconnecter</button>
     `;
   }
