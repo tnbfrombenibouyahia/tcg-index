@@ -513,6 +513,36 @@
   margin-top: 16px;
 }
 
+/* -- Passage 2 (OCR sur la photo de l'annonce, cf. content.js::renderVerdict
+   /requestVerdict) : bouton secondaire, contour plutôt que rempli --
+   distinct de .cardquant-cta (lien vers le site, plein) et .cardquant-signin
+   (action primaire), un cran en dessous des deux dans la hiérarchie
+   visuelle puisque c'est une tentative de repli, pas l'action attendue. */
+.cardquant-try-image {
+  all: unset;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  text-align: center;
+  margin: 4px 0 12px;
+  padding: 10px 16px;
+  border: 1px solid var(--cq-border);
+  border-radius: var(--cq-radius-sm);
+  color: var(--cq-foreground);
+  font-family: var(--cq-font-sans);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.cardquant-try-image:hover {
+  background: var(--cq-tint-neutral);
+}
+.cardquant-try-image:focus-visible {
+  outline: 2px solid var(--cq-foreground);
+  outline-offset: 2px;
+}
+
 /* -- Candidats (statut "ambiguous") : jusqu'à 8, déjà triés par
    pricing/matching.py, miniature à l'appui -- picker cliquable, cf.
    content.js::selectCandidate. Le texte seul ne suffit pas toujours à
