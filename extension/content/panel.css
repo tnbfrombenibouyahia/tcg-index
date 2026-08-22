@@ -463,6 +463,105 @@
   margin: 0;
 }
 
+/* -- ROI gradation (cf. lib/gradingRoi.js) : hypothèses éditables (grille
+   compacte) + sortie recalculée en live à chaque frappe/changement (cf.
+   content.js::recomputeGroi) -- jamais un appel réseau, le calcul est
+   100% client. Même idiome de champ que .cardquant-arb-inputs ci-dessous. */
+.cardquant-groi-assumptions,
+.cardquant-arb-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 10px;
+  margin: 0 0 14px;
+}
+.cardquant-arb-inputs {
+  grid-template-columns: repeat(3, 1fr);
+}
+.cardquant-groi-assumptions label,
+.cardquant-arb-inputs label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 10.5px;
+  color: var(--cq-foreground-muted);
+  font-weight: 600;
+}
+.cardquant-groi-assumptions select,
+.cardquant-groi-assumptions input,
+.cardquant-arb-inputs input {
+  font-family: var(--cq-font-mono);
+  font-size: 12px;
+  padding: 6px 8px;
+  border: 1px solid var(--cq-border-soft);
+  border-radius: var(--cq-radius-sm);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--cq-foreground);
+}
+.cardquant-groi-assumptions select:focus-visible,
+.cardquant-groi-assumptions input:focus-visible,
+.cardquant-arb-inputs input:focus-visible {
+  outline: 2px solid var(--cq-foreground-subtle);
+  outline-offset: 1px;
+}
+.cardquant-groi-roi {
+  font-family: var(--cq-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 4px 0 0;
+}
+.cardquant-groi-source {
+  font-size: 10.5px;
+  color: var(--cq-foreground-subtle);
+  margin: 6px 0 10px;
+}
+.cardquant-groi-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cardquant-groi-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 11.5px;
+  border-top: 1px solid var(--cq-border-soft);
+}
+.cardquant-groi-row:first-child {
+  border-top: none;
+}
+.cardquant-groi-row-label {
+  font-weight: 600;
+  min-width: 52px;
+}
+.cardquant-groi-row-prob {
+  color: var(--cq-foreground-subtle);
+  font-family: var(--cq-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.cardquant-groi-row-price {
+  margin-left: auto;
+  font-family: var(--cq-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* -- Calculateur d'arbitrage (§07 handoff) : 3 saisies (achat/livraison/
+   douane), sortie recalculée en live -- prix_revente_moyen réutilise
+   reference_price déjà connu du verdict, rien en plus à collecter côté
+   serveur. */
+.cardquant-arb-ref {
+  font-size: 12px;
+  margin: 0 0 12px;
+}
+.cardquant-arb-profit {
+  font-family: var(--cq-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+}
+
 /* -- CTA vers la fiche complète du site (/catalog/[id], cf. background.js
    ::CARDQUANT_OPEN_CARD -- SITE_URL n'est connu que là-bas). */
 .cardquant-cta {
