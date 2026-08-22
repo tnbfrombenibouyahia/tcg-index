@@ -15,12 +15,14 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 
 from pricing.cache import get_price_with_cache
+from pricing.grading_roi import GradingRoiInputs
 from pricing.liquidity import LiquidityMetrics, compute_liquidity
 from pricing.models import Card, PriceQuote
 from pricing.opportunity_score import compute_opportunity_score
 from pricing.repository import (
     count_sales_since,
     fetch_card_by_id,
+    fetch_grading_roi_inputs,
     fetch_language_siblings,
     fetch_latest_active_listing_count,
     fetch_latest_price_snapshot,
@@ -138,6 +140,7 @@ class ExtendedSignals:
     liquidity: LiquidityMetrics | None = None
     language_comparison: list[LanguageComparisonEntry] = field(default_factory=list)
     sealed_display_price: PriceQuote | None = None
+    grading_roi_inputs: GradingRoiInputs | None = None
 
 
 def _build_language_comparison(card: Card, grade: str, *, current_price: float | None) -> list[LanguageComparisonEntry]:
@@ -201,10 +204,19 @@ def compute_extended_signals(card: Card, grade: str, *, reference_price: float |
         if ratio is not None else None
     )
 
+    # La gradation ne concerne que les singles (le scellé n'a pas de notion
+    # de note PSA) -- même garde que sealed_display_price ci-dessus, sens
+    # inverse. None si `grading_roi_inputs` n'a pas encore été matérialisé
+    # pour cet item (rempli par run --tier seulement, cf.
+    # index/grading_roi_inputs.py) : le calculateur reste alors indisponible
+    # côté extension plutôt que d'afficher un ROI inventé.
+    grading_roi_inputs = fetch_grading_roi_inputs(card.id) if card.category == "single" else None
+
     return ExtendedSignals(
         opportunity_score=opportunity_score,
         sales_stats=sales_stats,
         liquidity=liquidity,
         language_comparison=language_comparison,
         sealed_display_price=sealed_display_price,
+        grading_roi_inputs=grading_roi_inputs,
     )

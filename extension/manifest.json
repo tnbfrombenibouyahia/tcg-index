@@ -28,7 +28,7 @@
         "https://www.ebay.be/itm/*",
         "https://www.ebay.pl/itm/*"
       ],
-      "js": ["content/content.js"],
+      "js": ["lib/gradingRoi.js", "content/content.js"],
       "css": ["content/panel.css"],
       "run_at": "document_idle"
     }
