@@ -28,6 +28,14 @@
 (function () {
   const TITLE_SELECTORS = ["h1.x-item-title__mainTitle span.ux-textspans", "h1.x-item-title__mainTitle"];
   const PRICE_SELECTORS = [".x-price-primary .ux-textspans", "#prcIsum", "#mm-saleDscPrc"];
+  // Photo principale de l'annonce -- passage 1 de la cascade d'identification
+  // (§01 handoff, OCR Cloud Vision côté pricing_api) quand le titre seul ne
+  // suffit pas. Vérifié en conditions réelles le 2026-08-22 sur 2 annonces
+  // one-piece TCG distinctes (layout actuel eBay -- `#icImg`, l'ancien
+  // sélecteur "classique", n'existe plus). `.active` d'abord (image
+  // actuellement affichée dans le carrousel, au cas où l'utilisateur a déjà
+  // changé de photo) puis la première du carrousel en repli.
+  const IMAGE_SELECTORS = [".ux-image-carousel-item.active img", ".ux-image-carousel-item img"];
 
   const VERDICT_LABELS = { green: "Bonne affaire", yellow: "Prix normal", red: "Survendu" };
   const CURRENCY_SYMBOLS = { USD: "$", EUR: "€", GBP: "£" };
@@ -67,6 +75,22 @@
     for (const sel of selectors) {
       const el = document.querySelector(sel);
       if (el && el.textContent.trim()) return el.textContent.trim();
+    }
+    return null;
+  }
+
+  // Photo principale de l'annonce, en résolution max si le CDN eBay
+  // l'expose -- confirmé en conditions réelles le 2026-08-22 (200 OK sur
+  // /s-l1600.webp là où la page ne charge que /s-l500.webp par défaut) :
+  // une image plus grande améliore la précision de l'OCR (pricing/ocr.py),
+  // gratuit à demander (même objet i.ebayimg.com, juste un autre gabarit).
+  // Repli sur l'URL telle quelle si le nom de fichier ne suit pas ce
+  // pattern (image hors CDN eBay standard, cas rare mais possible).
+  function findListingImageUrl() {
+    for (const sel of IMAGE_SELECTORS) {
+      const el = document.querySelector(sel);
+      const src = el?.src;
+      if (src) return src.replace(/\/s-l\d+\.(webp|jpg)$/, "/s-l1600.$1");
     }
     return null;
   }
@@ -117,6 +141,15 @@
     if (amount == null) return "—";
     const symbol = CURRENCY_SYMBOLS[currency] || currency || "$";
     return `${amount.toFixed(2)} ${symbol}`;
+  }
+
+  // Même convention de signe que renderDeltaRow (− plutôt que le "-" natif
+  // de toFixed, jamais devant un montant déjà négatif) -- réutilisée par le
+  // ROI gradation et le calculateur d'arbitrage, tous deux susceptibles
+  // d'afficher un montant négatif (perte).
+  function formatSignedMoney(amount) {
+    const sign = amount > 0 ? "+" : amount < 0 ? "−" : "±";
+    return `${sign}${formatMoney(Math.abs(amount), "USD")}`;
   }
 
   function sendMessage(message) {
@@ -185,6 +218,16 @@
       },
       onChange(selector, handler) {
         card.addEventListener("change", (e) => {
+          const el = e.target.closest(selector);
+          if (el) handler(el);
+        });
+      },
+      // "input" plutôt que "change" pour les champs numériques du ROI
+      // gradation / calculateur d'arbitrage : recalcul à chaque frappe, pas
+      // seulement au blur -- ces deux calculateurs sont 100% client (aucun
+      // appel réseau), pas de raison d'attendre.
+      onInput(selector, handler) {
+        card.addEventListener("input", (e) => {
           const el = e.target.closest(selector);
           if (el) handler(el);
         });
@@ -495,6 +538,127 @@
     `;
   }
 
+  // -- ROI gradation ----------------------------------------------------
+  // Formules dans lib/gradingRoi.js (port de web/lib/gradingRoi.ts) --
+  // aucun calcul ici, seulement du rendu + lecture des hypothèses saisies.
+  // Recalculé en live (cf. panel.onInput/onChange plus bas) SANS repasser
+  // par /verdict : `grading_roi_inputs` (déjà dans la réponse du dernier
+  // verdict, cf. lastVerdictData) suffit à tout recalculer côté client.
+
+  const GROI_SOURCE_LABELS = { card: "cette carte", setRarity: "set + rareté", set: "ce set", tcg: "tout le TCG" };
+  const GROI_GRADE_LABELS = { psa7: "PSA 7", psa8: "PSA 8", psa9: "PSA 9", "psa9.5": "PSA 9.5", psa10: "PSA 10" };
+
+  function groiCandidateFromInputs(inputs) {
+    const R = window.CardQuantGradingRoi;
+    const distribution = R.resolveGradeDistribution({
+      card: inputs.grade_counts.card,
+      setRarity: inputs.grade_counts.set_rarity,
+      set: inputs.grade_counts.set,
+      tcg: inputs.grade_counts.tcg,
+    });
+    return {
+      candidate: { ungradedPrice: inputs.ungraded_price, gradePrices: inputs.grade_prices, gradeMix: distribution.gradeMix },
+      distribution,
+    };
+  }
+
+  function renderGroiBreakdownRow(entry) {
+    const label = entry.key === "lowGrade" ? "< PSA 7" : GROI_GRADE_LABELS[entry.key];
+    return `
+      <div class="cardquant-groi-row">
+        <span class="cardquant-groi-row-label">${label}</span>
+        <span class="cardquant-groi-row-prob">${(entry.probability * 100).toFixed(0)}%</span>
+        <span class="cardquant-groi-row-price">${formatMoney(entry.price, "USD")}</span>
+      </div>
+    `;
+  }
+
+  function renderGroiOutput(inputs, assumptions) {
+    const R = window.CardQuantGradingRoi;
+    const { candidate, distribution } = groiCandidateFromInputs(inputs);
+    if (Object.keys(candidate.gradePrices).length === 0) {
+      return '<p class="cardquant-todo">Aucun prix gradé connu pour cette carte pour l\'instant.</p>';
+    }
+    const result = R.computeGradingRoi(candidate, assumptions);
+    const tone = result.roiPct > 0 ? "positive" : result.roiPct < -10 ? "negative" : "warn";
+    return `
+      <dl class="cardquant-analysis-list">
+        <dt>Valeur attendue (nette)</dt><dd>${formatMoney(result.expectedValueNet, "USD")}</dd>
+        <dt>Coût total (carte + gradation)</dt><dd>${formatMoney(result.totalCost, "USD")}</dd>
+        <dt>Profit net estimé</dt><dd class="cardquant-${tone}">${formatSignedMoney(result.netProfit)}</dd>
+      </dl>
+      <p class="cardquant-groi-roi cardquant-${tone}">ROI ${result.roiPct >= 0 ? "+" : ""}${result.roiPct.toFixed(0)}%</p>
+      <p class="cardquant-groi-source">Distribution basée sur ${distribution.sampleSize} vente${distribution.sampleSize > 1 ? "s" : ""} gradée${distribution.sampleSize > 1 ? "s" : ""} (${GROI_SOURCE_LABELS[distribution.sourceLevel]}).</p>
+      <div class="cardquant-groi-breakdown">${result.breakdown.map(renderGroiBreakdownRow).join("")}</div>
+    `;
+  }
+
+  function renderGradingRoi(inputs) {
+    const R = window.CardQuantGradingRoi;
+    if (!inputs) {
+      return `
+        <div class="cardquant-section">
+          <p class="cardquant-section-title">ROI gradation</p>
+          <p class="cardquant-todo">Pas encore de données de gradation pour cette carte (calculées une fois par cycle de synchro).</p>
+        </div>
+      `;
+    }
+    const A = R.DEFAULT_ASSUMPTIONS;
+    const { candidate } = groiCandidateFromInputs(inputs);
+    const suggested = R.suggestServiceTier(candidate);
+    return `
+      <div class="cardquant-section" id="cardquant-groi">
+        <p class="cardquant-section-title">ROI gradation</p>
+        <div class="cardquant-groi-assumptions">
+          <label>Palier PSA
+            <select class="cardquant-groi-tier">
+              ${R.PSA_SERVICE_TIERS.map((t) => `<option value="${t.id}" ${t.id === suggested ? "selected" : ""}>${t.label} — ${t.feeUsd}$</option>`).join("")}
+            </select>
+          </label>
+          <label>Frais divers ($)<input type="number" min="0" step="1" class="cardquant-groi-extra" value="${A.extraCostsUsd}"></label>
+          <label>Risque sous-note (%)<input type="number" min="0" max="100" step="1" class="cardquant-groi-lowp" value="${A.lowGradeProbabilityPct}"></label>
+          <label>Frais revente (%)<input type="number" min="0" max="100" step="1" class="cardquant-groi-fee" value="${A.resaleFeePct}"></label>
+        </div>
+        <div class="cardquant-groi-output">${renderGroiOutput(inputs, { ...A })}</div>
+      </div>
+    `;
+  }
+
+  // -- Calculateur d'arbitrage --------------------------------------------
+  // 100% client (§07 handoff) : prix_revente_moyen réutilise reference_price
+  // (déjà calculé pour le verdict ponctuel, rien en plus à collecter côté
+  // serveur), achat/livraison/douane saisis par l'utilisateur.
+
+  function renderArbitrageOutput(referencePrice, buy, ship, customs) {
+    const profit = referencePrice - (buy + ship + customs);
+    const tone = profit > 0 ? "positive" : profit < 0 ? "negative" : "warn";
+    return `<p class="cardquant-arb-profit cardquant-${tone}">${formatSignedMoney(profit)} <span class="cardquant-muted-inline">de bénéfice estimé</span></p>`;
+  }
+
+  function renderArbitrageCalculator(data) {
+    const ref = data.reference_price;
+    if (ref == null) {
+      return `
+        <div class="cardquant-section">
+          <p class="cardquant-section-title">Calculateur d'arbitrage</p>
+          <p class="cardquant-todo">Pas de prix de référence pour cette carte -- calculateur indisponible.</p>
+        </div>
+      `;
+    }
+    return `
+      <div class="cardquant-section" id="cardquant-arb">
+        <p class="cardquant-section-title">Calculateur d'arbitrage</p>
+        <p class="cardquant-arb-ref">Prix de revente moyen : <strong>${formatMoney(ref, "USD")}</strong> <span class="cardquant-muted-inline">(même référence que le verdict)</span></p>
+        <div class="cardquant-arb-inputs">
+          <label>Achat ($)<input type="number" min="0" step="0.01" class="cardquant-arb-buy" value="0"></label>
+          <label>Livraison ($)<input type="number" min="0" step="0.01" class="cardquant-arb-ship" value="0"></label>
+          <label>Douane ($)<input type="number" min="0" step="0.01" class="cardquant-arb-customs" value="0"></label>
+        </div>
+        <div class="cardquant-arb-output">${renderArbitrageOutput(ref, 0, 0, 0)}</div>
+      </div>
+    `;
+  }
+
   function renderCta(cardId) {
     if (cardId == null) return "";
     return `<button type="button" class="cardquant-cta" data-card-id="${cardId}">Analyse complète sur CardQuant ↗</button>`;
@@ -537,9 +701,10 @@
       ${renderLiquidity(data.liquidity)}
       ${renderLanguageComparison(data.language_comparison)}
       ${renderSealedDisplay(data.sealed_display_price)}
+      ${renderGradingRoi(data.grading_roi_inputs)}
+      ${renderArbitrageCalculator(data)}
       ${renderCta(data.card.card_id)}
       ${renderCardmarketLink(data.card)}
-      <p class="cardquant-todo">ROI gradation et calculateur d'arbitrage : à venir (cf. extension/README.md).</p>
       <button type="button" class="cardquant-signout">Se déconnecter</button>
     `;
   }
@@ -573,7 +738,16 @@
       return renderCardDetail(data, original, currentGrade);
     }
     if (data.status !== "ok" || !data.card) {
-      return `<p>${escapeHtml(data.message || "Carte non identifiée.")}</p>${footer}`;
+      // Passage 2 offert à l'utilisateur seulement si le titre a vraiment
+      // échoué (pas "ambiguous"/"no_reference_price", déjà retournés plus
+      // haut) ET qu'une photo est trouvable sur la page ET qu'on n'a pas
+      // déjà essayé l'image pour cette tentative (cf. requestVerdict --
+      // pas de 3e passage, cohérent avec "ne jamais deviner" §01 : si OCR
+      // échoue aussi, on s'arrête là).
+      const tryImage = !lastAttemptUsedImage && findListingImageUrl()
+        ? '<button type="button" class="cardquant-try-image">Essayer avec la photo de l\'annonce</button>'
+        : "";
+      return `<p>${escapeHtml(data.message || "Carte non identifiée.")}</p>${tryImage}${footer}`;
     }
     return renderCardDetail(data, original, currentGrade);
   }
@@ -586,6 +760,20 @@
   // pricing, cf. shared/verdict.py).
   let currentGrade = "ungraded";
   let gradeManuallySet = false;
+
+  // true si la dernière tentative /verdict a utilisé la photo de l'annonce
+  // (passage 1 OCR) plutôt que le titre -- suppresse le bouton "essayer
+  // avec la photo" en cas de nouvel échec (pas de 3e passage, cf.
+  // renderVerdict). Remis à false à chaque nouvelle requête PAR TITRE
+  // (nouvelle page, changement de grade...), jamais par la tentative image
+  // elle-même bien sûr.
+  let lastAttemptUsedImage = false;
+
+  // Dernière réponse /verdict reçue -- seule donnée dont ont besoin les
+  // recalculs live du ROI gradation / calculateur d'arbitrage (cf.
+  // panel.onChange/onInput plus bas) : les deux sont 100% client, jamais
+  // besoin de rappeler /verdict quand l'utilisateur change une hypothèse.
+  let lastVerdictData = null;
 
   // Carte confirmée via le picker de désambiguïsation (renderCandidate),
   // s'il y en a une -- "sticky" pour le reste de la session de cet onglet :
@@ -600,19 +788,38 @@
   // pricing_api saute identify_card() entièrement côté serveur quand il est
   // présent (cf. background.js, pricing_api/main.py::post_verdict). Défaut
   // = la carte déjà confirmée, s'il y en a une (voir confirmedCardId).
-  async function requestVerdict(panel, selectedCardId = confirmedCardId) {
+  // `useImage` : passage 2 déclenché par le bouton "essayer avec la photo"
+  // (cf. renderVerdict) -- envoie image_url à la place de text, forçant
+  // pricing_api sur le repli OCR (identify_card() n'utilise image_url QUE
+  // si text est absent, cf. pricing/matching.py). Titre toujours capté pour
+  // le grade auto-détecté quand il existe, mais jamais envoyé comme `text`
+  // dans ce mode -- sinon le serveur retomberait sur le même match par
+  // titre qui vient d'échouer.
+  async function requestVerdict(panel, selectedCardId = confirmedCardId, useImage = false) {
     if (selectedCardId != null) confirmedCardId = selectedCardId;
     panel.setLoading();
+    lastAttemptUsedImage = useImage;
     const title = queryFirstText(TITLE_SELECTORS);
     const rawPrice = queryFirstText(PRICE_SELECTORS);
     const displayedPrice = parsePrice(rawPrice);
 
-    if (!title || displayedPrice == null) {
+    let imageUrl = null;
+    if (useImage) {
+      imageUrl = findListingImageUrl();
+      if (!imageUrl) {
+        panel.setError("Aucune photo trouvable sur cette annonce.");
+        return;
+      }
+    } else if (!title) {
+      panel.setError("Titre ou prix introuvable sur cette page (sélecteurs à ajuster ?).");
+      return;
+    }
+    if (displayedPrice == null) {
       panel.setError("Titre ou prix introuvable sur cette page (sélecteurs à ajuster ?).");
       return;
     }
 
-    if (!gradeManuallySet) {
+    if (!gradeManuallySet && title) {
       currentGrade = detectGrade(title);
     }
 
@@ -629,8 +836,8 @@
     }
 
     const response = await sendMessage({
-      type: "CARDQUANT_GET_VERDICT", text: title, displayedPrice, currency, grade: currentGrade,
-      selectedCardId,
+      type: "CARDQUANT_GET_VERDICT", text: useImage ? null : title, imageUrl,
+      displayedPrice, currency, grade: currentGrade, selectedCardId,
     });
     if (!response || !response.ok) {
       if (response?.reason === "auth") {
@@ -644,6 +851,7 @@
       panel.setError("Verdict indisponible (pricing_api injoignable).");
       return;
     }
+    lastVerdictData = response.data;
     panel.setVerdict(response.data, response.convertedFrom ? { amount: displayedPrice, currency } : null, currentGrade);
   }
 
@@ -692,11 +900,60 @@
     if (cardId) sendMessage({ type: "CARDQUANT_OPEN_CARD", cardId });
   });
 
+  // Passage 2 (OCR sur la photo de l'annonce) -- cf. renderVerdict pour la
+  // condition d'affichage du bouton et requestVerdict pour le mode useImage.
+  panel.onClick(".cardquant-try-image", () => requestVerdict(panel, undefined, true));
+
   panel.onChange(".cardquant-grade-select", (el) => {
     currentGrade = el.value;
     gradeManuallySet = true;
     requestVerdict(panel);
   });
+
+  // ROI gradation : recalcule et re-rend UNIQUEMENT le bloc de sortie
+  // (.cardquant-groi-output), jamais tout le panneau ni un appel /verdict --
+  // les hypothèses (palier, frais...) ne changent aucune donnée serveur,
+  // seulement le calcul client (cf. lib/gradingRoi.js).
+  function recomputeGroi() {
+    if (!lastVerdictData || !lastVerdictData.grading_roi_inputs) return;
+    const section = document.querySelector("#cardquant-groi");
+    if (!section) return;
+    const tierSel = section.querySelector(".cardquant-groi-tier");
+    const readNum = (sel, fallback) => {
+      const v = parseFloat(section.querySelector(sel).value);
+      return Number.isFinite(v) ? v : fallback;
+    };
+    const A = window.CardQuantGradingRoi.DEFAULT_ASSUMPTIONS;
+    const assumptions = {
+      serviceTierId: tierSel.value || undefined,
+      extraCostsUsd: readNum(".cardquant-groi-extra", A.extraCostsUsd),
+      lowGradeProbabilityPct: readNum(".cardquant-groi-lowp", A.lowGradeProbabilityPct),
+      lowGradeValueFactor: A.lowGradeValueFactor,
+      resaleFeePct: readNum(".cardquant-groi-fee", A.resaleFeePct),
+    };
+    section.querySelector(".cardquant-groi-output").innerHTML =
+      renderGroiOutput(lastVerdictData.grading_roi_inputs, assumptions);
+  }
+  panel.onChange(".cardquant-groi-tier", recomputeGroi);
+  panel.onInput(".cardquant-groi-extra, .cardquant-groi-lowp, .cardquant-groi-fee", recomputeGroi);
+
+  // Calculateur d'arbitrage : même principe, aucun appel réseau -- réutilise
+  // reference_price déjà connu (cf. renderArbitrageCalculator).
+  function recomputeArbitrage() {
+    if (!lastVerdictData || lastVerdictData.reference_price == null) return;
+    const section = document.querySelector("#cardquant-arb");
+    if (!section) return;
+    const readNum = (sel) => {
+      const v = parseFloat(section.querySelector(sel).value);
+      return Number.isFinite(v) ? v : 0;
+    };
+    const buy = readNum(".cardquant-arb-buy");
+    const ship = readNum(".cardquant-arb-ship");
+    const customs = readNum(".cardquant-arb-customs");
+    section.querySelector(".cardquant-arb-output").innerHTML =
+      renderArbitrageOutput(lastVerdictData.reference_price, buy, ship, customs);
+  }
+  panel.onInput(".cardquant-arb-buy, .cardquant-arb-ship, .cardquant-arb-customs", recomputeArbitrage);
 
   // Le site relaie la session dès la connexion (cf. background.js
   // onMessageExternal) -- ce listener capte l'écriture dans

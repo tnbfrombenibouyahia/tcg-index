@@ -78,7 +78,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
             body: JSON.stringify({
-              text: message.text,
+              text: message.text ?? null,
+              // Passage 2 (OCR, cf. content.js::findListingImageUrl) --
+              // pricing_api ne l'utilise QUE si `text` est absent (cf.
+              // pricing/matching.py::identify_card), jamais les deux à la
+              // fois.
+              image_url: message.imageUrl ?? null,
               displayed_price: usdPrice,
               grade: message.grade || "ungraded",
               // Carte confirmée via le picker de désambiguïsation (cf.

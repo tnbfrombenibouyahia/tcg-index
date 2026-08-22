@@ -21,6 +21,7 @@ from pricing.matching import identify_card
 from pricing.models import Card
 from pricing_api.schemas import (
     CardCandidateOut,
+    GradingRoiInputsOut,
     LanguageComparisonOut,
     LiquidityOut,
     SalesStatsOut,
@@ -60,6 +61,11 @@ def _extended_out(signals: ExtendedSignals) -> dict:
     sealed_display_price = SealedDisplayPriceOut(
         price=signals.sealed_display_price.price, currency=signals.sealed_display_price.currency,
     ) if signals.sealed_display_price else None
+    grading_roi_inputs = GradingRoiInputsOut(
+        ungraded_price=signals.grading_roi_inputs.ungraded_price,
+        grade_prices=signals.grading_roi_inputs.grade_prices,
+        grade_counts=signals.grading_roi_inputs.grade_counts,
+    ) if signals.grading_roi_inputs else None
     return dict(
         opportunity_score=signals.opportunity_score,
         sales_stats=sales_stats,
@@ -70,6 +76,7 @@ def _extended_out(signals: ExtendedSignals) -> dict:
             for e in signals.language_comparison
         ],
         sealed_display_price=sealed_display_price,
+        grading_roi_inputs=grading_roi_inputs,
     )
 
 
@@ -122,7 +129,7 @@ def post_verdict(req: VerdictRequest, _user: dict = Depends(require_user)) -> Ve
     # opportunity_score en a besoin et gère lui-même son absence (cf.
     # shared/verdict.py::compute_extended_signals).
     extended = dict(opportunity_score=None, sales_stats=None, liquidity=None,
-                    language_comparison=[], sealed_display_price=None)
+                    language_comparison=[], sealed_display_price=None, grading_roi_inputs=None)
     if outcome.card is not None:
         signals = compute_extended_signals(
             outcome.card, req.grade,

@@ -80,24 +80,71 @@ Fait :
   repo) sur les statuts ok/no_reference_price/ambiguous/not_found + les 2
   interactions (changement de grade, clic CTA) — aucune erreur JS, aucun
   fragment "undefined"/"NaN" dans le rendu.
-  - ⚠️ **Limite connue, prioritaire à lever** : `active_listings` (compteur
-    "en vente active" du bloc Liquidité) ne couvre aujourd'hui QUE le
-    scellé côté ingestion (`ingestion/sources/ebay.py`) — pour une carte
-    seule, ce compteur est toujours `None` (affiché "—", jamais un faux
-    `0`, cf. `pricing/repository.py::fetch_latest_active_listing_count`).
-    Sans ce chiffre, la carte "seule" (le cœur d'usage réel de
-    l'extension) reste incomplète sur ce point précis — à traiter en
-    étendant l'ingestion eBay Browse API aux singles, pas juste un
-    ajustement d'affichage.
+  - ✅ **Limite levée le 2026-08-22** : `active_listings` (compteur "en
+    vente active" du bloc Liquidité) couvre désormais aussi les singles
+    (`ingestion/sources/ebay.py::sync_active_listings_for_tcg`,
+    `category='single'`, branché sur `search_single`/`build_single_query`
+    qui existaient déjà mais n'étaient appelés par rien) — Pokémon et One
+    Piece, EN et JP. `fetch_latest_active_listing_count` n'a pas changé
+    (elle lisait déjà par `item_id`, indépendamment de la catégorie).
+    Le pool (68 202 items) est trop gros pour un run unique (quota eBay
+    5000 req/jour) : rotation par tranches (`EBAY_SINGLES_NUM_SLICES=15`,
+    cf. `orchestrator.py::_current_ebay_singles_slice`), cron GCP dédié
+    quotidien (jeudi exclu, déjà pris par le scellé), cycle complet en
+    ~2,5 semaines. Un single peut donc encore afficher "—" temporairement
+    si la rotation n'a pas encore atteint cet item précis — jamais un faux
+    `0`, cf. `pricing/repository.py::fetch_latest_active_listing_count`.
+
+- **ROI gradation + calculateur d'arbitrage (§07)**, 100% côté client comme
+  décrit dans le handoff -- aucun des deux calculs ne vit côté serveur, pour
+  rester recalculable en live quand l'utilisateur change ses hypothèses.
+  - **ROI gradation** : `extension/lib/gradingRoi.js` est un port JS 1:1 de
+    `web/lib/gradingRoi.ts` (mêmes formules/constantes -- distribution de
+    grades par cascade carte → set+rareté → set → tcg, EV nette, coût de
+    soumission PSA par palier, ROI). Les ingrédients bruts (dernier prix
+    connu par grade + comptage de ventes gradées aux 4 niveaux) viennent
+    d'un nouveau champ `grading_roi_inputs` sur `/verdict`
+    (`pricing/grading_roi.py` + `pricing/repository.py::fetch_grading_roi_inputs`,
+    lit la table `grading_roi_inputs` déjà matérialisée côté site par
+    `index/grading_roi_inputs.py` -- rien de nouveau à calculer côté
+    Postgres). Palier PSA/frais divers/risque sous-note/frais revente sont
+    éditables dans le panneau, recalcul immédiat (`input`/`change`) sans
+    jamais rappeler `/verdict`. `None` (carte pas encore repassée dans son
+    palier `--tier`, cf. docstring `pricing/repository.py`) affiche un
+    message plutôt qu'un ROI inventé -- jamais affiché pour le scellé (pas
+    de notion de gradation).
+  - **Calculateur d'arbitrage** : aucune donnée serveur en plus -- réutilise
+    `reference_price` déjà renvoyé par `/verdict` (même prix que le verdict
+    ponctuel, cf. §07). Achat/livraison/douane saisis par l'utilisateur,
+    bénéfice recalculé en live.
+  - Testé via le même harness jsdom ponctuel que le panneau v2 (flux de
+    messages réel `CARDQUANT_GET_SESSION`/`CARDQUANT_GET_VERDICT` stubé,
+    pas les fonctions de rendu isolées) : cas avec/sans
+    `grading_roi_inputs`, recalcul live sur changement de palier ET de
+    frais, aucune erreur JS, aucun fragment "undefined"/"NaN".
+
+- **Identification par image (passage 2 de la cascade, §01)** : quand le
+  titre ne suffit pas (statut ni `ok` ni `no_reference_price`/`ambiguous`),
+  le panneau propose "Essayer avec la photo de l'annonce" -- récupère la
+  photo principale du carrousel eBay (`.ux-image-carousel-item(.active)
+  img`, sélecteurs vérifiés en conditions réelles le 2026-08-22 sur 2
+  annonces distinctes -- l'ancien `#icImg` "classique" n'existe plus sur le
+  layout actuel), demandée en résolution max si le CDN l'expose
+  (`/s-l500.webp` → `/s-l1600.webp`, gratuit -- même objet, meilleure
+  précision OCR). Envoie `image_url` à la place de `text` (jamais les deux
+  -- `pricing/matching.py::identify_card` n'utilise `image_url` QUE si
+  `text` est absent) ; le back-end (`pricing/ocr.py`, Cloud Vision) existait
+  déjà et savait déjà répondre, rien n'avait jamais rien envoyé côté
+  extension jusqu'ici. Pas de 3ᵉ passage si l'OCR échoue aussi (`ne jamais
+  deviner`, §01) : le bouton ne réapparaît pas après un échec en mode
+  image. Testé via un harness jsdom ponctuel (même principe que le panneau
+  v2) : bouton présent/absent selon qu'une photo est trouvable, requête
+  `text: null` + `image_url` confirmée, identification réussie affichée,
+  pas de 3ᵉ tentative offerte après un double échec.
 
 Pas fait (hors scope de ce scaffold) :
-- ROI gradation, calculateur d'arbitrage (§07) — décrits comme calculs
-  côté client dans le handoff, pas encore implémentés ici.
 - Vinted, Cardmarket — seul eBay (14 domaines pays, cf. `manifest.json`)
   est scopé pour l'instant.
-- Identification par image (upload/capture depuis le panneau) — le back-end
-  (`pricing/ocr.py`) sait déjà faire l'OCR, rien côté extension ne l'appelle
-  encore (aujourd'hui seul le titre de l'annonce est envoyé).
 - Publication Chrome Web Store (§09) : compte développeur 5$, politique de
   confidentialité publiée, test privé avant review — checklist inchangée,
   rien fait ici.
