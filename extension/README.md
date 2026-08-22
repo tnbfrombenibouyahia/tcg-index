@@ -88,12 +88,29 @@ Fait :
     Piece, EN et JP. `fetch_latest_active_listing_count` n'a pas changé
     (elle lisait déjà par `item_id`, indépendamment de la catégorie).
     Le pool (68 202 items) est trop gros pour un run unique (quota eBay
-    5000 req/jour) : rotation par tranches (`EBAY_SINGLES_NUM_SLICES=15`,
+    5000 req/jour) : rotation par tranches (`EBAY_SINGLES_NUM_SLICES`,
     cf. `orchestrator.py::_current_ebay_singles_slice`), cron GCP dédié
-    quotidien (jeudi exclu, déjà pris par le scellé), cycle complet en
-    ~2,5 semaines. Un single peut donc encore afficher "—" temporairement
-    si la rotation n'a pas encore atteint cet item précis — jamais un faux
-    `0`, cf. `pricing/repository.py::fetch_latest_active_listing_count`.
+    quotidien (jeudi exclu, déjà pris par le scellé). Un single peut donc
+    encore afficher "—" temporairement si la rotation n'a pas encore
+    atteint cet item précis — jamais un faux `0`, cf.
+    `pricing/repository.py::fetch_latest_active_listing_count`.
+  - ✅ **Étendu au gradé le 2026-08-22** (demande utilisateur : "les users
+    vont autant check les raw que les gradées") : `_SINGLE_GRADES =
+    ("ungraded", "graded")`, 2 requêtes/carte au lieu d'1
+    (`conditionIds:{4000}` puis `{2750}`). **'graded' n'est PAS une note
+    précise** -- vérifié via l'API Taxonomy eBay
+    (`get_item_aspects_for_category` sur 183454, CCG Individual Cards) :
+    aucun aspect "Grade"/"Grading Company" n'existe pour cette catégorie,
+    eBay ne permet de filtrer QUE sur le conditionId binaire Ungraded/
+    Graded. C'est donc un comptage toutes notes confondues (PSA7 à PSA10
+    mélangées) -- `shared/verdict.py::compute_extended_signals` mappe tout
+    grade PSA précis vers ce bucket `'graded'` unique avant la lecture
+    (`pricing/repository.py::fetch_latest_active_listing_count` n'a jamais
+    de ligne à un grade exact), et le panneau annote le chiffre "(toutes
+    notes)" dès que `grade !== 'ungraded'` -- jamais présenté comme "N PSA10"
+    (`ne jamais deviner`, §01). Contrepartie assumée : `EBAY_SINGLES_NUM_SLICES`
+    doublé (15 → 30, 2x plus de requêtes/item à budget quotidien égal),
+    cycle complet passé de ~2,5 à ~5 semaines.
 
 - **ROI gradation + calculateur d'arbitrage (§07)**, 100% côté client comme
   décrit dans le handoff -- aucun des deux calculs ne vit côté serveur, pour

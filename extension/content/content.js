@@ -455,26 +455,24 @@
   // active_listings peut être `null` -- PAS 0 -- quand l'annonce active
   // n'a jamais été scrapée pour cet item/grade
   // (cf. pricing/repository.py::fetch_latest_active_listing_count). Afficher
-  // "—" plutôt qu'un faux 0 est la seule option honnête ici. Deux raisons
-  // distinctes possibles, cf. le message affiché selon `grade` :
-  // - ungraded : suivi bien étendu aux singles (2026-08-22) mais rotation
-  //   par tranches sur tout le catalogue (~2,5 semaines/cycle, cf.
-  //   orchestrator.py::EBAY_SINGLES_NUM_SLICES) -- cet item précis n'est
-  //   peut-être juste pas encore repassé dans son tour.
-  // - gradé (psa7..psa10) : `active_listings` ne suit QUE grade='ungraded'
-  //   en v1, quel que soit l'avancement de la rotation (cf.
-  //   ingestion/sources/ebay.py -- CONDITION_GRADED existe pour un futur
-  //   découpage par tier PSA, jamais branché) -- limite structurelle, pas
-  //   une question de temps.
+  // "—" plutôt qu'un faux 0 est la seule option honnête ici. Depuis
+  // l'extension au gradé (2026-08-22), ungraded ET gradé suivent la MÊME
+  // logique de rotation -- `null` veut toujours dire "pas encore repassé
+  // dans son tour" (~5 semaines/cycle complet), jamais "structurellement
+  // pas suivi" (c'était le cas avant ce commit, plus maintenant).
+  //
+  // 'graded' (valeur unique en base pour toute note PSA) = toutes notes
+  // confondues, PAS une note précise -- eBay ne permet pas de filtrer plus
+  // finement (cf. ingestion/sources/ebay.py). Le chiffre reste affiché,
+  // mais annoté pour ne jamais laisser croire à un compte "PSA 10
+  // uniquement" quand grade !== 'ungraded'.
   function renderLiquidity(liquidity, grade) {
     if (!liquidity) return "";
     const status = LIQUIDITY_STATUS[liquidity.label] || { text: liquidity.label, tone: "muted" };
-    let note = "";
-    if (liquidity.active_listings == null) {
-      note = grade === "ungraded"
-        ? "<p class=\"cardquant-todo\">Annonces actives : pas encore scrapées pour cette carte -- rotation en cours sur tout le catalogue (~2,5 semaines pour un cycle complet).</p>"
-        : "<p class=\"cardquant-todo\">Annonces actives : suivi pas encore étendu aux cartes gradées (ungraded uniquement pour l'instant).</p>";
-    }
+    const isGraded = grade !== "ungraded";
+    const note = liquidity.active_listings == null
+      ? "<p class=\"cardquant-todo\">Annonces actives : pas encore scrapées pour cette carte -- rotation en cours sur tout le catalogue (~5 semaines pour un cycle complet).</p>"
+      : "";
     return `
       <div class="cardquant-section">
         <p class="cardquant-section-title">Liquidité · 3 derniers mois</p>
@@ -485,7 +483,7 @@
           </div>
           <div class="cardquant-stat">
             <span class="cardquant-stat-value">${liquidity.active_listings != null ? liquidity.active_listings : "—"}</span>
-            <span class="cardquant-stat-label">en vente active</span>
+            <span class="cardquant-stat-label">en vente active${isGraded && liquidity.active_listings != null ? " (toutes notes)" : ""}</span>
           </div>
         </div>
         <p class="cardquant-liquidity-status cardquant-${status.tone}">${escapeHtml(status.text)} · ~${liquidity.sales_per_month.toFixed(1)} ventes/mois</p>
