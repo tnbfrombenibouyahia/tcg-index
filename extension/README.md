@@ -90,14 +90,30 @@ Fait :
     étendant l'ingestion eBay Browse API aux singles, pas juste un
     ajustement d'affichage.
 
+- **Identification par image (passage 2 de la cascade, §01)** : quand le
+  titre ne suffit pas (statut ni `ok` ni `no_reference_price`/`ambiguous`),
+  le panneau propose "Essayer avec la photo de l'annonce" -- récupère la
+  photo principale du carrousel eBay (`.ux-image-carousel-item(.active)
+  img`, sélecteurs vérifiés en conditions réelles le 2026-08-22 sur 2
+  annonces distinctes -- l'ancien `#icImg` "classique" n'existe plus sur le
+  layout actuel), demandée en résolution max si le CDN l'expose
+  (`/s-l500.webp` → `/s-l1600.webp`, gratuit -- même objet, meilleure
+  précision OCR). Envoie `image_url` à la place de `text` (jamais les deux
+  -- `pricing/matching.py::identify_card` n'utilise `image_url` QUE si
+  `text` est absent) ; le back-end (`pricing/ocr.py`, Cloud Vision) existait
+  déjà et savait déjà répondre, rien n'avait jamais rien envoyé côté
+  extension jusqu'ici. Pas de 3ᵉ passage si l'OCR échoue aussi (`ne jamais
+  deviner`, §01) : le bouton ne réapparaît pas après un échec en mode
+  image. Testé via un harness jsdom ponctuel (même principe que le panneau
+  v2) : bouton présent/absent selon qu'une photo est trouvable, requête
+  `text: null` + `image_url` confirmée, identification réussie affichée,
+  pas de 3ᵉ tentative offerte après un double échec.
+
 Pas fait (hors scope de ce scaffold) :
 - ROI gradation, calculateur d'arbitrage (§07) — décrits comme calculs
   côté client dans le handoff, pas encore implémentés ici.
 - Vinted, Cardmarket — seul eBay (14 domaines pays, cf. `manifest.json`)
   est scopé pour l'instant.
-- Identification par image (upload/capture depuis le panneau) — le back-end
-  (`pricing/ocr.py`) sait déjà faire l'OCR, rien côté extension ne l'appelle
-  encore (aujourd'hui seul le titre de l'annonce est envoyé).
 - Publication Chrome Web Store (§09) : compte développeur 5$, politique de
   confidentialité publiée, test privé avant review — checklist inchangée,
   rien fait ici.
