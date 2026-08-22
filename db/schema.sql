@@ -106,8 +106,11 @@ CREATE INDEX IF NOT EXISTS idx_sales_item_date
 -- eBay, cf. ebay.py) -- séparer les deux doublerait le nombre de requêtes
 -- par item pour un signal pas demandé explicitement ; 'auction'/'fixed_price'
 -- restent des valeurs valides pour un futur découpage sans migration.
--- `grade` toujours 'ungraded' en v1 (seul le scellé est synchronisé, cf.
--- sync_active_listings_for_tcg -- pas de notion de gradation pour du scellé).
+-- `grade` toujours 'ungraded' en v1 : le scellé n'a de toute façon pas de
+-- notion de gradation, et les singles (branchés le 2026-08-22, cf.
+-- sync_active_listings_for_tcg category='single') ne sont interrogés qu'en
+-- condition 'Ungraded' côté eBay pour l'instant -- CONDITION_GRADED existe
+-- déjà dans ebay.py pour un futur découpage par tier PSA, pas encore branché.
 CREATE TABLE IF NOT EXISTS active_listings (
   id             BIGSERIAL PRIMARY KEY,
   item_id        BIGINT NOT NULL REFERENCES items(id),
