@@ -39,6 +39,11 @@ class PriceQuote:
     price: float
     currency: str
     fetched_at: datetime | None = None
+    # Page produit source exacte, quand la source en résout une (cf.
+    # pricing/sources/pricecharting_source.py -- déjà obtenue par le
+    # scrape/matching existant, jamais devinée/construite ici). None pour
+    # une source qui n'expose pas ça (ex. les stubs cardmarket/ebay_sold).
+    url: str | None = None
 
 
 @dataclass

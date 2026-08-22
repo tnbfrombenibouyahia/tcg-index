@@ -364,8 +364,17 @@ CREATE TABLE IF NOT EXISTS prices (
   grade       TEXT NOT NULL DEFAULT 'ungraded',  -- même vocabulaire que price_snapshots.grade
   price       NUMERIC(12,2) NOT NULL,
   currency    TEXT NOT NULL,
+  url         TEXT,                 -- page produit source exacte (demande utilisateur 2026-08-22,
+                                     -- "vérifier le prix" -- cf. pricing/sources/pricecharting_source.py,
+                                     -- déjà résolue par le scrape/matching existant, jamais devinée)
   fetched_at  TIMESTAMPTZ NOT NULL DEFAULT now(),  -- utilisé pour le TTL
   created_at  TIMESTAMPTZ DEFAULT now(),
   UNIQUE (item_id, source, grade)
 );
 CREATE INDEX IF NOT EXISTS idx_prices_item ON prices (item_id);
+-- ALTER plutôt qu'un simple CREATE IF NOT EXISTS : la table existe déjà en
+-- prod (remplie avant l'ajout de `url`), et CREATE TABLE IF NOT EXISTS
+-- n'ajoute jamais de colonne à une table déjà là -- premier ALTER de ce
+-- fichier, cf. db/apply_schema.py (rejoue tout schema.sql tel quel, cette
+-- ligne doit donc rester idempotente comme le reste).
+ALTER TABLE prices ADD COLUMN IF NOT EXISTS url TEXT;
