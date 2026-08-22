@@ -40,6 +40,17 @@ class CardCandidateOut(BaseModel):
     # mesurée dans tcg-index-handoff.md §04 : 99,9%/100% des items ont une
     # image_url exploitable).
     image_url: str | None = None
+    # Libellé humain dérivé de set_code (cf. pricing/repository.py::set_label_from_code)
+    # + année de sortie du set (cf. fetch_set_release_year) -- demande
+    # utilisateur (2026-08-22) : voir si une carte vient d'un set classique
+    # ou d'un tirage promo/événement, et de quelle année. Pas de champ
+    # "is_promo" séparé : la rareté seule (ex. "Promo") ne suffit pas à
+    # trancher de façon fiable (des cartes de sets clairement promo/
+    # événementiels gardent leur rareté normale style "Secret Rare",
+    # vérifié en base) -- `rarity` + `set_name` bruts affichés tels quels,
+    # jamais une classification binaire devinée à leur place.
+    set_name: str | None = None
+    set_release_year: int | None = None
 
 
 class SourcePriceOut(BaseModel):

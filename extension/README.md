@@ -185,6 +185,34 @@ Fait :
     selon `sources_compared[].url` (PriceCharting) et présence système
     (Cardmarket, toujours calculable), URLs exactes vérifiées.
 
+- **Set + année (demande utilisateur, 2026-08-23)** : le badge de set,
+  auparavant un simple préfixe de code ("OP13", tiré de `card.code.split("-")[0]`),
+  montre maintenant un vrai nom de set lisible + son année ("One Piece ·
+  Wings Of The Captain (2024)") -- `set_name`/`set_release_year`, nouveaux
+  champs sur `CardCandidateOut` (carte confirmée ET picker de
+  désambiguïsation). `set_name` dérivé du `set_code` (aucun nom de set
+  lisible n'est stocké ailleurs, cf. `pricing/repository.py::set_label_from_code`,
+  réimplantation volontairement séparée de l'équivalent JP-only dans
+  `ingestion/sources/pricecharting.py` -- module volumineux/fragile, pas
+  une dépendance à ajouter pour 4 lignes). `set_release_year` vient de
+  `items.release_date`, structurellement absente côté JP -- mais One Piece
+  JP réutilise le MÊME `set_code` que son homonyme EN (vérifié 100% de
+  correspondance), donc `fetch_set_release_year` retrouve déjà l'année EN
+  pour une carte JP sans repli explicite à coder.
+  - **Pas de badge "Promo"/"Normal" séparé** -- essayé puis écarté : la
+    rareté seule (`rarity == 'Promo'`) ne suffit pas à trancher de façon
+    fiable, vérifié en base (des cartes de sets clairement promo/
+    événementiels comme "... Pre-Release Cards"/"... Release Event Cards"
+    gardent leur rareté normale, ex. "Secret Rare" -- inventer un
+    classificateur binaire aurait mal classé ces cas). La rareté brute et
+    le nom du set (souvent explicite par lui-même) sont affichés tels
+    quels, jamais une classification devinée à la place de l'utilisateur.
+  - Testé en conditions réelles contre la base (pas juste des mocks) :
+    label + année corrects sur un set classique, un set promo (année
+    absente, gérée), et le repli JP -> EN validé sur une vraie carte JP
+    sans `release_date` propre. Harness jsdom : 3 cas (complet, promo sans
+    année, aucune métadonnée) -- badges corrects, aucune erreur JS.
+
 Pas fait (hors scope de ce scaffold) :
 - Vinted, Cardmarket — seul eBay (14 domaines pays, cf. `manifest.json`)
   est scopé pour l'instant.
