@@ -490,6 +490,35 @@
   outline-offset: 2px;
 }
 
+/* -- Lien de double-vérification CardMarket (cf. content.js::renderCardmarketLink)
+   -- contour plutôt que rempli, un cran en dessous de .cardquant-cta dans la
+   hiérarchie visuelle : action secondaire (vérifier ailleurs), pas l'action
+   principale (voir l'analyse complète sur le site). */
+.cardquant-cardmarket-link {
+  all: unset;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  text-align: center;
+  margin: 4px 0;
+  padding: 10px 16px;
+  border: 1px solid var(--cq-border);
+  border-radius: var(--cq-radius-sm);
+  color: var(--cq-foreground);
+  font-family: var(--cq-font-sans);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.cardquant-cardmarket-link:hover {
+  background: var(--cq-tint-neutral);
+}
+.cardquant-cardmarket-link:focus-visible {
+  outline: 2px solid var(--cq-foreground);
+  outline-offset: 2px;
+}
+
 /* -- Utilitaires de couleur : habillent des tons déjà décidés/fournis par
    pricing_api (verdict, label de liquidité, sens de l'écart de prix entre
    langues) -- ne réintroduisent aucun nouveau seuil ici. */
