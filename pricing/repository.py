@@ -303,3 +303,49 @@ def fetch_grading_roi_inputs(item_id: int) -> GradingRoiInputs | None:
             )
     finally:
         conn.close()
+
+
+def set_label_from_code(set_code: str | None, tcg: str) -> str | None:
+    """Dérive un libellé humain du set_code -- aucun nom de set lisible
+    n'est stocké ailleurs pour ces items, ni EN ni JP (réimplémentation
+    volontairement séparée de
+    ingestion/sources/pricecharting.py::_set_label_from_code, qui fait la
+    même chose : ce module-là est volumineux et fragile selon sa propre
+    docstring, pas une dépendance à ajouter ici pour 4 lignes). Ex.
+    'one-piece-wings-of-the-captain' -> 'Wings Of The Captain'. None si
+    `set_code` est None (item sans set, cas rare)."""
+    if not set_code:
+        return None
+    prefix = tcg + "-"
+    bare = set_code[len(prefix):] if set_code.startswith(prefix) else set_code
+    if bare.startswith("jp-"):
+        bare = bare[len("jp-"):]
+    return bare.replace("-", " ").title()
+
+
+def fetch_set_release_year(tcg: str, set_code: str | None) -> int | None:
+    """Année du set, dérivée de items.release_date -- None si absente pour
+    TOUT item de ce (tcg, set_code), y compris quand `release_date` est
+    structurellement absente côté JP (aucun référentiel JP ne le fournit,
+    cf. ingestion/sources/pricecharting.py). One Piece JP réutilise le MÊME
+    set_code que son homonyme EN (contrairement à Pokémon, dont les
+    set_code JP/EN sont disjoints -- cf. discussion projet du 2026-08-22,
+    vérifié 100% de correspondance sur ce TCG) : cette requête, filtrée sur
+    tcg+set_code SANS filtrer par langue, retrouve donc déjà l'année EN pour
+    une carte JP, sans repli explicite à coder. MIN() plutôt que MAX() ou un
+    LIMIT 1 arbitraire : un set peut avoir plusieurs release_date légèrement
+    différentes en base (ex. cartes bonus ajoutées après coup) -- l'année de
+    sortie initiale est la plus utile pour situer un set dans le temps."""
+    if not set_code:
+        return None
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT MIN(release_date) FROM items WHERE tcg = %s AND set_code = %s AND release_date IS NOT NULL",
+                (tcg, set_code),
+            )
+            row = cur.fetchone()
+            return row[0].year if row and row[0] else None
+    finally:
+        conn.close()

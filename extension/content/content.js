@@ -311,7 +311,8 @@
   // même philosophie que le reste du matcher (jamais deviner), déplacée
   // vers l'humain plutôt que vers un score de confiance.
   function renderCandidate(c) {
-    const meta = [c.code, c.rarity].filter(Boolean).join(" · ");
+    const setInfo = c.set_name ? `${c.set_name}${c.set_release_year ? ` (${c.set_release_year})` : ""}` : null;
+    const meta = [c.code, c.rarity, setInfo].filter(Boolean).join(" · ");
     // Masquée au chargement en échec plutôt que l'icône "cassée" du
     // navigateur (cf. onImgError plus bas, écoute déléguée -- pas d'attribut
     // onerror inline, cohérent avec le reste du fichier qui n'utilise jamais
@@ -359,12 +360,30 @@
     `;
   }
 
-  function renderMeta(data, currentGrade) {
-    const { base, qualifier } = splitQualifier(data.card.name);
+  // Set + année -- demande utilisateur (2026-08-23) : voir si une carte
+  // vient d'un set classique ou d'un tirage promo/événement, et de quelle
+  // année. `set_name` (déjà un libellé humain, cf.
+  // pricing/repository.py::set_label_from_code) et `set_release_year`
+  // (None si vraiment introuvable -- jamais deviné, cf.
+  // fetch_set_release_year) viennent directement de /verdict. Pas de badge
+  // "Promo"/"Normal" séparé : la rareté seule ne suffit pas à trancher de
+  // façon fiable (des cartes de sets clairement promo/événementiels
+  // gardent leur rareté normale, ex. "Secret Rare") -- le nom du set
+  // (souvent explicite : "... Pre-Release Cards", "... Promotion Cards")
+  // et la rareté réelle sont affichés bruts, à l'utilisateur de juger,
+  // jamais une classification binaire devinée à sa place.
+  function formatSetBadge(card) {
+    if (!card.set_name) return null;
+    const year = card.set_release_year ? ` (${card.set_release_year})` : "";
     // "One Piece" en dur : l'extension ne couvre que ce jeu pour l'instant
     // (cf. manifest.json, pricing/matching.py) -- à remplacer par un vrai
     // champ si un 2e TCG est ajouté un jour.
-    const setLabel = data.card.code ? data.card.code.split("-")[0] : null;
+    return `One Piece · ${card.set_name}${year}`;
+  }
+
+  function renderMeta(data, currentGrade) {
+    const { base, qualifier } = splitQualifier(data.card.name);
+    const setBadge = formatSetBadge(data.card);
     const lang = data.card.language;
     return `
       <p class="cardquant-card-name">${escapeHtml(base)}</p>
@@ -373,7 +392,8 @@
         : ""}
       <div class="cardquant-badge-row">
         ${lang ? `<span class="cardquant-badge">${LANGUAGE_FLAGS[lang] || ""} ${escapeHtml(LANGUAGE_NAMES[lang] || lang)}</span>` : ""}
-        ${setLabel ? `<span class="cardquant-badge">One Piece · ${escapeHtml(setLabel)}</span>` : ""}
+        ${setBadge ? `<span class="cardquant-badge">${escapeHtml(setBadge)}</span>` : ""}
+        ${data.card.rarity ? `<span class="cardquant-badge">${escapeHtml(data.card.rarity)}</span>` : ""}
         ${renderGradeBadge(currentGrade)}
       </div>
     `;

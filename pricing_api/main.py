@@ -19,6 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pricing.auth import verify_id_token
 from pricing.matching import identify_card
 from pricing.models import Card
+from pricing.repository import fetch_set_release_year, set_label_from_code
 from pricing_api.schemas import (
     CardCandidateOut,
     GradingRoiInputsOut,
@@ -42,7 +43,9 @@ if _cors_origins:
 def _card_out(card: Card, confidence: float) -> CardCandidateOut:
     return CardCandidateOut(card_id=card.id, name=card.name, code=card.code, set_code=card.set_code,
                              rarity=card.rarity, language=card.language, confidence=confidence,
-                             image_url=card.image_url)
+                             image_url=card.image_url,
+                             set_name=set_label_from_code(card.set_code, card.tcg),
+                             set_release_year=fetch_set_release_year(card.tcg, card.set_code))
 
 
 def _extended_out(signals: ExtendedSignals) -> dict:
