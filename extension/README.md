@@ -80,15 +80,20 @@ Fait :
   repo) sur les statuts ok/no_reference_price/ambiguous/not_found + les 2
   interactions (changement de grade, clic CTA) — aucune erreur JS, aucun
   fragment "undefined"/"NaN" dans le rendu.
-  - ⚠️ **Limite connue, prioritaire à lever** : `active_listings` (compteur
-    "en vente active" du bloc Liquidité) ne couvre aujourd'hui QUE le
-    scellé côté ingestion (`ingestion/sources/ebay.py`) — pour une carte
-    seule, ce compteur est toujours `None` (affiché "—", jamais un faux
-    `0`, cf. `pricing/repository.py::fetch_latest_active_listing_count`).
-    Sans ce chiffre, la carte "seule" (le cœur d'usage réel de
-    l'extension) reste incomplète sur ce point précis — à traiter en
-    étendant l'ingestion eBay Browse API aux singles, pas juste un
-    ajustement d'affichage.
+  - ✅ **Limite levée le 2026-08-22** : `active_listings` (compteur "en
+    vente active" du bloc Liquidité) couvre désormais aussi les singles
+    (`ingestion/sources/ebay.py::sync_active_listings_for_tcg`,
+    `category='single'`, branché sur `search_single`/`build_single_query`
+    qui existaient déjà mais n'étaient appelés par rien) — Pokémon et One
+    Piece, EN et JP. `fetch_latest_active_listing_count` n'a pas changé
+    (elle lisait déjà par `item_id`, indépendamment de la catégorie).
+    Le pool (68 202 items) est trop gros pour un run unique (quota eBay
+    5000 req/jour) : rotation par tranches (`EBAY_SINGLES_NUM_SLICES=15`,
+    cf. `orchestrator.py::_current_ebay_singles_slice`), cron GCP dédié
+    quotidien (jeudi exclu, déjà pris par le scellé), cycle complet en
+    ~2,5 semaines. Un single peut donc encore afficher "—" temporairement
+    si la rotation n'a pas encore atteint cet item précis — jamais un faux
+    `0`, cf. `pricing/repository.py::fetch_latest_active_listing_count`.
 
 Pas fait (hors scope de ce scaffold) :
 - ROI gradation, calculateur d'arbitrage (§07) — décrits comme calculs
