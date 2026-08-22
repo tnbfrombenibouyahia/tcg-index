@@ -688,6 +688,23 @@
     return `<a class="cardquant-cardmarket-link" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Vérifier sur Cardmarket ↗</a>`;
   }
 
+  // Lien de double-vérification vers PriceCharting -- demande utilisateur
+  // (2026-08-22, "aussi plutôt que Cardmarket") : PriceCharting est en plus
+  // la source même du prix de référence (cf. shared/verdict.py::compute_verdict_for_card),
+  // donc encore plus pertinent à vérifier que Cardmarket. Contrairement au
+  // lien Cardmarket (recherche, faute d'ID exploitable), ceci pointe vers
+  // la VRAIE page produit exacte -- déjà résolue par le scrape/matching
+  // serveur (pricing/sources/pricecharting_source.py::_find_row_for_card),
+  // exposée ici via sources_compared[].url plutôt que reconstruite/devinée
+  // côté extension. Absent (pas de bouton) si PriceCharting n'a pas
+  // matché cette carte -- jamais un lien de recherche de repli qui
+  // laisserait croire à un lien exact.
+  function renderPriceChartingLink(sourcesCompared) {
+    const source = (sourcesCompared || []).find((s) => s.source === "pricecharting" && s.url);
+    if (!source) return "";
+    return `<a class="cardquant-cardmarket-link" href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">Vérifier sur PriceCharting ↗</a>`;
+  }
+
   // Vue commune "carte identifiée" (statuts 'ok' et 'no_reference_price') --
   // tous les blocs sont défensifs (rien affiché si la donnée n'est pas là),
   // cf. pricing_api/schemas.py pour ce qui est None dans quel cas.
@@ -704,6 +721,7 @@
       ${renderGradingRoi(data.grading_roi_inputs)}
       ${renderArbitrageCalculator(data)}
       ${renderCta(data.card.card_id)}
+      ${renderPriceChartingLink(data.sources_compared)}
       ${renderCardmarketLink(data.card)}
       <button type="button" class="cardquant-signout">Se déconnecter</button>
     `;

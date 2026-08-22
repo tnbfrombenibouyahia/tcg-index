@@ -142,6 +142,32 @@ Fait :
   `text: null` + `image_url` confirmée, identification réussie affichée,
   pas de 3ᵉ tentative offerte après un double échec.
 
+- **Liens de double-vérification manuelle (demande utilisateur, 2026-08-22)** :
+  deux boutons en bas de la fiche carte pour recouper le verdict ailleurs.
+  - **PriceCharting** : lien vers la VRAIE page produit exacte -- pas une
+    recherche. PriceCharting est en plus la source même du prix de
+    référence (`shared/verdict.py::compute_verdict_for_card`), donc le plus
+    pertinent à vérifier. L'URL était déjà résolue en interne par le
+    scrape/matching serveur (`pricing/sources/pricecharting_source.py::_find_row_for_card`)
+    mais jamais exposée -- ajout d'une colonne `prices.url` (première
+    `ALTER TABLE` de `db/schema.sql`, la table existait déjà en prod donc
+    `CREATE TABLE IF NOT EXISTS` seul n'aurait rien ajouté) + un champ
+    `url` sur `PriceQuote`/`SourcePriceOut`, peuplés sans requête
+    supplémentaire (même scrape que celui qui sert déjà le prix). Absent
+    (pas de bouton) si PriceCharting n'a pas matché cette carte -- jamais
+    un lien de recherche de repli qui laisserait croire à un lien exact.
+  - **Cardmarket** : pas d'ID exploitable en base (`items.cardmarket_id`
+    existe mais n'est jamais rempli par apitcg.com pour ce catalogue) --
+    lien de RECHERCHE plutôt qu'un lien produit deviné (même principe "ne
+    jamais deviner", §01). Recherche par `card.code` (ex. "OP13-037"),
+    bien plus précis que le nom seul -- vérifié en conditions réelles :
+    5 résultats, tous la bonne carte, contre une dilution sur toute carte
+    contenant les mêmes mots avec le nom seul. Repli sur le nom pour le
+    scellé (pas de `code`).
+  - Testé via un harness jsdom ponctuel : présence conditionnelle correcte
+    selon `sources_compared[].url` (PriceCharting) et présence système
+    (Cardmarket, toujours calculable), URLs exactes vérifiées.
+
 Pas fait (hors scope de ce scaffold) :
 - Vinted, Cardmarket — seul eBay (14 domaines pays, cf. `manifest.json`)
   est scopé pour l'instant.

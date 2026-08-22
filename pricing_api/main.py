@@ -146,7 +146,7 @@ def post_verdict(req: VerdictRequest, _user: dict = Depends(require_user)) -> Ve
         reference_price=outcome.verdict.reference_price if outcome.verdict else None,
         displayed_price=req.displayed_price, grade=req.grade,
         sources_compared=[
-            SourcePriceOut(source=q.source, grade=q.grade, price=q.price, currency=q.currency)
+            SourcePriceOut(source=q.source, grade=q.grade, price=q.price, currency=q.currency, url=q.url)
             for q in outcome.sources_compared
         ],
         **extended,

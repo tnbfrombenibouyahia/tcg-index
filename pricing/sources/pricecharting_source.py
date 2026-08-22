@@ -111,7 +111,8 @@ class PriceChartingSource(PriceSource):
         if grade == "ungraded":
             if row["used_price"] is None:
                 return None
-            return PriceQuote(source=self.name, grade=grade, price=row["used_price"], currency="USD")
+            return PriceQuote(source=self.name, grade=grade, price=row["used_price"], currency="USD",
+                               url=row.get("url"))
 
         if not row.get("url"):
             return None
@@ -123,4 +124,4 @@ class PriceChartingSource(PriceSource):
         price = details.get("grades", {}).get(grade)
         if price is None:
             return None
-        return PriceQuote(source=self.name, grade=grade, price=price, currency="USD")
+        return PriceQuote(source=self.name, grade=grade, price=price, currency="USD", url=row["url"])

@@ -12,15 +12,15 @@ from shared.db import get_connection
 _DEFAULT_TTL_HOURS = 12.0
 
 _UPSERT_PRICE_SQL = """
-    INSERT INTO prices (item_id, source, grade, price, currency, fetched_at)
-    VALUES (%s, %s, %s, %s, %s, now())
+    INSERT INTO prices (item_id, source, grade, price, currency, url, fetched_at)
+    VALUES (%s, %s, %s, %s, %s, %s, now())
     ON CONFLICT (item_id, source, grade)
     DO UPDATE SET price = EXCLUDED.price, currency = EXCLUDED.currency,
-                  fetched_at = EXCLUDED.fetched_at
+                  url = EXCLUDED.url, fetched_at = EXCLUDED.fetched_at
 """
 
 _SELECT_PRICE_SQL = """
-    SELECT price, currency, fetched_at FROM prices
+    SELECT price, currency, url, fetched_at FROM prices
     WHERE item_id = %s AND source = %s AND grade = %s
 """
 
@@ -46,9 +46,9 @@ def _read_price_row(item_id: int, source: str, grade: str) -> PriceQuote | None:
             row = cur.fetchone()
             if row is None:
                 return None
-            price, currency, fetched_at = row
+            price, currency, url, fetched_at = row
             return PriceQuote(source=source, grade=grade, price=float(price),
-                               currency=currency, fetched_at=fetched_at)
+                               currency=currency, url=url, fetched_at=fetched_at)
     finally:
         conn.close()
 
@@ -80,7 +80,7 @@ def upsert_price(item_id: int, quote: PriceQuote) -> None:
     conn = get_connection()
     try:
         with conn.cursor() as cur:
-            cur.execute(_UPSERT_PRICE_SQL, (item_id, quote.source, quote.grade, quote.price, quote.currency))
+            cur.execute(_UPSERT_PRICE_SQL, (item_id, quote.source, quote.grade, quote.price, quote.currency, quote.url))
         conn.commit()
     finally:
         conn.close()

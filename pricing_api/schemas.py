@@ -47,6 +47,10 @@ class SourcePriceOut(BaseModel):
     grade: str
     price: float
     currency: str
+    # Page produit source exacte -- None pour une source qui n'en résout pas
+    # (cf. pricing/models.py::PriceQuote). Permet à l'extension de proposer
+    # un lien de double-vérification vers la source réelle du prix.
+    url: str | None = None
 
 
 class SalesStatsOut(BaseModel):
