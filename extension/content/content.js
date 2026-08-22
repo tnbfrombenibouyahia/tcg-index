@@ -28,6 +28,14 @@
 (function () {
   const TITLE_SELECTORS = ["h1.x-item-title__mainTitle span.ux-textspans", "h1.x-item-title__mainTitle"];
   const PRICE_SELECTORS = [".x-price-primary .ux-textspans", "#prcIsum", "#mm-saleDscPrc"];
+  // Photo principale de l'annonce -- passage 1 de la cascade d'identification
+  // (§01 handoff, OCR Cloud Vision côté pricing_api) quand le titre seul ne
+  // suffit pas. Vérifié en conditions réelles le 2026-08-22 sur 2 annonces
+  // one-piece TCG distinctes (layout actuel eBay -- `#icImg`, l'ancien
+  // sélecteur "classique", n'existe plus). `.active` d'abord (image
+  // actuellement affichée dans le carrousel, au cas où l'utilisateur a déjà
+  // changé de photo) puis la première du carrousel en repli.
+  const IMAGE_SELECTORS = [".ux-image-carousel-item.active img", ".ux-image-carousel-item img"];
 
   const VERDICT_LABELS = { green: "Bonne affaire", yellow: "Prix normal", red: "Survendu" };
   const CURRENCY_SYMBOLS = { USD: "$", EUR: "€", GBP: "£" };
@@ -67,6 +75,22 @@
     for (const sel of selectors) {
       const el = document.querySelector(sel);
       if (el && el.textContent.trim()) return el.textContent.trim();
+    }
+    return null;
+  }
+
+  // Photo principale de l'annonce, en résolution max si le CDN eBay
+  // l'expose -- confirmé en conditions réelles le 2026-08-22 (200 OK sur
+  // /s-l1600.webp là où la page ne charge que /s-l500.webp par défaut) :
+  // une image plus grande améliore la précision de l'OCR (pricing/ocr.py),
+  // gratuit à demander (même objet i.ebayimg.com, juste un autre gabarit).
+  // Repli sur l'URL telle quelle si le nom de fichier ne suit pas ce
+  // pattern (image hors CDN eBay standard, cas rare mais possible).
+  function findListingImageUrl() {
+    for (const sel of IMAGE_SELECTORS) {
+      const el = document.querySelector(sel);
+      const src = el?.src;
+      if (src) return src.replace(/\/s-l\d+\.(webp|jpg)$/, "/s-l1600.$1");
     }
     return null;
   }
@@ -689,7 +713,16 @@
       return renderCardDetail(data, original, currentGrade);
     }
     if (data.status !== "ok" || !data.card) {
-      return `<p>${escapeHtml(data.message || "Carte non identifiée.")}</p>${footer}`;
+      // Passage 2 offert à l'utilisateur seulement si le titre a vraiment
+      // échoué (pas "ambiguous"/"no_reference_price", déjà retournés plus
+      // haut) ET qu'une photo est trouvable sur la page ET qu'on n'a pas
+      // déjà essayé l'image pour cette tentative (cf. requestVerdict --
+      // pas de 3e passage, cohérent avec "ne jamais deviner" §01 : si OCR
+      // échoue aussi, on s'arrête là).
+      const tryImage = !lastAttemptUsedImage && findListingImageUrl()
+        ? '<button type="button" class="cardquant-try-image">Essayer avec la photo de l\'annonce</button>'
+        : "";
+      return `<p>${escapeHtml(data.message || "Carte non identifiée.")}</p>${tryImage}${footer}`;
     }
     return renderCardDetail(data, original, currentGrade);
   }
@@ -702,6 +735,14 @@
   // pricing, cf. shared/verdict.py).
   let currentGrade = "ungraded";
   let gradeManuallySet = false;
+
+  // true si la dernière tentative /verdict a utilisé la photo de l'annonce
+  // (passage 1 OCR) plutôt que le titre -- suppresse le bouton "essayer
+  // avec la photo" en cas de nouvel échec (pas de 3e passage, cf.
+  // renderVerdict). Remis à false à chaque nouvelle requête PAR TITRE
+  // (nouvelle page, changement de grade...), jamais par la tentative image
+  // elle-même bien sûr.
+  let lastAttemptUsedImage = false;
 
   // Dernière réponse /verdict reçue -- seule donnée dont ont besoin les
   // recalculs live du ROI gradation / calculateur d'arbitrage (cf.
@@ -722,19 +763,38 @@
   // pricing_api saute identify_card() entièrement côté serveur quand il est
   // présent (cf. background.js, pricing_api/main.py::post_verdict). Défaut
   // = la carte déjà confirmée, s'il y en a une (voir confirmedCardId).
-  async function requestVerdict(panel, selectedCardId = confirmedCardId) {
+  // `useImage` : passage 2 déclenché par le bouton "essayer avec la photo"
+  // (cf. renderVerdict) -- envoie image_url à la place de text, forçant
+  // pricing_api sur le repli OCR (identify_card() n'utilise image_url QUE
+  // si text est absent, cf. pricing/matching.py). Titre toujours capté pour
+  // le grade auto-détecté quand il existe, mais jamais envoyé comme `text`
+  // dans ce mode -- sinon le serveur retomberait sur le même match par
+  // titre qui vient d'échouer.
+  async function requestVerdict(panel, selectedCardId = confirmedCardId, useImage = false) {
     if (selectedCardId != null) confirmedCardId = selectedCardId;
     panel.setLoading();
+    lastAttemptUsedImage = useImage;
     const title = queryFirstText(TITLE_SELECTORS);
     const rawPrice = queryFirstText(PRICE_SELECTORS);
     const displayedPrice = parsePrice(rawPrice);
 
-    if (!title || displayedPrice == null) {
+    let imageUrl = null;
+    if (useImage) {
+      imageUrl = findListingImageUrl();
+      if (!imageUrl) {
+        panel.setError("Aucune photo trouvable sur cette annonce.");
+        return;
+      }
+    } else if (!title) {
+      panel.setError("Titre ou prix introuvable sur cette page (sélecteurs à ajuster ?).");
+      return;
+    }
+    if (displayedPrice == null) {
       panel.setError("Titre ou prix introuvable sur cette page (sélecteurs à ajuster ?).");
       return;
     }
 
-    if (!gradeManuallySet) {
+    if (!gradeManuallySet && title) {
       currentGrade = detectGrade(title);
     }
 
@@ -751,8 +811,8 @@
     }
 
     const response = await sendMessage({
-      type: "CARDQUANT_GET_VERDICT", text: title, displayedPrice, currency, grade: currentGrade,
-      selectedCardId,
+      type: "CARDQUANT_GET_VERDICT", text: useImage ? null : title, imageUrl,
+      displayedPrice, currency, grade: currentGrade, selectedCardId,
     });
     if (!response || !response.ok) {
       if (response?.reason === "auth") {
@@ -814,6 +874,10 @@
     const cardId = el.getAttribute("data-card-id");
     if (cardId) sendMessage({ type: "CARDQUANT_OPEN_CARD", cardId });
   });
+
+  // Passage 2 (OCR sur la photo de l'annonce) -- cf. renderVerdict pour la
+  // condition d'affichage du bouton et requestVerdict pour le mode useImage.
+  panel.onClick(".cardquant-try-image", () => requestVerdict(panel, undefined, true));
 
   panel.onChange(".cardquant-grade-select", (el) => {
     currentGrade = el.value;
