@@ -110,24 +110,25 @@ def count_sales_since(item_id: int, grade: str, since: date) -> int:
 
 
 def fetch_latest_active_listing_count(item_id: int, grade: str) -> int | None:
-    """None si aucune ligne (jamais scrapé pour cet item/grade) -- PAS 0.
-    Couvre scellé ET single depuis le 2026-08-22 (cf.
-    ingestion/sources/ebay.py::sync_active_listings_for_tcg,
-    category='single' branché sur EBAY_SINGLES_SYNC_JOBS dans
-    orchestrator.py) -- Pokémon + One Piece, EN + JP. Un single peut encore
-    renvoyer None un moment après ce commit : la rotation par tranches
-    (~5 semaines pour couvrir tout le pool depuis l'extension au gradé,
-    cf. orchestrator.py::EBAY_SINGLES_NUM_SLICES) n'a pas forcément déjà
-    atteint cet item précis. L'appelant ne doit jamais confondre ce None
-    avec "0 annonce active".
+    """Dernière ligne connue, quel que soit son âge -- None si aucune ligne
+    (jamais scrapé pour cet item/grade) -- PAS 0. `grade` : 'ungraded' ou
+    'graded' (toutes notes PSA confondues, eBay ne permet pas de filtrer
+    plus finement -- cf. docstring de ingestion/sources/ebay.py). Jamais un
+    grade PSA précis ici, il n'existera jamais en base.
 
-    `grade` : seules 'ungraded' et 'graded' existent réellement en base
-    pour les singles (cf. ingestion/sources/ebay.py::_SINGLE_GRADES) --
-    'graded' est TOUTES notes confondues (PSA7 à PSA10 mélangées, eBay ne
-    permet pas de filtrer plus finement, cf. son docstring). L'appelant
-    (shared/verdict.py::compute_extended_signals) fait déjà la conversion
-    grade précis -> 'graded' avant d'appeler cette fonction -- ne jamais
-    interroger un grade exact ici, il n'existera jamais."""
+    Deux régimes de fraîcheur selon `items.category`, cf.
+    pricing/active_listings_source.py pour le détail :
+    - 'sealed' : couvert par le batch hebdomadaire existant
+      (`ingestion/sources/ebay.py::run_ebay_listings_sync`) -- cette
+      fonction reste le seul point de lecture, jamais plus vieille qu'une
+      semaine pour un item déjà repéré une fois.
+    - 'single' : depuis le 2026-08-22, scrapé À LA DEMANDE au moment de la
+      consultation (cf. active_listings_source.py) -- ne JAMAIS appeler
+      cette fonction directement pour un single, elle ne fait aucun scrape
+      live et renverrait une ligne périmée ou None. L'ancien batch par
+      rotation (~5 semaines/cycle) est retiré : rejeté après une semaine
+      d'usage réel -- un chiffre vieux d'un mois n'aide personne à décider
+      d'un achat, cf. discussion utilisateur du 2026-08-22."""
     conn = get_connection()
     try:
         with conn.cursor() as cur:
@@ -138,6 +139,49 @@ def fetch_latest_active_listing_count(item_id: int, grade: str) -> int | None:
             )
             row = cur.fetchone()
             return row[0] if row else None
+    finally:
+        conn.close()
+
+
+def fetch_active_listing_count_for_date(item_id: int, grade: str, captured_at: date) -> int | None:
+    """Lecture STRICTE à une date précise (contrairement à
+    fetch_latest_active_listing_count, qui prend la plus récente quel que
+    soit son âge) -- utilisée par pricing/active_listings_source.py pour
+    savoir si le cache du jour est déjà chaud avant de scraper en direct.
+    None si pas encore scrapé CE jour précis pour cet item/grade (même si
+    une ligne plus ancienne existe)."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT listing_count FROM active_listings "
+                "WHERE item_id = %s AND grade = %s AND captured_at = %s",
+                (item_id, grade, captured_at),
+            )
+            row = cur.fetchone()
+            return row[0] if row else None
+    finally:
+        conn.close()
+
+
+_UPSERT_ACTIVE_LISTING_SQL = """
+    INSERT INTO active_listings (item_id, captured_at, marketplace, buying_option, grade, listing_count)
+    VALUES (%s, %s, 'ebay', 'all', %s, %s)
+    ON CONFLICT (item_id, captured_at, marketplace, buying_option, grade) DO NOTHING
+"""
+
+
+def upsert_active_listing_count(item_id: int, grade: str, listing_count: int, captured_at: date) -> None:
+    """DO NOTHING sur conflit (pas DO UPDATE) : une seule écriture par
+    (item, jour, grade) suffit -- si deux requêtes concurrentes scrapent le
+    même item le même jour (rare mais possible côté verdict ponctuel), la
+    première gagne, la seconde n'écrase pas pour un chiffre qui n'a de
+    toute façon quasi aucune chance d'avoir bougé entre les deux appels."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(_UPSERT_ACTIVE_LISTING_SQL, (item_id, captured_at, grade, listing_count))
+        conn.commit()
     finally:
         conn.close()
 

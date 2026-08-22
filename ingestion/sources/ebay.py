@@ -47,7 +47,6 @@ d'où `build_single_query` qui quote systématiquement `item["code"]`.
 import base64
 import os
 import time
-import zlib
 from datetime import date
 
 import requests
@@ -163,47 +162,27 @@ _UPSERT_ACTIVE_LISTINGS_SQL = """
 """
 
 
-def _slice_items(items: list[dict], slice_index: int, num_slices: int) -> list[dict]:
-    """Découpe stable par item -- même principe que
-    `pricecharting._slice_set_codes` (hash déterministe `zlib.crc32`, pas le
-    `hash()` builtin qui varie d'un run Python à l'autre), appliqué à
-    `item["id"]` plutôt qu'à un `set_code` : le pool singles (cf.
-    orchestrator.py::EBAY_SINGLES_SYNC_JOBS) est bien plus gros que le
-    catalogue vintage EN (68 202 vs quelques milliers), un item scellé n'est
-    de toute façon pas la bonne granularité ici (1 requête/carte, pas
-    /set)."""
-    return [it for it in items if zlib.crc32(str(it["id"]).encode()) % num_slices == slice_index]
-
-
-# 'graded' = toutes notes confondues (eBay ne permet de filtrer que le
-# conditionId binaire Ungraded/Graded, jamais une note précise -- cf.
-# docstring de sync_active_listings_for_tcg). N'affecte que category='single'
-# -- le scellé n'a pas de notion de gradation, cf. search_sealed.
-_SINGLE_GRADES = ("ungraded", "graded")
-
-
 def sync_active_listings_for_tcg(
     tcg: str, category: str = "sealed", since_months: int | None = 18, max_items: int | None = None,
-    language: str = "EN", slice_index: int | None = None, num_slices: int | None = None,
+    language: str = "EN",
 ) -> dict:
-    """Comptage de listings actifs par item, alimente `active_listings`.
-    `category='sealed'` (comportement historique) ou `category='single'`
-    (ajouté le 2026-08-22, cf. mémoire projet "ebay_singles_liquidity" --
-    jusque-là `fetch_latest_active_listing_count` renvoyait toujours `None`
-    pour un single, `search_single`/`build_single_query` existaient déjà
-    mais n'étaient appelés par rien).
+    """Comptage de listings actifs par item scellé, alimente `active_listings`.
+    Scellé UNIQUEMENT -- category='single' a été essayé en batch par
+    rotation le 2026-08-22 (68 202 items, ~5 semaines/cycle pour couvrir le
+    pool) puis retiré la même semaine : un chiffre vieux d'un mois n'aide
+    personne à décider d'un achat (retour utilisateur explicite). Les
+    singles sont désormais scrapés À LA DEMANDE au moment de la consultation
+    (cf. pricing/active_listings_source.py, qui réutilise `search_single`/
+    `build_single_query` ci-dessus -- ce module reste leur SEULE
+    implémentation, juste appelée différemment).
 
-    Même filtre que price_sync_scope/JustTCG par défaut pour le scellé
-    (`since_months=18`, cf. mémoire projet) : scope volontairement restreint,
-    pas une histoire de quota ici (5000 req/jour eBay est large, cf.
-    ebay.py) mais de validation progressive (cf. mémoire projet
-    "phased_by_tcg"). Les singles, eux, n'utilisent jamais `since_months`
-    (toujours appelés avec `since_months=None`, cf. orchestrator.py) : le
-    volume (68 202 items) est déjà trop gros pour un scope par âge d'avoir un
-    effet utile, et JP n'a de toute façon pas de `release_date` exploitable
-    (cf. mémoire projet "jp_singles_tracking") -- la rotation par tranches
-    (`slice_index`/`num_slices`) est le seul levier qui marche pour les deux
-    langues à la fois.
+    Même filtre que price_sync_scope/JustTCG par défaut (`since_months=18`,
+    cf. mémoire projet) : scope volontairement restreint en v1, pas une
+    histoire de quota ici (5000 req/jour eBay est large, cf. ebay.py) mais
+    de validation progressive (cf. mémoire projet "phased_by_tcg") -- les
+    singles ont pourtant une précision mesurée à 98% (probe_ebay.py), mais
+    élargir le scope est une décision à prendre explicitement, pas un effet
+    de bord de ce commit.
 
     `language` : 'EN' par défaut, 'JP' activé pour One Piece le 2026-08-07
     après validation (`probe_ebay.py --language JP` -- singles 135/136,
@@ -211,28 +190,15 @@ def sync_active_listings_for_tcg(
     propre item_id (nom différent, ex. "... Booster Box [JP]"), donc aucun
     changement de schéma nécessaire -- juste un filtre `language` de plus.
 
-    Scellé : pour chaque item, somme CCG Sealed Packs + CCG Sealed Boxes (2
+    Pour chaque item, somme CCG Sealed Packs + CCG Sealed Boxes (2
     requêtes) -- impossible de router de façon fiable vers une seule des deux
     catégories à partir du nom produit (des Tins/Blisters similaires
-    atterrissent des deux côtés côté eBay, cf. probe_ebay.py). Single : 2
-    requêtes/carte (`search_single`, une par valeur de `_SINGLE_GRADES`) --
-    'ungraded' ET 'graded' (ajouté le 2026-08-22, demande utilisateur : "les
-    users vont autant check les raw que les gradées"). 'graded' n'est PAS
-    une note précise (psa7..psa10) : confirmé via l'API Taxonomy eBay
-    (`get_item_aspects_for_category` sur 183454) qu'aucun aspect
-    "Grade"/"Grading Company" n'existe pour cette catégorie -- eBay ne
-    permet de filtrer QUE sur le conditionId binaire Ungraded/Graded
-    (cf. CONDITION_UNGRADED/CONDITION_GRADED plus haut), jamais une note
-    précise. 'graded' est donc un comptage toutes notes confondues,
-    documenté comme tel côté extension (jamais présenté comme "N PSA10"),
-    même principe "ne jamais deviner" que le reste du pipeline.
+    atterrissent des deux côtés côté eBay, cf. probe_ebay.py), donc on
+    interroge systématiquement les deux plutôt que de risquer de perdre du
+    volume.
 
-    `slice_index`/`num_slices` : rotation stable par item (cf.
-    `_slice_items`) -- `None`/`None` traite tout le pool éligible en un seul
-    run (comportement historique, utilisé par le scellé qui tient déjà sous
-    quota sans rotation). `max_items` plafonne APRÈS le découpage en tranche
-    (utile pour tester ou pour un run à budget limité) -- même rôle que dans
-    pricecharting.py.
+    `max_items` plafonne le nombre d'items traités (utile pour tester ou
+    pour un run à budget limité) -- même rôle que dans pricecharting.py.
     """
     conn = get_connection()
     try:
@@ -243,17 +209,14 @@ def sync_active_listings_for_tcg(
                 where.append("release_date >= (CURRENT_DATE - %s * INTERVAL '1 month')")
                 params.append(since_months)
             cur.execute(
-                f"SELECT id, name, set_code, code FROM items WHERE {' AND '.join(where)} ORDER BY id",
+                f"SELECT id, name, set_code FROM items WHERE {' AND '.join(where)} ORDER BY id",
                 params,
             )
-            items = [{"id": r[0], "name": r[1], "set_code": r[2], "code": r[3]} for r in cur.fetchall()]
+            items = [{"id": r[0], "name": r[1], "set_code": r[2]} for r in cur.fetchall()]
 
-        if slice_index is not None:
-            items = _slice_items(items, slice_index, num_slices)
         if max_items is not None:
             items = items[:max_items]
-        slice_label = f", tranche {slice_index + 1}/{num_slices}" if slice_index is not None else ""
-        print(f"{len(items)} item(s) éligibles pour tcg={tcg}, category={category}, language={language}{slice_label} (max_items={max_items}).")
+        print(f"{len(items)} item(s) éligibles pour tcg={tcg}, category={category}, language={language} (max_items={max_items}).")
 
         today = date.today()
         # Batch vidé après chaque flush (contrairement à un simple compteur
@@ -273,58 +236,25 @@ def sync_active_listings_for_tcg(
         # rejouer).
         batch: list[tuple] = []
         rows_written = 0
-        skipped = 0
-        requests_made = 0
         errors = []
         with conn.cursor() as cur:
-            def _make_request(item: dict, grade: str) -> None:
-                """Une requête eBay + append au batch (ou erreur journalisée),
-                pacée par le même compteur `requests_made` que le reste de la
-                fonction -- factorisé ici car category='single' l'appelle
-                jusqu'à 2 fois par item (une par valeur de _SINGLE_GRADES),
-                contre 1 seule fois pour le scellé."""
-                nonlocal requests_made
-                if requests_made > 0:
+            for i, item in enumerate(items):
+                if i > 0:
                     time.sleep(MIN_SECONDS_BETWEEN_REQUESTS)
                 try:
-                    if category == "single":
-                        total = search_single(item, grade=grade, limit=1).get("total", 0)
-                    else:
-                        packs_resp, boxes_resp = search_sealed(item, limit=1)
-                        total = packs_resp.get("total", 0) + boxes_resp.get("total", 0)
+                    packs_resp, boxes_resp = search_sealed(item, limit=1)
                 except Exception as exc:
-                    requests_made += 1
-                    print(f"    ! erreur eBay pour {item['name']!r} (id={item['id']}, grade={grade!r}): {exc}")
-                    errors.append({"item_id": item["id"], "name": item["name"], "grade": grade, "error": str(exc)})
-                    return
-                requests_made += 1
-                batch.append((item["id"], today, "ebay", "all", grade, total))
-
-            for item in items:
-                if category == "single" and not item.get("code"):
-                    # Sans numéro de carte, `q` (cf. build_single_query) n'est
-                    # que le nom seul -- eBay remonte tout ce qui contient ce
-                    # mot, pas la carte précise (module docstring : "q n'est
-                    # pas un ET strict"). Confirmé en prod le 2026-08-22 :
-                    # jusqu'à 143k "annonces actives" pour "Mew" seul, ~1.3%
-                    # du pool JP ce jour-là. Aucune requête eBay, aucune ligne
-                    # écrite -- `fetch_latest_active_listing_count` doit
-                    # rester None (jamais un chiffre trompeur), même principe
-                    # "ne jamais deviner" que le reste du pipeline de matching.
-                    skipped += 1
+                    print(f"    ! erreur eBay pour {item['name']!r} (id={item['id']}): {exc}")
+                    errors.append({"item_id": item["id"], "name": item["name"], "error": str(exc)})
                     continue
-
-                if category == "single":
-                    for grade in _SINGLE_GRADES:
-                        _make_request(item, grade)
-                else:
-                    _make_request(item, "ungraded")
+                total = packs_resp.get("total", 0) + boxes_resp.get("total", 0)
+                batch.append((item["id"], today, "ebay", "all", "ungraded", total))
 
                 if len(batch) >= 100:
                     _flush = batch
                     retry_on_serialization_failure(lambda b=_flush: (execute_values(cur, _UPSERT_ACTIVE_LISTINGS_SQL, b), conn.commit()))
                     rows_written += len(batch)
-                    print(f"  {rows_written + skipped}/{len(items)} items traités ({skipped} sautés, sans code), {rows_written} lignes upsertées jusqu'ici.")
+                    print(f"  {i + 1}/{len(items)} items traités, {rows_written} lignes upsertées jusqu'ici.")
                     batch = []
 
             if batch:
@@ -339,7 +269,6 @@ def sync_active_listings_for_tcg(
         "language": language,
         "items_processed": len(items),
         "rows_written": rows_written,
-        "skipped": skipped,
         "errors": errors,
     }
 
@@ -356,19 +285,16 @@ def main():
     parser.add_argument("--language", default="EN")
     parser.add_argument("--since-months", type=int, default=18)
     parser.add_argument("--max-items", type=int, default=None)
-    parser.add_argument("--slice-index", type=int, default=None)
-    parser.add_argument("--num-slices", type=int, default=None)
     args = parser.parse_args()
     since_months = args.since_months or None
 
     print(
         f"== Sync active_listings pour tcg={args.tcg} "
-        f"(category={args.category}, language={args.language}, since_months={since_months}, "
-        f"max_items={args.max_items}, slice_index={args.slice_index}, num_slices={args.num_slices}) =="
+        f"(category={args.category}, language={args.language}, since_months={since_months}, max_items={args.max_items}) =="
     )
     stats = sync_active_listings_for_tcg(
         args.tcg, category=args.category, since_months=since_months, max_items=args.max_items,
-        language=args.language, slice_index=args.slice_index, num_slices=args.num_slices,
+        language=args.language,
     )
     print(f"\nTerminé : {stats}")
 

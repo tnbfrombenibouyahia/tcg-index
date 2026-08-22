@@ -80,37 +80,37 @@ Fait :
   repo) sur les statuts ok/no_reference_price/ambiguous/not_found + les 2
   interactions (changement de grade, clic CTA) — aucune erreur JS, aucun
   fragment "undefined"/"NaN" dans le rendu.
-  - ✅ **Limite levée le 2026-08-22** : `active_listings` (compteur "en
-    vente active" du bloc Liquidité) couvre désormais aussi les singles
-    (`ingestion/sources/ebay.py::sync_active_listings_for_tcg`,
-    `category='single'`, branché sur `search_single`/`build_single_query`
-    qui existaient déjà mais n'étaient appelés par rien) — Pokémon et One
-    Piece, EN et JP. `fetch_latest_active_listing_count` n'a pas changé
-    (elle lisait déjà par `item_id`, indépendamment de la catégorie).
-    Le pool (68 202 items) est trop gros pour un run unique (quota eBay
-    5000 req/jour) : rotation par tranches (`EBAY_SINGLES_NUM_SLICES`,
-    cf. `orchestrator.py::_current_ebay_singles_slice`), cron GCP dédié
-    quotidien (jeudi exclu, déjà pris par le scellé). Un single peut donc
-    encore afficher "—" temporairement si la rotation n'a pas encore
-    atteint cet item précis — jamais un faux `0`, cf.
-    `pricing/repository.py::fetch_latest_active_listing_count`.
-  - ✅ **Étendu au gradé le 2026-08-22** (demande utilisateur : "les users
-    vont autant check les raw que les gradées") : `_SINGLE_GRADES =
-    ("ungraded", "graded")`, 2 requêtes/carte au lieu d'1
-    (`conditionIds:{4000}` puis `{2750}`). **'graded' n'est PAS une note
-    précise** -- vérifié via l'API Taxonomy eBay
-    (`get_item_aspects_for_category` sur 183454, CCG Individual Cards) :
-    aucun aspect "Grade"/"Grading Company" n'existe pour cette catégorie,
-    eBay ne permet de filtrer QUE sur le conditionId binaire Ungraded/
-    Graded. C'est donc un comptage toutes notes confondues (PSA7 à PSA10
-    mélangées) -- `shared/verdict.py::compute_extended_signals` mappe tout
-    grade PSA précis vers ce bucket `'graded'` unique avant la lecture
-    (`pricing/repository.py::fetch_latest_active_listing_count` n'a jamais
-    de ligne à un grade exact), et le panneau annote le chiffre "(toutes
-    notes)" dès que `grade !== 'ungraded'` -- jamais présenté comme "N PSA10"
-    (`ne jamais deviner`, §01). Contrepartie assumée : `EBAY_SINGLES_NUM_SLICES`
-    doublé (15 → 30, 2x plus de requêtes/item à budget quotidien égal),
-    cycle complet passé de ~2,5 à ~5 semaines.
+  - ✅ **Limite levée le 2026-08-22, singles + gradé, à la demande** :
+    `active_listings` (compteur "en vente active" du bloc Liquidité)
+    couvre désormais les singles ET les cartes gradées, Pokémon et One
+    Piece, EN et JP -- Ungraded et gradé (`conditionIds:{4000}`/`{2750}`).
+    **Un premier essai en BATCH par rotation a été tenté puis retiré la
+    même journée** (`orchestrator.py::run_ebay_singles_listings_sync`,
+    ~2,5 à ~5 semaines/cycle selon la portée -- historique dans les
+    commentaires de `orchestrator.py`) : retour utilisateur explicite,
+    un chiffre vieux d'un mois n'aide personne à décider d'un achat.
+    Remplacé par un scrape **à la demande** (`pricing/active_listings_source.py`,
+    appelé depuis `shared/verdict.py::compute_extended_signals`) -- au
+    moment où une carte est consultée, si elle n'a pas déjà été scrapée
+    aujourd'hui (cache = 1 ligne/jour calendaire, `pricing/repository.py::fetch_active_listing_count_for_date`),
+    1 requête eBay part en direct (~0.3-1s de latence en plus sur ce
+    `/verdict` précis), le résultat est mis en cache pour le reste de la
+    journée. `card.code` requis (même garde "ne jamais deviner" que le
+    reste du matching -- sans code la recherche eBay part trop générique,
+    jusqu'à 143k "annonces actives" observées pour un nom seul). Le scellé,
+    lui, reste sur son batch hebdomadaire existant (catalogue assez petit
+    pour tenir en un seul run, `ingestion/sources/ebay.py::run_ebay_listings_sync`,
+    inchangé).
+  - **'graded' n'est PAS une note précise (psa7..psa10)** -- vérifié via
+    l'API Taxonomy eBay (`get_item_aspects_for_category` sur 183454, CCG
+    Individual Cards) : aucun aspect "Grade"/"Grading Company" n'existe
+    pour cette catégorie, eBay ne permet de filtrer QUE sur le conditionId
+    binaire Ungraded/Graded. C'est donc un comptage toutes notes confondues
+    (PSA7 à PSA10 mélangées) -- `shared/verdict.py::compute_extended_signals`
+    mappe tout grade PSA précis vers ce bucket `'graded'` unique avant la
+    lecture, et le panneau annote le chiffre "(toutes notes)" dès que
+    `grade !== 'ungraded'` -- jamais présenté comme "N PSA10"
+    (`ne jamais deviner`, §01).
 
 - **ROI gradation + calculateur d'arbitrage (§07)**, 100% côté client comme
   décrit dans le handoff -- aucun des deux calculs ne vit côté serveur, pour

@@ -14,6 +14,7 @@ import statistics
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
+from pricing.active_listings_source import get_active_listing_count
 from pricing.cache import get_price_with_cache
 from pricing.grading_roi import GradingRoiInputs
 from pricing.liquidity import LiquidityMetrics, compute_liquidity
@@ -24,7 +25,6 @@ from pricing.repository import (
     fetch_card_by_id,
     fetch_grading_roi_inputs,
     fetch_language_siblings,
-    fetch_latest_active_listing_count,
     fetch_latest_price_snapshot,
     fetch_recent_sales,
     fetch_sealed_display_for_set,
@@ -186,13 +186,21 @@ def compute_extended_signals(card: Card, grade: str, *, reference_price: float |
     sales_last_90d = count_sales_since(card.id, grade, date.today() - timedelta(days=_LIQUIDITY_WINDOW_DAYS))
     # active_listings n'a que 2 valeurs de `grade` possibles en base :
     # 'ungraded' ou 'graded' (toutes notes confondues, cf.
-    # ingestion/sources/ebay.py::_SINGLE_GRADES -- eBay ne permet pas de
-    # filtrer sur une note précise). Une carte consultée à un grade PSA
-    # précis (psa7..psa10) doit donc chercher sous 'graded', jamais sous son
-    # grade exact qui n'existera jamais dans cette table -- toujours None
-    # sinon, même si des annonces gradées existent bien.
+    # ingestion/sources/ebay.py -- eBay ne permet pas de filtrer sur une
+    # note précise). Une carte consultée à un grade PSA précis
+    # (psa7..psa10) doit donc chercher sous 'graded', jamais sous son grade
+    # exact qui n'existera jamais dans cette table -- toujours None sinon,
+    # même si des annonces gradées existent bien.
+    #
+    # get_active_listing_count (pas fetch_latest_active_listing_count) :
+    # pour un single, scrape À LA DEMANDE si pas déjà fait aujourd'hui (cf.
+    # pricing/active_listings_source.py) -- remplace le 2026-08-22 un batch
+    # par rotation jugé trop lent (~5 semaines/cycle) après retour
+    # utilisateur. Le scellé, lui, continue de lire simplement le batch
+    # hebdomadaire existant (même fonction en interne, aucun changement de
+    # comportement pour lui).
     active_listings_grade = grade if grade == "ungraded" else "graded"
-    active_listings = fetch_latest_active_listing_count(card.id, active_listings_grade)
+    active_listings = get_active_listing_count(card, active_listings_grade)
     liquidity = compute_liquidity(sales_last_90d, active_listings)
 
     language_comparison = _build_language_comparison(card, grade, current_price=reference_price)
