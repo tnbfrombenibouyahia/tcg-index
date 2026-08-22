@@ -85,6 +85,16 @@ class SealedDisplayPriceOut(BaseModel):
     currency: str
 
 
+class GradingRoiInputsOut(BaseModel):
+    """Ingrédients bruts (PAS le ROI calculé) -- cf. pricing/grading_roi.py.
+    Le calcul EV/coût/ROI se fait côté extension (lib/gradingRoi.js, port de
+    web/lib/gradingRoi.ts) pour rester recalculable en live quand
+    l'utilisateur change ses hypothèses."""
+    ungraded_price: float
+    grade_prices: dict[str, float]  # seuls les grades avec un prix connu
+    grade_counts: dict[str, dict[str, int]]  # 'card'|'set_rarity'|'set'|'tcg' -> {grade: count}
+
+
 class VerdictResponse(BaseModel):
     status: str  # 'matched' | 'ambiguous' | 'not_found' | 'card_not_found' | 'no_reference_price'
     card: CardCandidateOut | None = None
@@ -106,3 +116,4 @@ class VerdictResponse(BaseModel):
     liquidity: LiquidityOut | None = None
     language_comparison: list[LanguageComparisonOut] = []
     sealed_display_price: SealedDisplayPriceOut | None = None
+    grading_roi_inputs: GradingRoiInputsOut | None = None
