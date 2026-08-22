@@ -5,6 +5,7 @@ le reste du repo).
 """
 from datetime import date
 
+from pricing.grading_roi import GradingRoiInputs
 from pricing.models import Card
 from shared.db import get_connection
 
@@ -193,5 +194,59 @@ def fetch_sealed_display_for_set(tcg: str, set_code: str | None, language: str) 
             )
             row = cur.fetchone()
             return _row_to_card(row) if row else None
+    finally:
+        conn.close()
+
+
+_GRADING_ROI_INPUTS_COLUMNS = (
+    "ungraded_price, psa7_price, psa8_price, psa9_price, psa95_price, psa10_price, "
+    "card_n7, card_n8, card_n9, card_n95, card_n10, "
+    "sr_n7, sr_n8, sr_n9, sr_n95, sr_n10, "
+    "set_n7, set_n8, set_n9, set_n95, set_n10, "
+    "tcg_n7, tcg_n8, tcg_n9, tcg_n95, tcg_n10"
+)
+
+
+def fetch_grading_roi_inputs(item_id: int) -> GradingRoiInputs | None:
+    """None si jamais matérialisé pour cet item -- `grading_roi_inputs` n'est
+    rempli que par un run --tier (cf. index/grading_roi_inputs.py), pas le
+    run quotidien : une carte pas encore repassée dans son palier n'a
+    simplement pas de ligne. L'appelant doit traiter ça comme "calculateur
+    indisponible pour l'instant", jamais comme un ROI nul."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"SELECT {_GRADING_ROI_INPUTS_COLUMNS} FROM grading_roi_inputs "
+                "WHERE item_id = %s ORDER BY captured_at DESC LIMIT 1",
+                (item_id,),
+            )
+            row = cur.fetchone()
+            if row is None:
+                return None
+            (ungraded, p7, p8, p9, p95, p10,
+             c7, c8, c9, c95, c10,
+             sr7, sr8, sr9, sr95, sr10,
+             set7, set8, set9, set95, set10,
+             tcg7, tcg8, tcg9, tcg95, tcg10) = row
+
+            grade_prices: dict[str, float] = {}
+            for grade, price in (("psa7", p7), ("psa8", p8), ("psa9", p9), ("psa9.5", p95), ("psa10", p10)):
+                if price is not None:
+                    grade_prices[grade] = float(price)
+
+            def _counts(n7, n8, n9, n95, n10) -> dict[str, int]:
+                return {"psa7": n7, "psa8": n8, "psa9": n9, "psa9.5": n95, "psa10": n10}
+
+            return GradingRoiInputs(
+                ungraded_price=float(ungraded),
+                grade_prices=grade_prices,
+                grade_counts={
+                    "card": _counts(c7, c8, c9, c95, c10),
+                    "set_rarity": _counts(sr7, sr8, sr9, sr95, sr10),
+                    "set": _counts(set7, set8, set9, set95, set10),
+                    "tcg": _counts(tcg7, tcg8, tcg9, tcg95, tcg10),
+                },
+            )
     finally:
         conn.close()

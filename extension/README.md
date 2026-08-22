@@ -95,9 +95,35 @@ Fait :
     si la rotation n'a pas encore atteint cet item précis — jamais un faux
     `0`, cf. `pricing/repository.py::fetch_latest_active_listing_count`.
 
+- **ROI gradation + calculateur d'arbitrage (§07)**, 100% côté client comme
+  décrit dans le handoff -- aucun des deux calculs ne vit côté serveur, pour
+  rester recalculable en live quand l'utilisateur change ses hypothèses.
+  - **ROI gradation** : `extension/lib/gradingRoi.js` est un port JS 1:1 de
+    `web/lib/gradingRoi.ts` (mêmes formules/constantes -- distribution de
+    grades par cascade carte → set+rareté → set → tcg, EV nette, coût de
+    soumission PSA par palier, ROI). Les ingrédients bruts (dernier prix
+    connu par grade + comptage de ventes gradées aux 4 niveaux) viennent
+    d'un nouveau champ `grading_roi_inputs` sur `/verdict`
+    (`pricing/grading_roi.py` + `pricing/repository.py::fetch_grading_roi_inputs`,
+    lit la table `grading_roi_inputs` déjà matérialisée côté site par
+    `index/grading_roi_inputs.py` -- rien de nouveau à calculer côté
+    Postgres). Palier PSA/frais divers/risque sous-note/frais revente sont
+    éditables dans le panneau, recalcul immédiat (`input`/`change`) sans
+    jamais rappeler `/verdict`. `None` (carte pas encore repassée dans son
+    palier `--tier`, cf. docstring `pricing/repository.py`) affiche un
+    message plutôt qu'un ROI inventé -- jamais affiché pour le scellé (pas
+    de notion de gradation).
+  - **Calculateur d'arbitrage** : aucune donnée serveur en plus -- réutilise
+    `reference_price` déjà renvoyé par `/verdict` (même prix que le verdict
+    ponctuel, cf. §07). Achat/livraison/douane saisis par l'utilisateur,
+    bénéfice recalculé en live.
+  - Testé via le même harness jsdom ponctuel que le panneau v2 (flux de
+    messages réel `CARDQUANT_GET_SESSION`/`CARDQUANT_GET_VERDICT` stubé,
+    pas les fonctions de rendu isolées) : cas avec/sans
+    `grading_roi_inputs`, recalcul live sur changement de palier ET de
+    frais, aucune erreur JS, aucun fragment "undefined"/"NaN".
+
 Pas fait (hors scope de ce scaffold) :
-- ROI gradation, calculateur d'arbitrage (§07) — décrits comme calculs
-  côté client dans le handoff, pas encore implémentés ici.
 - Vinted, Cardmarket — seul eBay (14 domaines pays, cf. `manifest.json`)
   est scopé pour l'instant.
 - Identification par image (upload/capture depuis le panneau) — le back-end
