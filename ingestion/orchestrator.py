@@ -354,12 +354,18 @@ EBAY_SINGLES_SYNC_JOBS: list[tuple[str, str]] = [
 # comme chaque pool est tranché par le même modulo sur `item_id`, la taille
 # de sa tranche quotidienne reste naturellement proportionnelle à sa taille
 # totale -- pokemon EN/JP (les deux plus gros, ~28-30k chacun) et one-piece
-# EN/JP (~3.8-6.6k) sont donc déjà équilibrés sans calcul par pool. 15
-# tranches × ~4547 items/jour en moyenne (68202/15) tient large sous les
-# 5000/jour eBay (marge ~10%, cf. principe §02 handoff) MÊME cumulé avec un
-# éventuel retry du même jour ; cycle complet en 15 déclenchements réels
-# (~2.5 semaines, cf. _current_ebay_singles_slice -- jeudi exclu).
-EBAY_SINGLES_NUM_SLICES = 15
+# EN/JP (~3.8-6.6k) sont donc déjà équilibrés sans calcul par pool.
+#
+# 30 tranches (doublé le 2026-08-22, demande utilisateur : suivi étendu aux
+# cartes gradées, cf. ebay.py::_SINGLE_GRADES) -- chaque item coûte
+# maintenant 2 requêtes/jour (ungraded + graded) au lieu d'1, donc 2x moins
+# d'items par tranche à budget quotidien égal : ~4547 requêtes/jour en
+# moyenne (68202×2/30), même marge ~10% sous les 5000/jour eBay qu'avant.
+# Contrepartie assumée : le cycle complet passe de ~2,5 à ~5 semaines (30
+# déclenchements réels, cf. _current_ebay_singles_slice -- jeudi exclu) --
+# le double de couverture (ungraded + graded) pour le même budget prend
+# mécaniquement deux fois plus de temps à parcourir tout le catalogue.
+EBAY_SINGLES_NUM_SLICES = 30
 
 
 def run_ebay_singles_listings_sync(run_type: str) -> None:

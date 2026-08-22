@@ -175,6 +175,13 @@ def _slice_items(items: list[dict], slice_index: int, num_slices: int) -> list[d
     return [it for it in items if zlib.crc32(str(it["id"]).encode()) % num_slices == slice_index]
 
 
+# 'graded' = toutes notes confondues (eBay ne permet de filtrer que le
+# conditionId binaire Ungraded/Graded, jamais une note précise -- cf.
+# docstring de sync_active_listings_for_tcg). N'affecte que category='single'
+# -- le scellé n'a pas de notion de gradation, cf. search_sealed.
+_SINGLE_GRADES = ("ungraded", "graded")
+
+
 def sync_active_listings_for_tcg(
     tcg: str, category: str = "sealed", since_months: int | None = 18, max_items: int | None = None,
     language: str = "EN", slice_index: int | None = None, num_slices: int | None = None,
@@ -207,9 +214,18 @@ def sync_active_listings_for_tcg(
     Scellé : pour chaque item, somme CCG Sealed Packs + CCG Sealed Boxes (2
     requêtes) -- impossible de router de façon fiable vers une seule des deux
     catégories à partir du nom produit (des Tins/Blisters similaires
-    atterrissent des deux côtés côté eBay, cf. probe_ebay.py). Single : 1
-    requête/carte (`search_single`, grade toujours 'ungraded' en v1, même
-    limite documentée que le reste du schéma `active_listings`).
+    atterrissent des deux côtés côté eBay, cf. probe_ebay.py). Single : 2
+    requêtes/carte (`search_single`, une par valeur de `_SINGLE_GRADES`) --
+    'ungraded' ET 'graded' (ajouté le 2026-08-22, demande utilisateur : "les
+    users vont autant check les raw que les gradées"). 'graded' n'est PAS
+    une note précise (psa7..psa10) : confirmé via l'API Taxonomy eBay
+    (`get_item_aspects_for_category` sur 183454) qu'aucun aspect
+    "Grade"/"Grading Company" n'existe pour cette catégorie -- eBay ne
+    permet de filtrer QUE sur le conditionId binaire Ungraded/Graded
+    (cf. CONDITION_UNGRADED/CONDITION_GRADED plus haut), jamais une note
+    précise. 'graded' est donc un comptage toutes notes confondues,
+    documenté comme tel côté extension (jamais présenté comme "N PSA10"),
+    même principe "ne jamais deviner" que le reste du pipeline.
 
     `slice_index`/`num_slices` : rotation stable par item (cf.
     `_slice_items`) -- `None`/`None` traite tout le pool éligible en un seul
@@ -261,6 +277,29 @@ def sync_active_listings_for_tcg(
         requests_made = 0
         errors = []
         with conn.cursor() as cur:
+            def _make_request(item: dict, grade: str) -> None:
+                """Une requête eBay + append au batch (ou erreur journalisée),
+                pacée par le même compteur `requests_made` que le reste de la
+                fonction -- factorisé ici car category='single' l'appelle
+                jusqu'à 2 fois par item (une par valeur de _SINGLE_GRADES),
+                contre 1 seule fois pour le scellé."""
+                nonlocal requests_made
+                if requests_made > 0:
+                    time.sleep(MIN_SECONDS_BETWEEN_REQUESTS)
+                try:
+                    if category == "single":
+                        total = search_single(item, grade=grade, limit=1).get("total", 0)
+                    else:
+                        packs_resp, boxes_resp = search_sealed(item, limit=1)
+                        total = packs_resp.get("total", 0) + boxes_resp.get("total", 0)
+                except Exception as exc:
+                    requests_made += 1
+                    print(f"    ! erreur eBay pour {item['name']!r} (id={item['id']}, grade={grade!r}): {exc}")
+                    errors.append({"item_id": item["id"], "name": item["name"], "grade": grade, "error": str(exc)})
+                    return
+                requests_made += 1
+                batch.append((item["id"], today, "ebay", "all", grade, total))
+
             for item in items:
                 if category == "single" and not item.get("code"):
                     # Sans numéro de carte, `q` (cf. build_single_query) n'est
@@ -274,21 +313,12 @@ def sync_active_listings_for_tcg(
                     # "ne jamais deviner" que le reste du pipeline de matching.
                     skipped += 1
                     continue
-                if requests_made > 0:
-                    time.sleep(MIN_SECONDS_BETWEEN_REQUESTS)
-                try:
-                    if category == "single":
-                        total = search_single(item, grade="ungraded", limit=1).get("total", 0)
-                    else:
-                        packs_resp, boxes_resp = search_sealed(item, limit=1)
-                        total = packs_resp.get("total", 0) + boxes_resp.get("total", 0)
-                except Exception as exc:
-                    requests_made += 1
-                    print(f"    ! erreur eBay pour {item['name']!r} (id={item['id']}): {exc}")
-                    errors.append({"item_id": item["id"], "name": item["name"], "error": str(exc)})
-                    continue
-                requests_made += 1
-                batch.append((item["id"], today, "ebay", "all", "ungraded", total))
+
+                if category == "single":
+                    for grade in _SINGLE_GRADES:
+                        _make_request(item, grade)
+                else:
+                    _make_request(item, "ungraded")
 
                 if len(batch) >= 100:
                     _flush = batch

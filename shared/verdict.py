@@ -184,7 +184,15 @@ def compute_extended_signals(card: Card, grade: str, *, reference_price: float |
     sales_stats = compute_sales_stats(recent_sales)
 
     sales_last_90d = count_sales_since(card.id, grade, date.today() - timedelta(days=_LIQUIDITY_WINDOW_DAYS))
-    active_listings = fetch_latest_active_listing_count(card.id, grade)
+    # active_listings n'a que 2 valeurs de `grade` possibles en base :
+    # 'ungraded' ou 'graded' (toutes notes confondues, cf.
+    # ingestion/sources/ebay.py::_SINGLE_GRADES -- eBay ne permet pas de
+    # filtrer sur une note précise). Une carte consultée à un grade PSA
+    # précis (psa7..psa10) doit donc chercher sous 'graded', jamais sous son
+    # grade exact qui n'existera jamais dans cette table -- toujours None
+    # sinon, même si des annonces gradées existent bien.
+    active_listings_grade = grade if grade == "ungraded" else "graded"
+    active_listings = fetch_latest_active_listing_count(card.id, active_listings_grade)
     liquidity = compute_liquidity(sales_last_90d, active_listings)
 
     language_comparison = _build_language_comparison(card, grade, current_price=reference_price)

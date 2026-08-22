@@ -116,9 +116,18 @@ def fetch_latest_active_listing_count(item_id: int, grade: str) -> int | None:
     category='single' branché sur EBAY_SINGLES_SYNC_JOBS dans
     orchestrator.py) -- Pokémon + One Piece, EN + JP. Un single peut encore
     renvoyer None un moment après ce commit : la rotation par tranches
-    (~15 jours pour couvrir tout le pool, cf. orchestrator.py) n'a pas
-    forcément déjà atteint cet item précis. L'appelant ne doit jamais
-    confondre ce None avec "0 annonce active"."""
+    (~5 semaines pour couvrir tout le pool depuis l'extension au gradé,
+    cf. orchestrator.py::EBAY_SINGLES_NUM_SLICES) n'a pas forcément déjà
+    atteint cet item précis. L'appelant ne doit jamais confondre ce None
+    avec "0 annonce active".
+
+    `grade` : seules 'ungraded' et 'graded' existent réellement en base
+    pour les singles (cf. ingestion/sources/ebay.py::_SINGLE_GRADES) --
+    'graded' est TOUTES notes confondues (PSA7 à PSA10 mélangées, eBay ne
+    permet pas de filtrer plus finement, cf. son docstring). L'appelant
+    (shared/verdict.py::compute_extended_signals) fait déjà la conversion
+    grade précis -> 'graded' avant d'appeler cette fonction -- ne jamais
+    interroger un grade exact ici, il n'existera jamais."""
     conn = get_connection()
     try:
         with conn.cursor() as cur:
