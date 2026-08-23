@@ -19,6 +19,7 @@ import re
 import unicodedata
 
 from ingestion.sources.pricecharting import (
+    PRICECHARTING_JP_ALL_SLUGS,
     PRICECHARTING_SET_SLUGS,
     fetch_all_console_rows,
     fetch_card_details,
@@ -94,7 +95,23 @@ class PriceChartingSource(PriceSource):
         requête de verdict grâce au cache TTL en amont. Retourne None
         (jamais d'exception) si le set_code n'est pas mappé, si le scraping
         échoue, ou si aucune ligne ne matche le code."""
-        slug = PRICECHARTING_SET_SLUGS.get(card.set_code or "")
+        # One Piece JP réutilise EXACTEMENT le même set_code que son
+        # homonyme EN (cf. pricing/repository.py::fetch_set_release_year) --
+        # sans ce branchement sur card.language, PRICECHARTING_SET_SLUGS
+        # (clé = set_code, EN uniquement) matche quand même et fait scraper
+        # la page de set ANGLAISE pour une carte JAPONAISE : le code
+        # (ex. "OP06-118") est identique dans les deux langues donc
+        # _find_row_for_card matche sans erreur apparente, mais renvoie le
+        # prix/URL de la MAUVAISE carte -- bug réel constaté en test (2026-
+        # 08-23 : carte JP PSA10 affichée à 4688$ (~PSA10 EN) et lien
+        # PriceCharting pointant vers la fiche anglaise). PRICECHARTING_JP_
+        # ALL_SLUGS (déjà construit et utilisé par le batch JP singles, cf.
+        # ingestion/sources/pricecharting.py) donne le bon slug JP pour la
+        # même clé set_code -- Pokémon JP n'a pas cette ambiguïté (set_code
+        # JP synthétique déjà distinct, cf. mémoire projet), ce branchement
+        # reste donc correct pour les deux TCG.
+        slugs = PRICECHARTING_JP_ALL_SLUGS if card.language == "JP" else PRICECHARTING_SET_SLUGS
+        slug = slugs.get(card.set_code or "")
         if not slug:
             return None
 

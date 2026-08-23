@@ -102,7 +102,20 @@
     // décimale, point = milliers) sur ebay.fr/.de/... -- une seule règle
     // "retire la virgule" (l'ancienne implémentation) transforme "127,00"
     // en 12700, une erreur x100 silencieuse sur tout site européen.
-    const matches = raw.match(/[\d.,]+/g);
+    //
+    // ebay.fr (et d'autres sites EU) séparent aussi les milliers par une
+    // espace insécable (U+00A0, parfois narrow U+202F) plutôt qu'un point :
+    // "3 280,04 EUR". Cette espace n'est pas dans la classe [\d.,] ci-
+    // dessous, donc sans ce nettoyage le raw.match la coupe en DEUX
+    // matches ("3" et "280,04") et matches[length-1] ne garde que le
+    // dernier -- un chiffre de milliers disparaît silencieusement (bug
+    // constaté en test réel : "3 280,04 EUR" lu comme 280,04 EUR, cf.
+    // retour utilisateur 2026-08-23). On retire toute espace strictement
+    // entre deux chiffres avant l'extraction (U+00A0/U+202F explicites,
+    // jamais un littéral invisible dans la source), jamais une espace
+    // suivie d'autre chose (ex. avant "EUR").
+    const cleaned = raw.replace(/(\d)[\s\u00A0\u202F\u2009](?=\d)/g, "$1");
+    const matches = cleaned.match(/[\d.,]+/g);
     if (!matches) return null;
     let numStr = matches[matches.length - 1];
     const lastComma = numStr.lastIndexOf(",");
