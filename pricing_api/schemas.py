@@ -123,9 +123,12 @@ class VerdictResponse(BaseModel):
 
     # Signaux étendus (maquette panneau v2) -- tous None/vides si la carte
     # n'a pas pu être identifiée (status != 'ok' et != 'no_reference_price').
-    # opportunity_score reste None même carte identifiée si aucune source de
-    # prix n'a répondu (status='no_reference_price') : jamais deviné sans
-    # prix de référence, cf. shared/verdict.py::compute_extended_signals.
+    # opportunity_score compare le prix affiché à la moy. des ventes
+    # récentes en priorité (repli sur reference_price PriceCharting
+    # seulement si aucune vente récente n'est connue, cf.
+    # shared/verdict.py::compute_extended_signals) -- reste None seulement si
+    # NI l'un NI l'autre signal n'est disponible : jamais deviné sans aucun
+    # prix de référence.
     opportunity_score: int | None = None
     sales_stats: SalesStatsOut | None = None
     liquidity: LiquidityOut | None = None

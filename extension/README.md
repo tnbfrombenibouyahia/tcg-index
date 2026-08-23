@@ -77,6 +77,30 @@ Fait :
     depuis leur lancement (permission GCP cassée, corrigée le
     2026-08-22) ; la couverture se reconstitue set par set au fil des
     passages hebdomadaires (rotation en 12 tranches).
+- **Suite du correctif `PriceChartingSource` ci-dessus, même carte
+  (2026-08-23)** : après déploiement du fix de slug JP, le lien
+  PriceCharting continuait de pointer vers la fiche anglaise pour cette
+  même carte (`item_id=73783`) -- pas un nouveau bug de code, le cache
+  `prices` (TTL 12h, `pricing/cache.py::get_price_with_cache`) avait gardé
+  la ligne (prix + URL) récupérée AVANT le déploiement du fix, et rien ne
+  l'invalide automatiquement au déploiement. Purgée manuellement en base
+  (`DELETE FROM prices WHERE item_id=73783 AND source='pricecharting'`) --
+  toute carte JP requêtée dans la fenêtre entre la casse et le déploiement
+  du fix peut avoir la même ligne périmée, à purger au cas par cas si
+  signalé.
+- **Score d'opportunité vs "Analyse de prix" contradictoires (demande
+  utilisateur, 2026-08-23)** : `opportunity_score` ne comparait le prix
+  affiché qu'à `reference_price` (PriceCharting, prix "catalogue"/demandé
+  du moment) -- jamais à la moy. des ventes réelles récentes
+  (`avg_last_3`/`avg_last_10`) affichée juste au-dessus dans le panneau
+  ("Analyse de prix"), pouvant afficher un score "Bonne affaire" pour un
+  prix nettement AU-DESSUS de ce qui s'est réellement vendu récemment.
+  `compute_extended_signals` (`shared/verdict.py`) calcule maintenant le
+  ratio du score contre `avg_last_3` en priorité (repli `avg_last_10`, puis
+  `reference_price` en dernier recours si aucune vente récente connue). Le
+  verdict vert/jaune/rouge (`Verdict.label`, pastille + lien
+  PriceCharting/Cardmarket) n'est **pas** touché -- il continue de comparer
+  à `reference_price` uniquement, signal ponctuel documenté séparément.
 - **Compte requis avant utilisation (§01/§09)** : la connexion (Google
   Sign-In) se fait sur **le site** (`web/components/auth/AuthModal.tsx`,
   `signInWithPopup` + Firebase Auth JS SDK), pas dans l'extension. "Se

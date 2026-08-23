@@ -136,8 +136,8 @@ def post_verdict(req: VerdictRequest, _user: dict = Depends(require_user)) -> Ve
     if outcome.card is not None:
         signals = compute_extended_signals(
             outcome.card, req.grade,
+            displayed_price=req.displayed_price,
             reference_price=outcome.verdict.reference_price if outcome.verdict else None,
-            ratio=outcome.verdict.ratio if outcome.verdict else None,
             confidence=confidence,
         )
         extended = _extended_out(signals)

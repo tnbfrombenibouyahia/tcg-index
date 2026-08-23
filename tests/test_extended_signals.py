@@ -97,7 +97,7 @@ class TestOpportunityScore:
 
 
 class TestComputeExtendedSignals:
-    def test_opportunity_score_none_without_ratio(self, monkeypatch):
+    def test_opportunity_score_none_without_any_price_signal(self, monkeypatch):
         card = _card()
         monkeypatch.setattr(verdict, "fetch_recent_sales", lambda *a, **k: [])
         monkeypatch.setattr(verdict, "count_sales_since", lambda *a, **k: 0)
@@ -106,12 +106,14 @@ class TestComputeExtendedSignals:
         monkeypatch.setattr(verdict, "fetch_latest_price_snapshot", lambda *a, **k: None)
         monkeypatch.setattr(verdict, "fetch_sealed_display_for_set", lambda *a, **k: None)
 
-        signals = verdict.compute_extended_signals(card, "ungraded", reference_price=None, ratio=None)
+        signals = verdict.compute_extended_signals(card, "ungraded", displayed_price=8.0, reference_price=None)
 
         assert signals.opportunity_score is None
         assert signals.liquidity.sales_last_90d == 0
 
-    def test_opportunity_score_computed_when_ratio_known(self, monkeypatch):
+    def test_opportunity_score_falls_back_to_reference_price_without_recent_sales(self, monkeypatch):
+        # Aucune vente récente connue -- repli sur reference_price
+        # (PriceCharting), seul signal de prix disponible.
         card = _card()
         monkeypatch.setattr(verdict, "fetch_recent_sales", lambda *a, **k: [])
         monkeypatch.setattr(verdict, "count_sales_since", lambda *a, **k: 12)
@@ -120,9 +122,38 @@ class TestComputeExtendedSignals:
         monkeypatch.setattr(verdict, "fetch_latest_price_snapshot", lambda *a, **k: None)
         monkeypatch.setattr(verdict, "fetch_sealed_display_for_set", lambda *a, **k: None)
 
-        signals = verdict.compute_extended_signals(card, "ungraded", reference_price=10.0, ratio=0.8, confidence=1.0)
+        signals = verdict.compute_extended_signals(
+            card, "ungraded", displayed_price=8.0, reference_price=10.0, confidence=1.0,
+        )
 
-        assert signals.opportunity_score is not None
+        assert signals.opportunity_score == compute_opportunity_score(0.8, signals.liquidity.sales_per_month, 1.0)
+
+    def test_opportunity_score_prefers_recent_sales_over_reference_price(self, monkeypatch):
+        # Reproduit le cas utilisateur du 2026-08-23 : reference_price
+        # (PriceCharting) très favorable (prix affiché largement en dessous)
+        # mais moy. des 3 dernières ventes réelles bien plus basse -- le
+        # score doit refléter la réalité du marché récent, pas PriceCharting
+        # (dont le prix affiché est parfois un prix catalogue/demandé, pas
+        # un prix réellement conclu).
+        card = _card()
+        monkeypatch.setattr(verdict, "fetch_recent_sales",
+                             lambda *a, **k: [(30.0, "USD"), (30.0, "USD"), (30.0, "USD")])
+        monkeypatch.setattr(verdict, "count_sales_since", lambda *a, **k: 12)
+        monkeypatch.setattr(verdict, "get_active_listing_count", lambda *a, **k: None)
+        monkeypatch.setattr(verdict, "fetch_language_siblings", lambda *a, **k: [])
+        monkeypatch.setattr(verdict, "fetch_latest_price_snapshot", lambda *a, **k: None)
+        monkeypatch.setattr(verdict, "fetch_sealed_display_for_set", lambda *a, **k: None)
+
+        # displayed_price=38 : 27% AU-DESSUS de avg_last_3 (30) -> mauvaise
+        # affaire attendue, alors que reference_price=100 donnerait un ratio
+        # de 0.38 (très favorable) si le score se basait encore dessus.
+        signals = verdict.compute_extended_signals(
+            card, "ungraded", displayed_price=38.0, reference_price=100.0, confidence=1.0,
+        )
+
+        expected = compute_opportunity_score(38.0 / 30.0, signals.liquidity.sales_per_month, 1.0)
+        assert signals.opportunity_score == expected
+        assert signals.opportunity_score < 50  # mauvaise affaire, pas "Bonne affaire"
 
     def test_language_comparison_includes_current_and_siblings(self, monkeypatch):
         card = _card()
@@ -134,7 +165,7 @@ class TestComputeExtendedSignals:
         monkeypatch.setattr(verdict, "fetch_latest_price_snapshot", lambda item_id, grade: (15.0, "USD") if item_id == 2 else None)
         monkeypatch.setattr(verdict, "fetch_sealed_display_for_set", lambda *a, **k: None)
 
-        signals = verdict.compute_extended_signals(card, "ungraded", reference_price=10.0, ratio=1.0)
+        signals = verdict.compute_extended_signals(card, "ungraded", reference_price=10.0)
 
         assert len(signals.language_comparison) == 2
         current, jp = signals.language_comparison
@@ -155,7 +186,7 @@ class TestComputeExtendedSignals:
         monkeypatch.setattr(verdict, "fetch_latest_price_snapshot", lambda item_id, grade: None)
         monkeypatch.setattr(verdict, "fetch_sealed_display_for_set", lambda *a, **k: None)
 
-        signals = verdict.compute_extended_signals(card, "ungraded", reference_price=10.0, ratio=1.0)
+        signals = verdict.compute_extended_signals(card, "ungraded", reference_price=10.0)
 
         jp = signals.language_comparison[1]
         assert jp.price is None
@@ -173,7 +204,7 @@ class TestComputeExtendedSignals:
         monkeypatch.setattr(verdict, "fetch_latest_price_snapshot", lambda *a, **k: None)
         monkeypatch.setattr(verdict, "fetch_sealed_display_for_set", lambda *a, **k: called.append(a))
 
-        signals = verdict.compute_extended_signals(sealed_card, "ungraded", reference_price=None, ratio=None)
+        signals = verdict.compute_extended_signals(sealed_card, "ungraded", reference_price=None)
 
         assert called == []
         assert signals.sealed_display_price is None

@@ -165,20 +165,23 @@ def _build_language_comparison(card: Card, grade: str, *, current_price: float |
     return [current, *siblings]
 
 
-def compute_extended_signals(card: Card, grade: str, *, reference_price: float | None = None,
-                              ratio: float | None = None, confidence: float = 1.0) -> ExtendedSignals:
+def compute_extended_signals(card: Card, grade: str, *, displayed_price: float | None = None,
+                              reference_price: float | None = None, confidence: float = 1.0) -> ExtendedSignals:
     """Signaux additionnels de la maquette extension -- délibérément séparé
     de compute_verdict_for_card : celui-ci reste focalisé "prix vs
     référence" (réutilisable par un futur script batch qui n'a besoin
     d'aucun de ces signaux), celui-ci fait les requêtes DB en plus
     seulement quand l'appelant (pricing_api) en a besoin.
 
-    `reference_price`/`ratio` : déjà calculés par compute_verdict_for_card /
-    classify() quand un verdict existe (outcome.verdict.reference_price /
-    .ratio) -- None si status='no_reference_price' (carte connue, aucune
-    source de prix n'a répondu) : opportunity_score reste alors None
-    (jamais deviné sans prix de référence), mais moy. ventes/liquidité/
-    comparaison langue restent calculables (ne dépendent pas de `ratio`).
+    `reference_price` : prix de référence PriceCharting déjà calculé par
+    compute_verdict_for_card/classify() (outcome.verdict.reference_price) --
+    None si status='no_reference_price'. Sert à la ligne "cette annonce" de
+    la comparaison par langue (prix PriceCharting live, cf.
+    _build_language_comparison) et de dernier repli pour le score
+    d'opportunité si aucune vente récente n'est connue (cf. plus bas).
+    `displayed_price` : prix affiché sur l'annonce (VerdictRequest.displayed_price,
+    déjà en USD) -- combiné à `reference_price`/aux ventes récentes pour le
+    score d'opportunité, cf. plus bas.
     `confidence` : confiance d'identification (pricing.matching), 0-1."""
     recent_sales = fetch_recent_sales(card.id, grade)
     sales_stats = compute_sales_stats(recent_sales)
@@ -215,9 +218,34 @@ def compute_extended_signals(card: Card, grade: str, *, reference_price: float |
                 sealed_display_price = PriceQuote(source="price_snapshots", grade="ungraded",
                                                     price=price, currency=currency)
 
+    # Score d'opportunité : compare le prix affiché à ce qui s'est
+    # RÉELLEMENT vendu récemment (moy. 3 dernières ventes -- repli moy. 10
+    # dernières si l'échantillon à 3 est vide, repli reference_price
+    # PriceCharting en dernier recours si aucune vente connue), PLUTÔT que
+    # reference_price seul comme avant -- demande utilisateur (2026-08-23) :
+    # reference_price (prix PriceCharting du moment, "catalogue"/demandé, pas
+    # forcément un prix réellement conclu) pouvait afficher un score "Bonne
+    # affaire" alors que le prix affiché était nettement AU-DESSUS de la
+    # moyenne des ventes réelles récentes affichée juste au-dessus dans le
+    # panneau ("Analyse de prix") -- les deux chiffres se contredisaient sans
+    # explication. Le verdict vert/jaune/rouge (Verdict.label, cf. classify()
+    # plus haut) N'EST PAS touché ici : il continue de comparer à
+    # reference_price, volontairement inchangé (signal ponctuel déjà
+    # documenté séparément) -- seul le score continu 0-100 change de
+    # référence.
+    opportunity_reference = sales_stats.avg_last_3
+    if opportunity_reference is None:
+        opportunity_reference = sales_stats.avg_last_10
+    if opportunity_reference is None:
+        opportunity_reference = reference_price
+
+    opportunity_ratio = (
+        displayed_price / opportunity_reference
+        if displayed_price is not None and opportunity_reference else None
+    )
     opportunity_score = (
-        compute_opportunity_score(ratio, liquidity.sales_per_month, confidence)
-        if ratio is not None else None
+        compute_opportunity_score(opportunity_ratio, liquidity.sales_per_month, confidence)
+        if opportunity_ratio is not None else None
     )
 
     # La gradation ne concerne que les singles (le scellé n'a pas de notion
