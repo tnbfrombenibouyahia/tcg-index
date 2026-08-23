@@ -339,6 +339,66 @@
 .cardquant-section-header .cardquant-section-title {
   margin: 0;
 }
+
+/* -- Sections pliantes (liquidité, comparaison par langue, ROI gradation,
+   calculateur d'arbitrage) -- <details>/<summary> natifs, cf.
+   content.js::renderCollapsible pour le pourquoi. Repliées par défaut :
+   .cardquant-section fournit déjà le filet du haut + le rythme vertical de
+   base (padding: 16px 0) -- annulé ici et redistribué entre le summary
+   (haut) et le corps (bas) pour que la hauteur totale reste identique que
+   la section soit ouverte ou fermée, seul le contenu du corps apparaît/
+   disparaît. */
+.cardquant-collapsible {
+  padding: 0;
+}
+.cardquant-collapsible > summary {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 16px 0 6px;
+  cursor: pointer;
+}
+/* Chrome/Chromium uniquement (extension MV3, pas de repli Firefox
+   nécessaire) -- masque le triangle natif au profit du chevron dessiné
+   ci-dessous, cohérent avec le reste des icônes du panneau (pas d'image). */
+.cardquant-collapsible > summary::-webkit-details-marker {
+  display: none;
+}
+.cardquant-collapsible-title {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--cq-foreground-subtle);
+}
+.cardquant-collapsible > summary::after {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid var(--cq-foreground-subtle);
+  border-bottom: 1.5px solid var(--cq-foreground-subtle);
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+.cardquant-collapsible[open] > summary::after {
+  transform: rotate(45deg);
+}
+.cardquant-collapsible > summary:hover .cardquant-collapsible-title {
+  color: var(--cq-foreground-muted);
+}
+.cardquant-collapsible > summary:focus-visible {
+  outline: 2px solid var(--cq-foreground-subtle);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.cardquant-collapsible-body {
+  padding: 4px 0 16px;
+}
 .cardquant-gauge-label {
   font-size: 12px;
   font-weight: 700;

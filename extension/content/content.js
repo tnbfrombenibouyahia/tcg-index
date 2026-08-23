@@ -487,6 +487,25 @@
     `;
   }
 
+  // Sections "pliantes" -- demande utilisateur (2026-08-23) : trop
+  // d'information affichée d'un coup. Score d'opportunité, infos carte,
+  // analyse de prix et display scellé restent toujours visibles (l'essentiel
+  // pour décider vite) ; liquidité, comparaison par langue, ROI gradation et
+  // calculateur d'arbitrage sont repliés par défaut, un clic suffit à les
+  // ouvrir. <details>/<summary> natifs plutôt qu'un accordéon maison : clavier
+  // (Entrée/Espace) et focus visible gratuits, pas de JS de toggle à écrire
+  // ni d'état à mémoriser ici -- chaque section s'ouvre/ferme indépendamment
+  // des autres, refermée à chaque nouveau verdict comme tout #cardquant-body
+  // (cf. panel.setVerdict/setLoading, qui remplacent le innerHTML en entier).
+  function renderCollapsible(title, bodyHtml, id) {
+    return `
+      <details class="cardquant-section cardquant-collapsible"${id ? ` id="${id}"` : ""}>
+        <summary class="cardquant-collapsible-title">${title}</summary>
+        <div class="cardquant-collapsible-body">${bodyHtml}</div>
+      </details>
+    `;
+  }
+
   const LIQUIDITY_STATUS = {
     liquide: { text: "Marché liquide", tone: "positive" },
     modere: { text: "Marché modéré", tone: "warn" },
@@ -517,9 +536,7 @@
     const note = liquidity.active_listings == null
       ? "<p class=\"cardquant-todo\">Annonces actives : indisponibles pour cette carte pour le moment.</p>"
       : "";
-    return `
-      <div class="cardquant-section">
-        <p class="cardquant-section-title">Liquidité · 3 derniers mois</p>
+    return renderCollapsible("Liquidité · 3 derniers mois", `
         <div class="cardquant-stat-grid">
           <div class="cardquant-stat">
             <span class="cardquant-stat-value">${liquidity.sales_last_90d}</span>
@@ -532,8 +549,7 @@
         </div>
         <p class="cardquant-liquidity-status cardquant-${status.tone}">${escapeHtml(status.text)} · ~${liquidity.sales_per_month.toFixed(1)} ventes/mois</p>
         ${note}
-      </div>
-    `;
+    `);
   }
 
   function renderLanguageRow(entry, current) {
@@ -575,13 +591,10 @@
   function renderLanguageComparison(entries) {
     if (!entries || entries.length < 2) return ""; // aucune langue sœur connue -- rien à comparer
     const current = entries.find((e) => e.is_current_listing);
-    return `
-      <div class="cardquant-section">
-        <p class="cardquant-section-title">Comparaison par langue</p>
+    return renderCollapsible("Comparaison par langue", `
         <div class="cardquant-lang-list">${entries.map((e) => renderLanguageRow(e, current)).join("")}</div>
         ${renderArbitrageNote(entries, current)}
-      </div>
-    `;
+    `);
   }
 
   function renderSealedDisplay(price) {
@@ -652,19 +665,15 @@
   function renderGradingRoi(inputs) {
     const R = window.CardQuantGradingRoi;
     if (!inputs) {
-      return `
-        <div class="cardquant-section">
-          <p class="cardquant-section-title">ROI gradation</p>
-          <p class="cardquant-todo">Pas encore de données de gradation pour cette carte (calculées une fois par cycle de synchro).</p>
-        </div>
-      `;
+      return renderCollapsible(
+        "ROI gradation",
+        '<p class="cardquant-todo">Pas encore de données de gradation pour cette carte (calculées une fois par cycle de synchro).</p>',
+      );
     }
     const A = R.DEFAULT_ASSUMPTIONS;
     const { candidate } = groiCandidateFromInputs(inputs);
     const suggested = R.suggestServiceTier(candidate);
-    return `
-      <div class="cardquant-section" id="cardquant-groi">
-        <p class="cardquant-section-title">ROI gradation</p>
+    return renderCollapsible("ROI gradation", `
         <div class="cardquant-groi-assumptions">
           <label>Palier PSA
             <select class="cardquant-groi-tier">
@@ -676,8 +685,7 @@
           <label>Frais revente (%)<input type="number" min="0" max="100" step="1" class="cardquant-groi-fee" value="${A.resaleFeePct}"></label>
         </div>
         <div class="cardquant-groi-output">${renderGroiOutput(inputs, { ...A })}</div>
-      </div>
-    `;
+    `, "cardquant-groi");
   }
 
   // -- Calculateur d'arbitrage --------------------------------------------
@@ -694,16 +702,12 @@
   function renderArbitrageCalculator(data) {
     const ref = data.reference_price;
     if (ref == null) {
-      return `
-        <div class="cardquant-section">
-          <p class="cardquant-section-title">Calculateur d'arbitrage</p>
-          <p class="cardquant-todo">Pas de prix de référence pour cette carte -- calculateur indisponible.</p>
-        </div>
-      `;
+      return renderCollapsible(
+        "Calculateur d'arbitrage",
+        '<p class="cardquant-todo">Pas de prix de référence pour cette carte -- calculateur indisponible.</p>',
+      );
     }
-    return `
-      <div class="cardquant-section" id="cardquant-arb">
-        <p class="cardquant-section-title">Calculateur d'arbitrage</p>
+    return renderCollapsible("Calculateur d'arbitrage", `
         <p class="cardquant-arb-ref">Prix de revente moyen : <strong>${formatMoney(ref, "USD")}</strong> <span class="cardquant-muted-inline">(même référence que le verdict)</span></p>
         <div class="cardquant-arb-inputs">
           <label>Achat ($)<input type="number" min="0" step="0.01" class="cardquant-arb-buy" value="0"></label>
@@ -711,8 +715,7 @@
           <label>Douane ($)<input type="number" min="0" step="0.01" class="cardquant-arb-customs" value="0"></label>
         </div>
         <div class="cardquant-arb-output">${renderArbitrageOutput(ref, 0, 0, 0)}</div>
-      </div>
-    `;
+    `, "cardquant-arb");
   }
 
   function renderCta(cardId) {
