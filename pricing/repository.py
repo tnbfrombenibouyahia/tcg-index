@@ -3,6 +3,8 @@ pour le module pricing. Même style que shared/sync_log.py : connexion dédiée
 par appel, try/finally: conn.close(), SQL inline (pas d'ORM, cohérent avec
 le reste du repo).
 """
+import re
+import unicodedata
 from datetime import date
 
 from pricing.grading_roi import GradingRoiInputs
@@ -11,6 +13,56 @@ from shared.db import get_connection
 
 _CARD_COLUMNS = "id, name, code, set_code, tcg, category, language, rarity, image_url"
 _SALES_STATS_LIMIT = 10  # borne haute -- moy. 3 ET moy. 10 se calculent sur la même liste (cf. pricing/sales_stats.py)
+
+# Score de qualificatif entre parenthèses/crochets (ex. "(Alternate Art)
+# (Manga)", "[Alternate Art Manga]") -- même regex/seuil que
+# pricing/matching.py::_qualifier_tokens et pricing/sources/
+# pricecharting_source.py::_qualifier_tokens, dupliqué ici en miniature
+# plutôt qu'importé : même convention que ces deux fichiers (modules de
+# matching volontairement autonomes, pas de dépendance croisée entre eux).
+# Utilisé par fetch_language_siblings ci-dessous.
+_QUALIFIER_RE = re.compile(r"[\(\[]([^\)\]]*)[\)\]]")
+_QUALIFIER_MATCH_THRESHOLD = 0.5
+
+
+def _normalize(text: str) -> str:
+    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
+    text = re.sub(r"[^a-z0-9]+", " ", text.lower())
+    return " ".join(text.split())
+
+
+def _qualifier_tokens(text: str) -> frozenset:
+    contents = [c for c in _QUALIFIER_RE.findall(text) if not c.strip().isdigit()]
+    return frozenset(_normalize(" ".join(contents)).split())
+
+
+def _dice(a: frozenset, b: frozenset) -> float:
+    if not a and not b:
+        return 1.0
+    if not a or not b:
+        return 0.0
+    return 2 * len(a & b) / (len(a) + len(b))
+
+
+def _best_qualifier_match(card: Card, pool: list[Card]) -> Card | None:
+    """Départage `pool` (plusieurs items d'une même langue partageant le
+    même (tcg, set_code, code)) par qualificatif de nom, retient le mieux
+    assorti à `card`. None si ambigu (meilleur score sous le seuil, ou
+    égalité en tête) -- même discipline que pricing/sources/
+    pricecharting_source.py::_find_row_for_card : mieux ne rien retourner
+    qu'associer la mauvaise variante."""
+    if len(pool) == 1:
+        return pool[0]
+    card_qual = _qualifier_tokens(card.name)
+    scored = sorted(
+        ((_dice(card_qual, _qualifier_tokens(c.name)), c) for c in pool),
+        key=lambda pair: pair[0], reverse=True,
+    )
+    best_score, best_card = scored[0]
+    tie = len(scored) >= 2 and scored[1][0] == best_score
+    if best_score < _QUALIFIER_MATCH_THRESHOLD or tie:
+        return None
+    return best_card
 
 
 def _row_to_card(row: tuple) -> Card:
@@ -207,10 +259,21 @@ def fetch_latest_price_snapshot(item_id: int, grade: str) -> tuple[float, str] |
 
 def fetch_language_siblings(card: Card) -> list[Card]:
     """Même carte (set_code + code), langues différentes -- PAS de repli
-    fuzzy ici (contrairement à pricing/matching.py) : le code est déjà connu
-    et fiable à ce stade (carte déjà identifiée), un faux-positif de langue
-    serait pire qu'une comparaison manquante. Renvoie [] pour le scellé
-    (card.code est NULL, cf. db/schema.sql::items)."""
+    fuzzy sur l'IDENTITÉ (contrairement à pricing/matching.py) : le code est
+    déjà connu et fiable à ce stade (carte déjà identifiée).
+
+    MAIS (tcg, set_code, code) seul ne désigne pas une carte unique : base/
+    Alternate Art/Manga/2nd Anniversary... partagent souvent le même code
+    (cf. fetch_items_by_code plus haut, et vérifié en base le 2026-08-23 sur
+    OP06-118 : 3 lignes EN, 3 lignes JP pour ce seul code). Sans filtrage
+    supplémentaire, une carte "Alternate Art Manga" récupérait TOUTES les
+    variantes de l'autre langue comme "siblings" -- bug réel constaté en
+    test (comparaison par langue affichant plusieurs lignes par langue avec
+    des prix qui ne correspondaient pas à la carte affichée). Départagé ici
+    par qualificatif de nom (cf. _best_qualifier_match), un seul sibling
+    retenu PAR langue -- aucun si ambigu, jamais deviné.
+
+    Renvoie [] pour le scellé (card.code est NULL, cf. db/schema.sql::items)."""
     if not card.code or not card.set_code:
         return []
     conn = get_connection()
@@ -222,9 +285,20 @@ def fetch_language_siblings(card: Card) -> list[Card]:
                 "AND category = %s AND language != %s",
                 (card.tcg, card.set_code, card.code, card.category, card.language),
             )
-            return [_row_to_card(row) for row in cur.fetchall()]
+            rows = [_row_to_card(row) for row in cur.fetchall()]
     finally:
         conn.close()
+
+    by_language: dict[str, list[Card]] = {}
+    for row in rows:
+        by_language.setdefault(row.language, []).append(row)
+
+    siblings = []
+    for pool in by_language.values():
+        best = _best_qualifier_match(card, pool)
+        if best is not None:
+            siblings.append(best)
+    return siblings
 
 
 def fetch_sealed_display_for_set(tcg: str, set_code: str | None, language: str) -> Card | None:
