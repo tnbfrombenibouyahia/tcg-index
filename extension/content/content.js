@@ -40,7 +40,25 @@
   const VERDICT_LABELS = { green: "Bonne affaire", yellow: "Prix normal", red: "Survendu" };
   const CURRENCY_SYMBOLS = { USD: "$", EUR: "€", GBP: "£" };
   const LANGUAGE_NAMES = { EN: "Anglaise", JP: "Japonaise", FR: "Française" };
-  const LANGUAGE_FLAGS = { EN: "🇬🇧", JP: "🇯🇵", FR: "🇫🇷" };
+  // Mini-drapeaux dessinés en SVG (grille 21x14 "pixel art", cf. classes
+  // .cardquant-flag/.cq-* de panel.css pour les couleurs) -- repère de
+  // langue partout où une carte a une langue affichée (picker de
+  // désambiguïsation, fiche carte identifiée, comparaison par langue).
+  // Remplace un premier essai en emoji drapeau (objet LANGUAGE_FLAGS,
+  // retiré) : son rendu dépend d'une police emoji système que Windows n'a
+  // pas toujours pour les drapeaux (retombe sur le code pays en texte
+  // minuscule, vérifié en conditions réelles le 2026-08-23), inutilisable
+  // pour distinguer vite deux candidats -- ou, pour une carte déjà
+  // identifiée seule, pour confirmer sa langue d'un coup d'œil. Un SVG
+  // inline ne dépend d'aucune police : rendu identique partout. Chaque
+  // rect a une classe (cq-w/cq-r/cq-b/cq-navy) plutôt qu'un fill= répété --
+  // les couleurs vivent dans panel.css, cohérent avec le reste de
+  // l'extension (jamais de couleur en dur dans le HTML injecté).
+  const LANGUAGE_FLAG_SVG = {
+    FR: '<svg class="cardquant-flag cardquant-flag--fr" viewBox="0 0 21 14" aria-hidden="true"><rect x="0" y="0" width="7" height="14" class="cq-b"/><rect x="7" y="0" width="7" height="14" class="cq-w"/><rect x="14" y="0" width="7" height="14" class="cq-r"/></svg>',
+    JP: '<svg class="cardquant-flag cardquant-flag--jp" viewBox="0 0 21 14" aria-hidden="true"><rect x="0" y="0" width="21" height="14" class="cq-w"/><rect x="8" y="3" width="4" height="1" class="cq-r"/><rect x="7" y="4" width="6" height="1" class="cq-r"/><rect x="6" y="5" width="8" height="1" class="cq-r"/><rect x="6" y="6" width="8" height="1" class="cq-r"/><rect x="6" y="7" width="8" height="1" class="cq-r"/><rect x="6" y="8" width="8" height="1" class="cq-r"/><rect x="7" y="9" width="6" height="1" class="cq-r"/><rect x="8" y="10" width="4" height="1" class="cq-r"/></svg>',
+    EN: '<svg class="cardquant-flag cardquant-flag--en" viewBox="0 0 21 14" aria-hidden="true"><rect x="0" y="0" width="21" height="14" class="cq-navy"/><rect x="0" y="0" width="3" height="1" class="cq-w"/><rect x="18" y="0" width="3" height="1" class="cq-w"/><rect x="0" y="1" width="4" height="1" class="cq-w"/><rect x="17" y="1" width="4" height="1" class="cq-w"/><rect x="0" y="12" width="4" height="1" class="cq-w"/><rect x="17" y="12" width="4" height="1" class="cq-w"/><rect x="0" y="13" width="3" height="1" class="cq-w"/><rect x="18" y="13" width="3" height="1" class="cq-w"/><rect x="1" y="2" width="5" height="1" class="cq-w"/><rect x="15" y="2" width="5" height="1" class="cq-w"/><rect x="1" y="11" width="5" height="1" class="cq-w"/><rect x="15" y="11" width="5" height="1" class="cq-w"/><rect x="3" y="3" width="4" height="1" class="cq-w"/><rect x="14" y="3" width="4" height="1" class="cq-w"/><rect x="3" y="10" width="4" height="1" class="cq-w"/><rect x="14" y="10" width="4" height="1" class="cq-w"/><rect x="4" y="4" width="5" height="1" class="cq-w"/><rect x="12" y="4" width="5" height="1" class="cq-w"/><rect x="4" y="9" width="5" height="1" class="cq-w"/><rect x="12" y="9" width="5" height="1" class="cq-w"/><rect x="6" y="5" width="4" height="1" class="cq-w"/><rect x="11" y="5" width="4" height="1" class="cq-w"/><rect x="6" y="8" width="9" height="1" class="cq-w"/><rect x="7" y="6" width="7" height="1" class="cq-w"/><rect x="7" y="7" width="7" height="1" class="cq-w"/><rect x="0" y="0" width="1" height="1" class="cq-r"/><rect x="20" y="0" width="1" height="1" class="cq-r"/><rect x="0" y="13" width="1" height="1" class="cq-r"/><rect x="20" y="13" width="1" height="1" class="cq-r"/><rect x="1" y="1" width="2" height="1" class="cq-r"/><rect x="18" y="1" width="2" height="1" class="cq-r"/><rect x="1" y="12" width="2" height="1" class="cq-r"/><rect x="18" y="12" width="2" height="1" class="cq-r"/><rect x="3" y="2" width="1" height="1" class="cq-r"/><rect x="17" y="2" width="1" height="1" class="cq-r"/><rect x="3" y="11" width="1" height="1" class="cq-r"/><rect x="17" y="11" width="1" height="1" class="cq-r"/><rect x="4" y="3" width="2" height="1" class="cq-r"/><rect x="15" y="3" width="2" height="1" class="cq-r"/><rect x="4" y="10" width="2" height="1" class="cq-r"/><rect x="15" y="10" width="2" height="1" class="cq-r"/><rect x="6" y="4" width="1" height="1" class="cq-r"/><rect x="14" y="4" width="1" height="1" class="cq-r"/><rect x="6" y="9" width="1" height="1" class="cq-r"/><rect x="14" y="9" width="1" height="1" class="cq-r"/><rect x="7" y="5" width="2" height="1" class="cq-r"/><rect x="12" y="5" width="2" height="1" class="cq-r"/><rect x="7" y="8" width="2" height="1" class="cq-r"/><rect x="12" y="8" width="2" height="1" class="cq-r"/><rect x="9" y="6" width="1" height="1" class="cq-r"/><rect x="11" y="6" width="1" height="1" class="cq-r"/><rect x="9" y="7" width="3" height="1" class="cq-r"/><rect x="8" y="0" width="5" height="14" class="cq-w"/><rect x="0" y="5" width="21" height="5" class="cq-w"/><rect x="9" y="0" width="3" height="14" class="cq-r"/><rect x="0" y="6" width="21" height="3" class="cq-r"/></svg>',
+  };
 
   // Miroir client de pricing/models.py::KNOWN_GRADES -- dupliqué faute de
   // vocabulaire partagé entre Python et cette extension (même situation que
@@ -336,19 +354,30 @@
     const thumb = c.image_url
       ? `<img class="cardquant-candidate-thumb" src="${escapeHtml(c.image_url)}" alt="" loading="lazy">`
       : `<div class="cardquant-candidate-thumb cardquant-candidate-thumb--empty" aria-hidden="true"></div>`;
-    // Drapeau langue devant le nom -- demande utilisateur (2026-08-23) :
+    // Repère de langue devant le nom -- demande utilisateur (2026-08-23) :
     // deux candidats identiques par ailleurs (même carte, même rareté) sont
     // fréquents entre EN et JP, sans ce repère on ne sait pas lequel est
-    // lequel en scannant vite la liste. Emoji plutôt qu'un badge séparé :
-    // repère visuel immédiat au même endroit que le nom, pas besoin de
-    // chercher ailleurs dans la ligne (cf. LANGUAGE_FLAGS, déjà utilisé
-    // ailleurs dans ce fichier pour la même raison).
-    const flag = LANGUAGE_FLAGS[c.language] || "";
+    // lequel en scannant vite la liste. Étapes précédentes de ce même
+    // repère, dans l'ordre : emoji drapeau (LANGUAGE_FLAGS) écarté après
+    // vérif en conditions réelles -- rendu dépendant d'une police emoji
+    // que Windows n'a pas toujours pour les drapeaux (retombe sur le code
+    // pays en texte minuscule) ; puis badge texte coloré, fonctionnel mais
+    // pas ce que l'utilisateur demandait ("un petit drapeau"). Mini-drapeau
+    // SVG (LANGUAGE_FLAG_SVG) à la place : dessiné à la main, aucune
+    // dépendance à une police, identique sur toute plateforme -- cf.
+    // panel.css pour les couleurs. Élément à part plutôt que fondu dans
+    // .cardquant-candidate-name : celle-ci tronque en ellipsis sur les
+    // noms longs, un préfixe à l'intérieur finirait caché.
+    const langName = c.language ? LANGUAGE_NAMES[c.language] || c.language : "";
+    const flagIcon = c.language && LANGUAGE_FLAG_SVG[c.language]
+      ? `<span class="cardquant-candidate-flag" title="${escapeHtml(langName)}" aria-label="${escapeHtml(langName)}">${LANGUAGE_FLAG_SVG[c.language]}</span>`
+      : "";
     return `
       <li class="cardquant-candidate" data-card-id="${c.card_id}" role="button" tabindex="0">
         ${thumb}
+        ${flagIcon}
         <div class="cardquant-candidate-info">
-          <div class="cardquant-candidate-name">${flag ? `${flag} ` : ""}${escapeHtml(c.name)}</div>
+          <div class="cardquant-candidate-name">${escapeHtml(c.name)}</div>
           ${meta ? `<div class="cardquant-candidate-meta">${escapeHtml(meta)}</div>` : ""}
         </div>
       </li>
@@ -412,7 +441,7 @@
         ? `<p class="cardquant-card-qualifier">${[qualifier, data.card.code].filter(Boolean).map(escapeHtml).join(" · ")}</p>`
         : ""}
       <div class="cardquant-badge-row">
-        ${lang ? `<span class="cardquant-badge">${LANGUAGE_FLAGS[lang] || ""} ${escapeHtml(LANGUAGE_NAMES[lang] || lang)}</span>` : ""}
+        ${lang ? `<span class="cardquant-badge">${LANGUAGE_FLAG_SVG[lang] || ""}${escapeHtml(LANGUAGE_NAMES[lang] || lang)}</span>` : ""}
         ${setBadge ? `<span class="cardquant-badge">${escapeHtml(setBadge)}</span>` : ""}
         ${data.card.rarity ? `<span class="cardquant-badge">${escapeHtml(data.card.rarity)}</span>` : ""}
         ${renderGradeBadge(currentGrade)}
@@ -553,7 +582,7 @@
   }
 
   function renderLanguageRow(entry, current) {
-    const flag = LANGUAGE_FLAGS[entry.language] || "";
+    const flag = LANGUAGE_FLAG_SVG[entry.language] || "";
     const name = LANGUAGE_NAMES[entry.language] || entry.language;
     let pctBadge = "";
     if (!entry.is_current_listing && entry.price != null && current && current.price) {
@@ -564,7 +593,7 @@
     }
     return `
       <div class="cardquant-lang-row${entry.is_current_listing ? " cardquant-lang-row--current" : ""}">
-        <span class="cardquant-lang-name">${flag} ${escapeHtml(name)}</span>
+        <span class="cardquant-lang-name">${flag}${escapeHtml(name)}</span>
         ${entry.is_current_listing ? '<span class="cardquant-badge cardquant-badge--sm">cette annonce</span>' : ""}
         <span class="cardquant-lang-price">${entry.price == null ? "pas d'équivalent" : formatMoney(entry.price, entry.currency)}${pctBadge}</span>
       </div>

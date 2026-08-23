@@ -509,6 +509,9 @@
   background: rgba(255, 255, 255, 0.06);
 }
 .cardquant-lang-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 12px;
   font-weight: 600;
 }
@@ -774,6 +777,39 @@
 .cardquant-candidate-thumb--empty {
   border: 1px dashed rgba(15, 15, 20, 0.25);
 }
+/* Repère de langue (JP/EN/FR) -- demande utilisateur (2026-08-23) : un
+   emoji drapeau seul (essayé d'abord, cf. content.js::renderCandidate)
+   dépend d'une police emoji système que Windows n'a pas toujours pour les
+   drapeaux -- retombe sur un texte minuscule à peine lisible ; un badge
+   texte coloré (étape suivante) réglait la lisibilité mais n'était plus un
+   "drapeau". Mini-drapeau SVG dessiné en pixel art à la place (grille
+   21x14, cf. content.js::LANGUAGE_FLAG_SVG) : chaque rect a une classe
+   couleur (cq-w/cq-r/cq-b/cq-navy) plutôt qu'un fill= répété -- les
+   couleurs vivent ici, pas dans le HTML injecté, cohérent avec le reste du
+   fichier. shape-rendering: crispEdges garde les bords nets à cette taille
+   (sinon l'anti-aliasing du navigateur brouille les petits carrés en flou
+   gris). Élément séparé (pas dans le nom) pour ne jamais se faire couper
+   par l'ellipsis de .cardquant-candidate-name. */
+.cardquant-candidate-flag {
+  flex: none;
+  display: inline-flex;
+}
+.cardquant-flag {
+  flex: none;
+  width: 20px;
+  height: 13px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+  shape-rendering: crispEdges;
+}
+.cardquant-flag--fr .cq-b { fill: #0055A4; }
+.cardquant-flag--fr .cq-w { fill: #FFFFFF; }
+.cardquant-flag--fr .cq-r { fill: #EF4135; }
+.cardquant-flag--jp .cq-w { fill: #FFFFFF; }
+.cardquant-flag--jp .cq-r { fill: #BC002D; }
+.cardquant-flag--en .cq-navy { fill: #012169; }
+.cardquant-flag--en .cq-w { fill: #FFFFFF; }
+.cardquant-flag--en .cq-r { fill: #C8102E; }
 .cardquant-candidate-info {
   min-width: 0; /* laisse cardquant-candidate-name tronquer plutôt que déborder */
 }
