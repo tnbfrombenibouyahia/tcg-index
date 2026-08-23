@@ -229,8 +229,8 @@ Fait :
   `text: null` + `image_url` confirmée, identification réussie affichée,
   pas de 3ᵉ tentative offerte après un double échec.
 
-- **Liens de double-vérification manuelle (demande utilisateur, 2026-08-22)** :
-  deux boutons en bas de la fiche carte pour recouper le verdict ailleurs.
+- **Lien de double-vérification manuelle (demande utilisateur, 2026-08-22)** :
+  un bouton en bas de la fiche carte pour recouper le verdict ailleurs.
   - **PriceCharting** : lien vers la VRAIE page produit exacte -- pas une
     recherche. PriceCharting est en plus la source même du prix de
     référence (`shared/verdict.py::compute_verdict_for_card`), donc le plus
@@ -243,17 +243,15 @@ Fait :
     supplémentaire (même scrape que celui qui sert déjà le prix). Absent
     (pas de bouton) si PriceCharting n'a pas matché cette carte -- jamais
     un lien de recherche de repli qui laisserait croire à un lien exact.
-  - **Cardmarket** : pas d'ID exploitable en base (`items.cardmarket_id`
-    existe mais n'est jamais rempli par apitcg.com pour ce catalogue) --
-    lien de RECHERCHE plutôt qu'un lien produit deviné (même principe "ne
-    jamais deviner", §01). Recherche par `card.code` (ex. "OP13-037"),
-    bien plus précis que le nom seul -- vérifié en conditions réelles :
-    5 résultats, tous la bonne carte, contre une dilution sur toute carte
-    contenant les mêmes mots avec le nom seul. Repli sur le nom pour le
-    scellé (pas de `code`).
   - Testé via un harness jsdom ponctuel : présence conditionnelle correcte
-    selon `sources_compared[].url` (PriceCharting) et présence système
-    (Cardmarket, toujours calculable), URLs exactes vérifiées.
+    selon `sources_compared[].url`, URL exacte vérifiée.
+  - **Cardmarket** (lien de recherche, ajouté le 2026-08-22) **et bouton
+    "Analyse complète sur CardQuant"** (`renderCta`, ouvrait
+    `/catalog/[id]` sur le site via `CARDQUANT_OPEN_CARD`) **retirés le
+    2026-08-23** à la demande utilisateur -- `CARDQUANT_OPEN_CARD` supprimé
+    de `background.js` avec eux (plus rien ne l'envoie). `.cardquant-cardmarket-link`
+    (CSS) reste utilisée par le lien PriceCharting, qui partageait déjà ce
+    style.
 
 - **Set + année (demande utilisateur, 2026-08-23)** : le badge de set,
   auparavant un simple préfixe de code ("OP13", tiré de `card.code.split("-")[0]`),

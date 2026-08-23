@@ -638,41 +638,11 @@
   margin: 0;
 }
 
-/* -- CTA vers la fiche complète du site (/catalog/[id], cf. background.js
-   ::CARDQUANT_OPEN_CARD -- SITE_URL n'est connu que là-bas). */
-.cardquant-cta {
-  all: unset;
-  box-sizing: border-box;
-  display: block;
-  width: 100%;
-  text-align: center;
-  margin: 4px 0;
-  padding: 11px 16px;
-  border-radius: var(--cq-radius-sm);
-  /* var(--cq-foreground) est désormais quasi-blanc (dark mode) : le CTA
-     plein se lit comme un bouton clair sur le fond sombre du panneau --
-     idiome courant en dark UI (pilule claire = action primaire) -- donc
-     le texte passe sombre plutôt que blanc, sinon invisible. */
-  background: var(--cq-foreground);
-  color: var(--cq-bg-to);
-  font-family: var(--cq-font-sans);
-  font-size: 12.5px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: filter 0.15s ease;
-}
-.cardquant-cta:hover {
-  filter: brightness(1.15);
-}
-.cardquant-cta:focus-visible {
-  outline: 2px solid var(--cq-foreground);
-  outline-offset: 2px;
-}
-
-/* -- Lien de double-vérification CardMarket (cf. content.js::renderCardmarketLink)
-   -- contour plutôt que rempli, un cran en dessous de .cardquant-cta dans la
-   hiérarchie visuelle : action secondaire (vérifier ailleurs), pas l'action
-   principale (voir l'analyse complète sur le site). */
+/* -- Lien de double-vérification PriceCharting (cf.
+   content.js::renderPriceChartingLink) -- contour plutôt que rempli, action
+   secondaire (vérifier ailleurs). Nom de classe hérité de l'ex-lien
+   Cardmarket qui partageait ce style (retiré le 2026-08-23 avec le CTA
+   "Analyse complète sur CardQuant", cf. content.js). */
 .cardquant-cardmarket-link {
   all: unset;
   box-sizing: border-box;
@@ -723,9 +693,9 @@
 
 /* -- Passage 2 (OCR sur la photo de l'annonce, cf. content.js::renderVerdict
    /requestVerdict) : bouton secondaire, contour plutôt que rempli --
-   distinct de .cardquant-cta (lien vers le site, plein) et .cardquant-signin
-   (action primaire), un cran en dessous des deux dans la hiérarchie
-   visuelle puisque c'est une tentative de repli, pas l'action attendue. */
+   distinct de .cardquant-signin (action primaire), un cran en dessous dans
+   la hiérarchie visuelle puisque c'est une tentative de repli, pas l'action
+   attendue. */
 .cardquant-try-image {
   all: unset;
   box-sizing: border-box;
@@ -861,7 +831,7 @@
   padding: 9px 16px;
   border-radius: 999px; /* cf. .pill-ink côté site */
   background: var(--cq-foreground);
-  color: var(--cq-bg-to); /* même correctif que .cardquant-cta -- fond désormais clair en dark mode */
+  color: var(--cq-bg-to); /* fond désormais clair en dark mode -- texte sombre, sinon invisible */
   font-size: 12.5px;
   font-weight: 700;
   transition: filter 0.15s ease;
