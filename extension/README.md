@@ -31,6 +31,19 @@ Fait :
   connu. Pas de `backdrop-filter` : le fond réel de la page hôte (eBay)
   n'est jamais contrôlé, un flou de fond serait imprévisible -- fond quasi
   opaque à la place (cf. commentaire en tête de `content/panel.css`).
+- **Dark mode (2026-08-23)** : le panneau est passé sombre par défaut (pas
+  encore adaptatif, le site n'a pas lui-même de dark mode). Deux éléments
+  restent volontairement hors palette thémée, cf. commentaires dans
+  `content/panel.css` : l'onglet replié (`#cardquant-tab`, encre foncée +
+  texte blanc fixes -- il flotte sur la page hôte, pas sur notre surface,
+  et doit rester lisible sur un eBay généralement clair) et la vignette du
+  picker de candidats (`.cardquant-candidate-thumb`, fond clair fixe --
+  décision "tuile photo" : les scans PriceCharting sont recadrés à ras
+  bord avec leur propre fond d'illustration, parfois sombre/saturé ; un
+  fond clair uniforme derrière assure une lecture cohérente quelle que
+  soit l'image, même idiome prévu pour les futures images produit scellé
+  côté `web/`, qui elles ont un vrai fond studio blanc à encadrer plutôt
+  qu'à détourer).
 - **Compte requis avant utilisation (§01/§09)** : la connexion (Google
   Sign-In) se fait sur **le site** (`web/components/auth/AuthModal.tsx`,
   `signInWithPopup` + Firebase Auth JS SDK), pas dans l'extension. "Se

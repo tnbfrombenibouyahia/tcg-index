@@ -10,7 +10,15 @@
    en dur (préfixe --cq-) : un content script ne peut pas hériter des
    custom properties de tcgindex.vercel.app, il tourne dans le DOM d'eBay.
    Accent = rouge One Piece uniquement (--accent-onepiece côté site) --
-   cette extension ne couvre que ce jeu (cf. manifest.json). */
+   cette extension ne couvre que ce jeu (cf. manifest.json).
+
+   Dark mode (2026-08-23, demande utilisateur) : le panneau bascule en
+   sombre par défaut -- pas encore adaptatif au thème système/site (le
+   site lui-même n'a pas encore son dark mode, cf. web/app/globals.css,
+   qui reste clair malgré son nom "Terminal" -- ce fichier part devant).
+   Toutes les couleurs passent par --cq-* : voir plus bas pour les deux
+   exceptions volontairement PAS themées (#cardquant-tab, .cardquant-
+   candidate-thumb) et pourquoi. */
 
 #cardquant-root {
   all: initial;
@@ -19,23 +27,26 @@
   right: 0;
   height: 100vh;
   z-index: 2147483647; /* max z-index -- toujours au-dessus du contenu hôte */
-  /* Toujours clair, quel que soit le thème du navigateur/OS ou de la page
-     hôte -- sans ça, le "dark mode" forcé de certains navigateurs repeint
-     les zones plates non reconnues comme "déjà stylées" (constaté en test :
-     le bas du panneau vire au noir alors que son fond réel reste blanc,
-     cf. getComputedStyle -- l'inversion est un filtre de rendu, invisible
+  /* Toujours sombre, quel que soit le thème du navigateur/OS ou de la page
+     hôte -- sans ça, le mode forcé opposé de certains navigateurs repeint
+     les zones plates non reconnues comme "déjà stylées" (constaté en test
+     avec color-scheme: light précédemment : le bas du panneau virait de
+     couleur alors que son fond réel restait celui déclaré ici, cf.
+     getComputedStyle -- l'inversion est un filtre de rendu, invisible
      depuis le CSS). */
-  color-scheme: light;
+  color-scheme: dark;
 
-  --cq-foreground:        #14171C;
-  --cq-foreground-muted:  #68707C;
-  --cq-foreground-subtle: #9AA1AC;
-  --cq-border:            rgba(15, 15, 20, 0.10);
-  --cq-border-soft:       rgba(15, 15, 20, 0.07);
-  --cq-tint-neutral:      rgba(15, 15, 20, 0.06);
-  --cq-positive:          #15803D;
-  --cq-negative:          #DC2626;
-  --cq-warn:              #B45309;
+  --cq-bg-from:           #15181C;
+  --cq-bg-to:             #0B0D10;
+  --cq-foreground:        #F2F3F5;
+  --cq-foreground-muted:  #9AA1AC;
+  --cq-foreground-subtle: #68707C;
+  --cq-border:            rgba(255, 255, 255, 0.12);
+  --cq-border-soft:       rgba(255, 255, 255, 0.08);
+  --cq-tint-neutral:      rgba(255, 255, 255, 0.06);
+  --cq-positive:          #22C55E;
+  --cq-negative:          #EF4444;
+  --cq-warn:              #F59E0B;
   --cq-radius:            16px;
   --cq-radius-sm:         8px;
   --cq-font-sans: -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -55,7 +66,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--cq-foreground); /* neutre tant qu'aucun verdict n'est connu */
+  /* Fixe, PAS var(--cq-foreground) : cet onglet flotte sur la page hôte
+     (eBay, généralement claire), pas sur la surface sombre du panneau --
+     il doit rester un chip encre foncée + texte blanc quel que soit le
+     thème du panneau, pour rester lisible sur un fond qu'on ne contrôle
+     pas. neutre tant qu'aucun verdict n'est connu. */
+  background: #14171C;
   color: #fff;
   font-family: var(--cq-font-sans);
   font-weight: 700;
@@ -95,7 +111,7 @@
      certains navigateurs en mode sombre forcé -- rendu noir constaté). Un
      fond quasi opaque reste lisible quel que soit l'hôte, cf. commentaire
      original de ce fichier. */
-  background: linear-gradient(165deg, #ffffff, #f7f8f9);
+  background: linear-gradient(165deg, var(--cq-bg-from), var(--cq-bg-to));
   border-left: 1px solid var(--cq-border);
   box-shadow: -8px 0 32px rgba(15, 15, 20, 0.16);
   box-sizing: border-box;
@@ -123,7 +139,7 @@
   justify-content: space-between;
   gap: 8px;
   padding: 72px 20px 12px;
-  background: linear-gradient(180deg, rgba(247, 248, 249, 0.98) 80%, rgba(247, 248, 249, 0));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--cq-bg-to) 98%, transparent) 80%, transparent);
   flex: 0 0 auto;
 }
 .cardquant-brand {
@@ -348,7 +364,7 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--cq-bg-to);
   border: 2px solid var(--cq-foreground);
   transform: translate(-50%, -50%);
   box-shadow: 0 1px 3px rgba(15, 15, 20, 0.3);
@@ -395,7 +411,7 @@
   padding: 10px 12px;
   border: 1px solid var(--cq-border-soft);
   border-radius: var(--cq-radius-sm);
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.04);
 }
 .cardquant-stat-value {
   font-family: var(--cq-font-mono);
@@ -430,7 +446,7 @@
 }
 .cardquant-lang-row--current {
   border-color: color-mix(in srgb, var(--cq-foreground) 25%, transparent);
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.06);
 }
 .cardquant-lang-name {
   font-size: 12px;
@@ -494,7 +510,7 @@
   padding: 6px 8px;
   border: 1px solid var(--cq-border-soft);
   border-radius: var(--cq-radius-sm);
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--cq-foreground);
 }
 .cardquant-groi-assumptions select:focus-visible,
@@ -573,8 +589,12 @@
   margin: 4px 0;
   padding: 11px 16px;
   border-radius: var(--cq-radius-sm);
+  /* var(--cq-foreground) est désormais quasi-blanc (dark mode) : le CTA
+     plein se lit comme un bouton clair sur le fond sombre du panneau --
+     idiome courant en dark UI (pilule claire = action primaire) -- donc
+     le texte passe sombre plutôt que blanc, sinon invisible. */
   background: var(--cq-foreground);
-  color: #fff;
+  color: var(--cq-bg-to);
   font-family: var(--cq-font-sans);
   font-size: 12.5px;
   font-weight: 700;
@@ -691,28 +711,38 @@
   padding: 7px 10px;
   border: 1px solid var(--cq-border-soft);
   border-radius: var(--cq-radius-sm);
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.04);
   cursor: pointer;
 }
 .cardquant-candidate:hover,
 .cardquant-candidate:focus-visible {
   border-color: var(--cq-border);
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.10);
 }
 .cardquant-candidate:focus-visible {
   outline: 2px solid var(--cq-foreground-subtle);
   outline-offset: 1px;
 }
+/* Tuile photo claire, fixe (PAS var(--cq-tint-neutral)) -- décision dark
+   mode (2026-08-23) : les vignettes viennent de scans PriceCharting
+   recadrés à ras bord, avec leur propre fond d'illustration (parfois
+   sombre/saturé, cf. exemplaire vérifié -- violet/rose plein cadre). Sans
+   fond clair fixe derrière, chaque miniature détonerait différemment
+   selon la carte. Un fond clair uniforme = lecture "carte photo"
+   volontaire, cohérente quelle que soit l'image -- même idiome que
+   prévu pour les futures images produit scellé (fond blanc studio) côté
+   web/, pour une seule et même règle de traitement des deux. */
 .cardquant-candidate-thumb {
   flex: none;
   width: 34px;
   height: 34px;
   border-radius: 6px;
   object-fit: cover;
-  background: var(--cq-tint-neutral);
+  background: #F2F3F5;
+  border: 1px solid rgba(15, 15, 20, 0.08);
 }
 .cardquant-candidate-thumb--empty {
-  border: 1px dashed var(--cq-border);
+  border: 1px dashed rgba(15, 15, 20, 0.25);
 }
 .cardquant-candidate-info {
   min-width: 0; /* laisse cardquant-candidate-name tronquer plutôt que déborder */
@@ -771,7 +801,7 @@
   padding: 9px 16px;
   border-radius: 999px; /* cf. .pill-ink côté site */
   background: var(--cq-foreground);
-  color: #fff;
+  color: var(--cq-bg-to); /* même correctif que .cardquant-cta -- fond désormais clair en dark mode */
   font-size: 12.5px;
   font-weight: 700;
   transition: filter 0.15s ease;
