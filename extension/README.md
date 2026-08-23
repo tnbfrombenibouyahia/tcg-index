@@ -44,6 +44,39 @@ Fait :
   soit l'image, même idiome prévu pour les futures images produit scellé
   côté `web/`, qui elles ont un vrai fond studio blanc à encadrer plutôt
   qu'à détourer).
+- **Correctifs suite à un retour de test réel (2026-08-23)**, sur une
+  vraie annonce eBay.fr (PSA10 One Piece JP Roronoa Zoro Manga Alt Art
+  OP06-118) -- chacun vérifié en direct contre la prod avant/après :
+  - `parsePrice` (`content/content.js`) ne reconnaissait pas l'espace
+    insécable (U+00A0, parfois narrow U+202F) qu'ebay.fr utilise comme
+    séparateur de milliers -- "3 280,04 EUR" était coupé en deux
+    fragments par le regex d'extraction et seul le dernier ("280,04")
+    était gardé, un chiffre de milliers disparaissant silencieusement.
+  - `PriceChartingSource.fetch_price` (`pricing/sources/
+    pricecharting_source.py`) ignorait `card.language` et consultait
+    toujours le mapping de slugs anglais -- One Piece JP réutilisant le
+    même `set_code` que l'EN, une carte JP scrapait quand même la page de
+    set anglaise (le code carte matche dans les deux langues) et
+    renvoyait le prix/l'URL de la carte anglaise. Un seul bug, trois
+    symptômes en cascade côté panneau (prix de référence, lien
+    PriceCharting, prix de revente de l'arbitrage) puisque les trois
+    signaux partagent cette même source.
+  - `fetch_language_siblings` (`pricing/repository.py`) filtrait sur
+    (set_code, code, langue) sans tenir compte du qualificatif de
+    variante (Alternate Art / Manga / 2nd Anniversary / base...) codé
+    dans `.name` -- plusieurs items distincts partagent souvent le même
+    (set_code, code), donc la comparaison par langue remontait toutes
+    les variantes de l'autre langue au lieu de la seule vraie
+    équivalente. Corrigé par le même scoring de qualificatif (Dice sur
+    les tokens entre parenthèses/crochets) déjà utilisé ailleurs dans le
+    repo pour ce type de désambiguïsation.
+  - Distinct de ces trois bugs de code : liquidité et ROI gradation
+    vides pour une carte JP donnée ne sont pas forcément un bug -- le job
+    hebdomadaire qui peuple `sales`/`grading_roi_inputs` pour les JP
+    singles (`tiered-jp-singles`) n'a jamais réussi une seule exécution
+    depuis leur lancement (permission GCP cassée, corrigée le
+    2026-08-22) ; la couverture se reconstitue set par set au fil des
+    passages hebdomadaires (rotation en 12 tranches).
 - **Compte requis avant utilisation (§01/§09)** : la connexion (Google
   Sign-In) se fait sur **le site** (`web/components/auth/AuthModal.tsx`,
   `signInWithPopup` + Firebase Auth JS SDK), pas dans l'extension. "Se
