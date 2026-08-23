@@ -641,15 +641,22 @@
   margin: 0;
 }
 
-/* -- Lien de double-vérification PriceCharting (cf.
-   content.js::renderPriceChartingLink) -- contour plutôt que rempli, action
-   secondaire (vérifier ailleurs). Nom de classe hérité de l'ex-lien
+/* -- Liens de double-vérification PriceCharting (cf.
+   content.js::renderVerificationLink(s)) -- contour plutôt que rempli,
+   action secondaire (vérifier ailleurs). Nom de classe hérité de l'ex-lien
    Cardmarket qui partageait ce style (retiré le 2026-08-23 avec le CTA
-   "Analyse complète sur CardQuant", cf. content.js). */
+   "Analyse complète sur CardQuant", cf. content.js). flex (pas block) depuis
+   l'ajout du 2e bouton "langue sœur" (2026-08-23) : chaque lien peut
+   maintenant porter un mini-drapeau (LANGUAGE_FLAG_SVG) avant son texte,
+   gap centré plutôt qu'un simple text-align qui n'aurait pas espacé les
+   deux. */
 .cardquant-cardmarket-link {
   all: unset;
   box-sizing: border-box;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   width: 100%;
   text-align: center;
   margin: 4px 0;

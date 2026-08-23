@@ -257,6 +257,46 @@ def fetch_latest_price_snapshot(item_id: int, grade: str) -> tuple[float, str] |
         conn.close()
 
 
+def _fetch_language_candidates(card: Card, *, same_set: bool) -> list[Card]:
+    """Coeur commun de fetch_language_siblings/fetch_language_variants_loose
+    -- même requête/désambiguïsation, seule la présence du filtre set_code
+    change (cf. les deux fonctions ci-dessous pour le pourquoi de chaque
+    mode)."""
+    if not card.code or (same_set and not card.set_code):
+        return []
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            if same_set:
+                cur.execute(
+                    f"SELECT {_CARD_COLUMNS} FROM items "
+                    "WHERE tcg = %s AND set_code = %s AND UPPER(code) = UPPER(%s) "
+                    "AND category = %s AND language != %s",
+                    (card.tcg, card.set_code, card.code, card.category, card.language),
+                )
+            else:
+                cur.execute(
+                    f"SELECT {_CARD_COLUMNS} FROM items "
+                    "WHERE tcg = %s AND UPPER(code) = UPPER(%s) "
+                    "AND category = %s AND language != %s",
+                    (card.tcg, card.code, card.category, card.language),
+                )
+            rows = [_row_to_card(row) for row in cur.fetchall()]
+    finally:
+        conn.close()
+
+    by_language: dict[str, list[Card]] = {}
+    for row in rows:
+        by_language.setdefault(row.language, []).append(row)
+
+    matches = []
+    for pool in by_language.values():
+        best = _best_qualifier_match(card, pool)
+        if best is not None:
+            matches.append(best)
+    return matches
+
+
 def fetch_language_siblings(card: Card) -> list[Card]:
     """Même carte (set_code + code), langues différentes -- PAS de repli
     fuzzy sur l'IDENTITÉ (contrairement à pricing/matching.py) : le code est
@@ -273,32 +313,39 @@ def fetch_language_siblings(card: Card) -> list[Card]:
     par qualificatif de nom (cf. _best_qualifier_match), un seul sibling
     retenu PAR langue -- aucun si ambigu, jamais deviné.
 
+    Résultat utilisé pour des PRIX affichés (comparaison par langue, cf.
+    shared/verdict.py::_build_language_comparison) -- exige donc le même
+    set_code exact : deux tirages différents d'une même carte n'ont pas
+    forcément la même cote, le prix d'un tirage ne doit jamais représenter
+    celui d'un autre. Cf. fetch_language_variants_loose pour un
+    appariement moins strict, réservé aux liens de vérification (jamais un
+    prix).
+
     Renvoie [] pour le scellé (card.code est NULL, cf. db/schema.sql::items)."""
-    if not card.code or not card.set_code:
-        return []
-    conn = get_connection()
-    try:
-        with conn.cursor() as cur:
-            cur.execute(
-                f"SELECT {_CARD_COLUMNS} FROM items "
-                "WHERE tcg = %s AND set_code = %s AND UPPER(code) = UPPER(%s) "
-                "AND category = %s AND language != %s",
-                (card.tcg, card.set_code, card.code, card.category, card.language),
-            )
-            rows = [_row_to_card(row) for row in cur.fetchall()]
-    finally:
-        conn.close()
+    return _fetch_language_candidates(card, same_set=True)
 
-    by_language: dict[str, list[Card]] = {}
-    for row in rows:
-        by_language.setdefault(row.language, []).append(row)
 
-    siblings = []
-    for pool in by_language.values():
-        best = _best_qualifier_match(card, pool)
-        if best is not None:
-            siblings.append(best)
-    return siblings
+def fetch_language_variants_loose(card: Card) -> list[Card]:
+    """Version PLUS PERMISSIVE de fetch_language_siblings : même
+    désambiguïsation par qualificatif (cf. _best_qualifier_match), MAIS sans
+    exiger le même set_code -- seulement (tcg, code, category), langues
+    différentes. Vérifié en base le 2026-08-23 : certains tirages EN
+    (ex. une compilation "The Best") n'ont tout simplement aucune ligne JP
+    cataloguée sous ce set_code exact (référentiel apitcg incomplet), alors
+    qu'un autre tirage JP du même code existe bien chez PriceCharting --
+    fetch_language_siblings renvoie [] dans ce cas, ce repli trouve quand
+    même un candidat "assez proche" par qualificatif.
+
+    RÉSERVÉ aux liens de double-vérification PriceCharting (cf.
+    shared/verdict.py::_build_language_comparison) : contrairement à
+    fetch_language_siblings, le tirage retenu n'est pas garanti être
+    EXACTEMENT le même que `card` (juste le meilleur qualificatif
+    disponible, même seuil 0.5) -- jamais utilisé pour afficher un prix
+    (qui pourrait alors représenter le mauvais tirage), seulement pour
+    proposer un lien à vérifier soi-même, demande utilisateur (2026-08-23).
+
+    Renvoie [] pour le scellé (card.code est NULL, cf. db/schema.sql::items)."""
+    return _fetch_language_candidates(card, same_set=False)
 
 
 def fetch_sealed_display_for_set(tcg: str, set_code: str | None, language: str) -> Card | None:

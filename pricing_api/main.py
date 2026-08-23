@@ -75,7 +75,7 @@ def _extended_out(signals: ExtendedSignals) -> dict:
         liquidity=liquidity,
         language_comparison=[
             LanguageComparisonOut(language=e.language, card_id=e.card_id, price=e.price,
-                                   currency=e.currency, is_current_listing=e.is_current_listing)
+                                   currency=e.currency, is_current_listing=e.is_current_listing, url=e.url)
             for e in signals.language_comparison
         ],
         sealed_display_price=sealed_display_price,
@@ -134,10 +134,15 @@ def post_verdict(req: VerdictRequest, _user: dict = Depends(require_user)) -> Ve
     extended = dict(opportunity_score=None, sales_stats=None, liquidity=None,
                     language_comparison=[], sealed_display_price=None, grading_roi_inputs=None)
     if outcome.card is not None:
+        # Réutilise l'URL PriceCharting déjà résolue par compute_verdict_for_card
+        # (outcome.sources_compared) pour la ligne "cette annonce" de la
+        # comparaison par langue -- jamais un 2e scrape pour la même carte.
+        reference_url = next((q.url for q in outcome.sources_compared if q.source == "pricecharting" and q.url), None)
         signals = compute_extended_signals(
             outcome.card, req.grade,
             displayed_price=req.displayed_price,
             reference_price=outcome.verdict.reference_price if outcome.verdict else None,
+            reference_url=reference_url,
             confidence=confidence,
         )
         extended = _extended_out(signals)

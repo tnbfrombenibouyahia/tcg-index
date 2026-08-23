@@ -486,10 +486,24 @@
     return `<dt>Écart vs marché</dt><dd class="cardquant-${tone}">${sign}${Math.abs(deltaAbs).toFixed(2)} $ (${sign}${Math.abs(deltaPct).toFixed(0)}%)</dd>`;
   }
 
-  // "Analyse de prix" : prix annonce (DOM) + moy. 3/10 ventes + écart vs
-  // marché (tous pricing_api, cf. pricing/sales_stats.py côté serveur) --
-  // moy. 3/10 absentes de la ligne si aucune vente connue (jamais 0 $
-  // affiché comme une vraie moyenne).
+  // "Analyse de prix" : prix annonce (DOM) + prix de marché + moy. 3/10
+  // ventes + écart vs marché (tous pricing_api, cf. pricing/sales_stats.py
+  // côté serveur) -- moy. 3/10 absentes de la ligne si aucune vente connue
+  // (jamais 0 $ affiché comme une vraie moyenne).
+  //
+  // Ligne "Prix de marché" -- demande utilisateur (2026-08-23) : l'écart
+  // ("Écart vs marché" plus bas, cf. renderDeltaRow) était affiché SANS le
+  // chiffre dont il est l'écart -- reference_price (prix PriceCharting du
+  // moment, cf. shared/verdict.py::compute_verdict_for_card, TOUJOURS en
+  // USD) n'apparaissait nulle part par lui-même, seulement caché dans le
+  // calcul du delta. Étiquetée "(PriceCharting)" pour ne pas la confondre
+  // avec les moy. 3/10 dernières ventes juste en dessous : deux "marchés"
+  // différents (catalogue PriceCharting vs ventes eBay réellement conclues)
+  // qui peuvent diverger, cf. le commentaire de compute_extended_signals
+  // sur opportunity_reference -- même raison qui a fait switcher le score
+  // d'opportunité vers les ventes réelles (commit 9a2815d), mais le verdict
+  // vert/jaune/rouge et cette ligne d'écart, eux, restent volontairement
+  // comparés à reference_price (cf. shared/verdict.py::classify, inchangé).
   function renderPriceAnalysis(data, original) {
     const stats = data.sales_stats;
     const rows = [];
@@ -497,6 +511,9 @@
       ? ` <span class="cardquant-muted-inline">(${original.amount.toFixed(2)} ${CURRENCY_SYMBOLS[original.currency] || original.currency})</span>`
       : "";
     rows.push(`<dt>Prix d'annonce</dt><dd>${formatMoney(data.displayed_price, "USD")}${originalNote}</dd>`);
+    if (data.reference_price != null) {
+      rows.push(`<dt>Prix de marché <span class="cardquant-muted-inline">(PriceCharting)</span></dt><dd>${formatMoney(data.reference_price, "USD")}</dd>`);
+    }
     if (stats && stats.avg_last_3 != null) {
       const note = stats.sample_size_3 < 3 ? ` (${stats.sample_size_3})` : "";
       rows.push(`<dt>Moy. 3 dernières ventes${note}</dt><dd>${formatMoney(stats.avg_last_3, stats.currency)}</dd>`);
@@ -747,25 +764,53 @@
     `, "cardquant-arb");
   }
 
-  // Lien de double-vérification vers PriceCharting -- demande utilisateur
-  // (2026-08-22). PriceCharting est en plus la source même du prix de
-  // référence (cf. shared/verdict.py::compute_verdict_for_card), donc
-  // pertinent à vérifier. Pointe vers la VRAIE page produit exacte -- déjà
-  // résolue par le scrape/matching serveur
-  // (pricing/sources/pricecharting_source.py::_find_row_for_card), exposée
-  // ici via sources_compared[].url plutôt que reconstruite/devinée côté
+  // Liens de double-vérification vers PriceCharting -- demande utilisateur
+  // (2026-08-22, étendu 2026-08-23). PriceCharting est en plus la source
+  // même du prix de référence (cf. shared/verdict.py::
+  // compute_verdict_for_card), donc pertinent à vérifier. Chaque lien
+  // pointe vers la VRAIE page produit exacte -- déjà résolue par le
+  // scrape/matching serveur (pricing/sources/pricecharting_source.py::
+  // _find_row_for_card), exposée ici via sources_compared[].url /
+  // language_comparison[].url plutôt que reconstruite/devinée côté
   // extension. Absent (pas de bouton) si PriceCharting n'a pas matché cette
-  // carte -- jamais un lien de recherche de repli qui laisserait croire à un
-  // lien exact.
+  // langue -- jamais un lien de recherche de repli qui laisserait croire à
+  // un lien exact.
+  //
+  // Un 2e bouton par langue sœur connue (cf. shared/verdict.py::
+  // _build_language_comparison) -- demande utilisateur (2026-08-23) :
+  // comparer d'un clic la fiche PriceCharting de l'AUTRE langue sans
+  // ressaisir la recherche à la main. Drapeau devant chaque lien (même
+  // repère que le reste du panneau, cf. LANGUAGE_FLAG_SVG) : avec 2+
+  // boutons empilés, le texte seul ne suffit plus à distinguer vite lequel
+  // est lequel.
   //
   // Bouton "Analyse complète sur CardQuant" (renderCta) et lien Cardmarket
   // (renderCardmarketLink, recherche faute d'ID exploitable) retirés le
   // 2026-08-23 à la demande utilisateur -- CARDQUANT_OPEN_CARD
   // (background.js) supprimé avec eux, plus rien ne l'envoie.
-  function renderPriceChartingLink(sourcesCompared) {
-    const source = (sourcesCompared || []).find((s) => s.source === "pricecharting" && s.url);
-    if (!source) return "";
-    return `<a class="cardquant-cardmarket-link" href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">Vérifier sur PriceCharting ↗</a>`;
+  function renderVerificationLink(url, language, label) {
+    if (!url) return "";
+    const flag = LANGUAGE_FLAG_SVG[language] || "";
+    return `<a class="cardquant-cardmarket-link" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${flag}${escapeHtml(label)} ↗</a>`;
+  }
+
+  function renderVerificationLinks(data) {
+    const currentSource = (data.sources_compared || []).find((s) => s.source === "pricecharting" && s.url);
+    const currentLink = renderVerificationLink(currentSource?.url, data.card.language, "Vérifier sur PriceCharting");
+    const siblingLinks = (data.language_comparison || [])
+      .filter((e) => !e.is_current_listing && e.url)
+      .map((e) => renderVerificationLink(
+        e.url, e.language,
+        `Voir la version ${(LANGUAGE_NAMES[e.language] || e.language).toLowerCase()} sur PriceCharting`,
+      ))
+      .join("");
+    if (!currentLink && !siblingLinks) return "";
+    // .cardquant-section (filet du haut, cf. panel.css) plutôt qu'un <div>
+    // nu -- sert de divider avec la dernière section d'analyse au-dessus
+    // (score/analyse de prix/liquidité/langue/ROI/arbitrage), demande
+    // utilisateur (2026-08-23) : ce bloc est une action ("vérifier
+    // ailleurs"), pas une donnée d'analyse de plus, à séparer visuellement.
+    return `<div class="cardquant-section cardquant-verify-links">${currentLink}${siblingLinks}</div>`;
   }
 
   // Vue commune "carte identifiée" (statuts 'ok' et 'no_reference_price') --
@@ -783,7 +828,7 @@
       ${renderSealedDisplay(data.sealed_display_price)}
       ${renderGradingRoi(data.grading_roi_inputs)}
       ${renderArbitrageCalculator(data)}
-      ${renderPriceChartingLink(data.sources_compared)}
+      ${renderVerificationLinks(data)}
       <button type="button" class="cardquant-signout">Se déconnecter</button>
     `;
   }

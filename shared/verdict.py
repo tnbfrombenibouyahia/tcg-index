@@ -25,6 +25,7 @@ from pricing.repository import (
     fetch_card_by_id,
     fetch_grading_roi_inputs,
     fetch_language_siblings,
+    fetch_language_variants_loose,
     fetch_latest_price_snapshot,
     fetch_recent_sales,
     fetch_sealed_display_for_set,
@@ -127,6 +128,12 @@ class LanguageComparisonEntry:
     price: float | None      # None si aucun prix connu pour cette langue -- jamais deviné
     currency: str | None
     is_current_listing: bool
+    # Page produit PriceCharting exacte pour CETTE langue -- None si pas
+    # (encore) résolue, cf. _build_language_comparison. Sert au bouton de
+    # double-vérification "Voir la version <langue>" du panneau extension
+    # (demande utilisateur 2026-08-23) -- jamais un lien de recherche
+    # deviné, même garde que renderPriceChartingLink côté extension.
+    url: str | None = None
 
 
 @dataclass
@@ -143,30 +150,87 @@ class ExtendedSignals:
     grading_roi_inputs: GradingRoiInputs | None = None
 
 
-def _build_language_comparison(card: Card, grade: str, *, current_price: float | None) -> list[LanguageComparisonEntry]:
-    """La ligne de la langue courante réutilise `current_price` (déjà
-    calculé par compute_verdict_for_card -- source PriceCharting live, plus
-    fraîche qu'un price_snapshot nocturne) plutôt que de re-requêter ; les
-    langues sœurs n'ont pas de verdict en cours, price_snapshots (dernier
-    connu) est leur seule source ici. Carte sans équivalent dans une langue
-    donnée -> pas de ligne pour elle (pas de fabrication d'une entrée à 0)."""
+def _build_language_comparison(card: Card, grade: str, *, current_price: float | None,
+                                current_url: str | None = None) -> list[LanguageComparisonEntry]:
+    """La ligne de la langue courante réutilise `current_price`/`current_url`
+    (déjà calculés par compute_verdict_for_card -- source PriceCharting
+    live, plus fraîche qu'un price_snapshot nocturne) plutôt que de
+    re-requêter ; les langues sœurs n'ont pas de verdict en cours,
+    price_snapshots (dernier connu) reste leur seule source de PRIX ici.
+    Carte sans équivalent dans une langue donnée -> pas de ligne pour elle
+    (pas de fabrication d'une entrée à 0).
+
+    `url` de chaque langue sœur : résolue séparément via un 2e appel
+    PriceChartingSource (même source, même cache TTL que la carte courante,
+    cf. pricing/cache.py) -- price_snapshots ne stocke aucune URL (table
+    alimentée par le batch nocturne, cf. db/schema.sql), impossible d'en
+    déduire une sans un appel dédié. Coût borné par le cache : un scrape
+    réseau seulement la première fois par langue sœur/grade, jamais répété
+    avant expiration du TTL (par défaut 12h, cf. pricing/cache.py).
+
+    Cet appel se fait TOUJOURS au grade 'ungraded', jamais `grade` (le
+    paramètre de cette fonction) -- demande utilisateur (2026-08-23) : le
+    bouton de vérification de la langue sœur disparaissait pour une carte
+    consultée à un grade PSA précis (ex. psa9.5) dès que CE grade précis
+    n'a pas de prix listé sur la page PriceCharting de la langue sœur (peu
+    de ventes à cette note, cf. PriceChartingSource.fetch_price -- qui
+    renvoie None, URL comprise, dès que le prix du grade demandé manque,
+    même quand la page produit elle-même a bien été retrouvée). La page
+    produit PriceCharting est pourtant UNE SEULE ET MÊME URL quel que soit
+    le grade consulté dessus, et son prix 'ungraded' (le "loose price" en
+    tête de page) est quasi toujours renseigné dès qu'une ligne existe --
+    l'interroger systématiquement en 'ungraded' ici maximise donc les
+    chances de récupérer le lien, SANS jamais changer le prix affiché par
+    ailleurs pour cette langue sœur (qui reste price_snapshots, cf.
+    ci-dessus -- ce 2e appel ne sert QU'À l'URL).
+
+    Repli "lien seul" (fetch_language_variants_loose) après les siblings
+    stricts -- demande utilisateur (2026-08-23) : certaines cartes n'ont
+    AUCUN sibling au sens strict (même set_code) mais une autre impression
+    du même code existe bien chez PriceCharting dans l'autre langue,
+    vérifié en base sur un cas réel (compilation EN "The Best" sans ligne
+    JP cataloguée sous ce set_code exact). Ce repli n'ajoute JAMAIS de prix
+    (price=None, currency=None) -- seulement un lien à vérifier soi-même,
+    jamais une valeur qui pourrait représenter le mauvais tirage. Sauté
+    entièrement pour une langue déjà couverte par un sibling strict (pas de
+    doublon), et pour toute langue où même ce repli ne résout aucune URL
+    (rien à proposer)."""
     current = LanguageComparisonEntry(
         language=card.language, card_id=card.id,
         price=current_price, currency="USD" if current_price is not None else None,
-        is_current_listing=True,
+        is_current_listing=True, url=current_url,
     )
-    siblings = []
+    entries = [current]
+    covered_languages = {card.language}
+
     for sibling in fetch_language_siblings(card):
         snapshot = fetch_latest_price_snapshot(sibling.id, grade)
         price, currency = snapshot if snapshot is not None else (None, None)
-        siblings.append(LanguageComparisonEntry(
-            language=sibling.language, card_id=sibling.id, price=price, currency=currency, is_current_listing=False,
+        sibling_quote = get_price_with_cache(sibling, "ungraded", PriceChartingSource())
+        entries.append(LanguageComparisonEntry(
+            language=sibling.language, card_id=sibling.id, price=price, currency=currency,
+            is_current_listing=False, url=sibling_quote.url if sibling_quote else None,
         ))
-    return [current, *siblings]
+        covered_languages.add(sibling.language)
+
+    for variant in fetch_language_variants_loose(card):
+        if variant.language in covered_languages:
+            continue
+        variant_quote = get_price_with_cache(variant, "ungraded", PriceChartingSource())
+        if not variant_quote or not variant_quote.url:
+            continue
+        entries.append(LanguageComparisonEntry(
+            language=variant.language, card_id=variant.id, price=None, currency=None,
+            is_current_listing=False, url=variant_quote.url,
+        ))
+        covered_languages.add(variant.language)
+
+    return entries
 
 
 def compute_extended_signals(card: Card, grade: str, *, displayed_price: float | None = None,
-                              reference_price: float | None = None, confidence: float = 1.0) -> ExtendedSignals:
+                              reference_price: float | None = None, reference_url: str | None = None,
+                              confidence: float = 1.0) -> ExtendedSignals:
     """Signaux additionnels de la maquette extension -- délibérément séparé
     de compute_verdict_for_card : celui-ci reste focalisé "prix vs
     référence" (réutilisable par un futur script batch qui n'a besoin
@@ -179,6 +243,10 @@ def compute_extended_signals(card: Card, grade: str, *, displayed_price: float |
     la comparaison par langue (prix PriceCharting live, cf.
     _build_language_comparison) et de dernier repli pour le score
     d'opportunité si aucune vente récente n'est connue (cf. plus bas).
+    `reference_url` : page produit PriceCharting de CETTE carte (même
+    origine que reference_price, cf. outcome.sources_compared côté
+    appelant) -- transmise telle quelle à la ligne "cette annonce" de la
+    comparaison par langue, jamais re-résolue ici.
     `displayed_price` : prix affiché sur l'annonce (VerdictRequest.displayed_price,
     déjà en USD) -- combiné à `reference_price`/aux ventes récentes pour le
     score d'opportunité, cf. plus bas.
@@ -206,7 +274,7 @@ def compute_extended_signals(card: Card, grade: str, *, displayed_price: float |
     active_listings = get_active_listing_count(card, active_listings_grade)
     liquidity = compute_liquidity(sales_last_90d, active_listings)
 
-    language_comparison = _build_language_comparison(card, grade, current_price=reference_price)
+    language_comparison = _build_language_comparison(card, grade, current_price=reference_price, current_url=reference_url)
 
     sealed_display_price = None
     if card.category == "single":

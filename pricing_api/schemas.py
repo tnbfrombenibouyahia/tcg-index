@@ -93,6 +93,11 @@ class LanguageComparisonOut(BaseModel):
     price: float | None  # None si aucun prix connu pour cette langue (pas d'équivalent trouvé)
     currency: str | None
     is_current_listing: bool  # true pour la ligne de l'annonce affichée
+    # Page produit PriceCharting pour CETTE langue -- None si pas résolue
+    # (set non mappé, scraping en échec...). Alimente le bouton "Voir la
+    # version <langue>" du panneau extension, cf. shared/verdict.py::
+    # _build_language_comparison -- jamais un lien de recherche deviné.
+    url: str | None = None
 
 
 class SealedDisplayPriceOut(BaseModel):
