@@ -6,7 +6,7 @@ Stack : Cloud SQL (Postgres) · Cloud Run Jobs + Cloud Scheduler · Firebase (Au
 01 — Le produit
 L'extension est le produit principal, consulté en direct sur une annonce ; le site est la couche d'analyse avancée derrière un compte.
 
-Extension navigateur — verdict en direct sur une annonce. Panneau latéral coulissant (type MetaMask, pas un popup classique) : identifie la carte (image ou titre), affiche dernières transactions, liquidité, ventes en cours, prix moyen EN/JP, score d'opportunité, ROI gradation, calculateur d'arbitrage, liens directs vers les annonces trouvées et un bouton "plus d'informations" vers le site. Compte requis avant toute utilisation.
+Extension navigateur — verdict en direct sur une annonce. Panneau latéral coulissant (type MetaMask, pas un popup classique) : identifie la carte (image ou titre), affiche dernières transactions, liquidité, ventes en cours, prix moyen EN/JP, score d'opportunité, ROI gradation, calculateur d'arbitrage, lien de double-vérification PriceCharting. Compte requis avant toute utilisation.
 
 Site — couche premium, analyse quantitative type Bloomberg. Connexion pour débloquer l'extension (si techniquement possible), cartes/sets à suivre, sous-cote/surcote structurelle, analyse plus poussée que l'extension seule.
 
@@ -300,8 +300,10 @@ Cinq signaux, verrouillés avant d'écrire le SQL, pas après.
 
 A — Verdict ponctuel (extension)
 
-ratio = prix_affiché / prix_de_référence
-prix_de_référence = médiane des ventes récentes comparables. < 0.85 vert (bonne affaire) · 0.85–1.15 jaune (prix normal) · > 1.15 rouge (survendu). Seuils calibrés et validés en conditions réelles — configurables (.env), pas à retuner sans donnée contraire.
+Pastille vert/jaune/rouge : ratio = prix_affiché / prix_de_référence
+prix_de_référence = médiane des cotations PriceCharting (seule source de référence branchée en MVP). < 0.85 vert (bonne affaire) · 0.85–1.15 jaune (prix normal) · > 1.15 rouge (survendu). Seuils calibrés et validés en conditions réelles — configurables (.env), pas à retuner sans donnée contraire.
+
+Score d'opportunité (jauge 0-100 du panneau, signal continu distinct de la pastille ci-dessus) : combine trois composantes pondérées — prix (60%), liquidité (25%), confiance d'identification (15%). La composante prix compare prix_affiché à la moyenne des 3 dernières ventes réellement conclues (repli sur la moyenne des 10 dernières, puis sur prix_de_référence PriceCharting en tout dernier recours si aucune vente récente n'est connue) — jamais à prix_de_référence seul, pour ne pas afficher "Bonne affaire" sur un prix supérieur à ce qui s'est réellement vendu récemment.
 
 B — Score structurel (site, sous-cote/surcote persistante)
 
