@@ -323,11 +323,19 @@
     const thumb = c.image_url
       ? `<img class="cardquant-candidate-thumb" src="${escapeHtml(c.image_url)}" alt="" loading="lazy">`
       : `<div class="cardquant-candidate-thumb cardquant-candidate-thumb--empty" aria-hidden="true"></div>`;
+    // Drapeau langue devant le nom -- demande utilisateur (2026-08-23) :
+    // deux candidats identiques par ailleurs (même carte, même rareté) sont
+    // fréquents entre EN et JP, sans ce repère on ne sait pas lequel est
+    // lequel en scannant vite la liste. Emoji plutôt qu'un badge séparé :
+    // repère visuel immédiat au même endroit que le nom, pas besoin de
+    // chercher ailleurs dans la ligne (cf. LANGUAGE_FLAGS, déjà utilisé
+    // ailleurs dans ce fichier pour la même raison).
+    const flag = LANGUAGE_FLAGS[c.language] || "";
     return `
       <li class="cardquant-candidate" data-card-id="${c.card_id}" role="button" tabindex="0">
         ${thumb}
         <div class="cardquant-candidate-info">
-          <div class="cardquant-candidate-name">${escapeHtml(c.name)}</div>
+          <div class="cardquant-candidate-name">${flag ? `${flag} ` : ""}${escapeHtml(c.name)}</div>
           ${meta ? `<div class="cardquant-candidate-meta">${escapeHtml(meta)}</div>` : ""}
         </div>
       </li>

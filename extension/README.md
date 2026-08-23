@@ -213,6 +213,15 @@ Fait :
     sans `release_date` propre. Harness jsdom : 3 cas (complet, promo sans
     année, aucune métadonnée) -- badges corrects, aucune erreur JS.
 
+- **Drapeau langue dans le picker de désambiguïsation (demande
+  utilisateur, 2026-08-23)** : deux candidats identiques par ailleurs (même
+  carte, même rareté, EN vs JP) sont fréquents -- sans repère, impossible
+  de savoir lequel est lequel en scannant vite la liste. `renderCandidate`
+  préfixe maintenant le nom du drapeau langue (`LANGUAGE_FLAGS`, déjà
+  utilisé ailleurs dans ce fichier pour la même raison). Testé via un
+  harness jsdom : deux candidats identiques hors langue rendent bien deux
+  drapeaux distincts (🇬🇧/🇯🇵).
+
 Pas fait (hors scope de ce scaffold) :
 - Vinted, Cardmarket — seul eBay (14 domaines pays, cf. `manifest.json`)
   est scopé pour l'instant.
