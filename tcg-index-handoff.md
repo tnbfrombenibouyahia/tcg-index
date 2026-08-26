@@ -63,14 +63,21 @@ eBay Browse API	Listings actifs — supply/pression vendeuse	API REST · OAuth2	
 LimitlessTCG · Bulbapedia · TCGdex	Backfill de la rareté	scraping · API MediaWiki	cadence alignée sur le référentiel mensuel
 Google Cloud Vision	OCR — identification carte par image	API REST	palier gratuit 1000 unités/mois — à la demande
 Vinted	Même rôle que eBay (profondeur de marché)	—	mis de côté pour l'instant, décision explicite
-Jobs et horaires
-Job	Portée	Cadence	Charge dominante
-Prix EN + JP	Tout le catalogue	chaque nuit, 02:00	1 requête/set — ~226 sets, moins de 90 min
-Listings actifs eBay	Tout le catalogue scellé, pool commun aux deux TCG	chaque nuit, 03:30, par tranche tournante	2 requêtes/item — tranches sous quota
-Référentiel + rareté	Tout le catalogue	le 1er du mois, 04:30	contraint par le quota apitcg
-Fuseau : Europe/Paris, déclaré directement à Cloud Scheduler (pas de calcul de décalage été/hiver à faire à la main).
+Jobs et horaires (état réel vérifié le 2026-08-26 via `gcloud scheduler jobs list` / `gcloud run jobs describe` — cf. note de migration en fin de section, la table ci-dessous remplace une version antérieure qui décrivait encore 3 jobs génériques)
+Cloud Scheduler (cron, UTC)	Cloud Run Job	Portée	Charge dominante
+daily-sync · 01:17	ingestion-daily	Prix ungraded, tout le catalogue EN+JP	1 requête/set — ~226 sets
+tiered-hot/recent/established/vintage/jp-singles · 5 horaires 03:05–04:13	ingestion-tiered (job unique, args `--tier <palier>` overridés par requête Scheduler)	Gradation PSA + ventes, par palier d'âge (rotation)	1 requête/carte, sous quota par tranche
+ebay-listings · jeudi 04:05	ingestion-ebay-listings	Listings actifs scellé, pool commun EN+JP	2 requêtes/item — tranches sous quota
+items-monthly · le 3, 02:00	ingestion-items	Référentiel complet (apitcg)	contraint par le quota apitcg (1000 req/mois)
+rarity-backfill-weekly · vendredi 03:19	ingestion-rarity-backfill	Backfill rareté (LimitlessTCG/Bulbapedia)	cadence hebdomadaire
+population-monthly · le 10, 02:27	ingestion-population	Population PSA+CGC (miroir PriceCharting), tout le catalogue mappé	1 requête/set — ~234 sets EN + ~429 sets JP
+Fuseau : UTC directement sur Cloud Scheduler (corrigé ici — cette section indiquait auparavant Europe/Paris, jamais le cas en pratique).
 
-Pourquoi 02:00 puis 03:30, pas plus serré : le job Prix a un budget de jusqu'à 90 min — démarrer eBay à 03:30 laisse la marge complète avant de toucher les mêmes tables d'agrégats. Le vrai filet reste le concurrency: group partagé (§02), pas le calage horaire seul : un soir où Prix déborde, la 2ᵉ run attend en file plutôt que d'écrire en parallèle. Cloud Scheduler n'a pas de file d'attente mutualisée entre projets comme un scheduler communautaire — pas besoin de choisir une minute non ronde pour éviter un engorgement à l'heure pile.
+Pourquoi daily-sync avant les tiered : le job Prix a un budget de plusieurs dizaines de minutes — décaler les tiered/eBay après laisse la marge avant de toucher les mêmes tables d'agrégats. Le vrai filet reste `ingestion_writer_lock` (pg_advisory_lock, §02), pas le calage horaire seul : un soir où un job déborde, le suivant attend en file plutôt que d'écrire en parallèle.
+
+Migration Cloud Scheduler + Cloud Run Jobs (2026-08-16) et nettoyage (2026-08-26) : les 6 jobs ci-dessus ont remplacé les 6 workflows `.github/workflows/*.yml` (daily-sync, tiered-sync, ebay-listings-sync, monthly-items-sync, monthly-population-sync, rarity-backfill-sync) le 16 août. Ces fichiers sont restés dans le repo, toujours déclenchés par GitHub, jusqu'au 26 août -- constaté ce jour-là : ils échouaient silencieusement depuis la migration, leur secret `DATABASE_URL` GitHub pointant encore vers l'ancien cluster CockroachDB (`tcg-index-prod-31243...cockroachlabs.cloud`), lui-même désactivé pour dépassement de quota Request Units. Supprimés le 26 août -- Cloud Scheduler est désormais l'unique déclencheur.
+
+Population PSA+CGC à zéro ligne au 26 août (vérifié : `population_snapshots` vide, aucune run `step='population'` dans `sync_runs`) : `ingestion-population` est correctement câblé (Scheduler → Cloud Run Jobs Admin API → secret `cardquant-database-url`, vérifié) mais n'a jamais eu l'occasion de se déclencher -- job créé le 16 août, cadence mensuelle le 10, donc premier créneau réel le 2026-09-10. À déclencher manuellement en attendant (`gcloud run jobs execute ingestion-population --region=europe-west3 --wait`) plutôt que d'attendre cette date -- pas encore fait au moment de cette note (bloqué côté outillage local le 26 août, cf. historique de session).
 
 Pourquoi une rotation par item, pas une alternance par jeu : Pokémon scellé seul (4 737 items, tous âges) demande 9 474 requêtes — plus que le quota quotidien (5000), même sur une journée entièrement dédiée. One Piece (EN+JP, 627 items+) tient seul en ~1 254+ requêtes et gâcherait le reste d'une journée réservée. La bonne maille est l'item, pas le TCG : pool commun Pokémon + One Piece découpé en tranches tournantes, choisies par date.today().toordinal() // 7 % N — sans état stocké. ~5 tranches de ~1150 items (2300 requêtes/nuit, large marge sous 5000) : chaque nuit touche un peu des deux TCG, cycle complet tous les 5 jours, marge prête pour Vinted plus tard sans retoucher le découpage.
 
@@ -83,7 +90,7 @@ Service	Rôle	Palier gratuit	Coût réel estimé
 Cloud SQL (PostgreSQL)	Base de données — db-f1-micro	aucun palier gratuit	~12-14€/mois (compute + 10 Go, europe-west3)
 Cloud Run Jobs	Batch nightly (prix + eBay) + job mensuel	240 000 vCPU-s + 450 000 GiB-s/mois	0€
 Cloud Run (service)	Gradation/ventes à la demande — pricing_api	2M requêtes + 180 000 vCPU-s/mois	0€ à cette échelle
-Cloud Scheduler	Déclenche les 3 jobs	3 jobs gratuits/mois/compte	0€ — exactement 3 jobs
+Cloud Scheduler	Déclenche les 6 Cloud Run Jobs (10 déclencheurs cron, cf. §04 -- tiered en a 5 vers le même job)	3 jobs gratuits/mois/compte, ~0,10$/job/mois au-delà	~0,70$/mois (10 déclencheurs, 3 gratuits) -- corrigé le 2026-08-26, cette ligne annonçait encore "exactement 3 jobs"
 Secret Manager	DATABASE_URL, clés apitcg/eBay	6 versions actives gratuites	0€
 Artifact Registry + Cloud Build	Images de conteneur	paliers gratuits	0€
 Cloud Logging	Observabilité des jobs	50 Go/mois gratuits	0€
@@ -357,4 +364,12 @@ Panneau strictement additif. Ne jamais masquer, modifier ou réécrire le conten
 Politique de confidentialité publiée + déclaration "Privacy practices". Obligatoire dès qu'il y a compte utilisateur ou lecture de contenu de page — les deux sont vrais ici.
 Connexion Google dans l'extension ≠ connexion Google sur le site. Un simple redirect OAuth web ne marche pas dans une extension. Passe par chrome.identity (getAuthToken ou launchWebAuthFlow), à intégrer avec Firebase Auth (§05) — un vrai travail d'intégration.
 Tester en privé avant la review publique. Chrome permet de charger l'extension en local (mode développeur) ou de la distribuer à des testeurs de confiance sans passer par la review publique.
+
+10 — Chantiers futurs
+
+Favoris payants, extension → site (proposé 2026-08-25, pas encore tranché). Un utilisateur avec un abonnement donné pourrait sauvegarder une carte en favori directement depuis le panneau extension, puis la retrouver et consulter son analyse complète à tout moment sur le site, connecté avec le même compte.
+
+S'appuie sur de l'existant, pas un nouveau socle : le pont de session extension ↔ site (Firebase Auth, Google Sign-In, relayé via chrome.runtime.onMessageExternal, cf. extension/background.js et web/lib/cardquant-extension.ts) fonctionne déjà. L'écran Watchlist du site (§08) était prévu dès la maquette mais jamais construit — les favoris en seraient le contenu. search_history (§06) est le précédent direct pour la forme de la donnée (user_id + item_id) ; une table favorites serait sa sœur, sauf qu'elle n'est pas append-only puisqu'un favori doit pouvoir être retiré (UNIQUE (user_id, item_id), add/remove, pas juste insert).
+
+Ce qui bloque réellement n'est pas technique : le schéma n'a aucune notion d'abonnement aujourd'hui (§06, users) — décision explicite tant que le modèle payant n'était pas tranché avant lancement. Avant de coder quoi que ce soit ici, trancher : quel modèle (gratuit limité + payant illimité, ou fonctionnalité 100% payante), quel fournisseur de paiement (Stripe par défaut — abonnements récurrents, webhooks, portail self-service), et où vérifier le droit. Le gating ne doit jamais reposer seulement côté extension/client (contournable par un appel direct à pricing_api) — passer par un check serveur, idéalement un statut d'abonnement embarqué en Firebase custom claim (mis à jour par le webhook Stripe) pour éviter une requête DB à chaque appel, dans le même esprit que le token déjà utilisé pour authentifier /verdict.
 CardQuant · document de référence
