@@ -65,12 +65,14 @@ class SourcePriceOut(BaseModel):
 
 
 class SalesStatsOut(BaseModel):
-    """Moy. 3 / moy. 10 dernières ventes -- cf. pricing/sales_stats.py.
-    sample_size_* < 3/10 signale une moyenne partielle (peu de ventes
-    connues), à afficher tel quel plutôt que masqué."""
-    avg_last_3: float | None
+    """Médiane récente (fenêtre adaptative 3-5 ventes) / moy. 10 dernières
+    ventes -- cf. pricing/sales_stats.py. sample_size_recent varie entre 0
+    et 5 selon la densité temporelle des ventes disponibles (jamais masqué
+    à l'appelant, cf. docstring de compute_sales_stats) ; sample_size_10 < 10
+    signale une moyenne partielle (peu de ventes connues)."""
+    median_recent: float | None
     avg_last_10: float | None
-    sample_size_3: int
+    sample_size_recent: int
     sample_size_10: int
     currency: str | None  # None si aucune vente exploitable
 

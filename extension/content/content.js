@@ -486,10 +486,10 @@
     return `<dt>Écart vs marché</dt><dd class="cardquant-${tone}">${sign}${Math.abs(deltaAbs).toFixed(2)} $ (${sign}${Math.abs(deltaPct).toFixed(0)}%)</dd>`;
   }
 
-  // "Analyse de prix" : prix annonce (DOM) + prix de marché + moy. 3/10
-  // ventes + écart vs marché (tous pricing_api, cf. pricing/sales_stats.py
-  // côté serveur) -- moy. 3/10 absentes de la ligne si aucune vente connue
-  // (jamais 0 $ affiché comme une vraie moyenne).
+  // "Analyse de prix" : prix annonce (DOM) + prix de marché + médiane
+  // récente/moy. 10 ventes + écart vs marché (tous pricing_api, cf.
+  // pricing/sales_stats.py côté serveur) -- lignes absentes si aucune
+  // vente connue (jamais 0 $ affiché comme une vraie moyenne).
   //
   // Ligne "Prix de marché" -- demande utilisateur (2026-08-23) : l'écart
   // ("Écart vs marché" plus bas, cf. renderDeltaRow) était affiché SANS le
@@ -497,7 +497,7 @@
   // moment, cf. shared/verdict.py::compute_verdict_for_card, TOUJOURS en
   // USD) n'apparaissait nulle part par lui-même, seulement caché dans le
   // calcul du delta. Étiquetée "(PriceCharting)" pour ne pas la confondre
-  // avec les moy. 3/10 dernières ventes juste en dessous : deux "marchés"
+  // avec la médiane récente/moy. 10 dernières ventes juste en dessous : deux "marchés"
   // différents (catalogue PriceCharting vs ventes eBay réellement conclues)
   // qui peuvent diverger, cf. le commentaire de compute_extended_signals
   // sur opportunity_reference -- même raison qui a fait switcher le score
@@ -514,9 +514,12 @@
     if (data.reference_price != null) {
       rows.push(`<dt>Prix de marché <span class="cardquant-muted-inline">(PriceCharting)</span></dt><dd>${formatMoney(data.reference_price, "USD")}</dd>`);
     }
-    if (stats && stats.avg_last_3 != null) {
-      const note = stats.sample_size_3 < 3 ? ` (${stats.sample_size_3})` : "";
-      rows.push(`<dt>Moy. 3 dernières ventes${note}</dt><dd>${formatMoney(stats.avg_last_3, stats.currency)}</dd>`);
+    if (stats && stats.median_recent != null) {
+      // Taille de fenêtre toujours affichée (pas juste si < nominal) --
+      // contrairement à moy. 10 ci-dessous, la fenêtre est adaptative
+      // (3 à 5 ventes selon leur densité temporelle, cf.
+      // pricing/sales_stats.py) donc "3" n'est plus un défaut implicite.
+      rows.push(`<dt>Médiane ventes récentes (${stats.sample_size_recent})</dt><dd>${formatMoney(stats.median_recent, stats.currency)}</dd>`);
     }
     if (stats && stats.avg_last_10 != null) {
       const note = stats.sample_size_10 < 10 ? ` (${stats.sample_size_10})` : "";

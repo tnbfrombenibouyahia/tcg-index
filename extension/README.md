@@ -92,11 +92,12 @@ Fait :
   utilisateur, 2026-08-23)** : `opportunity_score` ne comparait le prix
   affiché qu'à `reference_price` (PriceCharting, prix "catalogue"/demandé
   du moment) -- jamais à la moy. des ventes réelles récentes
-  (`avg_last_3`/`avg_last_10`) affichée juste au-dessus dans le panneau
-  ("Analyse de prix"), pouvant afficher un score "Bonne affaire" pour un
-  prix nettement AU-DESSUS de ce qui s'est réellement vendu récemment.
+  (`avg_last_3`/`avg_last_10`, renommé `median_recent` le 2026-08-28, voir
+  plus bas) affichée juste au-dessus dans le panneau ("Analyse de prix"),
+  pouvant afficher un score "Bonne affaire" pour un prix nettement
+  AU-DESSUS de ce qui s'est réellement vendu récemment.
   `compute_extended_signals` (`shared/verdict.py`) calcule maintenant le
-  ratio du score contre `avg_last_3` en priorité (repli `avg_last_10`, puis
+  ratio du score contre `avg_last_3` (devenu `median_recent`) en priorité (repli `avg_last_10`, puis
   `reference_price` en dernier recours si aucune vente récente connue). Le
   verdict vert/jaune/rouge (`Verdict.label`, pastille + lien
   PriceCharting/Cardmarket) n'est **pas** touché -- il continue de comparer
@@ -289,6 +290,25 @@ Fait :
   utilisé ailleurs dans ce fichier pour la même raison). Testé via un
   harness jsdom : deux candidats identiques hors langue rendent bien deux
   drapeaux distincts (🇬🇧/🇯🇵).
+
+- **Médiane récente à fenêtre adaptative au lieu de moy. 3 dernières ventes
+  fixe (2026-08-28)** : `avg_last_3` (`SalesStatsOut`) devient
+  `median_recent`, libellé panneau "Moy. 3 dernières ventes" →
+  "Médiane ventes récentes (N)" (N = taille réelle de la fenêtre, toujours
+  affichée, plus seulement si <3). Constaté en auditant la table `sales` en
+  conditions réelles (carte `item_id=73783`, Roronoa Zoro OP06-118
+  [Alternate Art Manga] -- une vente à $30,64 mêlée à des ventes à
+  $1475/$1750 faussait le score d'opportunité de -33% environ) : ~15% des
+  couples (carte, grade) avaient au moins 1 vente aberrante (>5x d'écart)
+  dans leurs 3 dernières ventes, une moyenne arithmétique s'y fait fausser
+  en entier par une seule valeur. Passage à une médiane, étendue de 3 à 5
+  ventes SEULEMENT quand la 4e/5e reste à <=180j de la 3e (sinon reste à 3)
+  -- au-delà, la vente supplémentaire n'est plus un point de "maintenant"
+  mais une vraie tendance de marché sur une carte peu liquide, que mélanger
+  au signal récent biaiserait au lieu de le robustifier. Validé contre
+  `price_snapshots` (référence indépendante, non dérivée de `sales`) :
+  médiane-5 bat médiane-3 sous 180j, mais perd nettement au-delà -- détail
+  complet et méthode de mesure dans `pricing/sales_stats.py`.
 
 Pas fait (hors scope de ce scaffold) :
 - Vinted, Cardmarket — seul eBay (14 domaines pays, cf. `manifest.json`)

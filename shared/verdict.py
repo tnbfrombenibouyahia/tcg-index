@@ -287,21 +287,31 @@ def compute_extended_signals(card: Card, grade: str, *, displayed_price: float |
                                                     price=price, currency=currency)
 
     # Score d'opportunité : compare le prix affiché à ce qui s'est
-    # RÉELLEMENT vendu récemment (moy. 3 dernières ventes -- repli moy. 10
-    # dernières si l'échantillon à 3 est vide, repli reference_price
-    # PriceCharting en dernier recours si aucune vente connue), PLUTÔT que
-    # reference_price seul comme avant -- demande utilisateur (2026-08-23) :
-    # reference_price (prix PriceCharting du moment, "catalogue"/demandé, pas
-    # forcément un prix réellement conclu) pouvait afficher un score "Bonne
-    # affaire" alors que le prix affiché était nettement AU-DESSUS de la
-    # moyenne des ventes réelles récentes affichée juste au-dessus dans le
-    # panneau ("Analyse de prix") -- les deux chiffres se contredisaient sans
-    # explication. Le verdict vert/jaune/rouge (Verdict.label, cf. classify()
-    # plus haut) N'EST PAS touché ici : il continue de comparer à
-    # reference_price, volontairement inchangé (signal ponctuel déjà
-    # documenté séparément) -- seul le score continu 0-100 change de
-    # référence.
-    opportunity_reference = sales_stats.avg_last_3
+    # RÉELLEMENT vendu récemment (médiane sur fenêtre adaptative de 3-5
+    # ventes -- repli moy. 10 dernières si l'échantillon récent est vide,
+    # repli reference_price PriceCharting en dernier recours si aucune vente
+    # connue), PLUTÔT que reference_price seul comme avant -- demande
+    # utilisateur (2026-08-23) : reference_price (prix PriceCharting du
+    # moment, "catalogue"/demandé, pas forcément un prix réellement conclu)
+    # pouvait afficher un score "Bonne affaire" alors que le prix affiché
+    # était nettement AU-DESSUS de la moyenne des ventes réelles récentes
+    # affichée juste au-dessus dans le panneau ("Analyse de prix") -- les
+    # deux chiffres se contredisaient sans explication. Le verdict
+    # vert/jaune/rouge (Verdict.label, cf. classify() plus haut) N'EST PAS
+    # touché ici : il continue de comparer à reference_price, volontairement
+    # inchangé (signal ponctuel déjà documenté séparément) -- seul le score
+    # continu 0-100 change de référence.
+    #
+    # `median_recent` plutôt qu'une moyenne arithmétique fixe des 3
+    # dernières ventes (2026-08-28, cf. pricing/sales_stats.py pour le détail
+    # et la validation empirique) : une moyenne se fait fausser en entier par
+    # une seule vente aberrante (ex. mauvais tirage/état mal classé par la
+    # source) au milieu d'un échantillon de 3 -- la médiane neutralise cette
+    # valeur isolée. Fenêtre étendue à 5 ventes quand elles restent proches
+    # en date (<=180j de la 3e) pour plus de robustesse statistique sans
+    # mélanger une vraie tendance de marché ancienne au signal "récent" sur
+    # les cartes peu liquides.
+    opportunity_reference = sales_stats.median_recent
     if opportunity_reference is None:
         opportunity_reference = sales_stats.avg_last_10
     if opportunity_reference is None:

@@ -125,21 +125,27 @@ def fetch_card_by_id(item_id: int) -> Card | None:
         conn.close()
 
 
-def fetch_recent_sales(item_id: int, grade: str, *, limit: int = _SALES_STATS_LIMIT) -> list[tuple[float, str]]:
+def fetch_recent_sales(item_id: int, grade: str, *, limit: int = _SALES_STATS_LIMIT) -> list[tuple[float, str, date]]:
     """`limit` dernières ventes (item_id, grade), plus récente d'abord --
-    couvre moy. 3 ET moy. 10 en une seule requête (cf. pricing/sales_stats.py),
-    sur l'index idx_sales_item_date (item_id, sale_date DESC). Liste vide si
-    aucune vente connue -- jamais d'exception pour "pas de données", cohérent
-    avec fetch_card_by_id."""
+    couvre médiane récente ET moy. 10 en une seule requête (cf.
+    pricing/sales_stats.py), sur l'index idx_sales_item_date (item_id,
+    sale_date DESC). Liste vide si aucune vente connue -- jamais
+    d'exception pour "pas de données", cohérent avec fetch_card_by_id.
+
+    `sale_date` inclus depuis le 2026-08-28 (en plus de price/currency) --
+    nécessaire à la fenêtre adaptative de pricing/sales_stats.py::compute_sales_stats,
+    qui doit savoir si les ventes #4/#5 sont assez récentes pour rejoindre
+    la fenêtre plutôt que de mélanger une vraie tendance de marché ancienne
+    au signal "maintenant"."""
     conn = get_connection()
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT price, currency FROM sales WHERE item_id = %s AND grade = %s "
+                "SELECT price, currency, sale_date FROM sales WHERE item_id = %s AND grade = %s "
                 "ORDER BY sale_date DESC, id DESC LIMIT %s",
                 (item_id, grade, limit),
             )
-            return [(float(price), currency) for price, currency in cur.fetchall()]
+            return [(float(price), currency, sale_date) for price, currency, sale_date in cur.fetchall()]
     finally:
         conn.close()
 

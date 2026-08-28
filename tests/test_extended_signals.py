@@ -3,11 +3,20 @@
 puis orchestration (shared/verdict.py::compute_extended_signals, DB
 monkeypatchée -- même style que tests/test_verdict.py).
 """
+from datetime import date, timedelta
+
 from pricing.liquidity import compute_liquidity, liquidity_label
 from pricing.models import Card, PriceQuote
 from pricing.opportunity_score import compute_opportunity_score
 from pricing.sales_stats import compute_sales_stats
 from shared import verdict
+
+_TODAY = date(2026, 8, 28)
+
+
+def _sale(price, days_ago, currency="USD"):
+    """(price, currency, sale_date) -- même forme que fetch_recent_sales."""
+    return (price, currency, _TODAY - timedelta(days=days_ago))
 
 
 def _card(**overrides):
@@ -20,33 +29,69 @@ def _card(**overrides):
 class TestComputeSalesStats:
     def test_empty_list_returns_none_stats(self):
         stats = compute_sales_stats([])
-        assert stats.avg_last_3 is None
+        assert stats.median_recent is None
         assert stats.avg_last_10 is None
-        assert stats.sample_size_3 == 0
+        assert stats.sample_size_recent == 0
         assert stats.currency is None
 
-    def test_averages_over_available_sales(self):
-        sales = [(10.0, "USD"), (12.0, "USD"), (8.0, "USD")]
+    def test_median_over_available_sales_dense_in_time(self):
+        sales = [_sale(10.0, 0), _sale(12.0, 5), _sale(8.0, 10)]
         stats = compute_sales_stats(sales)
-        assert stats.avg_last_3 == 10.0
+        assert stats.median_recent == 10.0
         assert stats.avg_last_10 == 10.0
-        assert stats.sample_size_3 == 3
+        assert stats.sample_size_recent == 3
         assert stats.sample_size_10 == 3
 
     def test_partial_sample_when_fewer_than_3_sales(self):
-        stats = compute_sales_stats([(10.0, "USD")])
-        assert stats.avg_last_3 == 10.0
-        assert stats.sample_size_3 == 1
+        stats = compute_sales_stats([_sale(10.0, 0)])
+        assert stats.median_recent == 10.0
+        assert stats.sample_size_recent == 1
 
     def test_never_mixes_currencies(self):
         # La plus récente (1re du tuple, cf. fetch_recent_sales) fixe la
         # devise -- les autres devises sont ignorées, jamais fondues dans
-        # la moyenne (même principe que shared/verdict.py côté sources).
-        sales = [(10.0, "USD"), (100.0, "EUR"), (12.0, "USD")]
+        # le calcul (même principe que shared/verdict.py côté sources).
+        sales = [_sale(10.0, 0), _sale(100.0, 3, currency="EUR"), _sale(12.0, 6)]
         stats = compute_sales_stats(sales)
         assert stats.currency == "USD"
-        assert stats.sample_size_3 == 2
-        assert stats.avg_last_3 == 11.0
+        assert stats.sample_size_recent == 2
+        assert stats.median_recent == 11.0
+
+    def test_median_neutralizes_single_outlier_among_3(self):
+        # Cas réel (2026-08-28) : carte item_id=73783, Roronoa Zoro OP06-118
+        # [Alternate Art Manga] -- vente à $30.64 mêlée à des ventes à
+        # $1475/$1999.99, toutes dans les 90 derniers jours. Une moyenne
+        # arithmétique (ancien avg_last_3) donnait ~$1168.54 (faussé de
+        # -33% vs la réalité) ; la médiane sur 3 valeurs ignore entièrement
+        # la valeur isolée (contrairement à une médiane sur 4, qui moyenne
+        # les 2 valeurs centrales -- cf. test suivant).
+        sales = [_sale(1475.0, 0), _sale(30.64, 22), _sale(1999.99, 45)]
+        stats = compute_sales_stats(sales)
+        assert stats.median_recent == 1475.0  # $30.64 neutralisé, pas moyenné
+        assert stats.sample_size_recent == 3
+
+    def test_window_extends_to_5_when_recent_sales_are_temporally_dense(self):
+        # 5 ventes toutes dans les 90 jours -- écart 3e->5e bien sous 180j,
+        # la fenêtre doit s'étendre jusqu'à 5.
+        sales = [_sale(p, d) for p, d in [(10.0, 0), (11.0, 20), (9.0, 40), (12.0, 60), (8.0, 80)]]
+        stats = compute_sales_stats(sales)
+        assert stats.sample_size_recent == 5
+        assert stats.median_recent == 10.0
+
+    def test_window_stays_at_3_when_4th_5th_sale_too_old(self):
+        # 3 ventes récentes et denses, puis un grand trou -- les ventes #4/#5
+        # sont à >180j de la 3e (l'ancre) : elles ne doivent PAS rejoindre la
+        # fenêtre, même si elles existent et sont plus récentes que "rien".
+        sales = [
+            _sale(100.0, 0), _sale(110.0, 10), _sale(90.0, 20),   # denses -- fenêtre de base
+            _sale(20.0, 300), _sale(15.0, 400),                    # vieille tendance de marché, exclues
+        ]
+        stats = compute_sales_stats(sales)
+        assert stats.sample_size_recent == 3
+        assert stats.median_recent == 100.0
+        # avg_last_10, lui, reste une moyenne simple sur tout ce qui est
+        # disponible -- inchangé, sert de repli plus généreux.
+        assert stats.sample_size_10 == 5
 
 
 class TestLiquidity:
@@ -133,13 +178,13 @@ class TestComputeExtendedSignals:
     def test_opportunity_score_prefers_recent_sales_over_reference_price(self, monkeypatch):
         # Reproduit le cas utilisateur du 2026-08-23 : reference_price
         # (PriceCharting) très favorable (prix affiché largement en dessous)
-        # mais moy. des 3 dernières ventes réelles bien plus basse -- le
+        # mais médiane des ventes récentes réelles bien plus basse -- le
         # score doit refléter la réalité du marché récent, pas PriceCharting
         # (dont le prix affiché est parfois un prix catalogue/demandé, pas
         # un prix réellement conclu).
         card = _card()
         monkeypatch.setattr(verdict, "fetch_recent_sales",
-                             lambda *a, **k: [(30.0, "USD"), (30.0, "USD"), (30.0, "USD")])
+                             lambda *a, **k: [_sale(30.0, 0), _sale(30.0, 5), _sale(30.0, 10)])
         monkeypatch.setattr(verdict, "count_sales_since", lambda *a, **k: 12)
         monkeypatch.setattr(verdict, "get_active_listing_count", lambda *a, **k: None)
         monkeypatch.setattr(verdict, "fetch_language_siblings", lambda *a, **k: [])
@@ -147,7 +192,7 @@ class TestComputeExtendedSignals:
         monkeypatch.setattr(verdict, "fetch_latest_price_snapshot", lambda *a, **k: None)
         monkeypatch.setattr(verdict, "fetch_sealed_display_for_set", lambda *a, **k: None)
 
-        # displayed_price=38 : 27% AU-DESSUS de avg_last_3 (30) -> mauvaise
+        # displayed_price=38 : 27% AU-DESSUS de median_recent (30) -> mauvaise
         # affaire attendue, alors que reference_price=100 donnerait un ratio
         # de 0.38 (très favorable) si le score se basait encore dessus.
         signals = verdict.compute_extended_signals(

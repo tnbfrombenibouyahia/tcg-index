@@ -53,8 +53,8 @@ def _extended_out(signals: ExtendedSignals) -> dict:
     (cf. pricing_api/schemas.py) -- séparé de _card_out pour rester lisible,
     un champ dataclass -> un champ Pydantic à la fois."""
     sales_stats = SalesStatsOut(
-        avg_last_3=signals.sales_stats.avg_last_3, avg_last_10=signals.sales_stats.avg_last_10,
-        sample_size_3=signals.sales_stats.sample_size_3, sample_size_10=signals.sales_stats.sample_size_10,
+        median_recent=signals.sales_stats.median_recent, avg_last_10=signals.sales_stats.avg_last_10,
+        sample_size_recent=signals.sales_stats.sample_size_recent, sample_size_10=signals.sales_stats.sample_size_10,
         currency=signals.sales_stats.currency,
     ) if signals.sales_stats else None
     liquidity = LiquidityOut(
