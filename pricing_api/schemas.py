@@ -131,6 +131,18 @@ class FavoritesListResponse(BaseModel):
     is_premium: bool
 
 
+class FavoriteStatusResponse(BaseModel):
+    """Statut favori d'UNE carte -- panneau extension (cf. content.js::
+    refreshFavoriteStatus), interrogé juste après une carte identifiée par
+    /verdict, pour ne jamais recharger la liste entière (FREE_FAVORITES_LIMIT
+    reste petit, mais pas de raison de payer un GET /favorites complet pour
+    savoir l'état d'une seule carte)."""
+    is_favorited: bool
+    count: int  # nb de favoris actuels de l'utilisateur -- alimente l'affichage "2/3"
+    limit: int  # FREE_FAVORITES_LIMIT, ou -1 si is_premium (illimité)
+    is_premium: bool
+
+
 class FavoriteAddRequest(BaseModel):
     item_id: int
 

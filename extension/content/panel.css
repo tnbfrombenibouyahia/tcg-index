@@ -292,6 +292,53 @@
   color: var(--cq-negative);
 }
 
+/* -- Watchlist (§10 handoff, backend ajouté le 2026-08-29) : bouton
+   "surveiller" cette carte. Contour comme .cardquant-try-image (action
+   secondaire, pas le verdict lui-même) tant que pas favori ; rempli en
+   accent positif une fois ajouté -- même idiome que .cardquant-pill--green
+   (fond teinté 15%, texte plein) pour rester dans le même vocabulaire de
+   couleur que le reste du panneau plutôt qu'introduire un nouvel accent. */
+.cardquant-favorite-row {
+  margin: 0 0 18px;
+}
+.cardquant-favorite-btn {
+  all: unset;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 10px 16px;
+  border: 1px solid var(--cq-border);
+  border-radius: var(--cq-radius-sm);
+  color: var(--cq-foreground);
+  font-family: var(--cq-font-sans);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.cardquant-favorite-btn:hover:not(:disabled) {
+  background: var(--cq-tint-neutral);
+}
+.cardquant-favorite-btn:focus-visible {
+  outline: 2px solid var(--cq-foreground);
+  outline-offset: 2px;
+}
+.cardquant-favorite-btn:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.cardquant-favorite-btn--active {
+  background: color-mix(in srgb, var(--cq-positive) 15%, transparent);
+  border-color: color-mix(in srgb, var(--cq-positive) 40%, transparent);
+  color: var(--cq-positive);
+}
+.cardquant-favorite-note {
+  margin: 8px 0 0;
+  font-size: 11.5px;
+  color: var(--cq-warn);
+}
+
 #cardquant-body dl {
   margin: 0;
   display: grid;

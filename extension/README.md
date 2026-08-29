@@ -310,6 +310,23 @@ Fait :
   médiane-5 bat médiane-3 sous 180j, mais perd nettement au-delà -- détail
   complet et méthode de mesure dans `pricing/sales_stats.py`.
 
+- **Watchlist (§10 handoff, 2026-08-29)** : bouton "☆ Ajouter à ma
+  watchlist" affiché sous le verdict dès qu'une carte est identifiée
+  (`content.js::renderFavoriteButton`), sauvegardant la carte + sa langue
+  précise (EN/JP sont deux `items` distincts, donc deux favoris distincts)
+  sur le compte de l'utilisateur via `pricing_api` (`GET/POST /favorites`,
+  `DELETE /favorites/{item_id}`). État initial ("…", désactivé) confirmé
+  après coup par `GET /favorites/{item_id}` (`refreshFavoriteStatus`) --
+  jamais deviné depuis la réponse `/verdict`, qui n'a aucune notion de
+  favoris. 3 favoris gratuits, au-delà réservé au premium (pas encore de
+  parcours de paiement, cf. `tcg-index-handoff.md` §10) : un 402 affiche le
+  message serveur tel quel sous le bouton (`.cardquant-favorite-note`),
+  jamais un texte de seuil réinventé côté client. Toggle add/remove relayé
+  par le service worker (`background.js::favoritesFetch`), même schéma
+  d'auth (jeton Firebase rafraîchi via `getValidIdToken`) que
+  `CARDQUANT_GET_VERDICT`. Pas encore construit : l'écran Watchlist du
+  site qui listerait ces favoris (§08 maquette, jamais fait).
+
 Pas fait (hors scope de ce scaffold) :
 - Vinted, Cardmarket — seul eBay (14 domaines pays, cf. `manifest.json`)
   est scopé pour l'instant.

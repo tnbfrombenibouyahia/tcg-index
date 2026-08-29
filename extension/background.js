@@ -29,8 +29,48 @@ chrome.runtime.onMessageExternal.addListener((message, _sender, sendResponse) =>
   return true;
 });
 
+// Watchlist (§10 handoff, backend ajouté le 2026-08-29, cf.
+// pricing_api/main.py::/favorites) -- même pattern d'auth que
+// CARDQUANT_GET_VERDICT ci-dessous (jeton rafraîchi via getValidIdToken,
+// 401 traduit en reason "auth"), factorisé ici puisque 3 messages
+// distincts (status/add/remove) en ont besoin, contrairement au verdict
+// qui reste seul de son genre. 402 (plafond gratuit atteint, cf.
+// pricing/favorites.py::FREE_FAVORITES_LIMIT) traduit en reason "limit"
+// avec le message serveur tel quel -- jamais un texte réinventé côté
+// extension pour un seuil qui vit côté serveur.
+async function favoritesFetch(path, options = {}) {
+  const idToken = await getValidIdToken();
+  if (!idToken) return { ok: false, reason: "auth" };
+  try {
+    const res = await fetch(`${PRICING_API_URL}${path}`, {
+      ...options,
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}`, ...(options.headers || {}) },
+    });
+    if (res.status === 401) return { ok: false, reason: "auth" };
+    if (res.status === 402) {
+      const body = await res.json().catch(() => null);
+      return { ok: false, reason: "limit", message: body?.detail || null };
+    }
+    if (!res.ok) return { ok: false, reason: "network", error: `HTTP ${res.status}` };
+    return { ok: true, data: await res.json() };
+  } catch (err) {
+    return { ok: false, reason: "network", error: String(err) };
+  }
+}
+
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   switch (message.type) {
+    case "CARDQUANT_FAVORITE_STATUS":
+      favoritesFetch(`/favorites/${message.itemId}`).then(sendResponse);
+      return true;
+
+    case "CARDQUANT_FAVORITE_ADD":
+      favoritesFetch("/favorites", { method: "POST", body: JSON.stringify({ item_id: message.itemId }) }).then(sendResponse);
+      return true;
+
+    case "CARDQUANT_FAVORITE_REMOVE":
+      favoritesFetch(`/favorites/${message.itemId}`, { method: "DELETE" }).then(sendResponse);
+      return true;
     case "CARDQUANT_GET_SESSION":
       getSession().then((session) => sendResponse({ ok: true, session }));
       return true;

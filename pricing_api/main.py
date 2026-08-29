@@ -35,6 +35,7 @@ from pricing_api.schemas import (
     FavoriteAddResponse,
     FavoriteOut,
     FavoriteRemoveResponse,
+    FavoriteStatusResponse,
     FavoritesListResponse,
     GradingRoiInputsOut,
     LanguageComparisonOut,
@@ -51,6 +52,13 @@ app = FastAPI(title="tcg-index pricing API")
 
 _cors_origins = [o.strip() for o in os.environ.get("PRICING_API_CORS_ORIGINS", "").split(",") if o.strip()]
 if _cors_origins:
+    # allow_methods=["POST"] seul suffit à /verdict, seul appelant navigateur
+    # direct pour l'instant (extension : host_permissions bypass CORS
+    # entièrement, cf. extension/manifest.json -- cette liste ne le concerne
+    # pas). Le jour où web/ (site) appelle /favorites directement depuis le
+    # navigateur (§10 handoff -- écran Watchlist pas encore construit), GET
+    # et DELETE devront être ajoutés ici, sinon le préflight CORS échoue
+    # silencieusement pour ces deux méthodes.
     app.add_middleware(CORSMiddleware, allow_origins=_cors_origins, allow_methods=["POST"], allow_headers=["*"])
 
 
@@ -130,6 +138,21 @@ def get_favorites(user: dict = Depends(require_user)) -> FavoritesListResponse:
     premium = is_premium(user["uid"])
     return FavoritesListResponse(
         favorites=[_favorite_out(c) for c in fetch_favorites(user["uid"])],
+        limit=-1 if premium else FREE_FAVORITES_LIMIT,
+        is_premium=premium,
+    )
+
+
+@app.get("/favorites/{item_id}", response_model=FavoriteStatusResponse)
+def get_favorite_status(item_id: int, user: dict = Depends(require_user)) -> FavoriteStatusResponse:
+    """Statut d'UNE carte -- appelé par le panneau extension juste après
+    identification (cf. content.js::refreshFavoriteStatus), pour afficher le
+    bouton "surveiller" dans le bon état sans recharger la liste entière."""
+    uid = user["uid"]
+    premium = is_premium(uid)
+    return FavoriteStatusResponse(
+        is_favorited=is_favorited(uid, item_id),
+        count=count_favorites(uid),
         limit=-1 if premium else FREE_FAVORITES_LIMIT,
         is_premium=premium,
     )

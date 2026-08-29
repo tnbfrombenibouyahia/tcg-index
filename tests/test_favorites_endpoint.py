@@ -36,6 +36,34 @@ class TestRequireUserOnFavorites:
         assert resp.status_code == 401
 
 
+class TestGetFavoriteStatus:
+    def test_status_without_auth_is_rejected(self):
+        resp = client.get("/favorites/42")
+        assert resp.status_code == 401
+
+    def test_reports_favorited_state_count_and_limit(self, monkeypatch):
+        _auth(monkeypatch)
+        monkeypatch.setattr("pricing_api.main.is_favorited", lambda uid, item_id: True)
+        monkeypatch.setattr("pricing_api.main.count_favorites", lambda uid: 2)
+        monkeypatch.setattr("pricing_api.main.is_premium", lambda uid: False)
+
+        resp = client.get("/favorites/42", headers=AUTH_HEADERS)
+
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body == {"is_favorited": True, "count": 2, "limit": FREE_FAVORITES_LIMIT, "is_premium": False}
+
+    def test_premium_reports_unlimited(self, monkeypatch):
+        _auth(monkeypatch)
+        monkeypatch.setattr("pricing_api.main.is_favorited", lambda uid, item_id: False)
+        monkeypatch.setattr("pricing_api.main.count_favorites", lambda uid: 10)
+        monkeypatch.setattr("pricing_api.main.is_premium", lambda uid: True)
+
+        resp = client.get("/favorites/42", headers=AUTH_HEADERS)
+
+        assert resp.json()["limit"] == -1
+
+
 class TestGetFavorites:
     def test_lists_favorites_with_free_limit(self, monkeypatch):
         _auth(monkeypatch)

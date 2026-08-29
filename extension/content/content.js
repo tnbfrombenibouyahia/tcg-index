@@ -816,6 +816,24 @@
     return `<div class="cardquant-section cardquant-verify-links">${currentLink}${siblingLinks}</div>`;
   }
 
+  // -- Watchlist (§10 handoff, backend ajouté le 2026-08-29, cf.
+  // pricing_api/main.py::/favorites) ---------------------------------------
+  // Bouton "surveiller" : ajoute/retire la carte identifiée des favoris de
+  // l'utilisateur, consultables ensuite sur le site (une fois l'écran
+  // Watchlist construit -- pas encore le cas, cf. handoff). État initial
+  // "…" désactivé -- jamais deviné ici (favori ou pas ? combien déjà
+  // utilisés sur le plafond gratuit ?), toujours confirmé par un aller-
+  // retour réseau à part (cf. refreshFavoriteStatus plus bas), même
+  // discipline que le reste du panneau ("ne jamais deviner", §01 handoff).
+  function renderFavoriteButton(itemId) {
+    return `
+      <div class="cardquant-favorite-row">
+        <button type="button" class="cardquant-favorite-btn" data-item-id="${itemId}" data-favorited="unknown" disabled>…</button>
+        <p class="cardquant-favorite-note" hidden></p>
+      </div>
+    `;
+  }
+
   // Vue commune "carte identifiée" (statuts 'ok' et 'no_reference_price') --
   // tous les blocs sont défensifs (rien affiché si la donnée n'est pas là),
   // cf. pricing_api/schemas.py pour ce qui est None dans quel cas.
@@ -824,6 +842,7 @@
     return `
       ${renderMeta(data, currentGrade)}
       ${hasVerdict ? `<p class="cardquant-pill cardquant-pill--${data.verdict}">${escapeHtml(VERDICT_LABELS[data.verdict] || data.verdict)}</p>` : ""}
+      ${renderFavoriteButton(data.card.card_id)}
       ${renderGauge(data.opportunity_score)}
       ${renderPriceAnalysis(data, original)}
       ${renderLiquidity(data.liquidity, data.grade)}
@@ -922,6 +941,51 @@
   // le grade auto-détecté quand il existe, mais jamais envoyé comme `text`
   // dans ce mode -- sinon le serveur retomberait sur le même match par
   // titre qui vient d'échouer.
+  // Libellé du bouton watchlist à partir de FavoriteStatusResponse (cf.
+  // pricing_api/schemas.py) -- "count/limit" affiché seulement pour un
+  // compte gratuit (limit === -1 pour premium, cf. pricing/favorites.py::
+  // is_premium, jamais affiché comme "count/-1").
+  function favoriteButtonLabel(status) {
+    if (status.is_favorited) return "★ Dans ma watchlist — retirer";
+    const suffix = status.limit >= 0 ? ` (${status.count}/${status.limit})` : "";
+    if (!status.is_premium && status.limit >= 0 && status.count >= status.limit) {
+      return `☆ Limite atteinte${suffix}`;
+    }
+    return `☆ Ajouter à ma watchlist${suffix}`;
+  }
+
+  // Applique un FavoriteStatusResponse au bouton DÉJÀ présent dans le DOM
+  // (cf. renderFavoriteButton) -- ne le recrée jamais, seulement son texte/
+  // état, pour ne pas perdre le focus clavier si l'utilisateur vient de
+  // cliquer dessus.
+  function applyFavoriteStatus(btn, status) {
+    btn.dataset.favorited = status.is_favorited ? "true" : "false";
+    btn.textContent = favoriteButtonLabel(status);
+    btn.classList.toggle("cardquant-favorite-btn--active", status.is_favorited);
+    const atLimit = !status.is_favorited && !status.is_premium && status.limit >= 0 && status.count >= status.limit;
+    btn.disabled = atLimit;
+  }
+
+  // Interroge GET /favorites/{item_id} (jamais deviné depuis /verdict, qui
+  // n'a aucune notion de favoris) et met à jour le bouton -- appelé juste
+  // après chaque nouveau verdict avec carte identifiée (cf. requestVerdict)
+  // et après chaque add/remove réussi (cf. le handler de clic plus bas).
+  // Vérifie que le bouton pour CET item_id existe toujours avant d'écrire
+  // dedans : le panneau a pu re-render sur une autre carte pendant l'aller-
+  // retour réseau (nouvelle page, nouveau grade...), auquel cas la réponse
+  // est déjà périmée -- jamais appliquée à la mauvaise carte.
+  async function refreshFavoriteStatus(panel, itemId) {
+    const response = await sendMessage({ type: "CARDQUANT_FAVORITE_STATUS", itemId });
+    const btn = panel.root.querySelector(`.cardquant-favorite-btn[data-item-id="${itemId}"]`);
+    if (!btn) return;
+    if (!response || !response.ok) {
+      btn.textContent = "Watchlist indisponible";
+      btn.disabled = true;
+      return;
+    }
+    applyFavoriteStatus(btn, response.data);
+  }
+
   async function requestVerdict(panel, selectedCardId = confirmedCardId, useImage = false) {
     if (selectedCardId != null) confirmedCardId = selectedCardId;
     panel.setLoading();
@@ -980,6 +1044,14 @@
     }
     lastVerdictData = response.data;
     panel.setVerdict(response.data, response.convertedFrom ? { amount: displayedPrice, currency } : null, currentGrade);
+
+    // Bouton watchlist affiché uniquement quand renderCardDetail l'est
+    // (cf. renderVerdict) -- même condition ("carte identifiée", statuts
+    // 'ok'/'no_reference_price' avec data.card), dupliquée ici faute de
+    // pouvoir lire l'état déjà décidé par renderVerdict depuis l'extérieur.
+    const showsCardDetail = response.data.card
+      && (response.data.status === "ok" || response.data.status === "no_reference_price");
+    if (showsCardDetail) refreshFavoriteStatus(panel, response.data.card.card_id);
   }
 
   async function refresh(panel) {
@@ -1025,6 +1097,49 @@
   // Passage 2 (OCR sur la photo de l'annonce) -- cf. renderVerdict pour la
   // condition d'affichage du bouton et requestVerdict pour le mode useImage.
   panel.onClick(".cardquant-try-image", () => requestVerdict(panel, undefined, true));
+
+  // Watchlist : toggle add/remove sur la carte actuellement affichée (cf.
+  // renderFavoriteButton/refreshFavoriteStatus plus haut). `data-favorited`
+  // décide le sens (déjà "true"/"false", jamais "unknown" à ce stade
+  // puisque le bouton reste disabled tant que refreshFavoriteStatus n'a
+  // pas répondu -- cf. renderFavoriteButton).
+  panel.onClick(".cardquant-favorite-btn", async (btn) => {
+    const itemId = Number(btn.getAttribute("data-item-id"));
+    const wasFavorited = btn.dataset.favorited === "true";
+    const previousLabel = btn.textContent; // restauré tel quel en cas d'échec, cf. plus bas
+    const note = panel.root.querySelector(".cardquant-favorite-note");
+    if (note) { note.hidden = true; note.textContent = ""; }
+    btn.disabled = true;
+    btn.textContent = "…";
+
+    const response = await sendMessage({
+      type: wasFavorited ? "CARDQUANT_FAVORITE_REMOVE" : "CARDQUANT_FAVORITE_ADD",
+      itemId,
+    });
+    if (!response || !response.ok) {
+      if (response?.reason === "auth") {
+        panel.setSignedOut("Session expirée, reconnecte-toi.");
+        return;
+      }
+      if (note) {
+        note.hidden = false;
+        // Message serveur tel quel pour "limit" (cf. pricing_api/main.py::
+        // post_favorite, le seuil FREE_FAVORITES_LIMIT vit côté serveur,
+        // jamais réinventé ici) -- texte générique en repli seulement pour
+        // une vraie panne réseau.
+        note.textContent = response?.reason === "limit"
+          ? (response.message || "Limite de favoris gratuits atteinte.")
+          : "Watchlist indisponible pour le moment, réessaie plus tard.";
+      }
+      // dataset.favorited jamais touché avant la réponse -- il reflète
+      // encore l'état réel, seul l'affichage (texte "…", disabled) doit
+      // être restauré.
+      btn.textContent = previousLabel;
+      btn.disabled = false;
+      return;
+    }
+    await refreshFavoriteStatus(panel, itemId);
+  });
 
   panel.onChange(".cardquant-grade-select", (el) => {
     currentGrade = el.value;
