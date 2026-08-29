@@ -17,11 +17,25 @@ from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from pricing.auth import verify_id_token
+from pricing.favorites import (
+    FREE_FAVORITES_LIMIT,
+    add_favorite,
+    count_favorites,
+    fetch_favorites,
+    is_favorited,
+    is_premium,
+    remove_favorite,
+)
 from pricing.matching import identify_card
 from pricing.models import Card
-from pricing.repository import fetch_set_release_year, set_label_from_code
+from pricing.repository import fetch_card_by_id, fetch_set_release_year, set_label_from_code
 from pricing_api.schemas import (
     CardCandidateOut,
+    FavoriteAddRequest,
+    FavoriteAddResponse,
+    FavoriteOut,
+    FavoriteRemoveResponse,
+    FavoritesListResponse,
     GradingRoiInputsOut,
     LanguageComparisonOut,
     LiquidityOut,
@@ -46,6 +60,13 @@ def _card_out(card: Card, confidence: float) -> CardCandidateOut:
                              image_url=card.image_url,
                              set_name=set_label_from_code(card.set_code, card.tcg),
                              set_release_year=fetch_set_release_year(card.tcg, card.set_code))
+
+
+def _favorite_out(card: Card) -> FavoriteOut:
+    return FavoriteOut(card_id=card.id, name=card.name, code=card.code, set_code=card.set_code,
+                        rarity=card.rarity, language=card.language, image_url=card.image_url,
+                        set_name=set_label_from_code(card.set_code, card.tcg),
+                        set_release_year=fetch_set_release_year(card.tcg, card.set_code))
 
 
 def _extended_out(signals: ExtendedSignals) -> dict:
@@ -102,6 +123,43 @@ def require_user(authorization: str | None = Header(default=None)) -> dict:
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/favorites", response_model=FavoritesListResponse)
+def get_favorites(user: dict = Depends(require_user)) -> FavoritesListResponse:
+    premium = is_premium(user["uid"])
+    return FavoritesListResponse(
+        favorites=[_favorite_out(c) for c in fetch_favorites(user["uid"])],
+        limit=-1 if premium else FREE_FAVORITES_LIMIT,
+        is_premium=premium,
+    )
+
+
+@app.post("/favorites", response_model=FavoriteAddResponse)
+def post_favorite(req: FavoriteAddRequest, user: dict = Depends(require_user)) -> FavoriteAddResponse:
+    uid = user["uid"]
+    # Le plafond gratuit (§10 handoff, pas encore de vrai palier payant) ne
+    # s'applique qu'à un VRAI ajout -- reclique sur un favori déjà présent
+    # (retry réseau, double clic dans le panneau) reste un no-op, jamais
+    # bloqué même à la limite atteinte.
+    if not is_favorited(uid, req.item_id) and not is_premium(uid) and count_favorites(uid) >= FREE_FAVORITES_LIMIT:
+        raise HTTPException(
+            status_code=402,
+            detail=f"Limite de {FREE_FAVORITES_LIMIT} favoris atteinte pour le compte gratuit.",
+        )
+
+    result = add_favorite(uid, req.item_id)
+    if result == "item_not_found":
+        raise HTTPException(status_code=404, detail="Carte introuvable.")
+
+    card = fetch_card_by_id(req.item_id)
+    return FavoriteAddResponse(status=result, favorite=_favorite_out(card))
+
+
+@app.delete("/favorites/{item_id}", response_model=FavoriteRemoveResponse)
+def delete_favorite(item_id: int, user: dict = Depends(require_user)) -> FavoriteRemoveResponse:
+    removed = remove_favorite(user["uid"], item_id)
+    return FavoriteRemoveResponse(status="removed" if removed else "not_favorited")
 
 
 @app.post("/verdict", response_model=VerdictResponse)

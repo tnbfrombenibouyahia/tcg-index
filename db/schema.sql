@@ -378,3 +378,37 @@ CREATE INDEX IF NOT EXISTS idx_prices_item ON prices (item_id);
 -- fichier, cf. db/apply_schema.py (rejoue tout schema.sql tel quel, cette
 -- ligne doit donc rester idempotente comme le reste).
 ALTER TABLE prices ADD COLUMN IF NOT EXISTS url TEXT;
+
+-- Watchlist utilisateur : cartes qu'un utilisateur veut surveiller,
+-- ajoutées/retirées depuis le panneau extension ou le site (§10
+-- tcg-index-handoff.md). Pas de table `users` locale ici -- l'identité
+-- vient de Firebase Auth (cf. pricing.auth.verify_id_token,
+-- pricing_api/main.py::require_user), `firebase_uid` sert directement de
+-- clé, comme le reste de l'auth de ce service. Contrairement à
+-- sales/price_snapshots (append-only), un favori doit pouvoir être retiré
+-- -- UNIQUE (firebase_uid, item_id) + DELETE, pas juste INSERT. `language`
+-- n'a pas besoin d'être stocké à part : EN et JP sont deux `items` distincts
+-- (cf. items.language), donc item_id porte déjà la langue suivie.
+CREATE TABLE IF NOT EXISTS favorites (
+  id            BIGSERIAL PRIMARY KEY,
+  firebase_uid  TEXT NOT NULL,
+  item_id       BIGINT NOT NULL REFERENCES items(id),
+  created_at    TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (firebase_uid, item_id)
+);
+CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites (firebase_uid, created_at DESC);
+
+-- Entitlement minimal pour gater la watchlist (favoris gratuits limités,
+-- au-delà réservé au premium -- cf. FREE_FAVORITES_LIMIT dans
+-- pricing/favorites.py). Le modèle payant final (fournisseur, montant)
+-- n'est PAS tranché (§10 handoff, proposé le 2026-08-25) : cette table est
+-- un jalon minimal, `is_premium` basculé à la main en SQL en attendant un
+-- webhook (Stripe ou autre) qui écrirait ici sans changer la forme de
+-- cette table ni son point de lecture côté API. Absence de ligne = pas
+-- premium (comportement par défaut côté pricing/favorites.py::is_premium),
+-- pas besoin d'un INSERT à la création de compte.
+CREATE TABLE IF NOT EXISTS user_entitlements (
+  firebase_uid  TEXT PRIMARY KEY,
+  is_premium    BOOLEAN NOT NULL DEFAULT false,
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);

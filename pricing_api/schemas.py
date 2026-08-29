@@ -107,6 +107,43 @@ class SealedDisplayPriceOut(BaseModel):
     currency: str
 
 
+class FavoriteOut(BaseModel):
+    """Une carte favorite -- mêmes champs d'affichage que CardCandidateOut
+    (picker/watchlist cohérents), sans `confidence` : un favori est déjà
+    une identité confirmée, pas un candidat à départager."""
+    card_id: int
+    name: str
+    code: str | None
+    set_code: str | None
+    rarity: str | None
+    language: str  # 'EN' | 'JP' | 'FR' -- porte la langue suivie (cf. pricing/favorites.py)
+    image_url: str | None = None
+    set_name: str | None = None
+    set_release_year: int | None = None
+
+
+class FavoritesListResponse(BaseModel):
+    favorites: list[FavoriteOut]
+    # FREE_FAVORITES_LIMIT (cf. pricing/favorites.py), ou -1 si is_premium
+    # (illimité) -- évite à l'appelant de dupliquer la constante pour
+    # afficher "2/3 favoris".
+    limit: int
+    is_premium: bool
+
+
+class FavoriteAddRequest(BaseModel):
+    item_id: int
+
+
+class FavoriteAddResponse(BaseModel):
+    status: str  # 'added' | 'already_favorited'
+    favorite: FavoriteOut
+
+
+class FavoriteRemoveResponse(BaseModel):
+    status: str  # 'removed' | 'not_favorited'
+
+
 class GradingRoiInputsOut(BaseModel):
     """Ingrédients bruts (PAS le ROI calculé) -- cf. pricing/grading_roi.py.
     Le calcul EV/coût/ROI se fait côté extension (lib/gradingRoi.js, port de
