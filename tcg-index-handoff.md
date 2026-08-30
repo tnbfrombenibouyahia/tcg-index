@@ -322,6 +322,21 @@ score = valeur_théorique / prix_marché
 valeur_théorique = pull_cost × character_multiplier × collector_factor × demand_factor
 pull_cost = prix_du_pack × (1/taux_de_pull), taux_de_pull dérivé du nombre de cartes de cette rareté dans le set. collector_factor et demand_factor fixés à 1.0 en MVP — non modélisés, pas bloquant pour démarrer, à affiner avec un vrai signal de demande plus tard. Score > 1 = carte sous-cotée.
 
+C — Score de valeur relative (site, sous-évaluation PAR COMPARAISON AUX PAIRS, construit 2026-08-30)
+
+Complémentaire au signal B, pas un remplacement (`index/relative_value.py`) : B compare chaque carte à sa propre valeur théorique dérivée du prix du Booster Box — ne voit jamais deux cartes entre elles, et doit skipper tout un set sans Booster Box mappé. C compare directement une carte à ses pairs (même set, même rareté, même langue) — aucune dépendance à `sealed_ev`, note aussi les sets que B doit exclure.
+
+normalized_price = market_price / character_multiplier (le pull_cost théorique est constant au sein d'un groupe de pairs — même set/rareté/langue → même taux de pull — donc sous le modèle théorique de B, la seule variation "expliquée" restante est character_multiplier ; diviser par ce multiplicateur retire cet effet).
+relative_value_score = médiane leave-one-out des normalized_price du groupe (exclut la carte notée elle-même) / normalized_price de la carte. Score > 1 = sous ses pairs, popularité de personnage prise en compte.
+
+Groupe de pairs : (tcg, set_code, language, rarity, qualifier_bucket) — le dernier champ n'était pas prévu au départ, ajouté après un 1er dry-run réel qui a exposé le vrai piège : (set, rareté) seul mélange des variantes au libellé de rareté brut identique mais au marché incomparable (ex. "Nico Robin [SP]" à $486 et "Nico Robin (055) (Alternate Art)" à $50, toutes deux `rarity='Super Rare'`). `qualifier_bucket` réutilise le motif d'extraction déjà en place ailleurs dans ce repo (`pricing/repository.py::_qualifier_tokens`, contenu entre parenthèses/crochets du nom, hors qualificatifs purement numériques) — dupliqué en miniature, pas importé, même discipline que ce fichier.
+
+Filet de sécurité en plus (`MAX_GROUP_PRICE_SPREAD`, défaut 20×) : un groupe de Commons EB02 (one-piece) à $1-2 mélangé à des Commons EB02 à $700-3786 — AUCUN qualificatif dans les noms, donc non attrapé par le fix ci-dessus — s'est révélé être une vraie anomalie de donnée en amont (mauvais mapping produit PriceCharting), pas une variation de marché réelle. Le groupe entier est exclu plutôt que de deviner quelle carte est fautive — la médiane qui en sortirait serait fausse pour chaque carte du groupe. Même philosophie que `MAX_PULL_COST` (signal B). `MIN_PEER_GROUP_SIZE` (défaut 4) exclut les groupes trop petits pour qu'une médiane leave-one-out veuille dire quelque chose.
+
+Table `relative_value_scores` (schéma proche de `undervalued_scores`, mêmes conventions — rejouable, UPSERT). Premier run réel (2026-08-30, les deux TCG) : 12 265 cartes notées, 2 484 au-dessus du seuil d'affichage (1.3). Constaté au passage, hors scope de ce module : deux entrées catalogue distinctes pour "Building Snake" (one-piece, EN, source `apitcg`, `external_id` différents, même prix) — doublon référentiel probable côté source, jamais creusé ici.
+
+Pas encore fait : aucune surface pour ce signal côté site (`web/`) — la table existe et se peuple, mais rien ne l'affiche encore (contrairement à `undervalued_scores`, déjà consommé par `/undervalued`).
+
 ROI gradation (extension, calcul côté client)
 
 ROI = (valeur_attendue − prix_ungraded − frais) / (prix_ungraded + frais)

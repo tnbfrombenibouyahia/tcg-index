@@ -6,8 +6,16 @@
 -- supplémentaires stockées dans l'index pour éviter un lookup table), rien
 -- d'autre dans ce fichier n'est spécifique à CockroachDB.
 
+-- IF NOT EXISTS ajouté le 2026-08-30 sur items/price_snapshots/sales ici et
+-- sur index_values plus bas (seules tables du fichier qui ne l'avaient pas) :
+-- constaté en conditions réelles que `db/apply_schema.py` (rejoue tout ce
+-- fichier tel quel) échouait (`DuplicateTable`) sur une base déjà
+-- provisionnée, ces 4 CREATE TABLE n'ayant jamais ce garde-fou contrairement
+-- à toutes les tables ajoutées depuis. Aucun changement de schéma, juste
+-- rendu rejouable comme le reste du fichier.
+
 -- Référentiel : ce qu'on suit
-CREATE TABLE items (
+CREATE TABLE IF NOT EXISTS items (
   id            BIGSERIAL PRIMARY KEY,
   external_id   TEXT NOT NULL,        -- id chez la source de référentiel
   source        TEXT NOT NULL,        -- 'apitcg'
@@ -29,7 +37,7 @@ CREATE TABLE items (
 CREATE INDEX IF NOT EXISTS idx_items_interest_tier ON items (interest_tier) WHERE interest_tier IS NOT NULL;
 
 -- Prix bruts : append-only, jamais d'UPDATE
-CREATE TABLE price_snapshots (
+CREATE TABLE IF NOT EXISTS price_snapshots (
   id            BIGSERIAL PRIMARY KEY,
   item_id       BIGINT NOT NULL REFERENCES items(id),
   captured_at   DATE NOT NULL,        -- jour du snapshot
@@ -55,7 +63,7 @@ CREATE INDEX IF NOT EXISTS idx_price_snapshots_item_grade_captured
 -- append-only, grain différent de price_snapshots (une ligne par transaction
 -- réelle, pas par jour). Sert au calcul de volume (par TCG/set/carte/année/
 -- personnage via jointure sur items), pas encore utilisé par un calcul.
-CREATE TABLE sales (
+CREATE TABLE IF NOT EXISTS sales (
   id                BIGSERIAL PRIMARY KEY,
   item_id           BIGINT NOT NULL REFERENCES items(id),
   sale_date         DATE NOT NULL,
@@ -283,6 +291,33 @@ CREATE INDEX IF NOT EXISTS idx_undervalued_score
 CREATE INDEX IF NOT EXISTS idx_undervalued_item
     ON undervalued_scores (item_id, captured_at DESC);
 
+-- Sous-évaluation RELATIVE (index/relative_value.py, proposé 2026-08-29,
+-- construit 2026-08-30) -- complémentaire à undervalued_scores ci-dessus,
+-- pas un remplacement : compare chaque carte à ses pairs directs (même
+-- set/rareté/langue) plutôt qu'à une valeur théorique absolue dérivée du
+-- prix du Booster Box. Ne dépend jamais de sealed_ev -- note aussi les
+-- sets sans Booster Box mappé, que undervalued_scores doit skipper
+-- entièrement (cf. index/relative_value.py, docstring).
+CREATE TABLE IF NOT EXISTS relative_value_scores (
+  id                     BIGSERIAL PRIMARY KEY,
+  item_id                BIGINT NOT NULL REFERENCES items(id),
+  captured_at            DATE NOT NULL,
+  -- inputs du calcul (pour audit/replay)
+  peer_group_size        INTEGER NOT NULL,       -- nb de cartes dans (tcg, set_code, language, rarity)
+  character_multiplier   NUMERIC(6,4) NOT NULL,  -- normalized_score/10 (table statique, même source que undervalued_scores)
+  market_price           NUMERIC(12,2) NOT NULL, -- dernier prix marché (price_snapshots ungraded) -- même définition que undervalued_scores
+  normalized_price       NUMERIC(12,2) NOT NULL, -- market_price / character_multiplier
+  -- output
+  peer_median_normalized NUMERIC(12,2) NOT NULL, -- médiane leave-one-out des normalized_price du groupe (exclut la carte elle-même)
+  relative_value_score   NUMERIC(10,4) NOT NULL, -- peer_median_normalized / normalized_price -- >1 = sous ses pairs
+  created_at             TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (item_id, captured_at)
+);
+CREATE INDEX IF NOT EXISTS idx_relative_value_score
+    ON relative_value_scores (captured_at DESC, relative_value_score DESC);
+CREATE INDEX IF NOT EXISTS idx_relative_value_item
+    ON relative_value_scores (item_id, captured_at DESC);
+
 -- Ingrédients du calculateur ROI de gradation (cf. lib/gradingRoi.ts +
 -- lib/queries/gradingRoi.ts, page /grading-roi) : PAS le ROI lui-même --
 -- juste les données coûteuses à dériver (dernier prix par grade, comptage
@@ -339,7 +374,7 @@ CREATE INDEX IF NOT EXISTS idx_grading_roi_inputs_item
     ON grading_roi_inputs (item_id, captured_at DESC);
 
 -- Indice calculé : l'output, ce que le front lit
-CREATE TABLE index_values (
+CREATE TABLE IF NOT EXISTS index_values (
   id            BIGSERIAL PRIMARY KEY,
   index_code    TEXT NOT NULL,        -- 'PKM_DISPLAYS', 'PKM_SINGLES', 'OP_DISPLAYS'...
   captured_at   DATE NOT NULL,
