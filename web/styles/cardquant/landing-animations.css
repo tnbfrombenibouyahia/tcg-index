@@ -1,0 +1,19 @@
+/* Animations décoratives de la landing CardQuant (Scène 3D, Terminal
+   showcase, Extension VS -- cf. mémoire projet "cardquant-rebrand"). Copie
+   fidèle du <style> inline de "CardQuant Landing.dc.html" (handoff) --
+   uniquement des noms de keyframes, aucun conflit possible avec le reste du
+   site, donc importé globalement sans scoping particulier. */
+@keyframes cq-rig { 0% { transform: rotateY(9deg) rotateX(3deg); } 50% { transform: rotateY(-9deg) rotateX(-1deg); } 100% { transform: rotateY(9deg) rotateX(3deg); } }
+@keyframes cq-float { 0%, 100% { transform: translateY(0) rotateZ(-0.6deg); } 50% { transform: translateY(-14px) rotateZ(0.6deg); } }
+@keyframes cq-glow { 0%, 100% { opacity: 0; transform: translateX(-50%) scale(.6); } 8% { opacity: .5; transform: translateX(-50%) scale(1); } 24% { opacity: .34; transform: translateX(-50%) scale(.9); } 44% { opacity: .52; transform: translateX(-50%) scale(1.04); } 64% { opacity: .36; transform: translateX(-50%) scale(.92); } 86% { opacity: .48; transform: translateX(-50%) scale(1); } 93% { opacity: 0; } }
+@keyframes cq-sheen { 0%, 6% { transform: translateX(-140%) rotate(18deg); opacity: 0; } 14% { opacity: .55; } 30% { transform: translateX(140%) rotate(18deg); opacity: 0; } 100% { transform: translateX(140%) rotate(18deg); opacity: 0; } }
+@keyframes cq-plate-l { 0% { transform: translate3d(60px,10px,-220px) rotateY(26deg); opacity: 0; } 9% { transform: translate3d(0,0,-40px) rotateY(17deg); opacity: 1; } 80% { transform: translate3d(0,0,-40px) rotateY(17deg); opacity: 1; } 90% { transform: translate3d(30px,-8px,-160px) rotateY(22deg); opacity: 0; } 100% { opacity: 0; } }
+@keyframes cq-plate-r { 0% { transform: translate3d(-60px,10px,-220px) rotateY(-26deg); opacity: 0; } 9% { transform: translate3d(0,0,-40px) rotateY(-17deg); opacity: 1; } 80% { transform: translate3d(0,0,-40px) rotateY(-17deg); opacity: 1; } 90% { transform: translate3d(-30px,-8px,-160px) rotateY(-22deg); opacity: 0; } 100% { opacity: 0; } }
+@keyframes cq-scan { 0% { transform: translateY(-6%); opacity: 0; } 4% { opacity: 1; } 12% { transform: translateY(102%); opacity: 1; } 15% { opacity: 0; } 100% { transform: translateY(102%); opacity: 0; } }
+@keyframes cq-caret { 0%, 45% { opacity: 1; } 50%, 95% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes cq-query { 0% { width: 0; } 6% { width: 236px; } 92% { width: 236px; } 100% { width: 236px; } }
+@keyframes cq-pulse { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+@keyframes cq-blink { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+@keyframes cq-sweep { 0% { opacity: 0; transform: translateY(-100%); } 12% { opacity: .5; } 34%, 100% { opacity: 0; transform: translateY(100%); } }
+@keyframes cq-tick-slow { 0% { transform: translateY(0); } 88%, 100% { transform: translateY(-242px); } }
+@keyframes cq-tick-fast { 0% { transform: translateY(0); } 34%, 100% { transform: translateY(-88px); } }
