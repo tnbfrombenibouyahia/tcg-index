@@ -1,0 +1,32 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   CardQuant / Slabline — Tokens typographiques.
+   Copie fidèle du handoff, SAUF --font-core/--font-mono : dans le
+   prototype .dc.html ils pointent vers des chaînes littérales ("Outfit",
+   "IBM Plex Mono") chargées via Google Fonts @import ; ici ils pointent vers
+   les variables next/font posées par app/layout.tsx (--font-outfit,
+   --font-ibm-plex-mono -- cette dernière déjà chargée pour l'ancien design
+   system, réutilisée telle quelle, cf. mémoire projet "cardquant-rebrand").
+   ───────────────────────────────────────────────────────────────────────────── */
+:root{
+  --font-core:var(--font-outfit),-apple-system,"Segoe UI",sans-serif;
+  --font-mono:var(--font-ibm-plex-mono),ui-monospace,"SF Mono",monospace;
+
+  --weight-extralight:200;--weight-light:300;--weight-regular:400;--weight-medium:500;--weight-semibold:600;--weight-bold:700;
+
+  /* display: Outfit Light, very large, tight leading — "Overview Panel" */
+  --type-display-size:56px;--type-display-lh:1.0;--type-display-weight:300;--type-display-track:-0.02em;
+  --type-h1-size:34px;--type-h1-lh:1.08;--type-h1-weight:300;--type-h1-track:-0.015em;
+  --type-h2-size:24px;--type-h2-lh:1.15;--type-h2-weight:400;--type-h2-track:-0.01em;
+  --type-h3-size:17px;--type-h3-lh:1.25;--type-h3-weight:500;--type-h3-track:0;
+
+  /* metric: the big card number, Outfit Regular w/ superscript unit */
+  --type-metric-size:30px;--type-metric-lh:1;--type-metric-weight:400;--type-metric-track:-0.01em;
+  --type-metric-sm-size:20px;
+
+  --type-body-size:14px;--type-body-lh:1.5;--type-body-weight:400;
+  --type-label-size:12px;--type-label-lh:1.35;--type-label-weight:400;
+  --type-micro-size:10.5px;--type-micro-lh:1.3;--type-micro-weight:400;--type-micro-track:0.04em;
+
+  --type-num-size:13px;--type-num-lh:1.3;--type-num-weight:500;
+  --type-ticker-size:11px;--type-ticker-track:0.06em;
+}

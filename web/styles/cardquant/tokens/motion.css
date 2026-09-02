@@ -1,0 +1,12 @@
+/* CardQuant / Slabline — easings & durées. Copie fidèle du handoff. */
+:root{
+  --ease-out:cubic-bezier(.22,.61,.36,1);
+  --ease-in-out:cubic-bezier(.4,0,.2,1);
+  --ease-spring:cubic-bezier(.2,.9,.2,1.15);
+  --dur-fast:120ms;
+  --dur-base:220ms;
+  --dur-slow:400ms;
+  --dur-showcase:4000ms;
+  --hover-lift:-2px;
+  --press-scale:.985;
+}
