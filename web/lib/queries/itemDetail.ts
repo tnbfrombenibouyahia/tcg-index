@@ -204,3 +204,25 @@ export async function getItemPriceHistory(itemId: number, grade: Grade): Promise
   `;
   return rows;
 }
+
+export interface MonthlySalesCount {
+  month: string; // "YYYY-MM"
+  salesCount: number;
+}
+
+// Panneau "Liquidité et exécution" de la fiche carte CardQuant (cf. mémoire
+// projet "cardquant-rebrand") : ventes conclues par mois, toutes sources et
+// tous grades confondus -- contrairement à liquidity/sellThroughRate30d
+// (LiquidityCalc, ci-dessus), qui n'existe que pour le scellé EN (cf.
+// lib/queries/liquidity.ts), `sales` couvre aussi bien les singles -- ce
+// graphique reste donc affichable même quand `item.liquidity` est null.
+export async function getItemMonthlySales(itemId: number, months = 12): Promise<MonthlySalesCount[]> {
+  const rows = await sql<MonthlySalesCount[]>`
+    SELECT to_char(date_trunc('month', sale_date), 'YYYY-MM') AS month, COUNT(*)::int4 AS "salesCount"
+    FROM sales
+    WHERE item_id = ${itemId} AND sale_date >= date_trunc('month', CURRENT_DATE) - (${months - 1} || ' months')::interval
+    GROUP BY month
+    ORDER BY month ASC
+  `;
+  return rows;
+}
