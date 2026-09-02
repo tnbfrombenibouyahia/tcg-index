@@ -39,11 +39,15 @@ function orderFragment(mode: SealedEvMode, sort?: SealedEvSort) {
 export interface SealedEvParams {
   mode: SealedEvMode;
   tcg?: string;
+  setCode?: string;
   limit?: number;
   sort?: SealedEvSort;
 }
 
-export async function getSealedEv({ mode, tcg, limit = 50, sort }: SealedEvParams): Promise<SealedEvRow[]> {
+// `setCode` ajouté pour l'écran Analyse set CardQuant (cf. mémoire projet
+// "cardquant-rebrand", panneau "Ouvrabilité du set") -- un Booster Box par
+// set, donc `limit` par défaut suffit largement même sans lui.
+export async function getSealedEv({ mode, tcg, setCode, limit = 50, sort }: SealedEvParams): Promise<SealedEvRow[]> {
   const order = orderFragment(mode, sort);
 
   // `sealed_ev` est append-only (une ligne par item/jour) -- DISTINCT ON
@@ -74,7 +78,9 @@ export async function getSealedEv({ mode, tcg, limit = 50, sort }: SealedEvParam
       l.ev_ratio_top10::float8 AS "evRatioTop10"
     FROM latest l
     JOIN items i ON i.id = l.item_id
-    ${tcg ? sql`WHERE i.tcg = ${tcg}` : sql``}
+    WHERE 1=1
+      ${tcg ? sql`AND i.tcg = ${tcg}` : sql``}
+      ${setCode ? sql`AND i.set_code = ${setCode}` : sql``}
     ${order}
     LIMIT ${limit}
   `;
