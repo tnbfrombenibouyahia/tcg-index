@@ -1,5 +1,6 @@
 import { Icon } from "../core/Icon";
 import { Badge } from "../core/Badge";
+import { InstallExtensionCta } from "./InstallExtensionCta";
 
 // Hero de la landing CardQuant (cf. mémoire projet "cardquant-rebrand") : le
 // panneau "avant/après" est un exemple illustratif fixe (même carte, mêmes
@@ -54,10 +55,10 @@ export function HeroSection() {
           </p>
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-            <a href="#tarifs" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, height: 42, padding: "0 22px", borderRadius: 999, background: "var(--green-400)", color: "#000", fontSize: 14, fontWeight: 500 }}>
+            <InstallExtensionCta style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, height: 42, padding: "0 22px", borderRadius: 999, background: "var(--green-400)", color: "#000", fontSize: 14, fontWeight: 500 }}>
               Installer l&apos;extension — gratuit
               <Icon name="arrow-up-right" size={14} color="#000" />
-            </a>
+            </InstallExtensionCta>
             <a href="#metriques" style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 42, padding: "0 20px", borderRadius: 999, border: "1px solid var(--border-strong)", color: "var(--text-body)", fontSize: 14 }}>
               Voir les métriques
             </a>

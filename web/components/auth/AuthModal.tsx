@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "@/lib/firebase-client";
@@ -14,7 +15,20 @@ import { relaySessionToExtension } from "@/lib/cardquant-extension";
 // plutôt que factice, pour ne pas laisser un chemin qui a l'air de marcher
 // à côté d'un chemin Google qui marche vraiment. Composant contrôlé,
 // partagé entre l'avatar du dashboard (AuthTrigger.tsx) et les CTA de la
-// landing page (header + hero) -- même modale, deux points d'entrée.
+// landing page (header, hero, tarifs, extension) -- même modale, plusieurs
+// points d'entrée.
+//
+// createPortal vers document.body (2026-09-02, bug constaté en vérifiant
+// visuellement le popup auto de LandingNav.tsx) : LandingNav rend cette
+// modale À L'INTÉRIEUR de son <header>, qui a un backdropFilter -- un
+// backdrop-filter (comme un filter/transform) sur un ancêtre crée un nouveau
+// containing block pour tout descendant en position:fixed, donc l'overlay
+// "inset:0" se retrouvait confiné aux 62px de hauteur du header au lieu de
+// couvrir tout le viewport (modale visuellement coupée/écrasée). Portal
+// plutôt que retirer le backdropFilter du header (effet verre dépoli voulu)
+// ou plutôt qu'un correctif local à LandingNav seul : n'importe quel futur
+// appelant imbriqué sous un ancêtre filtré/transformé aurait le même bug,
+// un portail au niveau de la modale elle-même le règle une fois pour toutes.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type AuthMode = "login" | "signup";
@@ -58,7 +72,7 @@ export function AuthModal({
     }
   }
 
-  return (
+  return createPortal(
     <div
       onClick={onClose}
       style={{
@@ -186,7 +200,8 @@ export function AuthModal({
           {t("disclaimer")}
         </p>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

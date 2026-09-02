@@ -1,4 +1,5 @@
 import { Icon } from "../core/Icon";
+import { InstallExtensionCta } from "./InstallExtensionCta";
 
 // Section "Tarifs" de la landing CardQuant (cf. mémoire projet
 // "cardquant-rebrand"). Construite fidèlement au mockup à la demande
@@ -6,7 +7,9 @@ import { Icon } from "../core/Icon";
 // déclenche de paiement réel (pas de Stripe/billing branché côté produit
 // aujourd'hui) -- "Essayer 14 jours" et "Passer en Max" restent des ancres
 // inertes (#tarifs), comme dans le mockup d'origine. Seul "Installer
-// l'extension" (palier gratuit) est une action réelle.
+// l'extension" (palier gratuit) est une action réelle depuis le
+// 2026-09-02 : passe par InstallExtensionCta (compte requis avant le Chrome
+// Web Store, cf. ce fichier).
 const FREE_FEATURES = [
   "Panneau d'analyse sur toute annonce reconnue",
   "Prix de marché et moyenne des 3 / 10 dernières ventes",
@@ -70,9 +73,9 @@ export function PricingSection() {
           <div style={{ height: 1, background: "var(--border-hairline)" }} />
           <FeatureList items={FREE_FEATURES} />
           <div style={{ marginTop: "auto", paddingTop: 6 }}>
-            <a href="#tarifs" style={{ display: "flex", width: "100%", boxSizing: "border-box", alignItems: "center", justifyContent: "center", height: 42, padding: "0 22px", borderRadius: 999, background: "var(--white)", border: "1px solid var(--border-hairline)", color: "var(--text-strong)", fontSize: 14, fontWeight: 500 }}>
+            <InstallExtensionCta style={{ display: "flex", width: "100%", boxSizing: "border-box", alignItems: "center", justifyContent: "center", height: 42, padding: "0 22px", borderRadius: 999, background: "var(--white)", border: "1px solid var(--border-hairline)", color: "var(--text-strong)", fontSize: 14, fontWeight: 500 }}>
               Installer l&apos;extension
-            </a>
+            </InstallExtensionCta>
           </div>
         </section>
 
