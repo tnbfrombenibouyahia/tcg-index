@@ -78,10 +78,17 @@ def _card_out(card: Card, confidence: float) -> CardCandidateOut:
 
 
 def _favorite_out(card: Card) -> FavoriteOut:
+    # Prix brut (ungraded) -- même grade de référence que le reste du produit
+    # pour "le" prix d'une carte quand aucun grade n'est précisé (cf.
+    # _position_out du portefeuille, même choix). Écran Watchlist CardQuant
+    # (cf. mémoire projet "cardquant-rebrand").
+    snapshot = fetch_latest_price_snapshot(card.id, "ungraded")
     return FavoriteOut(card_id=card.id, name=card.name, code=card.code, set_code=card.set_code,
                         rarity=card.rarity, language=card.language, image_url=card.image_url,
                         set_name=set_label_from_code(card.set_code, card.tcg),
-                        set_release_year=fetch_set_release_year(card.tcg, card.set_code))
+                        set_release_year=fetch_set_release_year(card.tcg, card.set_code),
+                        current_price=snapshot[0] if snapshot else None,
+                        current_currency=snapshot[1] if snapshot else None)
 
 
 def _position_out(position: Position) -> PortfolioPositionOut:

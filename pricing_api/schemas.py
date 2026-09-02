@@ -112,7 +112,12 @@ class SealedDisplayPriceOut(BaseModel):
 class FavoriteOut(BaseModel):
     """Une carte favorite -- mêmes champs d'affichage que CardCandidateOut
     (picker/watchlist cohérents), sans `confidence` : un favori est déjà
-    une identité confirmée, pas un candidat à départager."""
+    une identité confirmée, pas un candidat à départager.
+
+    current_price/current_currency ajoutés pour l'écran Watchlist CardQuant
+    (cf. mémoire projet "cardquant-rebrand") -- prix brut (ungraded) le plus
+    récent connu, même source que _position_out du portefeuille
+    (fetch_latest_price_snapshot). None si jamais snapshotté à ce grade."""
     card_id: int
     name: str
     code: str | None
@@ -122,6 +127,8 @@ class FavoriteOut(BaseModel):
     image_url: str | None = None
     set_name: str | None = None
     set_release_year: int | None = None
+    current_price: float | None = None
+    current_currency: str | None = None
 
 
 class FavoritesListResponse(BaseModel):
