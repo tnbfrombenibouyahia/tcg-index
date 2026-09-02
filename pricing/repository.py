@@ -4,6 +4,7 @@ par appel, try/finally: conn.close(), SQL inline (pas d'ORM, cohérent avec
 le reste du repo).
 """
 import re
+import statistics
 import unicodedata
 from datetime import date
 
@@ -474,5 +475,108 @@ def fetch_set_release_year(tcg: str, set_code: str | None) -> int | None:
             )
             row = cur.fetchone()
             return row[0].year if row and row[0] else None
+    finally:
+        conn.close()
+
+
+# -- Panneau extension "v3" (population/divergence/positionnement, cf.
+# shared/verdict.py::_compute_population_signal et suivants) ----------------
+
+def fetch_population_snapshot_latest(item_id: int) -> tuple[date, int, int, int, int, int, int] | None:
+    """Dernier population_snapshots connu pour CETTE carte précise (pas le
+    set) -- (captured_at, pop_grade10, pop_grade9, pop_grade8, pop_grade7,
+    pop_grade6, pop_total). Mêmes 5 paliers que le Terminal (PSA10/9/8/7/
+    ≤6, cf. web/components/cardquant/population/GradeDistributionPanel.tsx)
+    pour un vocabulaire identique Terminal/extension. None si cet item n'a
+    jamais été snapshotté (hors du batch de population, cf.
+    ingestion/sources/pricecharting.py)."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT captured_at, pop_grade10, pop_grade9, pop_grade8, pop_grade7, pop_grade6, pop_total "
+                "FROM population_snapshots WHERE item_id = %s ORDER BY captured_at DESC LIMIT 1",
+                (item_id,),
+            )
+            row = cur.fetchone()
+            return tuple(row) if row else None
+    finally:
+        conn.close()
+
+
+def fetch_population_snapshot_before(item_id: int, cutoff: date) -> tuple[date, int] | None:
+    """Snapshot le plus récent À OU AVANT `cutoff` -- (captured_at,
+    pop_grade10) seulement, suffisant pour la delta "POP 10 · 30j" du
+    panneau extension. None si aucun snapshot n'existe encore à cette
+    ancienneté (item trop récemment entré dans le tracking de population) --
+    jamais un delta calculé contre un 0 implicite."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT captured_at, pop_grade10 FROM population_snapshots "
+                "WHERE item_id = %s AND captured_at <= %s ORDER BY captured_at DESC LIMIT 1",
+                (item_id, cutoff),
+            )
+            row = cur.fetchone()
+            return (row[0], row[1]) if row else None
+    finally:
+        conn.close()
+
+
+def fetch_sales_window_stats(item_id: int, grade: str, start: date, end: date) -> tuple[int, float | None]:
+    """Nb de ventes + prix médian sur [start, end) -- fenêtre fermée à
+    gauche, ouverte à droite (deux fenêtres contiguës s'enchaînent sans
+    chevauchement ni trou, cf. shared/verdict.py::_compute_volume_divergence).
+    Médiane None si la fenêtre ne contient aucune vente -- jamais 0 $
+    affiché comme un vrai prix."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT price FROM sales WHERE item_id = %s AND grade = %s AND sale_date >= %s AND sale_date < %s",
+                (item_id, grade, start, end),
+            )
+            prices = [float(row[0]) for row in cur.fetchall()]
+    finally:
+        conn.close()
+    return len(prices), (statistics.median(prices) if prices else None)
+
+
+def fetch_set_rank_by_price(item_id: int, tcg: str, set_code: str) -> tuple[int, int] | None:
+    """Rang de item_id parmi les singles de (tcg, set_code) par prix
+    ungraded le plus récent connu (price_snapshots), décroissant -- #1 =
+    carte la plus chère du set. Même base de prix que
+    web/lib/queries/setAnalysis.ts::getSetTopCards(sortBy='price') (grade
+    'ungraded', DISTINCT ON captured_at/created_at DESC) -- définition
+    identique Terminal/extension. None si cet item lui-même n'a aucun prix
+    ungraded connu -- rang indéfini plutôt que deviné. `total` ne compte
+    que les cartes du set qui ONT un prix connu, pas la taille nominale du
+    set (une carte toute neuve sans prix encore scrapé ailleurs dans le set
+    ne doit pas gonfler artificiellement le dénominateur)."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                WITH set_items AS (
+                    SELECT id FROM items WHERE tcg = %s AND set_code = %s AND category = 'single'
+                ),
+                priced AS (
+                    SELECT DISTINCT ON (ps.item_id) ps.item_id, ps.price
+                    FROM price_snapshots ps JOIN set_items si ON si.id = ps.item_id
+                    WHERE ps.grade = 'ungraded'
+                    ORDER BY ps.item_id, ps.captured_at DESC, ps.created_at DESC
+                ),
+                ranked AS (
+                    SELECT item_id, RANK() OVER (ORDER BY price DESC) AS rnk, COUNT(*) OVER () AS total
+                    FROM priced
+                )
+                SELECT rnk, total FROM ranked WHERE item_id = %s
+                """,
+                (tcg, set_code, item_id),
+            )
+            row = cur.fetchone()
+            return (int(row[0]), int(row[1])) if row else None
     finally:
         conn.close()

@@ -27,8 +27,12 @@ from pricing.repository import (
     fetch_language_siblings,
     fetch_language_variants_loose,
     fetch_latest_price_snapshot,
+    fetch_population_snapshot_before,
+    fetch_population_snapshot_latest,
     fetch_recent_sales,
+    fetch_sales_window_stats,
     fetch_sealed_display_for_set,
+    fetch_set_rank_by_price,
 )
 from pricing.sales_stats import SalesStats, compute_sales_stats
 from pricing.sources.base import PriceSource
@@ -137,10 +141,61 @@ class LanguageComparisonEntry:
 
 
 @dataclass
+class PopulationSignal:
+    """"Population par note" du panneau extension (maquette "CardQuant
+    Panel", cf. mémoire projet "cardquant-rebrand") -- dernier
+    population_snapshots connu pour CETTE carte précise (pas le set), mêmes
+    5 paliers que le Terminal (PSA10/9/8/7/≤6, cf.
+    web/components/cardquant/population/GradeDistributionPanel.tsx) --
+    volontairement PAS les 4 paliers de la maquette d'origine (qui groupait
+    "≤ PSA 7"), pour un vocabulaire identique Terminal/extension plutôt
+    qu'un recoupage différent des mêmes colonnes selon l'écran.
+    `grade10_delta_30d`/`premium_10_9` : None si non calculable (pas de
+    snapshot assez ancien / pas de prix psa9 connu à ce jour) -- jamais
+    deviné."""
+    captured_at: date
+    grade10: int
+    grade9: int
+    grade8: int
+    grade7: int
+    grade6: int
+    total: int
+    gem_rate_pct: float | None
+    grade10_delta_30d: int | None
+    premium_10_9: float | None
+
+
+@dataclass
+class VolumeDivergenceSignal:
+    """"Divergence prix / volume" du panneau extension -- compare le nb de
+    ventes et le prix médian sur les 30 derniers jours à la fenêtre des 30
+    jours précédents (même grade que la consultation en cours, cf.
+    _compute_volume_divergence). Champs `*_pct` à None quand la fenêtre de
+    référence (`prior_*`) est vide -- un pourcentage contre un dénominateur
+    nul n'aurait aucun sens, jamais affiché comme "+∞%" ou "0%"."""
+    recent_sales: int
+    prior_sales: int
+    volume_delta_pct: float | None
+    recent_median_price: float | None
+    prior_median_price: float | None
+    price_delta_pct: float | None
+
+
+@dataclass
+class SetPositionSignal:
+    """"Positionnement dans le set" du panneau extension -- rang par prix
+    ungraded décroissant parmi les singles du même set qui ont eux-mêmes un
+    prix connu (cf. pricing/repository.py::fetch_set_rank_by_price)."""
+    rank: int
+    total: int
+
+
+@dataclass
 class ExtendedSignals:
     """Signaux de la maquette extension au-delà du verdict ponctuel : score
     d'opportunité, moy. ventes, liquidité, comparaison par langue, prix du
-    display scellé. Séparé de VerdictOutcome à dessein (cf.
+    display scellé, population par note, divergence prix/volume,
+    positionnement dans le set. Séparé de VerdictOutcome à dessein (cf.
     compute_extended_signals)."""
     opportunity_score: int | None = None
     sales_stats: SalesStats | None = None
@@ -148,6 +203,9 @@ class ExtendedSignals:
     language_comparison: list[LanguageComparisonEntry] = field(default_factory=list)
     sealed_display_price: PriceQuote | None = None
     grading_roi_inputs: GradingRoiInputs | None = None
+    population: PopulationSignal | None = None
+    volume_divergence: VolumeDivergenceSignal | None = None
+    set_position: SetPositionSignal | None = None
 
 
 def _build_language_comparison(card: Card, grade: str, *, current_price: float | None,
@@ -226,6 +284,64 @@ def _build_language_comparison(card: Card, grade: str, *, current_price: float |
         covered_languages.add(variant.language)
 
     return entries
+
+
+_POPULATION_DELTA_WINDOW_DAYS = 30
+_VOLUME_DIVERGENCE_WINDOW_DAYS = 30
+
+
+def _compute_population_signal(item_id: int) -> PopulationSignal | None:
+    latest = fetch_population_snapshot_latest(item_id)
+    if latest is None:
+        return None
+    captured_at, g10, g9, g8, g7, g6, total = latest
+    gem_rate_pct = (g10 / total * 100) if total > 0 else None
+
+    prior = fetch_population_snapshot_before(item_id, captured_at - timedelta(days=_POPULATION_DELTA_WINDOW_DAYS))
+    grade10_delta_30d = (g10 - prior[1]) if prior is not None else None
+
+    # Prime PSA 10 / 9 -- prix gradés directs (price_snapshots), PAS
+    # grading_roi_inputs.grade_prices : ce dernier n'est matérialisé que par
+    # le run --tier (cf. fetch_grading_roi_inputs), une couverture bien plus
+    # étroite que price_snapshots pour un simple ratio de prime.
+    psa10 = fetch_latest_price_snapshot(item_id, "psa10")
+    psa9 = fetch_latest_price_snapshot(item_id, "psa9")
+    premium_10_9 = (psa10[0] / psa9[0]) if psa10 and psa9 and psa9[0] > 0 else None
+
+    return PopulationSignal(
+        captured_at=captured_at, grade10=g10, grade9=g9, grade8=g8, grade7=g7, grade6=g6, total=total,
+        gem_rate_pct=gem_rate_pct, grade10_delta_30d=grade10_delta_30d, premium_10_9=premium_10_9,
+    )
+
+
+def _compute_volume_divergence(item_id: int, grade: str) -> VolumeDivergenceSignal | None:
+    today = date.today()
+    recent_start = today - timedelta(days=_VOLUME_DIVERGENCE_WINDOW_DAYS)
+    prior_start = today - timedelta(days=2 * _VOLUME_DIVERGENCE_WINDOW_DAYS)
+    recent_count, recent_median = fetch_sales_window_stats(item_id, grade, recent_start, today + timedelta(days=1))
+    prior_count, prior_median = fetch_sales_window_stats(item_id, grade, prior_start, recent_start)
+    if recent_count == 0 and prior_count == 0:
+        return None  # rien à comparer sur les deux fenêtres -- pas de signal plutôt qu'un "0%" trompeur
+
+    volume_delta_pct = ((recent_count - prior_count) / prior_count * 100) if prior_count > 0 else None
+    price_delta_pct = (
+        ((recent_median - prior_median) / prior_median * 100)
+        if recent_median is not None and prior_median is not None and prior_median > 0 else None
+    )
+    return VolumeDivergenceSignal(
+        recent_sales=recent_count, prior_sales=prior_count, volume_delta_pct=volume_delta_pct,
+        recent_median_price=recent_median, prior_median_price=prior_median, price_delta_pct=price_delta_pct,
+    )
+
+
+def _compute_set_position(card: Card) -> SetPositionSignal | None:
+    # Positionnement dans un SET n'a de sens que pour un single (le scellé
+    # n'appartient pas à un classement "carte par carte") -- même garde que
+    # sealed_display_price/grading_roi_inputs plus bas, sens inverse.
+    if card.category != "single" or not card.set_code:
+        return None
+    result = fetch_set_rank_by_price(card.id, card.tcg, card.set_code)
+    return SetPositionSignal(rank=result[0], total=result[1]) if result else None
 
 
 def compute_extended_signals(card: Card, grade: str, *, displayed_price: float | None = None,
@@ -334,6 +450,10 @@ def compute_extended_signals(card: Card, grade: str, *, displayed_price: float |
     # côté extension plutôt que d'afficher un ROI inventé.
     grading_roi_inputs = fetch_grading_roi_inputs(card.id) if card.category == "single" else None
 
+    population = _compute_population_signal(card.id)
+    volume_divergence = _compute_volume_divergence(card.id, grade)
+    set_position = _compute_set_position(card)
+
     return ExtendedSignals(
         opportunity_score=opportunity_score,
         sales_stats=sales_stats,
@@ -341,4 +461,7 @@ def compute_extended_signals(card: Card, grade: str, *, displayed_price: float |
         language_comparison=language_comparison,
         sealed_display_price=sealed_display_price,
         grading_roi_inputs=grading_roi_inputs,
+        population=population,
+        volume_divergence=volume_divergence,
+        set_position=set_position,
     )

@@ -41,6 +41,7 @@ from pricing_api.schemas import (
     GradingRoiInputsOut,
     LanguageComparisonOut,
     LiquidityOut,
+    PopulationSignalOut,
     PortfolioAddRequest,
     PortfolioAddResponse,
     PortfolioDeleteResponse,
@@ -50,9 +51,11 @@ from pricing_api.schemas import (
     PortfolioUpdateResponse,
     SalesStatsOut,
     SealedDisplayPriceOut,
+    SetPositionOut,
     SourcePriceOut,
     VerdictRequest,
     VerdictResponse,
+    VolumeDivergenceOut,
 )
 from shared.verdict import ExtendedSignals, compute_extended_signals, compute_verdict_for_card
 
@@ -140,6 +143,23 @@ def _extended_out(signals: ExtendedSignals) -> dict:
         grade_prices=signals.grading_roi_inputs.grade_prices,
         grade_counts=signals.grading_roi_inputs.grade_counts,
     ) if signals.grading_roi_inputs else None
+    population = PopulationSignalOut(
+        captured_at=signals.population.captured_at, grade10=signals.population.grade10,
+        grade9=signals.population.grade9, grade8=signals.population.grade8, grade7=signals.population.grade7,
+        grade6=signals.population.grade6, total=signals.population.total,
+        gem_rate_pct=signals.population.gem_rate_pct, grade10_delta_30d=signals.population.grade10_delta_30d,
+        premium_10_9=signals.population.premium_10_9,
+    ) if signals.population else None
+    volume_divergence = VolumeDivergenceOut(
+        recent_sales=signals.volume_divergence.recent_sales, prior_sales=signals.volume_divergence.prior_sales,
+        volume_delta_pct=signals.volume_divergence.volume_delta_pct,
+        recent_median_price=signals.volume_divergence.recent_median_price,
+        prior_median_price=signals.volume_divergence.prior_median_price,
+        price_delta_pct=signals.volume_divergence.price_delta_pct,
+    ) if signals.volume_divergence else None
+    set_position = SetPositionOut(
+        rank=signals.set_position.rank, total=signals.set_position.total,
+    ) if signals.set_position else None
     return dict(
         opportunity_score=signals.opportunity_score,
         sales_stats=sales_stats,
@@ -151,6 +171,9 @@ def _extended_out(signals: ExtendedSignals) -> dict:
         ],
         sealed_display_price=sealed_display_price,
         grading_roi_inputs=grading_roi_inputs,
+        population=population,
+        volume_divergence=volume_divergence,
+        set_position=set_position,
     )
 
 
@@ -307,7 +330,8 @@ def post_verdict(req: VerdictRequest, _user: dict = Depends(require_user)) -> Ve
     # opportunity_score en a besoin et gère lui-même son absence (cf.
     # shared/verdict.py::compute_extended_signals).
     extended = dict(opportunity_score=None, sales_stats=None, liquidity=None,
-                    language_comparison=[], sealed_display_price=None, grading_roi_inputs=None)
+                    language_comparison=[], sealed_display_price=None, grading_roi_inputs=None,
+                    population=None, volume_divergence=None, set_position=None)
     if outcome.card is not None:
         # Réutilise l'URL PriceCharting déjà résolue par compute_verdict_for_card
         # (outcome.sources_compared) pour la ligne "cette annonce" de la

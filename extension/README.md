@@ -324,8 +324,65 @@ Fait :
   jamais un texte de seuil réinventé côté client. Toggle add/remove relayé
   par le service worker (`background.js::favoritesFetch`), même schéma
   d'auth (jeton Firebase rafraîchi via `getValidIdToken`) que
-  `CARDQUANT_GET_VERDICT`. Pas encore construit : l'écran Watchlist du
-  site qui listerait ces favoris (§08 maquette, jamais fait).
+  `CARDQUANT_GET_VERDICT`. L'écran Watchlist du site qui liste ces favoris
+  a depuis été construit (`app/(cardquant)/watchlist`, cf. mémoire projet
+  "cardquant-rebrand") -- la ligne ci-dessus n'est plus à jour sur ce point
+  précis mais gardée telle quelle pour l'historique.
+
+- **Reskin "CardQuant Panel" (design system Slabline, 2026-08-31/09-02)** :
+  `content/panel.css` et `content/content.js` réhabillés en dur sur les
+  mêmes tokens couleur que le Terminal/la Landing (`--cq-*` recopiés depuis
+  `web/styles/cardquant/tokens/colors.css` + la surcharge sombre partagée,
+  cf. `web/components/cardquant/darkTokenOverride.ts` -- un content script
+  ne peut pas hériter des custom properties de `tcgindex.vercel.app`,
+  recopie manuelle à resynchroniser à la main si la palette du Terminal
+  change). Identité de carte, jauge de score et rangées d'analyse
+  (population/liquidité/langue/ROI/divergence/positionnement/arbitrage)
+  regroupées dans une seule carte à rangées repliables plutôt que des
+  sections indépendantes, même esprit que la maquette du handoff. Header
+  avec avatar + prénom (`session.displayName`, déjà relayée par le site).
+  - **"Ouvrir la fiche sur CardQuant" réintroduit** : ce CTA existait dans
+    une version antérieure, retiré le 2026-08-23 faute d'URL de fiche
+    carte fixe côté site à l'époque. `app/(cardquant)/catalog/[id]` existe
+    désormais (§ Fiche carte du handoff, construite depuis) -- le bouton
+    rouvre `/catalog/{item_id}` dans un nouvel onglet
+    (`background.js::CARDQUANT_OPEN_CARD`).
+  - **Score gardé "Score d'opportunité", jamais renommé "Score
+    structurel"** malgré ce nom dans la maquette : côté Terminal,
+    "Score structurel" désigne un signal DIFFÉRENT (`undervalued_scores`/
+    `relative_value_scores`, ratio valeur théorique/marché recalculé
+    chaque nuit par comparaison aux pairs, cf.
+    `web/components/cardquant/undervalued/StructuralScorePanel.tsx` et
+    `pricing/opportunity_score.py`) -- une couverture partielle (seuls les
+    sets avec Booster Box mappé ou un groupe de pairs complet) et une
+    échelle en ratio, pas un score continu 0-100 adapté à une jauge par
+    annonce. Réutiliser le même nom pour deux mesures différentes aurait
+    été trompeur ; seul l'HABILLAGE (barre segmentée 14 pas, rampe de
+    couleur, libellés de palier à 5 niveaux) vient de la maquette, la
+    donnée reste `opportunity_score` (`pricing/opportunity_score.py`,
+    inchangé).
+  - **3 nouveaux signaux `/verdict`** (`shared/verdict.py::
+    compute_extended_signals`, `pricing/repository.py`) : "Population par
+    note" (dernier `population_snapshots` de CETTE carte, mêmes 5 paliers
+    que `GradeDistributionPanel.tsx` côté Terminal -- PSA10/9/8/7/≤6, pas
+    le regroupement "≤ PSA 7" à 4 paliers de la maquette d'origine, pour un
+    vocabulaire identique aux deux surfaces -- + gem rate, delta POP10/30j,
+    prime PSA10/9) ; "Divergence prix/volume" (nb de ventes + prix médian
+    sur les 30 derniers jours vs les 30 jours précédents, même grade que la
+    consultation) ; "Positionnement dans le set" (rang par prix ungraded
+    décroissant parmi les singles du set qui ont eux-mêmes un prix connu,
+    même définition que `getSetTopCards(sortBy='price')` côté Terminal).
+    Les trois restent `None`/absents plutôt qu'une valeur devinée quand la
+    donnée manque (item hors tracking population, fenêtre de 30j vide des
+    deux côtés, carte sans set_code ou sans prix connu).
+  - **"Noter l'achat"** : journalise directement une position au
+    portefeuille (écran PnL du site, backend construit le 2026-08-31, cf.
+    mémoire projet "cardquant-rebrand") au prix affiché de l'annonce (déjà
+    converti en USD), grade courant, quantité 1, date du jour --
+    `background.js::CARDQUANT_PORTFOLIO_ADD` (`POST /portfolio`, même
+    endpoint que `web/lib/portfolioApi.ts`). Pas de mini-formulaire dans le
+    panneau (tout est déjà connu) ; la position reste éditable/supprimable
+    ensuite sur `/pnl`.
 
 Pas fait (hors scope de ce scaffold) :
 - Vinted, Cardmarket — seul eBay (14 domaines pays, cf. `manifest.json`)

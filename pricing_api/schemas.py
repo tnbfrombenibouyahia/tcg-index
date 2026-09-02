@@ -175,6 +175,36 @@ class GradingRoiInputsOut(BaseModel):
     grade_counts: dict[str, dict[str, int]]  # 'card'|'set_rarity'|'set'|'tcg' -> {grade: count}
 
 
+class PopulationSignalOut(BaseModel):
+    """cf. shared/verdict.py::PopulationSignal."""
+    captured_at: date
+    grade10: int
+    grade9: int
+    grade8: int
+    grade7: int
+    grade6: int
+    total: int
+    gem_rate_pct: float | None
+    grade10_delta_30d: int | None
+    premium_10_9: float | None
+
+
+class VolumeDivergenceOut(BaseModel):
+    """cf. shared/verdict.py::VolumeDivergenceSignal."""
+    recent_sales: int
+    prior_sales: int
+    volume_delta_pct: float | None
+    recent_median_price: float | None
+    prior_median_price: float | None
+    price_delta_pct: float | None
+
+
+class SetPositionOut(BaseModel):
+    """cf. shared/verdict.py::SetPositionSignal."""
+    rank: int
+    total: int
+
+
 class VerdictResponse(BaseModel):
     status: str  # 'matched' | 'ambiguous' | 'not_found' | 'card_not_found' | 'no_reference_price'
     card: CardCandidateOut | None = None
@@ -200,6 +230,11 @@ class VerdictResponse(BaseModel):
     language_comparison: list[LanguageComparisonOut] = []
     sealed_display_price: SealedDisplayPriceOut | None = None
     grading_roi_inputs: GradingRoiInputsOut | None = None
+    # Panneau extension "v3" (cf. mémoire projet "cardquant-rebrand") --
+    # mêmes garanties "None si non identifiée" que les signaux ci-dessus.
+    population: PopulationSignalOut | None = None
+    volume_divergence: VolumeDivergenceOut | None = None
+    set_position: SetPositionOut | None = None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
