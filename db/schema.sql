@@ -447,3 +447,41 @@ CREATE TABLE IF NOT EXISTS user_entitlements (
   is_premium    BOOLEAN NOT NULL DEFAULT false,
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Portefeuille personnel (écran PnL CardQuant, cf. mémoire projet
+-- "cardquant-rebrand") : une ligne par achat déclaré par l'utilisateur, pas
+-- un flux automatique -- personne d'autre que l'utilisateur lui-même ne
+-- sait ce qu'il a payé pour sa propre carte. Même identité que
+-- favorites/user_entitlements (firebase_uid, pas de table `users` locale).
+--
+-- Position OUVERTE (sell_price/sell_date NULL) = toujours détenue, P/V
+-- "non réalisé" contre le dernier prix marché connu (price_snapshots).
+-- Position FERMÉE (sell_price/sell_date renseignés) = revendue, P/V
+-- "réalisé" figé aux deux prix déclarés -- ne bouge plus avec le marché,
+-- contrairement à une position ouverte.
+--
+-- `grade` : même vocabulaire que price_snapshots.grade/sales.grade (cf.
+-- mémoire projet "grading_tiers") -- sert à choisir la bonne colonne de
+-- price_snapshots pour calculer le prix actuel d'une position ouverte.
+-- `quantity` : un lot identique (même carte, même grade, achetées ensemble)
+-- reste une seule ligne plutôt que N lignes dupliquées -- coût/valeur
+-- actuelle multipliés par quantity à l'affichage, pas stockés multipliés.
+CREATE TABLE IF NOT EXISTS portfolio_positions (
+  id            BIGSERIAL PRIMARY KEY,
+  firebase_uid  TEXT NOT NULL,
+  item_id       BIGINT NOT NULL REFERENCES items(id),
+  grade         TEXT NOT NULL DEFAULT 'ungraded',
+  quantity      INTEGER NOT NULL DEFAULT 1,
+  buy_price     NUMERIC(12,2) NOT NULL,
+  buy_currency  TEXT NOT NULL DEFAULT 'EUR',
+  buy_date      DATE NOT NULL,
+  sell_price    NUMERIC(12,2),
+  sell_currency TEXT,
+  sell_date     DATE,
+  note          TEXT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CHECK (quantity > 0),
+  CHECK ((sell_price IS NULL) = (sell_date IS NULL))
+);
+CREATE INDEX IF NOT EXISTS idx_portfolio_positions_user ON portfolio_positions (firebase_uid, created_at DESC);

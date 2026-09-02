@@ -28,7 +28,8 @@ from pricing.favorites import (
 )
 from pricing.matching import identify_card
 from pricing.models import Card
-from pricing.repository import fetch_card_by_id, fetch_set_release_year, set_label_from_code
+from pricing.portfolio import Position, add_position, delete_position, fetch_position, fetch_positions, update_position
+from pricing.repository import fetch_card_by_id, fetch_latest_price_snapshot, fetch_set_release_year, set_label_from_code
 from pricing_api.schemas import (
     CardCandidateOut,
     FavoriteAddRequest,
@@ -40,6 +41,13 @@ from pricing_api.schemas import (
     GradingRoiInputsOut,
     LanguageComparisonOut,
     LiquidityOut,
+    PortfolioAddRequest,
+    PortfolioAddResponse,
+    PortfolioDeleteResponse,
+    PortfolioListResponse,
+    PortfolioPositionOut,
+    PortfolioUpdateRequest,
+    PortfolioUpdateResponse,
     SalesStatsOut,
     SealedDisplayPriceOut,
     SourcePriceOut,
@@ -52,14 +60,13 @@ app = FastAPI(title="tcg-index pricing API")
 
 _cors_origins = [o.strip() for o in os.environ.get("PRICING_API_CORS_ORIGINS", "").split(",") if o.strip()]
 if _cors_origins:
-    # allow_methods=["POST"] seul suffit à /verdict, seul appelant navigateur
-    # direct pour l'instant (extension : host_permissions bypass CORS
-    # entièrement, cf. extension/manifest.json -- cette liste ne le concerne
-    # pas). Le jour où web/ (site) appelle /favorites directement depuis le
-    # navigateur (§10 handoff -- écran Watchlist pas encore construit), GET
-    # et DELETE devront être ajoutés ici, sinon le préflight CORS échoue
-    # silencieusement pour ces deux méthodes.
-    app.add_middleware(CORSMiddleware, allow_origins=_cors_origins, allow_methods=["POST"], allow_headers=["*"])
+    # GET/PATCH/DELETE ajoutés pour /portfolio (écran PnL CardQuant, cf.
+    # mémoire projet "cardquant-rebrand") -- premier appelant navigateur
+    # direct de web/ au-delà de /verdict (POST seul, historique) : ce
+    # dernier reste couvert, l'extension elle-même n'est de toute façon pas
+    # concernée par cette liste (host_permissions bypass CORS entièrement,
+    # cf. extension/manifest.json).
+    app.add_middleware(CORSMiddleware, allow_origins=_cors_origins, allow_methods=["GET", "POST", "PATCH", "DELETE"], allow_headers=["*"])
 
 
 def _card_out(card: Card, confidence: float) -> CardCandidateOut:
@@ -75,6 +82,34 @@ def _favorite_out(card: Card) -> FavoriteOut:
                         rarity=card.rarity, language=card.language, image_url=card.image_url,
                         set_name=set_label_from_code(card.set_code, card.tcg),
                         set_release_year=fetch_set_release_year(card.tcg, card.set_code))
+
+
+def _position_out(position: Position) -> PortfolioPositionOut:
+    """Enrichit une Position brute (portfolio_positions) avec l'identité de
+    la carte et son prix marché courant -- même découpage que _favorite_out
+    (le module métier ne connaît que sa propre table, l'enrichissement vit
+    ici). `card` peut être None si l'item a été supprimé du référentiel
+    depuis (jamais arrivé en pratique, mais items.id n'est pas ON DELETE
+    CASCADE -- mieux vaut un champ vide qu'une 500)."""
+    card = fetch_card_by_id(position.item_id)
+    snapshot = fetch_latest_price_snapshot(position.item_id, position.grade)
+    return PortfolioPositionOut(
+        id=position.id, item_id=position.item_id,
+        name=card.name if card else "Carte introuvable",
+        code=card.code if card else None,
+        set_code=card.set_code if card else None,
+        tcg=card.tcg if card else "",
+        language=card.language if card else "",
+        rarity=card.rarity if card else None,
+        image_url=card.image_url if card else None,
+        grade=position.grade, quantity=position.quantity,
+        buy_price=position.buy_price, buy_currency=position.buy_currency, buy_date=position.buy_date,
+        sell_price=position.sell_price, sell_currency=position.sell_currency, sell_date=position.sell_date,
+        note=position.note,
+        status="closed" if position.sell_date else "open",
+        current_price=snapshot[0] if snapshot else None,
+        current_currency=snapshot[1] if snapshot else None,
+    )
 
 
 def _extended_out(signals: ExtendedSignals) -> dict:
@@ -183,6 +218,58 @@ def post_favorite(req: FavoriteAddRequest, user: dict = Depends(require_user)) -
 def delete_favorite(item_id: int, user: dict = Depends(require_user)) -> FavoriteRemoveResponse:
     removed = remove_favorite(user["uid"], item_id)
     return FavoriteRemoveResponse(status="removed" if removed else "not_favorited")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Portefeuille personnel (écran PnL CardQuant, cf. mémoire projet
+# "cardquant-rebrand"). Premier endpoint de ce service appelé directement
+# depuis le navigateur pour un CRUD complet (pas juste add/remove comme
+# /favorites) -- même auth (require_user), même principe de portée
+# (fetch_position/update_position/delete_position filtrent TOUJOURS sur
+# firebase_uid, jamais un id nu, cf. pricing/portfolio.py).
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.get("/portfolio", response_model=PortfolioListResponse)
+def get_portfolio(user: dict = Depends(require_user)) -> PortfolioListResponse:
+    return PortfolioListResponse(positions=[_position_out(p) for p in fetch_positions(user["uid"])])
+
+
+@app.post("/portfolio", response_model=PortfolioAddResponse)
+def post_portfolio(req: PortfolioAddRequest, user: dict = Depends(require_user)) -> PortfolioAddResponse:
+    new_id = add_position(
+        user["uid"], req.item_id, req.grade, req.quantity,
+        req.buy_price, req.buy_currency, req.buy_date, req.note,
+    )
+    if new_id is None:
+        raise HTTPException(status_code=404, detail="Carte introuvable.")
+    position = fetch_position(user["uid"], new_id)
+    return PortfolioAddResponse(position=_position_out(position))
+
+
+@app.patch("/portfolio/{position_id}", response_model=PortfolioUpdateResponse)
+def patch_portfolio(position_id: int, req: PortfolioUpdateRequest, user: dict = Depends(require_user)) -> PortfolioUpdateResponse:
+    uid = user["uid"]
+    if fetch_position(uid, position_id) is None:
+        raise HTTPException(status_code=404, detail="Position introuvable.")
+    # Clôture (déclarer une vente) exige les 3 champs ensemble -- une vente
+    # à moitié saisie (prix sans date, ou l'inverse) n'a pas de sens et
+    # laisserait le CHECK (sell_price IS NULL) = (sell_date IS NULL) de
+    # portfolio_positions échouer silencieusement côté COALESCE (un seul des
+    # deux mis à jour, l'autre resterait NULL).
+    if (req.sell_price is None) != (req.sell_date is None) and not req.clear_sale:
+        raise HTTPException(status_code=400, detail="sell_price et sell_date doivent être fournis ensemble.")
+    update_position(
+        uid, position_id,
+        sell_price=req.sell_price, sell_currency=req.sell_currency or ("EUR" if req.sell_price is not None else None),
+        sell_date_value=req.sell_date, note=req.note, clear_sale=req.clear_sale,
+    )
+    return PortfolioUpdateResponse(position=_position_out(fetch_position(uid, position_id)))
+
+
+@app.delete("/portfolio/{position_id}", response_model=PortfolioDeleteResponse)
+def delete_portfolio(position_id: int, user: dict = Depends(require_user)) -> PortfolioDeleteResponse:
+    removed = delete_position(user["uid"], position_id)
+    return PortfolioDeleteResponse(status="removed" if removed else "not_found")
 
 
 @app.post("/verdict", response_model=VerdictResponse)

@@ -2,6 +2,8 @@
 snake_case, cohérent avec le contrat JSON déjà observé côté
 web/app/api/*/route.ts (ex. item_id, grade).
 """
+from datetime import date
+
 from pydantic import BaseModel, field_validator
 
 from pricing.models import KNOWN_GRADES
@@ -191,3 +193,90 @@ class VerdictResponse(BaseModel):
     language_comparison: list[LanguageComparisonOut] = []
     sealed_display_price: SealedDisplayPriceOut | None = None
     grading_roi_inputs: GradingRoiInputsOut | None = None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Portefeuille personnel (écran PnL CardQuant, cf. mémoire projet
+# "cardquant-rebrand") -- cf. pricing/portfolio.py pour le CRUD, ce fichier
+# ne porte que la forme JSON.
+# ─────────────────────────────────────────────────────────────────────────────
+
+class PortfolioPositionOut(BaseModel):
+    id: int
+    item_id: int
+    name: str
+    code: str | None
+    set_code: str | None
+    tcg: str
+    language: str
+    rarity: str | None
+    image_url: str | None = None
+    grade: str
+    quantity: int
+    buy_price: float
+    buy_currency: str
+    buy_date: date
+    sell_price: float | None
+    sell_currency: str | None
+    sell_date: date | None
+    note: str | None
+    status: str  # 'open' | 'closed'
+    # Prix marché le plus récent connu à `grade` -- None si jamais snapshotté
+    # (cf. pricing/repository.py::fetch_latest_price_snapshot). Toujours
+    # renseigné même pour une position fermée (affichage "et aujourd'hui ?"),
+    # le P/V réalisé lui reste basé sur sell_price, pas sur ce champ.
+    current_price: float | None = None
+    current_currency: str | None = None
+
+
+class PortfolioListResponse(BaseModel):
+    positions: list[PortfolioPositionOut]
+
+
+class PortfolioAddRequest(BaseModel):
+    item_id: int
+    grade: str = "ungraded"
+    quantity: int = 1
+    buy_price: float
+    buy_currency: str = "EUR"
+    buy_date: date
+    note: str | None = None
+
+    @field_validator("grade")
+    @classmethod
+    def _validate_grade(cls, v: str) -> str:
+        if v not in KNOWN_GRADES:
+            raise ValueError(f"grade doit être l'un de {sorted(KNOWN_GRADES)}")
+        return v
+
+    @field_validator("quantity")
+    @classmethod
+    def _validate_quantity(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("quantity doit être >= 1")
+        return v
+
+
+class PortfolioAddResponse(BaseModel):
+    position: PortfolioPositionOut
+
+
+class PortfolioUpdateRequest(BaseModel):
+    """Édition partielle -- tous les champs sont optionnels, seuls ceux
+    fournis sont modifiés (cf. pricing/portfolio.py::update_position).
+    `clear_sale=True` rouvre une position close, ignore les autres champs de
+    vente s'ils sont fournis en même temps (correction d'erreur de saisie,
+    pas une revente + réouverture simultanées)."""
+    sell_price: float | None = None
+    sell_currency: str | None = None
+    sell_date: date | None = None
+    note: str | None = None
+    clear_sale: bool = False
+
+
+class PortfolioUpdateResponse(BaseModel):
+    position: PortfolioPositionOut
+
+
+class PortfolioDeleteResponse(BaseModel):
+    status: str  # 'removed' | 'not_found'
