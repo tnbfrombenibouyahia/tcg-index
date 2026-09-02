@@ -59,9 +59,10 @@ export interface UndervaluedParams {
 //
 // Plancher $5 (demande utilisateur 2026-08-09, "en dessous de ça on
 // comptabilise pas") -- même défaut partout où ce filtre s'applique (ici,
-// app/(app)/undervalued/page.tsx, app/(app)/dashboard/page.tsx), aligné sur
-// le plancher déjà en place pour /divergence (minPrice: 5) : sous $5, le
-// bruit sur des cartes quasi sans valeur dominait le classement.
+// app/(app)/undervalued/page.tsx ; le dashboard CardQuant utilise le même
+// plancher mais via getDivergence, cf. app/(cardquant)/dashboard/page.tsx),
+// aligné sur le plancher déjà en place pour /divergence (minPrice: 5) : sous
+// $5, le bruit sur des cartes quasi sans valeur dominait le classement.
 function whereFragment(tcg: Tcg | undefined, minMarketPrice: number) {
   return sql`
     WHERE l.market_price >= ${minMarketPrice}
