@@ -665,3 +665,57 @@ export async function getPopulationRanking({
   }
   return result;
 }
+
+export interface PopulationGrowth {
+  current: number;
+  previous: number;
+  daysSpan: number;
+  changePct: number | null;
+}
+
+// "Croissance de la POP" du Dashboard/écran Population PSA CardQuant (cf.
+// mémoire projet "cardquant-rebrand") -- population_snapshots accumule un
+// instantané par item environ chaque semaine (cf. tcg-index-handoff.md,
+// "population PSA+CGC en hebdo"), donc un vrai historique existe, juste pas
+// forcément profond : on prend l'instantané le plus ANCIEN disponible comme
+// référence plutôt qu'une fenêtre fixe de 180j qui pourrait n'avoir aucune
+// donnée si le suivi est plus récent que ça -- `daysSpan` dit honnêtement sur
+// quelle durée porte la comparaison plutôt que de sous-entendre "6 mois" à
+// tort. Retourne des totaux nuls (changePct null) si moins de 14j d'écart
+// (pas assez pour qu'une variation soit lisible).
+export async function getPopulationGrowth(tcg?: Tcg): Promise<PopulationGrowth> {
+  const [row] = await sql<{ current: number; previous: number; daysSpan: number | null }[]>`
+    WITH bounds AS (
+      SELECT MIN(captured_at) AS first_date, MAX(captured_at) AS last_date FROM population_snapshots
+    ),
+    latest AS (
+      SELECT DISTINCT ON (ps.item_id) ps.item_id, ps.pop_total
+      FROM population_snapshots ps
+      JOIN items i ON i.id = ps.item_id
+      ${tcg ? sql`WHERE i.tcg = ${tcg}` : sql``}
+      ORDER BY ps.item_id, ps.captured_at DESC
+    ),
+    earliest AS (
+      SELECT DISTINCT ON (ps.item_id) ps.item_id, ps.pop_total
+      FROM population_snapshots ps
+      JOIN items i ON i.id = ps.item_id
+      ${tcg ? sql`WHERE i.tcg = ${tcg}` : sql``}
+      ORDER BY ps.item_id, ps.captured_at ASC
+    )
+    SELECT
+      COALESCE((SELECT SUM(pop_total) FROM latest), 0)::int4 AS current,
+      COALESCE((SELECT SUM(pop_total) FROM earliest), 0)::int4 AS previous,
+      (SELECT (last_date - first_date) FROM bounds)::int4 AS "daysSpan"
+  `;
+
+  const current = row?.current ?? 0;
+  const previous = row?.previous ?? 0;
+  const daysSpan = row?.daysSpan ?? 0;
+
+  return {
+    current,
+    previous,
+    daysSpan,
+    changePct: daysSpan >= 14 && previous > 0 ? ((current - previous) / previous) * 100 : null,
+  };
+}
