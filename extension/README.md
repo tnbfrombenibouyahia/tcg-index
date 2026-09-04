@@ -410,6 +410,15 @@ Pas fait (hors scope de ce scaffold) :
 
 ## Icônes
 
-Placeholders générés par script (monogramme "CQ", accent bleu `#3b82f6` du
-site, cf. `web/app/globals.css`) — à remplacer par un vrai logo avant toute
-soumission au Store.
+Icônes réelles (2026-09-04) — plus des placeholders. Piste "1B · Monogramme
+CQ" retenue parmi 3 proposées dans le zip design (`CardQuant Icon.dc.html`,
+cf. mémoire projet "cardquant-rebrand") : fond `--green-400` (`#76FB91`),
+texte noir "CQ" (128/48px) ou "Q" seul (16px, la fiche design note que "CQ"
+ne reste pas lisible à cette taille). Générées en rendant le SVG source du
+zip dans un vrai navigateur (fidélité de police/anti-aliasing) sur fond
+chroma-key, puis recadrées/dékeyées/réduites via un script ponctuel
+(`Add-Type System.Drawing`, pas conservé dans le repo) — `icon128.png` et
+`icon48.png` utilisent la variante "CQ" du design (tailles de police et
+tracé de la barre ajustés séparément pour chaque taille dans le fichier
+source), `icon16.png` la variante "Q" seul. Fond transparent en dehors du
+carré arrondi (`rx` du SVG), pas un carré plein.
