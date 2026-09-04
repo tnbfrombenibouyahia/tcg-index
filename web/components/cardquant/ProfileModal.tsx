@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { User } from "firebase/auth";
-import { multiFactor, updateProfile } from "firebase/auth";
+import { multiFactor, signOut, updateProfile } from "firebase/auth";
+import { auth } from "@/lib/firebase-client";
+import { syncSessionCookie } from "@/lib/useAuth";
 import { fetchFavorites } from "@/lib/watchlistApi";
 import { fetchPositions } from "@/lib/portfolioApi";
 import { Button } from "./core/Button";
@@ -38,7 +41,9 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 // pas de service de notification, donc pas de persistance possible pour
 // tout ce qui n'est pas déjà porté par Firebase Auth ou pricing_api.
 export function ProfileModal({ user, onClose }: { user: User; onClose: () => void }) {
+  const router = useRouter();
   const [displayName, setDisplayName] = useState(user.displayName ?? "");
+  const [signingOut, setSigningOut] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [isPremium, setIsPremium] = useState<boolean | null>(null);
@@ -91,6 +96,26 @@ export function ProfileModal({ user, onClose }: { user: User; onClose: () => voi
     a.download = "cardquant-portefeuille.csv";
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  // N'existait nulle part avant la passe Auth (cf. mémoire projet
+  // "cardquant-rebrand") : indispensable maintenant que le Terminal est
+  // gardé (proxy.ts) -- sans ça, un utilisateur connecté n'a aucun moyen
+  // réel de sortir de sa session. `syncSessionCookie(false)` explicite
+  // avant la navigation plutôt que de compter uniquement sur le listener
+  // de useAuth.ts (asynchrone, même raisonnement que AuthPage.tsx après une
+  // connexion réussie -- éviter toute fenêtre où le cookie de session
+  // survivrait encore à la déconnexion).
+  async function handleSignOut() {
+    setSigningOut(true);
+    try {
+      await signOut(auth);
+      syncSessionCookie(false);
+      onClose();
+      router.push("/");
+    } finally {
+      setSigningOut(false);
+    }
   }
 
   return (
@@ -163,6 +188,8 @@ export function ProfileModal({ user, onClose }: { user: User; onClose: () => voi
               </span>
               <span style={{ fontSize: 11.5, color: "var(--text-body)" }}>Export des données</span>
               <Button variant="secondary" size="sm" onClick={exportCsv}>Exporter en CSV</Button>
+              <span style={{ fontSize: 11.5, color: "var(--text-body)" }}>Session</span>
+              <Button variant="ghost" size="sm" onClick={handleSignOut} disabled={signingOut}>{signingOut ? "…" : "Se déconnecter"}</Button>
             </div>
           </section>
 

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Icon } from "../core/Icon";
 import { useAuth } from "@/lib/useAuth";
-import { AuthModal, type AuthMode } from "@/components/auth/AuthModal";
 import { InstallExtensionCta } from "./InstallExtensionCta";
 
 // Clé localStorage isolée à ce prompt -- juste un "déjà vu une fois", pas de
@@ -12,43 +13,38 @@ const AUTH_PROMPT_SEEN_KEY = "cardquant-landing-auth-prompt-seen";
 
 // Nav de la landing CardQuant (cf. mémoire projet "cardquant-rebrand").
 // FR/EN/ES cosmétique -- même limite assumée que TopNav.tsx (pas de
-// changement de langue réel, cf. son commentaire). "Se connecter" ouvre la
-// modale d'auth existante plutôt que de suivre l'ancre "#tarifs" du mockup
-// (qui n'avait pas de sens pour ce lien précis). "Installer l'extension"
-// passe par InstallExtensionCta (compte requis avant le Chrome Web Store,
-// cf. ce fichier) depuis le 2026-09-02 -- avant ça pointait vers #tarifs,
-// faute de flux d'inscription au clic.
+// changement de langue réel, cf. son commentaire). "Se connecter" mène
+// désormais à la vraie page /auth (cf. components/cardquant/auth/AuthPage.tsx,
+// passe Auth) plutôt qu'à la modale AuthModal.tsx (Google uniquement, pas
+// d'inscription complète) -- celle-ci reste utilisée ailleurs (cf. plan),
+// juste plus ici. "Installer l'extension" passe par InstallExtensionCta
+// (compte requis avant le Chrome Web Store, cf. ce fichier) depuis le
+// 2026-09-02, non touché cette passe.
 export function LandingNav() {
+  const router = useRouter();
   const { user, loading } = useAuth();
-  const [authOpen, setAuthOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<AuthMode>("login");
-  // Passe à true dès que l'utilisateur ouvre la modale lui-même (bouton
-  // "Se connecter") -- évite que l'effet d'auto-ouverture ci-dessous ne lui
-  // repasse en mode "signup" sous le nez si `loading` se résout pile à ce
-  // moment-là (fenêtre de quelques ms au premier rendu).
-  const manuallyOpenedRef = useRef(false);
 
-  // Popup de connexion automatique à la toute première visite de la landing
-  // (demande utilisateur 2026-09-02). Dès que la session Firebase est
-  // résolue (`loading` passe à false) : si personne n'est connecté et que ce
-  // navigateur n'a jamais vu l'invite, on ouvre la modale d'elle-même --
-  // mode "signup" (acquisition), cohérent avec le mode par défaut de
-  // InstallExtensionCta. Le flag est posé dès l'ouverture, pas à la
-  // fermeture : peu importe comment l'utilisateur quitte la modale (croix,
-  // clic dehors, connexion réussie), elle ne doit plus jamais s'imposer
-  // ensuite sur ce navigateur.
+  // Redirection automatique vers l'inscription à la toute première visite
+  // de la landing (demande utilisateur 2026-09-02, remplacée le 2026-09-03
+  // par une redirection directe -- décision utilisateur -- au lieu d'ouvrir
+  // une modale, maintenant que /auth est une vraie page). Dès que la
+  // session Firebase est résolue (`loading` passe à false) : si personne
+  // n'est connecté et que ce navigateur n'a jamais vu l'invite, on quitte
+  // la landing pour /auth?mode=signup. Le flag est posé avant la
+  // navigation : peu importe comment l'utilisateur revient ensuite
+  // (navigateur précédent, lien direct...), ça ne doit plus jamais se
+  // redéclencher sur ce navigateur.
   useEffect(() => {
-    if (loading || user || manuallyOpenedRef.current) return;
+    if (loading || user) return;
     try {
       if (window.localStorage.getItem(AUTH_PROMPT_SEEN_KEY)) return;
       window.localStorage.setItem(AUTH_PROMPT_SEEN_KEY, "1");
     } catch {
       // localStorage indisponible (mode privé strict) -- tant pis, on
-      // affiche quand même cette fois plutôt que de bloquer le prompt
+      // redirige quand même cette fois plutôt que de bloquer le prompt
     }
-    setAuthMode("signup");
-    setAuthOpen(true);
-  }, [loading, user]);
+    router.push("/auth?mode=signup");
+  }, [loading, user, router]);
 
   return (
     <header style={{ position: "sticky", top: 0, zIndex: 50, height: 62, background: "rgba(0,0,0,.82)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderBottom: "1px solid var(--border-hairline)" }}>
@@ -65,19 +61,17 @@ export function LandingNav() {
           <span style={{ display: "inline-grid", placeItems: "center", height: 22, padding: "0 9px", borderRadius: 999, color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: 10.5, cursor: "pointer" }}>EN</span>
           <span style={{ display: "inline-grid", placeItems: "center", height: 22, padding: "0 9px", borderRadius: 999, color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: 10.5, cursor: "pointer" }}>ES</span>
         </div>
-        <button
-          type="button"
-          onClick={() => { manuallyOpenedRef.current = true; setAuthMode("login"); setAuthOpen(true); }}
+        <Link
+          href="/auth?mode=login"
           style={{ font: "inherit", fontSize: 13, color: "var(--text-body)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
         >
           Se connecter
-        </button>
+        </Link>
         <InstallExtensionCta style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, height: 30, padding: "0 14px", borderRadius: 999, background: "var(--green-400)", color: "#000", fontSize: 12, fontWeight: 500 }}>
           Installer l&apos;extension
           <Icon name="arrow-up-right" size={14} color="#000" />
         </InstallExtensionCta>
       </div>
-      <AuthModal open={authOpen} mode={authMode} onClose={() => setAuthOpen(false)} onModeChange={setAuthMode} />
     </header>
   );
 }

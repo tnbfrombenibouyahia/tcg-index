@@ -12,6 +12,10 @@ import {
   Target,
   Activity,
   Layers,
+  AlertTriangle,
+  Mail,
+  KeyRound,
+  ShieldCheck,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -43,6 +47,10 @@ const REGISTRY: Record<string, LucideIcon> = {
   target: Target,
   activity: Activity,
   layers: Layers,
+  "triangle-alert": AlertTriangle,
+  mail: Mail,
+  "key-round": KeyRound,
+  "shield-check": ShieldCheck,
 };
 
 export interface IconProps {

@@ -8,7 +8,6 @@ import { IconButton } from "./core/IconButton";
 import { PillTabs } from "./core/PillTabs";
 import { NewsPopup } from "./NewsPopup";
 import { ProfileModal } from "./ProfileModal";
-import { AuthModal, type AuthMode } from "@/components/auth/AuthModal";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Chrome partagé du Terminal CardQuant (header + nav), port du bandeau du
@@ -80,8 +79,6 @@ export function TopNav({ syncLabel }: { syncLabel: string | null }) {
   const [currency, setCurrency] = useState("EUR");
   const [lang, setLang] = useState("FR");
   const [newsOpen, setNewsOpen] = useState(false);
-  const [authOpen, setAuthOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<AuthMode>("signup");
   const [profileOpen, setProfileOpen] = useState(false);
   const activeLabel = activeLabelFor(pathname) ?? "Dashboard";
 
@@ -91,15 +88,16 @@ export function TopNav({ syncLabel }: { syncLabel: string | null }) {
   }
 
   // Avatar : ouvre le vrai profil si connecté (ProfileModal, données
-  // Firebase/pricing_api réelles), sinon la modale de connexion existante --
-  // pas de raison d'afficher un panneau de paramètres de compte à quelqu'un
-  // qui n'a pas de compte.
+  // Firebase/pricing_api réelles), sinon renvoie vers /auth (cf.
+  // components/cardquant/auth/AuthPage.tsx, passe Auth) -- ce chemin ne
+  // devrait quasiment plus jamais être emprunté maintenant que le Terminal
+  // est gardé (proxy.ts renvoie déjà un visiteur anonyme vers /auth avant
+  // même que cet écran ne monte), sauf pendant la fenêtre où la session
+  // n'a pas encore été restaurée côté client -- filet de sécurité, pas le
+  // chemin principal.
   function onAvatarClick() {
     if (user) setProfileOpen(true);
-    else {
-      setAuthMode("login");
-      setAuthOpen(true);
-    }
+    else router.push(`/auth?next=${encodeURIComponent(pathname)}`);
   }
 
   return (
@@ -163,7 +161,6 @@ export function TopNav({ syncLabel }: { syncLabel: string | null }) {
         </>
       ) : null}
 
-      <AuthModal open={authOpen} mode={authMode} onClose={() => setAuthOpen(false)} onModeChange={setAuthMode} />
       {profileOpen && user ? <ProfileModal user={user} onClose={() => setProfileOpen(false)} /> : null}
     </header>
   );
