@@ -1,8 +1,20 @@
+"use client";
+
 import { Icon } from "../core/Icon";
 
 // Port fidèle de design-system/components/data/DataTable.jsx (handoff
 // CardQuant, cf. mémoire projet "cardquant-rebrand"). `key` doit être une clé
 // de `T` -- react-node/string/number en valeur affichée.
+//
+// "use client" obligatoire : le `<th onClick={...}>` ci-dessous attache un
+// handler d'événement à un élément hôte, TOUJOURS (même quand `onSort` n'est
+// pas fourni -- `() => onSort?.(c.key)` est créée dans tous les cas). Sans
+// cette directive, ce fichier restait Server Component par défaut (tous ses
+// appelants -- OpportunitiesPanel, LatestSalesPanel -- le sont aussi), et RSC
+// refuse de sérialiser un handler dans le payload : "Event handlers cannot be
+// passed to Client Component props", plantage systématique (pas transitoire,
+// un reload ne change rien) de /dashboard et /transactions. Repéré via les
+// runtime errors Vercel du 2026-09-04.
 export interface DataTableColumn<T> {
   key: keyof T & string;
   label: string;
