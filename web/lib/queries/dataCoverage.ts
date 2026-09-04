@@ -68,7 +68,11 @@ const JUNK_SET_CODES = [
   "one-piece-one-piece-promotion-cards",
 ];
 
-const EXCLUDE_FILTER = sql`
+// Exportée pour lib/queries/landingCoverage.ts (section "Couverture" de la
+// landing CardQuant, cf. mémoire projet "cardquant-rebrand") -- même
+// définition de "carte suivie sérieusement" que /live, pas une deuxième
+// version divergente pour la page marketing.
+export const EXCLUDE_FILTER = sql`
   name NOT ILIKE 'Code Card - %'
   AND set_code NOT IN ${sql(JUNK_SET_CODES)}
   AND (release_date IS NULL OR release_date <= CURRENT_DATE)

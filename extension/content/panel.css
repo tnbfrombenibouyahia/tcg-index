@@ -3,22 +3,21 @@
    redéfinit rien de la page hôte (cf. `all: initial`/`all: unset`
    ci-dessous, contre l'héritage accidentel de styles eBay).
 
-   Tokens alignés sur le design system du site ("TCG Terminal", cf.
-   web/app/globals.css) -- même verre dépoli, mêmes couleurs positive/
-   negative, même mono pour les chiffres -- pour que le panneau se sente
-   comme une extension du site plutôt qu'un widget à part. Redéfinis ici
-   en dur (préfixe --cq-) : un content script ne peut pas hériter des
-   custom properties de tcgindex.vercel.app, il tourne dans le DOM d'eBay.
-   Accent = rouge One Piece uniquement (--accent-onepiece côté site) --
-   cette extension ne couvre que ce jeu (cf. manifest.json).
+   Tokens recopiés en dur (préfixe --cq-) depuis le design system CardQuant/
+   Slabline du Terminal (web/styles/cardquant/tokens/colors.css) --
+   mêmes valeurs hexadécimales que la surcharge sombre appliquée aux DEUX
+   surfaces produit réelles (Terminal + Landing, cf.
+   web/components/cardquant/darkTokenOverride.ts) : "vocabulaire/couleurs
+   identiques au Terminal" (cf. mémoire projet "cardquant-rebrand"), même si
+   un content script ne peut techniquement pas hériter des custom
+   properties de tcgindex.vercel.app (il tourne dans le DOM d'eBay) --
+   recopie manuelle, à resynchroniser à la main si la palette du Terminal
+   change.
 
-   Dark mode (2026-08-23, demande utilisateur) : le panneau bascule en
-   sombre par défaut -- pas encore adaptatif au thème système/site (le
-   site lui-même n'a pas encore son dark mode, cf. web/app/globals.css,
-   qui reste clair malgré son nom "Terminal" -- ce fichier part devant).
-   Toutes les couleurs passent par --cq-* : voir plus bas pour les deux
-   exceptions volontairement PAS themées (#cardquant-tab, .cardquant-
-   candidate-thumb) et pourquoi. */
+   Toujours sombre (le panneau n'a pas de mode clair, décision 2026-08-23)
+   -- color-scheme: dark ci-dessous évite qu'un mode forcé opposé du
+   navigateur ne repeigne les zones plates non reconnues comme "déjà
+   stylées" (constaté en test avec color-scheme: light précédemment). */
 
 #cardquant-root {
   all: initial;
@@ -27,33 +26,31 @@
   right: 0;
   height: 100vh;
   z-index: 2147483647; /* max z-index -- toujours au-dessus du contenu hôte */
-  /* Toujours sombre, quel que soit le thème du navigateur/OS ou de la page
-     hôte -- sans ça, le mode forcé opposé de certains navigateurs repeint
-     les zones plates non reconnues comme "déjà stylées" (constaté en test
-     avec color-scheme: light précédemment : le bas du panneau virait de
-     couleur alors que son fond réel restait celui déclaré ici, cf.
-     getComputedStyle -- l'inversion est un filtre de rendu, invisible
-     depuis le CSS). */
   color-scheme: dark;
 
-  --cq-bg-from:           #15181C;
-  --cq-bg-to:             #0B0D10;
-  --cq-foreground:        #F2F3F5;
-  --cq-foreground-muted:  #9AA1AC;
-  --cq-foreground-subtle: #68707C;
-  --cq-border:            rgba(255, 255, 255, 0.12);
-  --cq-border-soft:       rgba(255, 255, 255, 0.08);
-  --cq-tint-neutral:      rgba(255, 255, 255, 0.06);
-  --cq-positive:          #22C55E;
-  --cq-negative:          #EF4444;
-  --cq-warn:              #F59E0B;
-  --cq-radius:            16px;
-  --cq-radius-sm:         8px;
+  --cq-page:           #000000;
+  --cq-card-bg:        #0B0C0B; /* ink-900 */
+  --cq-card-bg-alt:    #171A18; /* ink-800 -- hover, badges */
+  --cq-ink-700:        #232724; /* bordures/filets */
+  --cq-border-strong:  #3A403C; /* ink-600 */
+  --cq-text-strong:    #FFFFFF;
+  --cq-text-body:      #C9CFCB;
+  --cq-grey-400:       #8A918C; /* texte muet */
+  --cq-grey-300:       #4A514D; /* texte très discret / traits bas */
+  --cq-green:          #76FB91; /* accent */
+  --cq-green-deep:     #21C94E;
+  --cq-up:             #4EE873;
+  --cq-down:           #FF5A72;
+  --cq-warn:           #EEDF10;
+  --cq-gold:           #E8B10C; /* grade PSA */
+  --cq-tint-neutral:   rgba(255, 255, 255, 0.06);
+  --cq-radius:         14px;
+  --cq-radius-sm:      10px;
   --cq-font-sans: -apple-system, "Segoe UI", Roboto, sans-serif;
   --cq-font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 
   font-family: var(--cq-font-sans);
-  color: var(--cq-foreground);
+  color: var(--cq-text-body);
 }
 
 #cardquant-tab {
@@ -66,11 +63,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Fixe, PAS var(--cq-foreground) : cet onglet flotte sur la page hôte
+  /* Fixe, PAS un token du panneau : cet onglet flotte sur la page hôte
      (eBay, généralement claire), pas sur la surface sombre du panneau --
      il doit rester un chip encre foncée + texte blanc quel que soit le
      thème du panneau, pour rester lisible sur un fond qu'on ne contrôle
-     pas. neutre tant qu'aucun verdict n'est connu. */
+     pas. Neutre tant qu'aucun verdict n'est connu. */
   background: #14171C;
   color: #fff;
   font-family: var(--cq-font-sans);
@@ -79,41 +76,40 @@
   letter-spacing: 0.2px;
   border-radius: 8px 0 0 8px;
   cursor: pointer;
-  box-shadow: -2px 2px 10px rgba(15, 15, 20, 0.22);
+  box-shadow: -2px 2px 10px rgba(0, 0, 0, 0.35);
   transition: background 0.15s ease;
 }
 #cardquant-tab:hover {
-  filter: brightness(1.08);
+  filter: brightness(1.1);
 }
 #cardquant-tab:focus-visible {
   outline: 2px solid #fff;
   outline-offset: -4px;
 }
 #cardquant-tab.cardquant-green {
-  background: var(--cq-positive);
+  background: var(--cq-green);
+  color: #000;
 }
 #cardquant-tab.cardquant-yellow {
   background: var(--cq-warn);
+  color: #000;
 }
 #cardquant-tab.cardquant-red {
-  background: var(--cq-negative);
+  background: var(--cq-down);
 }
 
 #cardquant-card {
   position: absolute;
   top: 0;
   right: 0;
-  width: 320px;
+  width: 340px;
   height: 100%;
   /* Pas de backdrop-filter : le panneau s'affiche sur des pages eBay dont
-     le contenu derrière n'est jamais contrôlé (image sombre, pub, etc.) --
-     un vrai flou de fond serait imprévisible (et confirmé instable dans
-     certains navigateurs en mode sombre forcé -- rendu noir constaté). Un
-     fond quasi opaque reste lisible quel que soit l'hôte, cf. commentaire
-     original de ce fichier. */
-  background: linear-gradient(165deg, var(--cq-bg-from), var(--cq-bg-to));
-  border-left: 1px solid var(--cq-border);
-  box-shadow: -8px 0 32px rgba(15, 15, 20, 0.16);
+     le contenu derrière n'est jamais contrôlé -- un fond quasi opaque reste
+     lisible quel que soit l'hôte. */
+  background: var(--cq-page);
+  border-left: 1px solid var(--cq-ink-700);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.5);
   box-sizing: border-box;
   font-size: 13px;
   line-height: 1.5;
@@ -128,26 +124,24 @@
   transform: translateX(0);
 }
 
-/* -- Header persistant : marque + statut d'identification (distinct du
-   verdict de prix, cf. .cardquant-pill plus bas) -- "le badge te dit en 1
-   coup d'œil si l'extension a fait son job". */
+/* -- Header persistant : marque + statut d'identification + avatar/prénom
+   (session relayée par le site, cf. content.js::userInitials). */
 .cardquant-header {
   position: sticky;
   top: 0;
+  z-index: 1;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
-  padding: 72px 20px 12px;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--cq-bg-to) 98%, transparent) 80%, transparent);
+  padding: 18px 16px 12px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--cq-page) 98%, transparent) 82%, transparent);
   flex: 0 0 auto;
 }
 .cardquant-brand {
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  color: var(--cq-foreground-subtle);
+  letter-spacing: 0.14em;
+  color: var(--cq-text-strong);
 }
 .cardquant-status {
   display: inline-flex;
@@ -158,7 +152,7 @@
   padding: 3px 8px;
   border-radius: 999px;
   background: var(--cq-tint-neutral);
-  color: var(--cq-foreground-muted);
+  color: var(--cq-grey-400);
   white-space: nowrap;
 }
 .cardquant-status::before {
@@ -169,23 +163,57 @@
   background: currentColor;
 }
 .cardquant-status--positive {
-  background: color-mix(in srgb, var(--cq-positive) 15%, transparent);
-  color: var(--cq-positive);
+  background: color-mix(in srgb, var(--cq-green) 15%, transparent);
+  color: var(--cq-green);
 }
 .cardquant-status--warn {
   background: color-mix(in srgb, var(--cq-warn) 15%, transparent);
   color: var(--cq-warn);
 }
 .cardquant-status--negative {
-  background: color-mix(in srgb, var(--cq-negative) 15%, transparent);
-  color: var(--cq-negative);
+  background: color-mix(in srgb, var(--cq-down) 15%, transparent);
+  color: var(--cq-down);
 }
 .cardquant-status--pending::before {
   animation: cardquant-pulse 1.4s ease-in-out infinite;
 }
 
+/* Avatar + prénom -- masqué (hidden) tant qu'aucune session n'est connue,
+   cf. content.js::setUser. Poussé à droite, séparé du reste par un filet
+   vertical (même idiome que la maquette "CardQuant Panel"). */
+.cardquant-user {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-left: 8px;
+  border-left: 1px solid var(--cq-ink-700);
+}
+.cardquant-avatar {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--cq-green);
+  color: #000;
+  display: grid;
+  place-items: center;
+  font-family: var(--cq-font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.cardquant-user-name {
+  font-size: 11px;
+  color: var(--cq-grey-400);
+  white-space: nowrap;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 #cardquant-body {
-  padding: 4px 20px 20px;
+  padding: 4px 14px 20px;
   flex: 1 1 auto;
 }
 
@@ -193,15 +221,172 @@
   margin: 0 0 12px;
 }
 
-#cardquant-body .cardquant-card-name {
-  font-weight: 700;
-  font-size: 14px;
-  margin: 0 0 2px;
-}
-#cardquant-body .cardquant-card-qualifier {
-  color: var(--cq-foreground-muted);
-  font-size: 11.5px;
+/* -- CTA "Ouvrir la fiche sur CardQuant" -- pill pleine, accent vert, même
+   position (juste sous le header) que la maquette d'origine. */
+.cardquant-open-card {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  height: 44px;
+  padding: 0 6px 0 4px;
   margin: 0 0 12px;
+  border-radius: 999px;
+  background: var(--cq-green);
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+.cardquant-open-card:hover {
+  filter: brightness(1.06);
+}
+.cardquant-open-card:active {
+  transform: scale(0.985);
+}
+.cardquant-open-card:focus-visible {
+  outline: 2px solid var(--cq-text-strong);
+  outline-offset: 2px;
+}
+.cardquant-open-card-badge {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: #000;
+  color: var(--cq-green);
+  display: grid;
+  place-items: center;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+.cardquant-open-card-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.cardquant-open-card-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #000;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cardquant-open-card-sub {
+  font-family: var(--cq-font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.08em;
+  color: rgba(0, 0, 0, 0.6);
+}
+.cardquant-open-card-arrow {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.12);
+  display: grid;
+  place-items: center;
+  color: #000;
+}
+
+/* -- Section identité de carte : photo + nom/badges + verdict ponctuel /
+   écart vs marché (cf. content.js::renderIdentityCard). */
+.cardquant-identity-card {
+  background: var(--cq-card-bg);
+  border: 1px solid var(--cq-ink-700);
+  border-radius: var(--cq-radius);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0 0 10px;
+}
+.cardquant-identity-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.cardquant-identity-info {
+  flex: 1;
+  min-width: 0;
+}
+.cardquant-card-name {
+  font-weight: 400;
+  font-size: 16px;
+  color: var(--cq-text-strong);
+  margin: 0 0 3px;
+  line-height: 1.2;
+}
+.cardquant-card-qualifier {
+  font-family: var(--cq-font-mono);
+  color: var(--cq-grey-400);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  margin: 0 0 8px;
+}
+.cardquant-set-badge {
+  font-size: 11px;
+  color: var(--cq-grey-400);
+  margin: 8px 0 0;
+}
+.cardquant-identity-photo {
+  flex: none;
+  width: 78px;
+  height: 102px;
+  border-radius: 6px;
+  overflow: hidden;
+  object-fit: cover;
+  border: 1px solid var(--cq-ink-700);
+  background: var(--cq-card-bg-alt);
+}
+.cardquant-identity-photo--empty {
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  color: var(--cq-grey-400);
+}
+.cardquant-identity-divider {
+  height: 1px;
+  background: var(--cq-ink-700);
+}
+.cardquant-identity-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cardquant-identity-footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cardquant-identity-footer-col--right {
+  align-items: flex-end;
+}
+.cardquant-identity-footer-label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cq-grey-400);
+}
+.cardquant-identity-verdict {
+  font-size: 21px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+.cardquant-identity-delta {
+  font-family: var(--cq-font-mono);
+  font-size: 13.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.cardquant-identity-delta-pct {
+  font-size: 11px;
 }
 
 /* -- Badges de métadonnées (langue, set, grade éditable). */
@@ -210,43 +395,66 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin: 0 0 16px;
 }
 .cardquant-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   font-size: 11px;
-  font-weight: 600;
-  padding: 4px 9px;
+  font-weight: 500;
+  height: 20px;
+  padding: 0 8px;
   border-radius: 999px;
-  background: var(--cq-tint-neutral);
-  color: var(--cq-foreground-muted);
+  border: 1px solid var(--cq-border-strong);
+  color: var(--cq-text-body);
   white-space: nowrap;
 }
 .cardquant-badge--sm {
   font-size: 10px;
-  padding: 2px 7px;
+  height: 18px;
+  padding: 0 6px;
+}
+.cardquant-badge--dot {
+  gap: 6px;
+}
+.cardquant-badge--dot::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--cq-green);
 }
 
 /* Grade éditable : select natif habillé en pill, crayon superposé --
    fallback utilisateur simple (cf. tcg-index-handoff.md §07) plutôt qu'un
    dropdown maison, pour rester robuste sur une page hôte qu'on ne
-   contrôle pas. */
+   contrôle pas. Teinte or (--cq-gold) quand un grade PSA est sélectionné --
+   même accent que GradeChip côté Terminal (web/components/cardquant/
+   market/GradeChip.tsx), "non gradée" reste neutre. */
 .cardquant-grade-wrap {
   position: relative;
   padding: 0;
-  background: color-mix(in srgb, var(--cq-foreground) 8%, transparent);
+  padding-right: 20px;
+  background: var(--cq-card-bg-alt);
+}
+.cardquant-grade-wrap[data-graded="true"] {
+  border-color: var(--cq-gold);
+  background: color-mix(in srgb, var(--cq-gold) 14%, transparent);
 }
 .cardquant-grade-select {
   all: unset;
+  position: absolute;
+  inset: 0;
   font-family: var(--cq-font-sans);
   font-size: 11px;
-  font-weight: 700;
-  color: var(--cq-foreground);
-  padding: 4px 22px 4px 9px;
+  font-weight: 600;
+  color: var(--cq-text-strong);
+  padding: 0 22px 0 9px;
   cursor: pointer;
   appearance: none;
+}
+.cardquant-grade-wrap[data-graded="true"] .cardquant-grade-select {
+  color: var(--cq-gold);
 }
 .cardquant-grade-pencil {
   position: absolute;
@@ -254,69 +462,15 @@
   top: 50%;
   transform: translateY(-50%);
   font-size: 10px;
-  color: var(--cq-foreground-subtle);
+  color: var(--cq-grey-400);
   pointer-events: none;
 }
 
-/* -- Verdict : pill tintée, même idiome que GradingRoiWidget.tsx côté site
-   (fond = accent à 15% d'opacité, texte = accent plein) plutôt qu'un
-   simple texte mono. */
-.cardquant-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--cq-font-sans);
-  font-size: 12.5px;
-  font-weight: 700;
-  padding: 5px 11px;
-  border-radius: 999px;
-  margin: 0 0 18px;
-}
-.cardquant-pill::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-}
-.cardquant-pill--green {
-  background: color-mix(in srgb, var(--cq-positive) 15%, transparent);
-  color: var(--cq-positive);
-}
-.cardquant-pill--yellow {
-  background: color-mix(in srgb, var(--cq-warn) 15%, transparent);
-  color: var(--cq-warn);
-}
-.cardquant-pill--red {
-  background: color-mix(in srgb, var(--cq-negative) 15%, transparent);
-  color: var(--cq-negative);
-}
-
-#cardquant-body dl {
-  margin: 0;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 7px 8px;
-  padding: 12px 0;
-  border-top: 1px solid var(--cq-border-soft);
-}
-#cardquant-body dt {
-  color: var(--cq-foreground-muted);
-  font-size: 12px;
-  align-self: center;
-}
-#cardquant-body dd {
-  margin: 0;
-  font-family: var(--cq-font-mono);
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
-/* -- Sections génériques (score, analyse de prix, liquidité, langue,
-   display) -- même rythme vertical partout, séparées par un filet fin. */
+/* -- Sections génériques (score, analyse de prix, display scellé, liens de
+   vérification) -- même rythme vertical, séparées par un filet fin. */
 .cardquant-section {
-  padding: 16px 0;
-  border-top: 1px solid var(--cq-border-soft);
+  padding: 14px 0;
+  border-top: 1px solid var(--cq-ink-700);
 }
 .cardquant-section:first-of-type {
   padding-top: 0;
@@ -324,10 +478,10 @@
 }
 .cardquant-section-title {
   font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.4px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--cq-foreground-subtle);
+  color: var(--cq-grey-400);
   margin: 0 0 10px;
 }
 .cardquant-section-header {
@@ -335,6 +489,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 8px;
+  margin: 0 0 10px;
 }
 .cardquant-section-header .cardquant-section-title {
   margin: 0;
@@ -344,55 +499,224 @@
   font-weight: 700;
 }
 
-/* -- Jauge d'opportunité : score 0-100 calculé côté serveur (cf.
-   pricing/opportunity_score.py) -- ce fichier ne fait que positionner un
-   curseur, jamais le calcul. État grisé/indéterminé si aucun prix de
-   référence n'est disponible (cf. renderGauge). */
-.cardquant-gauge {
-  position: relative;
-  height: 6px;
-  border-radius: 999px;
-  margin: 10px 0 6px;
-  background: linear-gradient(90deg, var(--cq-negative), var(--cq-warn), var(--cq-positive));
+/* -- Jauge d'opportunité : barre segmentée 14 pas + rampe de couleur
+   rouge -> ambre -> vert (cf. content.js::scoreRamp), même esprit que la
+   maquette "CardQuant Panel" mais reste "Score d'opportunité" (jamais
+   "Score structurel", cf. commentaire de renderGauge dans content.js). */
+.cardquant-gauge-score {
+  font-family: var(--cq-font-mono);
+  font-size: 13px;
+  font-weight: 600;
 }
-.cardquant-gauge--indeterminate {
-  background: var(--cq-tint-neutral);
+.cardquant-gauge-steps {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 16px;
+  margin: 0 0 6px;
 }
-.cardquant-gauge-cursor {
-  position: absolute;
-  top: 50%;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--cq-bg-to);
-  border: 2px solid var(--cq-foreground);
-  transform: translate(-50%, -50%);
-  box-shadow: 0 1px 3px rgba(15, 15, 20, 0.3);
+.cardquant-gauge-step {
+  flex: 1;
+  height: 10px;
+  border-radius: 2px;
+  align-self: flex-end;
+}
+.cardquant-gauge-step--head {
+  height: 16px;
 }
 .cardquant-gauge-scale {
   display: flex;
   justify-content: space-between;
   font-size: 10px;
-  color: var(--cq-foreground-subtle);
+  color: var(--cq-grey-400);
 }
 .cardquant-gauge-note {
   margin: 8px 0 0;
   font-size: 11px;
-  color: var(--cq-foreground-subtle);
+  color: var(--cq-grey-400);
 }
 
 .cardquant-muted-inline {
-  color: var(--cq-foreground-subtle);
+  color: var(--cq-grey-400);
   font-weight: 400;
 }
 
-/* "Analyse de prix" est déjà un .cardquant-section (filet + padding
-   propres) -- sans ceci, le <dl> générique (#cardquant-body dl plus haut)
-   ajoute son propre filet juste sous le titre de section, un doublon
-   visuel à quelques px du filet du haut de section. */
-.cardquant-analysis-list {
+/* -- Analyse de prix : ligne "Prix d'annonce" mise en avant (fond alt),
+   puis lignes plates -- cf. content.js::renderPriceAnalysis. */
+.cardquant-price-analysis {
+  padding: 0;
+  border: 1px solid var(--cq-ink-700);
+  border-radius: var(--cq-radius-sm);
+  margin: 0 0 10px;
+  overflow: hidden;
+}
+.cardquant-price-analysis .cardquant-section-title {
+  padding: 12px 14px 8px;
+  margin: 0;
+}
+.cardquant-price-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 14px;
+  border-top: 1px solid var(--cq-ink-700);
+  font-size: 12px;
+  color: var(--cq-text-body);
+}
+.cardquant-price-row--lead {
+  background: var(--cq-card-bg-alt);
+  font-weight: 600;
+  color: var(--cq-text-strong);
+}
+.cardquant-price-value {
+  font-family: var(--cq-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 12.5px;
+  color: var(--cq-text-strong);
+  white-space: nowrap;
+}
+.cardquant-price-source {
+  padding: 10px 14px 12px;
+  border-top: 1px solid var(--cq-ink-700);
+}
+
+/* -- Carte d'analyse : regroupe les rangées repliables (population,
+   liquidité, langue, ROI, divergence, positionnement, arbitrage) --
+   cf. content.js::renderAnalysisCard/renderRow. */
+.cardquant-analysis-card {
+  border: 1px solid var(--cq-ink-700);
+  border-radius: var(--cq-radius-sm);
+  overflow: hidden;
+  margin: 0 0 10px;
+}
+.cardquant-row {
+  border-top: 1px solid var(--cq-ink-700);
+}
+.cardquant-row:first-child {
   border-top: none;
-  padding-top: 0;
+}
+.cardquant-row-summary {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+.cardquant-row-summary:hover {
+  background: var(--cq-card-bg-alt);
+}
+.cardquant-row-summary:focus-visible {
+  outline: 2px solid var(--cq-grey-400);
+  outline-offset: -2px;
+}
+.cardquant-row-summary::-webkit-details-marker {
+  display: none;
+}
+.cardquant-icon {
+  display: block;
+}
+.cardquant-row-icon {
+  flex: none;
+  display: flex;
+  color: var(--cq-grey-400);
+}
+.cardquant-row-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--cq-text-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cardquant-row-preview {
+  flex: none;
+  font-family: var(--cq-font-mono);
+  font-size: 11px;
+  color: var(--cq-grey-400);
+  white-space: nowrap;
+}
+.cardquant-row-chevron {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid var(--cq-grey-400);
+  border-bottom: 1.5px solid var(--cq-grey-400);
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+.cardquant-row[open] > .cardquant-row-summary .cardquant-row-chevron {
+  transform: rotate(45deg);
+}
+.cardquant-row-body {
+  padding: 0 14px 14px;
+}
+
+/* -- Population par note (cf. content.js::renderPopulationRow) -- mêmes
+   couleurs de palier que web/components/cardquant/population/
+   GradeDistributionPanel.tsx (PSA10 vert, PSA9 vert clair, PSA8 blanc,
+   PSA7 gris, ≤6 gris foncé). */
+.cardquant-pop-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+.cardquant-pop-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cardquant-pop-bar-label {
+  flex: none;
+  width: 52px;
+  font-family: var(--cq-font-mono);
+  font-size: 10.5px;
+  color: var(--cq-text-strong);
+  white-space: nowrap;
+}
+.cardquant-pop-bar-track {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--cq-ink-700);
+  overflow: hidden;
+}
+.cardquant-pop-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+}
+.cardquant-pop-bar-value {
+  flex: none;
+  width: 40px;
+  text-align: right;
+  font-family: var(--cq-font-mono);
+  font-size: 10.5px;
+  color: var(--cq-grey-400);
+}
+.cardquant-pop-stats {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.cardquant-pop-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.cardquant-pop-stat-value {
+  font-family: var(--cq-font-mono);
+  font-size: 12px;
+  color: var(--cq-text-strong);
+}
+.cardquant-pop-stat-label {
+  font-size: 10px;
+  color: var(--cq-grey-400);
 }
 
 /* -- Liquidité : 2 compteurs + label déjà décidé côté serveur (cf.
@@ -402,29 +726,31 @@
 .cardquant-stat-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 10px;
+  margin: 0 0 10px;
 }
 .cardquant-stat {
   display: flex;
   flex-direction: column;
   gap: 2px;
   padding: 10px 12px;
-  border: 1px solid var(--cq-border-soft);
+  border: 1px solid var(--cq-ink-700);
   border-radius: var(--cq-radius-sm);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--cq-card-bg-alt);
 }
 .cardquant-stat-value {
   font-family: var(--cq-font-mono);
   font-variant-numeric: tabular-nums;
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--cq-text-strong);
 }
 .cardquant-stat-label {
   font-size: 10.5px;
-  color: var(--cq-foreground-muted);
+  color: var(--cq-grey-400);
 }
 .cardquant-liquidity-status {
-  margin: 10px 0 0;
+  margin: 0;
   font-size: 12px;
   font-weight: 600;
 }
@@ -435,22 +761,27 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  margin: 0 0 10px;
 }
 .cardquant-lang-row {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
-  border: 1px solid var(--cq-border-soft);
+  border: 1px solid var(--cq-ink-700);
   border-radius: var(--cq-radius-sm);
 }
 .cardquant-lang-row--current {
-  border-color: color-mix(in srgb, var(--cq-foreground) 25%, transparent);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--cq-border-strong);
+  background: var(--cq-card-bg-alt);
 }
 .cardquant-lang-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 12px;
   font-weight: 600;
+  color: var(--cq-text-strong);
 }
 .cardquant-lang-price {
   margin-left: auto;
@@ -460,15 +791,16 @@
   font-family: var(--cq-font-mono);
   font-variant-numeric: tabular-nums;
   font-size: 12px;
+  color: var(--cq-text-body);
 }
 .cardquant-lang-pct {
   font-size: 10.5px;
   font-weight: 700;
 }
 .cardquant-arbitrage-note {
-  margin: 10px 0 0;
+  margin: 0;
   font-size: 11.5px;
-  color: var(--cq-foreground-muted);
+  color: var(--cq-grey-400);
 }
 
 .cardquant-sealed-price {
@@ -477,12 +809,36 @@
   font-size: 16px;
   font-weight: 700;
   margin: 0;
+  color: var(--cq-text-strong);
+}
+
+#cardquant-body dl {
+  margin: 0 0 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 7px 8px;
+}
+#cardquant-body dt {
+  color: var(--cq-grey-400);
+  font-size: 12px;
+  align-self: center;
+}
+#cardquant-body dd {
+  margin: 0;
+  font-family: var(--cq-font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--cq-text-strong);
+}
+.cardquant-analysis-list {
+  border-top: none;
+  padding-top: 0;
 }
 
 /* -- ROI gradation (cf. lib/gradingRoi.js) : hypothèses éditables (grille
    compacte) + sortie recalculée en live à chaque frappe/changement (cf.
-   content.js::recomputeGroi) -- jamais un appel réseau, le calcul est
-   100% client. Même idiome de champ que .cardquant-arb-inputs ci-dessous. */
+   content.js::recomputeGroi). Même idiome de champ que
+   .cardquant-arb-inputs ci-dessous. */
 .cardquant-groi-assumptions,
 .cardquant-arb-inputs {
   display: grid;
@@ -499,7 +855,7 @@
   flex-direction: column;
   gap: 4px;
   font-size: 10.5px;
-  color: var(--cq-foreground-muted);
+  color: var(--cq-grey-400);
   font-weight: 600;
 }
 .cardquant-groi-assumptions select,
@@ -508,15 +864,15 @@
   font-family: var(--cq-font-mono);
   font-size: 12px;
   padding: 6px 8px;
-  border: 1px solid var(--cq-border-soft);
+  border: 1px solid var(--cq-ink-700);
   border-radius: var(--cq-radius-sm);
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--cq-foreground);
+  background: var(--cq-card-bg-alt);
+  color: var(--cq-text-strong);
 }
 .cardquant-groi-assumptions select:focus-visible,
 .cardquant-groi-assumptions input:focus-visible,
 .cardquant-arb-inputs input:focus-visible {
-  outline: 2px solid var(--cq-foreground-subtle);
+  outline: 2px solid var(--cq-grey-400);
   outline-offset: 1px;
 }
 .cardquant-groi-roi {
@@ -528,7 +884,7 @@
 }
 .cardquant-groi-source {
   font-size: 10.5px;
-  color: var(--cq-foreground-subtle);
+  color: var(--cq-grey-400);
   margin: 6px 0 10px;
 }
 .cardquant-groi-breakdown {
@@ -542,7 +898,8 @@
   gap: 8px;
   padding: 5px 0;
   font-size: 11.5px;
-  border-top: 1px solid var(--cq-border-soft);
+  border-top: 1px solid var(--cq-ink-700);
+  color: var(--cq-text-body);
 }
 .cardquant-groi-row:first-child {
   border-top: none;
@@ -550,9 +907,10 @@
 .cardquant-groi-row-label {
   font-weight: 600;
   min-width: 52px;
+  color: var(--cq-text-strong);
 }
 .cardquant-groi-row-prob {
-  color: var(--cq-foreground-subtle);
+  color: var(--cq-grey-400);
   font-family: var(--cq-font-mono);
   font-variant-numeric: tabular-nums;
 }
@@ -560,6 +918,7 @@
   margin-left: auto;
   font-family: var(--cq-font-mono);
   font-variant-numeric: tabular-nums;
+  color: var(--cq-text-strong);
 }
 
 /* -- Calculateur d'arbitrage (§07 handoff) : 3 saisies (achat/livraison/
@@ -569,6 +928,7 @@
 .cardquant-arb-ref {
   font-size: 12px;
   margin: 0 0 12px;
+  color: var(--cq-text-body);
 }
 .cardquant-arb-profit {
   font-family: var(--cq-font-mono);
@@ -578,94 +938,148 @@
   margin: 0;
 }
 
-/* -- CTA vers la fiche complète du site (/catalog/[id], cf. background.js
-   ::CARDQUANT_OPEN_CARD -- SITE_URL n'est connu que là-bas). */
-.cardquant-cta {
+/* -- Liens de double-vérification PriceCharting -- grille 2 colonnes, 1er
+   lien (langue de cette annonce) en avant (plein, vert), les langues
+   sœurs en contour -- même hiérarchie que la maquette "CardQuant Panel". */
+.cardquant-verify-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+.cardquant-verify-link {
   all: unset;
   box-sizing: border-box;
-  display: block;
-  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
   text-align: center;
-  margin: 4px 0;
-  padding: 11px 16px;
-  border-radius: var(--cq-radius-sm);
-  /* var(--cq-foreground) est désormais quasi-blanc (dark mode) : le CTA
-     plein se lit comme un bouton clair sur le fond sombre du panneau --
-     idiome courant en dark UI (pilule claire = action primaire) -- donc
-     le texte passe sombre plutôt que blanc, sinon invisible. */
-  background: var(--cq-foreground);
-  color: var(--cq-bg-to);
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--cq-border-strong);
+  color: var(--cq-text-body);
   font-family: var(--cq-font-sans);
-  font-size: 12.5px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: filter 0.15s ease;
-}
-.cardquant-cta:hover {
-  filter: brightness(1.15);
-}
-.cardquant-cta:focus-visible {
-  outline: 2px solid var(--cq-foreground);
-  outline-offset: 2px;
-}
-
-/* -- Lien de double-vérification CardMarket (cf. content.js::renderCardmarketLink)
-   -- contour plutôt que rempli, un cran en dessous de .cardquant-cta dans la
-   hiérarchie visuelle : action secondaire (vérifier ailleurs), pas l'action
-   principale (voir l'analyse complète sur le site). */
-.cardquant-cardmarket-link {
-  all: unset;
-  box-sizing: border-box;
-  display: block;
-  width: 100%;
-  text-align: center;
-  margin: 4px 0;
-  padding: 10px 16px;
-  border: 1px solid var(--cq-border);
-  border-radius: var(--cq-radius-sm);
-  color: var(--cq-foreground);
-  font-family: var(--cq-font-sans);
-  font-size: 12.5px;
-  font-weight: 700;
+  font-size: 11.5px;
+  font-weight: 600;
   cursor: pointer;
   transition: background 0.15s ease;
+  grid-column: span 1;
 }
-.cardquant-cardmarket-link:hover {
-  background: var(--cq-tint-neutral);
+.cardquant-verify-grid:has(.cardquant-verify-link:only-child) .cardquant-verify-link {
+  grid-column: span 2;
 }
-.cardquant-cardmarket-link:focus-visible {
-  outline: 2px solid var(--cq-foreground);
+.cardquant-verify-link:hover {
+  background: var(--cq-card-bg-alt);
+}
+.cardquant-verify-link:focus-visible {
+  outline: 2px solid var(--cq-text-strong);
   outline-offset: 2px;
 }
+.cardquant-verify-link--primary {
+  background: var(--cq-green);
+  border-color: var(--cq-green);
+  color: #000;
+}
+.cardquant-verify-link--primary:hover {
+  filter: brightness(1.05);
+  background: var(--cq-green);
+}
 
-/* -- Utilitaires de couleur : habillent des tons déjà décidés/fournis par
-   pricing_api (verdict, label de liquidité, sens de l'écart de prix entre
-   langues) -- ne réintroduisent aucun nouveau seuil ici. */
-.cardquant-positive { color: var(--cq-positive); }
-.cardquant-negative { color: var(--cq-negative); }
+/* -- Watchlist + "Noter l'achat" (portefeuille) -- rangée de 2 boutons,
+   cf. content.js::renderActionsRow. */
+.cardquant-actions-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin: 0 0 6px;
+}
+.cardquant-action-btn {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  height: 38px;
+  border: 1px solid var(--cq-border-strong);
+  border-radius: 999px;
+  color: var(--cq-text-body);
+  font-family: var(--cq-font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.cardquant-action-btn span:last-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cardquant-action-btn:hover:not(:disabled) {
+  background: var(--cq-card-bg-alt);
+}
+.cardquant-action-btn:focus-visible {
+  outline: 2px solid var(--cq-text-strong);
+  outline-offset: 2px;
+}
+.cardquant-action-btn:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.cardquant-action-btn--active {
+  background: color-mix(in srgb, var(--cq-green) 15%, transparent);
+  border-color: color-mix(in srgb, var(--cq-green) 45%, transparent);
+  color: var(--cq-green);
+}
+.cardquant-favorite-note,
+.cardquant-portfolio-note {
+  margin: 0 0 10px;
+  font-size: 11.5px;
+  color: var(--cq-warn);
+}
+
+/* -- Pied de panneau : disclaimer + déconnexion, cf.
+   content.js::renderFooter. */
+.cardquant-footer-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 0 4px;
+}
+.cardquant-footer-disclaimer {
+  flex: 1;
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: var(--cq-grey-400);
+}
+
+.cardquant-positive { color: var(--cq-up); }
+.cardquant-negative { color: var(--cq-down); }
 .cardquant-warn { color: var(--cq-warn); }
-.cardquant-muted { color: var(--cq-foreground-subtle); }
+.cardquant-muted { color: var(--cq-grey-400); }
 
 .cardquant-error {
-  background: color-mix(in srgb, var(--cq-negative) 8%, transparent);
-  border: 1px solid color-mix(in srgb, var(--cq-negative) 22%, transparent);
-  color: var(--cq-negative);
+  background: color-mix(in srgb, var(--cq-down) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cq-down) 25%, transparent);
+  color: var(--cq-down);
   padding: 10px 12px;
   border-radius: var(--cq-radius-sm);
   font-size: 12.5px;
 }
 
 .cardquant-todo {
-  color: var(--cq-foreground-subtle);
+  color: var(--cq-grey-400);
   font-size: 11px;
-  margin-top: 16px;
+  margin: 0;
 }
 
 /* -- Passage 2 (OCR sur la photo de l'annonce, cf. content.js::renderVerdict
    /requestVerdict) : bouton secondaire, contour plutôt que rempli --
-   distinct de .cardquant-cta (lien vers le site, plein) et .cardquant-signin
-   (action primaire), un cran en dessous des deux dans la hiérarchie
-   visuelle puisque c'est une tentative de repli, pas l'action attendue. */
+   distinct de .cardquant-signin (action primaire), un cran en dessous dans
+   la hiérarchie visuelle puisque c'est une tentative de repli, pas l'action
+   attendue. */
 .cardquant-try-image {
   all: unset;
   box-sizing: border-box;
@@ -674,9 +1088,9 @@
   text-align: center;
   margin: 4px 0 12px;
   padding: 10px 16px;
-  border: 1px solid var(--cq-border);
+  border: 1px solid var(--cq-border-strong);
   border-radius: var(--cq-radius-sm);
-  color: var(--cq-foreground);
+  color: var(--cq-text-strong);
   font-family: var(--cq-font-sans);
   font-size: 12.5px;
   font-weight: 700;
@@ -684,10 +1098,10 @@
   transition: background 0.15s ease;
 }
 .cardquant-try-image:hover {
-  background: var(--cq-tint-neutral);
+  background: var(--cq-card-bg-alt);
 }
 .cardquant-try-image:focus-visible {
-  outline: 2px solid var(--cq-foreground);
+  outline: 2px solid var(--cq-text-strong);
   outline-offset: 2px;
 }
 
@@ -709,29 +1123,24 @@
   align-items: center;
   gap: 10px;
   padding: 7px 10px;
-  border: 1px solid var(--cq-border-soft);
+  border: 1px solid var(--cq-ink-700);
   border-radius: var(--cq-radius-sm);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--cq-card-bg);
   cursor: pointer;
 }
 .cardquant-candidate:hover,
 .cardquant-candidate:focus-visible {
-  border-color: var(--cq-border);
-  background: rgba(255, 255, 255, 0.10);
+  border-color: var(--cq-border-strong);
+  background: var(--cq-card-bg-alt);
 }
 .cardquant-candidate:focus-visible {
-  outline: 2px solid var(--cq-foreground-subtle);
+  outline: 2px solid var(--cq-grey-400);
   outline-offset: 1px;
 }
-/* Tuile photo claire, fixe (PAS var(--cq-tint-neutral)) -- décision dark
-   mode (2026-08-23) : les vignettes viennent de scans PriceCharting
-   recadrés à ras bord, avec leur propre fond d'illustration (parfois
-   sombre/saturé, cf. exemplaire vérifié -- violet/rose plein cadre). Sans
-   fond clair fixe derrière, chaque miniature détonerait différemment
-   selon la carte. Un fond clair uniforme = lecture "carte photo"
-   volontaire, cohérente quelle que soit l'image -- même idiome que
-   prévu pour les futures images produit scellé (fond blanc studio) côté
-   web/, pour une seule et même règle de traitement des deux. */
+/* Tuile photo claire, fixe -- les vignettes viennent de scans
+   PriceCharting recadrés à ras bord, avec leur propre fond d'illustration
+   (parfois sombre/saturé) : un fond clair uniforme derrière = lecture
+   "carte photo" cohérente quelle que soit l'image. */
 .cardquant-candidate-thumb {
   flex: none;
   width: 34px;
@@ -739,29 +1148,55 @@
   border-radius: 6px;
   object-fit: cover;
   background: #F2F3F5;
-  border: 1px solid rgba(15, 15, 20, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 .cardquant-candidate-thumb--empty {
-  border: 1px dashed rgba(15, 15, 20, 0.25);
+  border: 1px dashed rgba(255, 255, 255, 0.25);
 }
+/* Repère de langue (JP/EN/FR) -- mini-drapeau SVG pixel art (grille 21x14,
+   cf. content.js::LANGUAGE_FLAG_SVG) : chaque rect a une classe couleur
+   (cq-w/cq-r/cq-b/cq-navy) plutôt qu'un fill= répété, cohérent avec le
+   reste du fichier. shape-rendering: crispEdges garde les bords nets à
+   cette taille. */
+.cardquant-candidate-flag {
+  flex: none;
+  display: inline-flex;
+}
+.cardquant-flag {
+  flex: none;
+  width: 20px;
+  height: 13px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+  shape-rendering: crispEdges;
+}
+.cardquant-flag--fr .cq-b { fill: #0055A4; }
+.cardquant-flag--fr .cq-w { fill: #FFFFFF; }
+.cardquant-flag--fr .cq-r { fill: #EF4135; }
+.cardquant-flag--jp .cq-w { fill: #FFFFFF; }
+.cardquant-flag--jp .cq-r { fill: #BC002D; }
+.cardquant-flag--en .cq-navy { fill: #012169; }
+.cardquant-flag--en .cq-w { fill: #FFFFFF; }
+.cardquant-flag--en .cq-r { fill: #C8102E; }
 .cardquant-candidate-info {
   min-width: 0; /* laisse cardquant-candidate-name tronquer plutôt que déborder */
 }
 .cardquant-candidate-name {
   font-weight: 600;
   font-size: 12.5px;
+  color: var(--cq-text-strong);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .cardquant-candidate-meta {
-  color: var(--cq-foreground-muted);
+  color: var(--cq-grey-400);
   font-family: var(--cq-font-mono);
   font-size: 11px;
   margin-top: 2px;
 }
 .cardquant-candidate-more {
-  color: var(--cq-foreground-subtle);
+  color: var(--cq-grey-400);
   font-size: 11.5px;
   margin: 0 0 12px;
 }
@@ -799,9 +1234,9 @@
   align-items: center;
   margin-top: 14px;
   padding: 9px 16px;
-  border-radius: 999px; /* cf. .pill-ink côté site */
-  background: var(--cq-foreground);
-  color: var(--cq-bg-to); /* même correctif que .cardquant-cta -- fond désormais clair en dark mode */
+  border-radius: 999px;
+  background: var(--cq-text-strong);
+  color: #000;
   font-size: 12.5px;
   font-weight: 700;
   transition: filter 0.15s ease;
@@ -810,19 +1245,20 @@
   filter: brightness(1.15);
 }
 #cardquant-body .cardquant-signout {
+  flex: none;
   display: inline-block;
-  margin-top: 18px;
-  color: var(--cq-foreground-subtle);
+  color: var(--cq-grey-400);
   font-size: 11px;
   text-decoration: underline;
   text-underline-offset: 2px;
+  white-space: nowrap;
 }
 #cardquant-body .cardquant-signout:hover {
-  color: var(--cq-foreground-muted);
+  color: var(--cq-text-body);
 }
 #cardquant-body .cardquant-signin:focus-visible,
 #cardquant-body .cardquant-signout:focus-visible {
-  outline: 2px solid var(--cq-foreground);
+  outline: 2px solid var(--cq-text-strong);
   outline-offset: 2px;
   border-radius: 4px;
 }

@@ -1,5 +1,6 @@
 import { type FirebaseApp, getApp, getApps, initializeApp } from "firebase/app";
 import { type Auth, getAuth } from "firebase/auth";
+import { type Firestore, getFirestore } from "firebase/firestore";
 
 // Config publique du projet Firebase cardquant-tcg (apiKey/authDomain/
 // projectId) -- même triplet que l'extension navigateur
@@ -17,3 +18,7 @@ const firebaseConfig = {
 // pattern globalThis ici.
 export const firebaseApp: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 export const auth: Auth = getAuth(firebaseApp);
+// Profil CardQuant (pseudo, tag réseau, jeu suivi...) -- cf. lib/profileApi.ts.
+// Pas de Storage ici : la carte fétiche de l'inscription reste un aperçu
+// local pour l'instant (cf. mémoire projet "cardquant-rebrand", passe Auth).
+export const db: Firestore = getFirestore(firebaseApp);

@@ -2,6 +2,8 @@
 snake_case, cohérent avec le contrat JSON déjà observé côté
 web/app/api/*/route.ts (ex. item_id, grade).
 """
+from datetime import date
+
 from pydantic import BaseModel, field_validator
 
 from pricing.models import KNOWN_GRADES
@@ -65,12 +67,14 @@ class SourcePriceOut(BaseModel):
 
 
 class SalesStatsOut(BaseModel):
-    """Moy. 3 / moy. 10 dernières ventes -- cf. pricing/sales_stats.py.
-    sample_size_* < 3/10 signale une moyenne partielle (peu de ventes
-    connues), à afficher tel quel plutôt que masqué."""
-    avg_last_3: float | None
+    """Médiane récente (fenêtre adaptative 3-5 ventes) / moy. 10 dernières
+    ventes -- cf. pricing/sales_stats.py. sample_size_recent varie entre 0
+    et 5 selon la densité temporelle des ventes disponibles (jamais masqué
+    à l'appelant, cf. docstring de compute_sales_stats) ; sample_size_10 < 10
+    signale une moyenne partielle (peu de ventes connues)."""
+    median_recent: float | None
     avg_last_10: float | None
-    sample_size_3: int
+    sample_size_recent: int
     sample_size_10: int
     currency: str | None  # None si aucune vente exploitable
 
@@ -93,11 +97,72 @@ class LanguageComparisonOut(BaseModel):
     price: float | None  # None si aucun prix connu pour cette langue (pas d'équivalent trouvé)
     currency: str | None
     is_current_listing: bool  # true pour la ligne de l'annonce affichée
+    # Page produit PriceCharting pour CETTE langue -- None si pas résolue
+    # (set non mappé, scraping en échec...). Alimente le bouton "Voir la
+    # version <langue>" du panneau extension, cf. shared/verdict.py::
+    # _build_language_comparison -- jamais un lien de recherche deviné.
+    url: str | None = None
 
 
 class SealedDisplayPriceOut(BaseModel):
     price: float
     currency: str
+
+
+class FavoriteOut(BaseModel):
+    """Une carte favorite -- mêmes champs d'affichage que CardCandidateOut
+    (picker/watchlist cohérents), sans `confidence` : un favori est déjà
+    une identité confirmée, pas un candidat à départager.
+
+    current_price/current_currency ajoutés pour l'écran Watchlist CardQuant
+    (cf. mémoire projet "cardquant-rebrand") -- prix brut (ungraded) le plus
+    récent connu, même source que _position_out du portefeuille
+    (fetch_latest_price_snapshot). None si jamais snapshotté à ce grade."""
+    card_id: int
+    name: str
+    code: str | None
+    set_code: str | None
+    rarity: str | None
+    language: str  # 'EN' | 'JP' | 'FR' -- porte la langue suivie (cf. pricing/favorites.py)
+    image_url: str | None = None
+    set_name: str | None = None
+    set_release_year: int | None = None
+    current_price: float | None = None
+    current_currency: str | None = None
+
+
+class FavoritesListResponse(BaseModel):
+    favorites: list[FavoriteOut]
+    # FREE_FAVORITES_LIMIT (cf. pricing/favorites.py), ou -1 si is_premium
+    # (illimité) -- évite à l'appelant de dupliquer la constante pour
+    # afficher "2/3 favoris".
+    limit: int
+    is_premium: bool
+
+
+class FavoriteStatusResponse(BaseModel):
+    """Statut favori d'UNE carte -- panneau extension (cf. content.js::
+    refreshFavoriteStatus), interrogé juste après une carte identifiée par
+    /verdict, pour ne jamais recharger la liste entière (FREE_FAVORITES_LIMIT
+    reste petit, mais pas de raison de payer un GET /favorites complet pour
+    savoir l'état d'une seule carte)."""
+    is_favorited: bool
+    count: int  # nb de favoris actuels de l'utilisateur -- alimente l'affichage "2/3"
+    limit: int  # FREE_FAVORITES_LIMIT, ou -1 si is_premium (illimité)
+    is_premium: bool
+
+
+class FavoriteAddRequest(BaseModel):
+    item_id: int
+
+
+class FavoriteAddResponse(BaseModel):
+    status: str  # 'added' | 'already_favorited'
+    favorite: FavoriteOut
+
+
+class FavoriteRemoveResponse(BaseModel):
+    status: str  # 'removed' | 'not_favorited'
 
 
 class GradingRoiInputsOut(BaseModel):
@@ -108,6 +173,36 @@ class GradingRoiInputsOut(BaseModel):
     ungraded_price: float
     grade_prices: dict[str, float]  # seuls les grades avec un prix connu
     grade_counts: dict[str, dict[str, int]]  # 'card'|'set_rarity'|'set'|'tcg' -> {grade: count}
+
+
+class PopulationSignalOut(BaseModel):
+    """cf. shared/verdict.py::PopulationSignal."""
+    captured_at: date
+    grade10: int
+    grade9: int
+    grade8: int
+    grade7: int
+    grade6: int
+    total: int
+    gem_rate_pct: float | None
+    grade10_delta_30d: int | None
+    premium_10_9: float | None
+
+
+class VolumeDivergenceOut(BaseModel):
+    """cf. shared/verdict.py::VolumeDivergenceSignal."""
+    recent_sales: int
+    prior_sales: int
+    volume_delta_pct: float | None
+    recent_median_price: float | None
+    prior_median_price: float | None
+    price_delta_pct: float | None
+
+
+class SetPositionOut(BaseModel):
+    """cf. shared/verdict.py::SetPositionSignal."""
+    rank: int
+    total: int
 
 
 class VerdictResponse(BaseModel):
@@ -123,12 +218,107 @@ class VerdictResponse(BaseModel):
 
     # Signaux étendus (maquette panneau v2) -- tous None/vides si la carte
     # n'a pas pu être identifiée (status != 'ok' et != 'no_reference_price').
-    # opportunity_score reste None même carte identifiée si aucune source de
-    # prix n'a répondu (status='no_reference_price') : jamais deviné sans
-    # prix de référence, cf. shared/verdict.py::compute_extended_signals.
+    # opportunity_score compare le prix affiché à la moy. des ventes
+    # récentes en priorité (repli sur reference_price PriceCharting
+    # seulement si aucune vente récente n'est connue, cf.
+    # shared/verdict.py::compute_extended_signals) -- reste None seulement si
+    # NI l'un NI l'autre signal n'est disponible : jamais deviné sans aucun
+    # prix de référence.
     opportunity_score: int | None = None
     sales_stats: SalesStatsOut | None = None
     liquidity: LiquidityOut | None = None
     language_comparison: list[LanguageComparisonOut] = []
     sealed_display_price: SealedDisplayPriceOut | None = None
     grading_roi_inputs: GradingRoiInputsOut | None = None
+    # Panneau extension "v3" (cf. mémoire projet "cardquant-rebrand") --
+    # mêmes garanties "None si non identifiée" que les signaux ci-dessus.
+    population: PopulationSignalOut | None = None
+    volume_divergence: VolumeDivergenceOut | None = None
+    set_position: SetPositionOut | None = None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Portefeuille personnel (écran PnL CardQuant, cf. mémoire projet
+# "cardquant-rebrand") -- cf. pricing/portfolio.py pour le CRUD, ce fichier
+# ne porte que la forme JSON.
+# ─────────────────────────────────────────────────────────────────────────────
+
+class PortfolioPositionOut(BaseModel):
+    id: int
+    item_id: int
+    name: str
+    code: str | None
+    set_code: str | None
+    tcg: str
+    language: str
+    rarity: str | None
+    image_url: str | None = None
+    grade: str
+    quantity: int
+    buy_price: float
+    buy_currency: str
+    buy_date: date
+    sell_price: float | None
+    sell_currency: str | None
+    sell_date: date | None
+    note: str | None
+    status: str  # 'open' | 'closed'
+    # Prix marché le plus récent connu à `grade` -- None si jamais snapshotté
+    # (cf. pricing/repository.py::fetch_latest_price_snapshot). Toujours
+    # renseigné même pour une position fermée (affichage "et aujourd'hui ?"),
+    # le P/V réalisé lui reste basé sur sell_price, pas sur ce champ.
+    current_price: float | None = None
+    current_currency: str | None = None
+
+
+class PortfolioListResponse(BaseModel):
+    positions: list[PortfolioPositionOut]
+
+
+class PortfolioAddRequest(BaseModel):
+    item_id: int
+    grade: str = "ungraded"
+    quantity: int = 1
+    buy_price: float
+    buy_currency: str = "EUR"
+    buy_date: date
+    note: str | None = None
+
+    @field_validator("grade")
+    @classmethod
+    def _validate_grade(cls, v: str) -> str:
+        if v not in KNOWN_GRADES:
+            raise ValueError(f"grade doit être l'un de {sorted(KNOWN_GRADES)}")
+        return v
+
+    @field_validator("quantity")
+    @classmethod
+    def _validate_quantity(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("quantity doit être >= 1")
+        return v
+
+
+class PortfolioAddResponse(BaseModel):
+    position: PortfolioPositionOut
+
+
+class PortfolioUpdateRequest(BaseModel):
+    """Édition partielle -- tous les champs sont optionnels, seuls ceux
+    fournis sont modifiés (cf. pricing/portfolio.py::update_position).
+    `clear_sale=True` rouvre une position close, ignore les autres champs de
+    vente s'ils sont fournis en même temps (correction d'erreur de saisie,
+    pas une revente + réouverture simultanées)."""
+    sell_price: float | None = None
+    sell_currency: str | None = None
+    sell_date: date | None = None
+    note: str | None = None
+    clear_sale: bool = False
+
+
+class PortfolioUpdateResponse(BaseModel):
+    position: PortfolioPositionOut
+
+
+class PortfolioDeleteResponse(BaseModel):
+    status: str  # 'removed' | 'not_found'

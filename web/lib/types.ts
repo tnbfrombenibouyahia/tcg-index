@@ -370,3 +370,32 @@ export interface ItemDetail extends ItemSummary {
   liquidity: LiquidityCalc | null;
   population: PopulationCalc | null;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Agrégats dédiés au Dashboard CardQuant (cf. lib/queries/dashboardOverview.ts
+// et mémoire projet "cardquant-rebrand") -- pas de champ `name`/`setName` :
+// items.set_code n'a pas de nom humain lisible en base (cf. db/schema.sql),
+// seul le code brut (ex. "SWSH7") existe. Ne pas inventer un libellé --
+// afficher le code seul jusqu'à ce qu'une table de référence des sets existe.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface SetHeatmapRow {
+  tcg: Tcg;
+  setCode: string;
+  salesCount: number;
+  salesValue: number;
+  priceChangePct: number;
+}
+
+export interface MonthlySalesPoint {
+  tcg: Tcg;
+  month: string; // "YYYY-MM"
+  salesCount: number;
+}
+
+export interface PopulationBySetRow {
+  tcg: Tcg;
+  setCode: string;
+  popTotal: number;
+  gemRatePct: number; // pop_grade10 / pop_total * 100
+}

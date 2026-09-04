@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Manrope, IBM_Plex_Mono } from "next/font/google";
+import { Manrope, Outfit, IBM_Plex_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { getUniverse } from "@/lib/universe";
@@ -9,6 +9,17 @@ const manrope = Manrope({
   variable: "--font-manrope",
   subsets: ["latin"],
   weight: ["500", "600", "700", "800"],
+});
+
+// Typeface du design CardQuant/Slabline (cf. mémoire projet
+// "cardquant-rebrand") -- coexiste avec Manrope tant que tout le site n'est
+// pas migré : chaque écran choisit sa police via --font-core (ancien
+// système) ou les tokens styles/cardquant/tokens/typography.css (nouveau),
+// jamais les deux en même temps sur un même écran.
+const outfit = Outfit({
+  variable: "--font-outfit",
+  subsets: ["latin"],
+  weight: ["200", "300", "400", "500", "600", "700"],
 });
 
 const ibmPlexMono = IBM_Plex_Mono({
@@ -48,7 +59,7 @@ export default async function RootLayout({
     <html
       lang={locale}
       data-universe={universe}
-      className={`${manrope.variable} ${ibmPlexMono.variable} h-full antialiased`}
+      className={`${manrope.variable} ${outfit.variable} ${ibmPlexMono.variable} h-full antialiased`}
     >
       <body className="min-h-full text-foreground">
         <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>

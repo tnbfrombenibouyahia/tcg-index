@@ -6,7 +6,7 @@ Stack : Cloud SQL (Postgres) · Cloud Run Jobs + Cloud Scheduler · Firebase (Au
 01 — Le produit
 L'extension est le produit principal, consulté en direct sur une annonce ; le site est la couche d'analyse avancée derrière un compte.
 
-Extension navigateur — verdict en direct sur une annonce. Panneau latéral coulissant (type MetaMask, pas un popup classique) : identifie la carte (image ou titre), affiche dernières transactions, liquidité, ventes en cours, prix moyen EN/JP, score d'opportunité, ROI gradation, calculateur d'arbitrage, liens directs vers les annonces trouvées et un bouton "plus d'informations" vers le site. Compte requis avant toute utilisation.
+Extension navigateur — verdict en direct sur une annonce. Panneau latéral coulissant (type MetaMask, pas un popup classique) : identifie la carte (image ou titre), affiche dernières transactions, liquidité, ventes en cours, prix moyen EN/JP, score d'opportunité, ROI gradation, calculateur d'arbitrage, lien de double-vérification PriceCharting. Compte requis avant toute utilisation.
 
 Site — couche premium, analyse quantitative type Bloomberg. Connexion pour débloquer l'extension (si techniquement possible), cartes/sets à suivre, sous-cote/surcote structurelle, analyse plus poussée que l'extension seule.
 
@@ -63,14 +63,23 @@ eBay Browse API	Listings actifs — supply/pression vendeuse	API REST · OAuth2	
 LimitlessTCG · Bulbapedia · TCGdex	Backfill de la rareté	scraping · API MediaWiki	cadence alignée sur le référentiel mensuel
 Google Cloud Vision	OCR — identification carte par image	API REST	palier gratuit 1000 unités/mois — à la demande
 Vinted	Même rôle que eBay (profondeur de marché)	—	mis de côté pour l'instant, décision explicite
-Jobs et horaires
-Job	Portée	Cadence	Charge dominante
-Prix EN + JP	Tout le catalogue	chaque nuit, 02:00	1 requête/set — ~226 sets, moins de 90 min
-Listings actifs eBay	Tout le catalogue scellé, pool commun aux deux TCG	chaque nuit, 03:30, par tranche tournante	2 requêtes/item — tranches sous quota
-Référentiel + rareté	Tout le catalogue	le 1er du mois, 04:30	contraint par le quota apitcg
-Fuseau : Europe/Paris, déclaré directement à Cloud Scheduler (pas de calcul de décalage été/hiver à faire à la main).
+Jobs et horaires (état réel vérifié le 2026-08-26 via `gcloud scheduler jobs list` / `gcloud run jobs describe` — cf. note de migration en fin de section, la table ci-dessous remplace une version antérieure qui décrivait encore 3 jobs génériques ; calendrier de `population-monthly` mis à jour le 2026-08-27, cf. note en fin de section)
+Cloud Scheduler (cron, UTC)	Cloud Run Job	Portée	Charge dominante
+daily-sync · 01:17	ingestion-daily	Prix ungraded, tout le catalogue EN+JP	1 requête/set — ~226 sets
+tiered-hot/recent/established/vintage/jp-singles · 5 horaires 03:05–04:13	ingestion-tiered (job unique, args `--tier <palier>` overridés par requête Scheduler)	Gradation PSA + ventes, par palier d'âge (rotation)	1 requête/carte, sous quota par tranche
+ebay-listings · jeudi 04:05	ingestion-ebay-listings	Listings actifs scellé, pool commun EN+JP	2 requêtes/item — tranches sous quota
+items-monthly · le 3, 02:00	ingestion-items	Référentiel complet (apitcg)	contraint par le quota apitcg (1000 req/mois)
+rarity-backfill-weekly · vendredi 03:19	ingestion-rarity-backfill	Backfill rareté (LimitlessTCG/Bulbapedia)	cadence hebdomadaire
+population-monthly (id inchangé, cadence hebdo depuis le 27/08) · mercredi 02:27	ingestion-population	Population PSA+CGC (miroir PriceCharting), tout le catalogue mappé	1 requête/set — ~234 sets EN + ~429 sets JP, ~50 min
+Fuseau : UTC directement sur Cloud Scheduler (corrigé ici — cette section indiquait auparavant Europe/Paris, jamais le cas en pratique).
 
-Pourquoi 02:00 puis 03:30, pas plus serré : le job Prix a un budget de jusqu'à 90 min — démarrer eBay à 03:30 laisse la marge complète avant de toucher les mêmes tables d'agrégats. Le vrai filet reste le concurrency: group partagé (§02), pas le calage horaire seul : un soir où Prix déborde, la 2ᵉ run attend en file plutôt que d'écrire en parallèle. Cloud Scheduler n'a pas de file d'attente mutualisée entre projets comme un scheduler communautaire — pas besoin de choisir une minute non ronde pour éviter un engorgement à l'heure pile.
+Pourquoi daily-sync avant les tiered : le job Prix a un budget de plusieurs dizaines de minutes — décaler les tiered/eBay après laisse la marge avant de toucher les mêmes tables d'agrégats. Le vrai filet reste `ingestion_writer_lock` (pg_advisory_lock, §02), pas le calage horaire seul : un soir où un job déborde, le suivant attend en file plutôt que d'écrire en parallèle.
+
+Migration Cloud Scheduler + Cloud Run Jobs (2026-08-16) et nettoyage (2026-08-26) : les 6 jobs ci-dessus ont remplacé les 6 workflows `.github/workflows/*.yml` (daily-sync, tiered-sync, ebay-listings-sync, monthly-items-sync, monthly-population-sync, rarity-backfill-sync) le 16 août. Ces fichiers sont restés dans le repo, toujours déclenchés par GitHub, jusqu'au 26 août -- constaté ce jour-là : ils échouaient silencieusement depuis la migration, leur secret `DATABASE_URL` GitHub pointant encore vers l'ancien cluster CockroachDB (`tcg-index-prod-31243...cockroachlabs.cloud`), lui-même désactivé pour dépassement de quota Request Units. Supprimés le 26 août -- Cloud Scheduler est désormais l'unique déclencheur.
+
+Population PSA+CGC opérationnelle depuis le 27 août (`population_snapshots` : 39 558 lignes, 663/663 sets EN+JP couverts). La première exécution manuelle le 26 août avait échoué au bout de 30 min -- pas un souci d'outillage local comme supposé dans une note précédente, mais le `timeoutSeconds` du job Cloud Run (1800s, valeur par défaut jamais ajustée à la création le 16 août) trop court face au volume réel : 663 sets à ~2s/requête minimum (throttle anti-détection, cf. `MIN_SECONDS_BETWEEN_REQUESTS` dans `pricecharting.py`) demandent ~50-65 min. Corrigé le 27 août (`gcloud run jobs update ingestion-population --region=europe-west3 --task-timeout=7200s`, aligné sur `ingestion-daily`), puis rejoué avec succès en 47min30s.
+
+Cadence passée de mensuelle à hebdomadaire le même jour (`gcloud scheduler jobs update http population-monthly --schedule="27 2 * * 3"`, id Scheduler inchangé par simplicité) : le recensement source lui-même n'est mis à jour que mensuellement par PriceCharting (`orchestrator.py:385`, "population census updated monthly"), donc l'hebdo n'apporte rien de neuf la plupart des semaines -- le seul vrai gain est d'absorber un nouveau mapping de set en au plus 7 jours plutôt que 30, pour un surcoût de charge de scraping jugé acceptable (cadence hebdo déjà précédent avec `rarity-backfill-weekly`). Un daily aurait quadruplé la charge nocturne sur un site sans API pour zéro donnée neuve 29 jours sur 30 -- explicitement écarté.
 
 Pourquoi une rotation par item, pas une alternance par jeu : Pokémon scellé seul (4 737 items, tous âges) demande 9 474 requêtes — plus que le quota quotidien (5000), même sur une journée entièrement dédiée. One Piece (EN+JP, 627 items+) tient seul en ~1 254+ requêtes et gâcherait le reste d'une journée réservée. La bonne maille est l'item, pas le TCG : pool commun Pokémon + One Piece découpé en tranches tournantes, choisies par date.today().toordinal() // 7 % N — sans état stocké. ~5 tranches de ~1150 items (2300 requêtes/nuit, large marge sous 5000) : chaque nuit touche un peu des deux TCG, cycle complet tous les 5 jours, marge prête pour Vinted plus tard sans retoucher le découpage.
 
@@ -83,7 +92,7 @@ Service	Rôle	Palier gratuit	Coût réel estimé
 Cloud SQL (PostgreSQL)	Base de données — db-f1-micro	aucun palier gratuit	~12-14€/mois (compute + 10 Go, europe-west3)
 Cloud Run Jobs	Batch nightly (prix + eBay) + job mensuel	240 000 vCPU-s + 450 000 GiB-s/mois	0€
 Cloud Run (service)	Gradation/ventes à la demande — pricing_api	2M requêtes + 180 000 vCPU-s/mois	0€ à cette échelle
-Cloud Scheduler	Déclenche les 3 jobs	3 jobs gratuits/mois/compte	0€ — exactement 3 jobs
+Cloud Scheduler	Déclenche les 6 Cloud Run Jobs (10 déclencheurs cron, cf. §04 -- tiered en a 5 vers le même job)	3 jobs gratuits/mois/compte, ~0,10$/job/mois au-delà	~0,70$/mois (10 déclencheurs, 3 gratuits) -- corrigé le 2026-08-26, cette ligne annonçait encore "exactement 3 jobs"
 Secret Manager	DATABASE_URL, clés apitcg/eBay	6 versions actives gratuites	0€
 Artifact Registry + Cloud Build	Images de conteneur	paliers gratuits	0€
 Cloud Logging	Observabilité des jobs	50 Go/mois gratuits	0€
@@ -300,14 +309,33 @@ Cinq signaux, verrouillés avant d'écrire le SQL, pas après.
 
 A — Verdict ponctuel (extension)
 
-ratio = prix_affiché / prix_de_référence
-prix_de_référence = médiane des ventes récentes comparables. < 0.85 vert (bonne affaire) · 0.85–1.15 jaune (prix normal) · > 1.15 rouge (survendu). Seuils calibrés et validés en conditions réelles — configurables (.env), pas à retuner sans donnée contraire.
+Pastille vert/jaune/rouge : ratio = prix_affiché / prix_de_référence
+prix_de_référence = médiane des cotations PriceCharting (seule source de référence branchée en MVP). < 0.85 vert (bonne affaire) · 0.85–1.15 jaune (prix normal) · > 1.15 rouge (survendu). Seuils calibrés et validés en conditions réelles — configurables (.env), pas à retuner sans donnée contraire.
+
+Score d'opportunité (jauge 0-100 du panneau, signal continu distinct de la pastille ci-dessus) : combine trois composantes pondérées — prix (60%), liquidité (25%), confiance d'identification (15%). La composante prix compare prix_affiché à la médiane des ventes réellement conclues les plus récentes (repli sur la moyenne des 10 dernières, puis sur prix_de_référence PriceCharting en tout dernier recours si aucune vente récente n'est connue) — jamais à prix_de_référence seul, pour ne pas afficher "Bonne affaire" sur un prix supérieur à ce qui s'est réellement vendu récemment.
+
+Médiane plutôt que moyenne des 3 dernières ventes (corrigé le 2026-08-28) : une moyenne arithmétique sur 3 valeurs se fait fausser en entier par une seule vente mal classée par la source (ex. carte `item_id=73783`, Roronoa Zoro OP06-118 [Alternate Art Manga] — une vente à $30,64 mêlée à des ventes à $1475/$1750 faussait le score de -33% environ) ; mesuré sur toute la table `sales`, ~15% des couples (carte, grade) ont au moins une vente à >5x d'écart dans leurs 3 dernières. Fenêtre adaptative de 3 à 5 ventes : étendue à 4/5 ventes SEULEMENT si elles restent à ≤180 jours de la 3e (l'ancre, pas "aujourd'hui") — au-delà, la vente supplémentaire n'est plus un point de "maintenant" mais une vraie tendance de marché sur une carte peu liquide, que mélanger au signal récent biaiserait plutôt que de le robustifier. Validé contre `price_snapshots` (référence indépendante, pas dérivée de `sales`) : médiane-5 bat médiane-3 sous 180j d'écart, mais perd nettement au-delà (13,7% d'écart moyen à la référence pour médiane-3 vs 22,2% pour médiane-5 sur les groupes à ventes espacées de plus d'un an). Détail dans `pricing/sales_stats.py`.
 
 B — Score structurel (site, sous-cote/surcote persistante)
 
 score = valeur_théorique / prix_marché
 valeur_théorique = pull_cost × character_multiplier × collector_factor × demand_factor
 pull_cost = prix_du_pack × (1/taux_de_pull), taux_de_pull dérivé du nombre de cartes de cette rareté dans le set. collector_factor et demand_factor fixés à 1.0 en MVP — non modélisés, pas bloquant pour démarrer, à affiner avec un vrai signal de demande plus tard. Score > 1 = carte sous-cotée.
+
+C — Score de valeur relative (site, sous-évaluation PAR COMPARAISON AUX PAIRS, construit 2026-08-30)
+
+Complémentaire au signal B, pas un remplacement (`index/relative_value.py`) : B compare chaque carte à sa propre valeur théorique dérivée du prix du Booster Box — ne voit jamais deux cartes entre elles, et doit skipper tout un set sans Booster Box mappé. C compare directement une carte à ses pairs (même set, même rareté, même langue) — aucune dépendance à `sealed_ev`, note aussi les sets que B doit exclure.
+
+normalized_price = market_price / character_multiplier (le pull_cost théorique est constant au sein d'un groupe de pairs — même set/rareté/langue → même taux de pull — donc sous le modèle théorique de B, la seule variation "expliquée" restante est character_multiplier ; diviser par ce multiplicateur retire cet effet).
+relative_value_score = médiane leave-one-out des normalized_price du groupe (exclut la carte notée elle-même) / normalized_price de la carte. Score > 1 = sous ses pairs, popularité de personnage prise en compte.
+
+Groupe de pairs : (tcg, set_code, language, rarity, qualifier_bucket) — le dernier champ n'était pas prévu au départ, ajouté après un 1er dry-run réel qui a exposé le vrai piège : (set, rareté) seul mélange des variantes au libellé de rareté brut identique mais au marché incomparable (ex. "Nico Robin [SP]" à $486 et "Nico Robin (055) (Alternate Art)" à $50, toutes deux `rarity='Super Rare'`). `qualifier_bucket` réutilise le motif d'extraction déjà en place ailleurs dans ce repo (`pricing/repository.py::_qualifier_tokens`, contenu entre parenthèses/crochets du nom, hors qualificatifs purement numériques) — dupliqué en miniature, pas importé, même discipline que ce fichier.
+
+Filet de sécurité en plus (`MAX_GROUP_PRICE_SPREAD`, défaut 20×) : un groupe de Commons EB02 (one-piece) à $1-2 mélangé à des Commons EB02 à $700-3786 — AUCUN qualificatif dans les noms, donc non attrapé par le fix ci-dessus — s'est révélé être une vraie anomalie de donnée en amont (mauvais mapping produit PriceCharting), pas une variation de marché réelle. Le groupe entier est exclu plutôt que de deviner quelle carte est fautive — la médiane qui en sortirait serait fausse pour chaque carte du groupe. Même philosophie que `MAX_PULL_COST` (signal B). `MIN_PEER_GROUP_SIZE` (défaut 4) exclut les groupes trop petits pour qu'une médiane leave-one-out veuille dire quelque chose.
+
+Table `relative_value_scores` (schéma proche de `undervalued_scores`, mêmes conventions — rejouable, UPSERT). Premier run réel (2026-08-30, les deux TCG) : 12 265 cartes notées, 2 484 au-dessus du seuil d'affichage (1.3). Constaté au passage, hors scope de ce module : deux entrées catalogue distinctes pour "Building Snake" (one-piece, EN, source `apitcg`, `external_id` différents, même prix) — doublon référentiel probable côté source, jamais creusé ici.
+
+Pas encore fait : aucune surface pour ce signal côté site (`web/`) — la table existe et se peuple, mais rien ne l'affiche encore (contrairement à `undervalued_scores`, déjà consommé par `/undervalued`).
 
 ROI gradation (extension, calcul côté client)
 
@@ -355,4 +383,16 @@ Panneau strictement additif. Ne jamais masquer, modifier ou réécrire le conten
 Politique de confidentialité publiée + déclaration "Privacy practices". Obligatoire dès qu'il y a compte utilisateur ou lecture de contenu de page — les deux sont vrais ici.
 Connexion Google dans l'extension ≠ connexion Google sur le site. Un simple redirect OAuth web ne marche pas dans une extension. Passe par chrome.identity (getAuthToken ou launchWebAuthFlow), à intégrer avec Firebase Auth (§05) — un vrai travail d'intégration.
 Tester en privé avant la review publique. Chrome permet de charger l'extension en local (mode développeur) ou de la distribuer à des testeurs de confiance sans passer par la review publique.
+
+10 — Chantiers futurs
+
+Favoris (watchlist), backend + bouton panneau extension livrés le 2026-08-29 — écran Watchlist du site reste à faire. Proposé le 2026-08-25 : un utilisateur peut désormais sauvegarder une carte en favori (identité + langue précise, EN et JP comptent comme deux favoris distincts puisque ce sont deux `items`) directement depuis le panneau extension ; la retrouver sur le site reste à construire (même compte, cf. pont de session existant).
+
+Décidé le 2026-08-29, sans attendre le choix du fournisseur de paiement : 3 favoris gratuits, au-delà réservé au premium. `user_entitlements.is_premium` (bascule manuelle en SQL pour l'instant, pas de parcours d'achat) fait office de jalon minimal — remplaçable plus tard par un webhook Stripe sans changer le point de vérification côté API. Le reste de la décision différée le 2026-08-25 (quel fournisseur, quel prix, portail self-service) n'est toujours pas tranché.
+
+Backend : table `favorites` (firebase_uid + item_id, UNIQUE, add/remove — pas append-only comme sales/price_snapshots, cf. db/schema.sql) et `user_entitlements` ; logique DB dans pricing/favorites.py ; endpoints `GET /favorites` (liste), `GET /favorites/{item_id}` (statut d'une carte -- favori ? combien déjà utilisés sur le plafond ?), `POST /favorites` et `DELETE /favorites/{item_id}` dans pricing_api/main.py, gate 402 côté serveur (jamais seulement côté extension/client, même principe que require_user sur /verdict) — testés dans tests/test_favorites_endpoint.py. Pas de table `users` : comme pour /verdict, l'identité vient directement de Firebase Auth (pricing.auth.verify_id_token), `firebase_uid` sert de clé.
+
+Extension : bouton "☆ Ajouter à ma watchlist" affiché sous le verdict dès qu'une carte est identifiée (extension/content/content.js::renderFavoriteButton), état (favori/limite atteinte/count-limit) confirmé après coup par GET /favorites/{item_id} -- jamais deviné depuis la réponse /verdict, qui n'a aucune notion de favoris. Toggle add/remove relayé par le service worker (extension/background.js::favoritesFetch, même schéma d'auth que CARDQUANT_GET_VERDICT) ; un 402 affiche le message serveur tel quel sous le bouton, jamais un texte de seuil réinventé côté client.
+
+Restant : écran Watchlist du site (§08, prévu dès la maquette, jamais construit) qui consomme GET /favorites -- web/ ne peut pas écrire directement en base (utilisateur DB en lecture seule, cf. web/lib/db.ts), donc web/ devra appeler pricing_api comme le fait déjà l'extension, pas une requête Postgres directe.
 CardQuant · document de référence

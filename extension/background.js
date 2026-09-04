@@ -29,8 +29,66 @@ chrome.runtime.onMessageExternal.addListener((message, _sender, sendResponse) =>
   return true;
 });
 
+// Watchlist (§10 handoff, backend ajouté le 2026-08-29, cf.
+// pricing_api/main.py::/favorites) ET portefeuille personnel (bouton
+// "Noter l'achat" du panneau CardQuant, cf. pricing_api/main.py::/portfolio)
+// -- même pattern d'auth (jeton rafraîchi via getValidIdToken, 401 traduit
+// en reason "auth"), factorisé ici puisque les deux fonctionnalités
+// partagent exactement la même forme d'appel (Bearer token, JSON, mêmes
+// codes d'erreur), contrairement au verdict qui reste seul de son genre
+// (conversion FX en plus). Nom générique (pas "favoritesFetch") depuis que
+// /portfolio l'utilise aussi -- 402 (plafond gratuit, cf.
+// pricing/favorites.py::FREE_FAVORITES_LIMIT) ne concerne que /favorites en
+// pratique, mais rien n'empêche /portfolio de s'en servir un jour.
+async function pricingApiFetch(path, options = {}) {
+  const idToken = await getValidIdToken();
+  if (!idToken) return { ok: false, reason: "auth" };
+  try {
+    const res = await fetch(`${PRICING_API_URL}${path}`, {
+      ...options,
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}`, ...(options.headers || {}) },
+    });
+    if (res.status === 401) return { ok: false, reason: "auth" };
+    if (res.status === 402) {
+      const body = await res.json().catch(() => null);
+      return { ok: false, reason: "limit", message: body?.detail || null };
+    }
+    if (!res.ok) return { ok: false, reason: "network", error: `HTTP ${res.status}` };
+    return { ok: true, data: await res.json() };
+  } catch (err) {
+    return { ok: false, reason: "network", error: String(err) };
+  }
+}
+
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   switch (message.type) {
+    case "CARDQUANT_FAVORITE_STATUS":
+      pricingApiFetch(`/favorites/${message.itemId}`).then(sendResponse);
+      return true;
+
+    case "CARDQUANT_FAVORITE_ADD":
+      pricingApiFetch("/favorites", { method: "POST", body: JSON.stringify({ item_id: message.itemId }) }).then(sendResponse);
+      return true;
+
+    case "CARDQUANT_FAVORITE_REMOVE":
+      pricingApiFetch(`/favorites/${message.itemId}`, { method: "DELETE" }).then(sendResponse);
+      return true;
+
+    // Bouton "Noter l'achat" du panneau (cf. content.js) -- ajoute une
+    // position au portefeuille personnel (écran PnL du site) directement
+    // depuis l'annonce eBay, prix/grade déjà connus (pas de ressaisie).
+    // Même endpoint que web/lib/portfolioApi.ts::addPosition -- un seul
+    // backend pour les deux surfaces (extension et site).
+    case "CARDQUANT_PORTFOLIO_ADD":
+      pricingApiFetch("/portfolio", {
+        method: "POST",
+        body: JSON.stringify({
+          item_id: message.itemId, grade: message.grade, quantity: 1,
+          buy_price: message.buyPrice, buy_currency: message.buyCurrency, buy_date: message.buyDate,
+        }),
+      }).then(sendResponse);
+      return true;
+
     case "CARDQUANT_GET_SESSION":
       getSession().then((session) => sendResponse({ ok: true, session }));
       return true;
@@ -39,15 +97,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       chrome.tabs.create({ url: `${SITE_URL}/?cardquant_login=1` }).then(() => sendResponse({ ok: true }));
       return true;
 
-    // Bouton "Analyse complète sur CardQuant" du panneau -- SITE_URL n'est
-    // connu que dans ce contexte (lib/config.js n'est chargé que par
-    // background.js, cf. manifest.json content_scripts qui ne charge que
-    // content/content.js), d'où le passage par message plutôt qu'un lien
-    // <a> direct construit côté content script. Fiche produit = /catalog/[id]
-    // (web/app/(app)/catalog/[id]/page.tsx), pas une URL slug jeu/set/langue :
-    // card_id suffit, déjà connu de la réponse /verdict.
+    // "Ouvrir la fiche sur CardQuant" du panneau -- la fiche carte existe
+    // désormais réellement sur le site (cf. mémoire projet
+    // "cardquant-rebrand", écran Fiche carte / app/(cardquant)/catalog/[id]),
+    // retiré le 2026-08-23 faute d'URL fixe à l'époque, réintroduit
+    // maintenant que /catalog/{id} est une vraie route.
     case "CARDQUANT_OPEN_CARD":
-      chrome.tabs.create({ url: `${SITE_URL}/catalog/${message.cardId}` }).then(() => sendResponse({ ok: true }));
+      chrome.tabs.create({ url: `${SITE_URL}/catalog/${message.itemId}` }).then(() => sendResponse({ ok: true }));
       return true;
 
     case "CARDQUANT_SIGN_OUT":

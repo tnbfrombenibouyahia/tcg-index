@@ -1,0 +1,16 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   CardQuant / Slabline — point d'entrée des tokens (écrans migrés au nouveau
+   design uniquement, cf. mémoire projet "cardquant-rebrand"). Ordre de
+   chargement repris du styles.css du handoff, minus tokens/fonts.css (Outfit
+   est chargé via next/font dans app/layout.tsx, pas un Google Fonts @import
+   ici) et tokens/base.css (pas encore nécessaire : aucun écran migré à ce
+   jour ne dépend de son reset -- à ajouter si besoin plus tard).
+   foil.css ajouté pour HoloCard (Scène 3D de la landing, cf.
+   components/cardquant/market/HoloCard.tsx).
+   ───────────────────────────────────────────────────────────────────────────── */
+@import "./tokens/colors.css";
+@import "./tokens/typography.css";
+@import "./tokens/spacing.css";
+@import "./tokens/effects.css";
+@import "./tokens/motion.css";
+@import "./tokens/foil.css";

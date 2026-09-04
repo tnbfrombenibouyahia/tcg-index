@@ -1,0 +1,15 @@
+/* CardQuant / Slabline — tokens d'espacement. Copie fidèle du handoff. */
+:root{
+  --space-1:2px;--space-2:4px;--space-3:6px;--space-4:8px;--space-5:12px;--space-6:16px;--space-7:20px;--space-8:24px;--space-9:32px;--space-10:40px;--space-11:56px;--space-12:80px;--space-13:120px;
+
+  --card-pad:16px;
+  --card-pad-tight:12px;
+  --grid-gap:10px;
+  --page-pad-x:20px;
+  --page-pad-y:18px;
+  --shell-max:1600px;
+  --row-h:38px;
+  --row-h-dense:30px;
+  --control-h:34px;
+  --control-h-sm:28px;
+}

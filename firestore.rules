@@ -1,0 +1,37 @@
+// Règles Firestore -- CardQuant. Pas déployées automatiquement depuis cette
+// session (pas d'accès Firebase CLI/projet ici) : à appliquer via
+// `firebase deploy --only firestore:rules` avant que les écritures de
+// profil (web/lib/profileApi.ts) fonctionnent en production. Tant que ce
+// n'est pas fait, les règles par défaut du projet s'appliquent (probablement
+// un refus). Cf. mémoire projet "cardquant-rebrand", passe Auth -- même
+// limite disclosed que la migration `portfolio_positions` (Postgres) pour PnL.
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Profil CardQuant d'un utilisateur (pseudo, tag réseau, jeu suivi,
+    // devise, langue -- cf. lib/profileApi.ts::CardQuantProfile). Réservé au
+    // propriétaire pour l'instant : pas de lecture publique (une carte P/V
+    // partagée ou un profil public consultable par d'autres utilisateurs
+    // sont des chantiers à part, pas encore construits côté web/).
+    match /profiles/{uid} {
+      allow read, create, update: if request.auth != null && request.auth.uid == uid;
+      allow delete: if false;
+    }
+
+    // Réservation de pseudo public (une entrée par handle, `{uid}` à
+    // l'intérieur) -- garantit l'unicité via la transaction de
+    // `createProfile`. `get` ouvert à tout utilisateur authentifié : la
+    // transaction doit pouvoir vérifier si un pseudo est déjà pris, y
+    // compris pour un pseudo appartenant à un autre uid ; ça ne révèle que
+    // "pris ou pas", jamais d'autre donnée. Jamais de update/delete côté
+    // client : un changement de pseudo n'est pas un chantier de cette passe.
+    match /handles/{handle} {
+      allow get: if request.auth != null;
+      allow list: if false;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
+      allow update, delete: if false;
+    }
+  }
+}

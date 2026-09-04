@@ -4,6 +4,7 @@ par appel, try/finally: conn.close(), SQL inline (pas d'ORM, cohérent avec
 le reste du repo).
 """
 import re
+import statistics
 import unicodedata
 from datetime import date
 
@@ -125,21 +126,27 @@ def fetch_card_by_id(item_id: int) -> Card | None:
         conn.close()
 
 
-def fetch_recent_sales(item_id: int, grade: str, *, limit: int = _SALES_STATS_LIMIT) -> list[tuple[float, str]]:
+def fetch_recent_sales(item_id: int, grade: str, *, limit: int = _SALES_STATS_LIMIT) -> list[tuple[float, str, date]]:
     """`limit` dernières ventes (item_id, grade), plus récente d'abord --
-    couvre moy. 3 ET moy. 10 en une seule requête (cf. pricing/sales_stats.py),
-    sur l'index idx_sales_item_date (item_id, sale_date DESC). Liste vide si
-    aucune vente connue -- jamais d'exception pour "pas de données", cohérent
-    avec fetch_card_by_id."""
+    couvre médiane récente ET moy. 10 en une seule requête (cf.
+    pricing/sales_stats.py), sur l'index idx_sales_item_date (item_id,
+    sale_date DESC). Liste vide si aucune vente connue -- jamais
+    d'exception pour "pas de données", cohérent avec fetch_card_by_id.
+
+    `sale_date` inclus depuis le 2026-08-28 (en plus de price/currency) --
+    nécessaire à la fenêtre adaptative de pricing/sales_stats.py::compute_sales_stats,
+    qui doit savoir si les ventes #4/#5 sont assez récentes pour rejoindre
+    la fenêtre plutôt que de mélanger une vraie tendance de marché ancienne
+    au signal "maintenant"."""
     conn = get_connection()
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT price, currency FROM sales WHERE item_id = %s AND grade = %s "
+                "SELECT price, currency, sale_date FROM sales WHERE item_id = %s AND grade = %s "
                 "ORDER BY sale_date DESC, id DESC LIMIT %s",
                 (item_id, grade, limit),
             )
-            return [(float(price), currency) for price, currency in cur.fetchall()]
+            return [(float(price), currency, sale_date) for price, currency, sale_date in cur.fetchall()]
     finally:
         conn.close()
 
@@ -257,6 +264,46 @@ def fetch_latest_price_snapshot(item_id: int, grade: str) -> tuple[float, str] |
         conn.close()
 
 
+def _fetch_language_candidates(card: Card, *, same_set: bool) -> list[Card]:
+    """Coeur commun de fetch_language_siblings/fetch_language_variants_loose
+    -- même requête/désambiguïsation, seule la présence du filtre set_code
+    change (cf. les deux fonctions ci-dessous pour le pourquoi de chaque
+    mode)."""
+    if not card.code or (same_set and not card.set_code):
+        return []
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            if same_set:
+                cur.execute(
+                    f"SELECT {_CARD_COLUMNS} FROM items "
+                    "WHERE tcg = %s AND set_code = %s AND UPPER(code) = UPPER(%s) "
+                    "AND category = %s AND language != %s",
+                    (card.tcg, card.set_code, card.code, card.category, card.language),
+                )
+            else:
+                cur.execute(
+                    f"SELECT {_CARD_COLUMNS} FROM items "
+                    "WHERE tcg = %s AND UPPER(code) = UPPER(%s) "
+                    "AND category = %s AND language != %s",
+                    (card.tcg, card.code, card.category, card.language),
+                )
+            rows = [_row_to_card(row) for row in cur.fetchall()]
+    finally:
+        conn.close()
+
+    by_language: dict[str, list[Card]] = {}
+    for row in rows:
+        by_language.setdefault(row.language, []).append(row)
+
+    matches = []
+    for pool in by_language.values():
+        best = _best_qualifier_match(card, pool)
+        if best is not None:
+            matches.append(best)
+    return matches
+
+
 def fetch_language_siblings(card: Card) -> list[Card]:
     """Même carte (set_code + code), langues différentes -- PAS de repli
     fuzzy sur l'IDENTITÉ (contrairement à pricing/matching.py) : le code est
@@ -273,32 +320,39 @@ def fetch_language_siblings(card: Card) -> list[Card]:
     par qualificatif de nom (cf. _best_qualifier_match), un seul sibling
     retenu PAR langue -- aucun si ambigu, jamais deviné.
 
+    Résultat utilisé pour des PRIX affichés (comparaison par langue, cf.
+    shared/verdict.py::_build_language_comparison) -- exige donc le même
+    set_code exact : deux tirages différents d'une même carte n'ont pas
+    forcément la même cote, le prix d'un tirage ne doit jamais représenter
+    celui d'un autre. Cf. fetch_language_variants_loose pour un
+    appariement moins strict, réservé aux liens de vérification (jamais un
+    prix).
+
     Renvoie [] pour le scellé (card.code est NULL, cf. db/schema.sql::items)."""
-    if not card.code or not card.set_code:
-        return []
-    conn = get_connection()
-    try:
-        with conn.cursor() as cur:
-            cur.execute(
-                f"SELECT {_CARD_COLUMNS} FROM items "
-                "WHERE tcg = %s AND set_code = %s AND UPPER(code) = UPPER(%s) "
-                "AND category = %s AND language != %s",
-                (card.tcg, card.set_code, card.code, card.category, card.language),
-            )
-            rows = [_row_to_card(row) for row in cur.fetchall()]
-    finally:
-        conn.close()
+    return _fetch_language_candidates(card, same_set=True)
 
-    by_language: dict[str, list[Card]] = {}
-    for row in rows:
-        by_language.setdefault(row.language, []).append(row)
 
-    siblings = []
-    for pool in by_language.values():
-        best = _best_qualifier_match(card, pool)
-        if best is not None:
-            siblings.append(best)
-    return siblings
+def fetch_language_variants_loose(card: Card) -> list[Card]:
+    """Version PLUS PERMISSIVE de fetch_language_siblings : même
+    désambiguïsation par qualificatif (cf. _best_qualifier_match), MAIS sans
+    exiger le même set_code -- seulement (tcg, code, category), langues
+    différentes. Vérifié en base le 2026-08-23 : certains tirages EN
+    (ex. une compilation "The Best") n'ont tout simplement aucune ligne JP
+    cataloguée sous ce set_code exact (référentiel apitcg incomplet), alors
+    qu'un autre tirage JP du même code existe bien chez PriceCharting --
+    fetch_language_siblings renvoie [] dans ce cas, ce repli trouve quand
+    même un candidat "assez proche" par qualificatif.
+
+    RÉSERVÉ aux liens de double-vérification PriceCharting (cf.
+    shared/verdict.py::_build_language_comparison) : contrairement à
+    fetch_language_siblings, le tirage retenu n'est pas garanti être
+    EXACTEMENT le même que `card` (juste le meilleur qualificatif
+    disponible, même seuil 0.5) -- jamais utilisé pour afficher un prix
+    (qui pourrait alors représenter le mauvais tirage), seulement pour
+    proposer un lien à vérifier soi-même, demande utilisateur (2026-08-23).
+
+    Renvoie [] pour le scellé (card.code est NULL, cf. db/schema.sql::items)."""
+    return _fetch_language_candidates(card, same_set=False)
 
 
 def fetch_sealed_display_for_set(tcg: str, set_code: str | None, language: str) -> Card | None:
@@ -421,5 +475,108 @@ def fetch_set_release_year(tcg: str, set_code: str | None) -> int | None:
             )
             row = cur.fetchone()
             return row[0].year if row and row[0] else None
+    finally:
+        conn.close()
+
+
+# -- Panneau extension "v3" (population/divergence/positionnement, cf.
+# shared/verdict.py::_compute_population_signal et suivants) ----------------
+
+def fetch_population_snapshot_latest(item_id: int) -> tuple[date, int, int, int, int, int, int] | None:
+    """Dernier population_snapshots connu pour CETTE carte précise (pas le
+    set) -- (captured_at, pop_grade10, pop_grade9, pop_grade8, pop_grade7,
+    pop_grade6, pop_total). Mêmes 5 paliers que le Terminal (PSA10/9/8/7/
+    ≤6, cf. web/components/cardquant/population/GradeDistributionPanel.tsx)
+    pour un vocabulaire identique Terminal/extension. None si cet item n'a
+    jamais été snapshotté (hors du batch de population, cf.
+    ingestion/sources/pricecharting.py)."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT captured_at, pop_grade10, pop_grade9, pop_grade8, pop_grade7, pop_grade6, pop_total "
+                "FROM population_snapshots WHERE item_id = %s ORDER BY captured_at DESC LIMIT 1",
+                (item_id,),
+            )
+            row = cur.fetchone()
+            return tuple(row) if row else None
+    finally:
+        conn.close()
+
+
+def fetch_population_snapshot_before(item_id: int, cutoff: date) -> tuple[date, int] | None:
+    """Snapshot le plus récent À OU AVANT `cutoff` -- (captured_at,
+    pop_grade10) seulement, suffisant pour la delta "POP 10 · 30j" du
+    panneau extension. None si aucun snapshot n'existe encore à cette
+    ancienneté (item trop récemment entré dans le tracking de population) --
+    jamais un delta calculé contre un 0 implicite."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT captured_at, pop_grade10 FROM population_snapshots "
+                "WHERE item_id = %s AND captured_at <= %s ORDER BY captured_at DESC LIMIT 1",
+                (item_id, cutoff),
+            )
+            row = cur.fetchone()
+            return (row[0], row[1]) if row else None
+    finally:
+        conn.close()
+
+
+def fetch_sales_window_stats(item_id: int, grade: str, start: date, end: date) -> tuple[int, float | None]:
+    """Nb de ventes + prix médian sur [start, end) -- fenêtre fermée à
+    gauche, ouverte à droite (deux fenêtres contiguës s'enchaînent sans
+    chevauchement ni trou, cf. shared/verdict.py::_compute_volume_divergence).
+    Médiane None si la fenêtre ne contient aucune vente -- jamais 0 $
+    affiché comme un vrai prix."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT price FROM sales WHERE item_id = %s AND grade = %s AND sale_date >= %s AND sale_date < %s",
+                (item_id, grade, start, end),
+            )
+            prices = [float(row[0]) for row in cur.fetchall()]
+    finally:
+        conn.close()
+    return len(prices), (statistics.median(prices) if prices else None)
+
+
+def fetch_set_rank_by_price(item_id: int, tcg: str, set_code: str) -> tuple[int, int] | None:
+    """Rang de item_id parmi les singles de (tcg, set_code) par prix
+    ungraded le plus récent connu (price_snapshots), décroissant -- #1 =
+    carte la plus chère du set. Même base de prix que
+    web/lib/queries/setAnalysis.ts::getSetTopCards(sortBy='price') (grade
+    'ungraded', DISTINCT ON captured_at/created_at DESC) -- définition
+    identique Terminal/extension. None si cet item lui-même n'a aucun prix
+    ungraded connu -- rang indéfini plutôt que deviné. `total` ne compte
+    que les cartes du set qui ONT un prix connu, pas la taille nominale du
+    set (une carte toute neuve sans prix encore scrapé ailleurs dans le set
+    ne doit pas gonfler artificiellement le dénominateur)."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                WITH set_items AS (
+                    SELECT id FROM items WHERE tcg = %s AND set_code = %s AND category = 'single'
+                ),
+                priced AS (
+                    SELECT DISTINCT ON (ps.item_id) ps.item_id, ps.price
+                    FROM price_snapshots ps JOIN set_items si ON si.id = ps.item_id
+                    WHERE ps.grade = 'ungraded'
+                    ORDER BY ps.item_id, ps.captured_at DESC, ps.created_at DESC
+                ),
+                ranked AS (
+                    SELECT item_id, RANK() OVER (ORDER BY price DESC) AS rnk, COUNT(*) OVER () AS total
+                    FROM priced
+                )
+                SELECT rnk, total FROM ranked WHERE item_id = %s
+                """,
+                (tcg, set_code, item_id),
+            )
+            row = cur.fetchone()
+            return (int(row[0]), int(row[1])) if row else None
     finally:
         conn.close()

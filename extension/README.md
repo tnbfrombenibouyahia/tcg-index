@@ -77,6 +77,31 @@ Fait :
     depuis leur lancement (permission GCP cassée, corrigée le
     2026-08-22) ; la couverture se reconstitue set par set au fil des
     passages hebdomadaires (rotation en 12 tranches).
+- **Suite du correctif `PriceChartingSource` ci-dessus, même carte
+  (2026-08-23)** : après déploiement du fix de slug JP, le lien
+  PriceCharting continuait de pointer vers la fiche anglaise pour cette
+  même carte (`item_id=73783`) -- pas un nouveau bug de code, le cache
+  `prices` (TTL 12h, `pricing/cache.py::get_price_with_cache`) avait gardé
+  la ligne (prix + URL) récupérée AVANT le déploiement du fix, et rien ne
+  l'invalide automatiquement au déploiement. Purgée manuellement en base
+  (`DELETE FROM prices WHERE item_id=73783 AND source='pricecharting'`) --
+  toute carte JP requêtée dans la fenêtre entre la casse et le déploiement
+  du fix peut avoir la même ligne périmée, à purger au cas par cas si
+  signalé.
+- **Score d'opportunité vs "Analyse de prix" contradictoires (demande
+  utilisateur, 2026-08-23)** : `opportunity_score` ne comparait le prix
+  affiché qu'à `reference_price` (PriceCharting, prix "catalogue"/demandé
+  du moment) -- jamais à la moy. des ventes réelles récentes
+  (`avg_last_3`/`avg_last_10`, renommé `median_recent` le 2026-08-28, voir
+  plus bas) affichée juste au-dessus dans le panneau ("Analyse de prix"),
+  pouvant afficher un score "Bonne affaire" pour un prix nettement
+  AU-DESSUS de ce qui s'est réellement vendu récemment.
+  `compute_extended_signals` (`shared/verdict.py`) calcule maintenant le
+  ratio du score contre `avg_last_3` (devenu `median_recent`) en priorité (repli `avg_last_10`, puis
+  `reference_price` en dernier recours si aucune vente récente connue). Le
+  verdict vert/jaune/rouge (`Verdict.label`, pastille + lien
+  PriceCharting/Cardmarket) n'est **pas** touché -- il continue de comparer
+  à `reference_price` uniquement, signal ponctuel documenté séparément.
 - **Compte requis avant utilisation (§01/§09)** : la connexion (Google
   Sign-In) se fait sur **le site** (`web/components/auth/AuthModal.tsx`,
   `signInWithPopup` + Firebase Auth JS SDK), pas dans l'extension. "Se
@@ -205,8 +230,8 @@ Fait :
   `text: null` + `image_url` confirmée, identification réussie affichée,
   pas de 3ᵉ tentative offerte après un double échec.
 
-- **Liens de double-vérification manuelle (demande utilisateur, 2026-08-22)** :
-  deux boutons en bas de la fiche carte pour recouper le verdict ailleurs.
+- **Lien de double-vérification manuelle (demande utilisateur, 2026-08-22)** :
+  un bouton en bas de la fiche carte pour recouper le verdict ailleurs.
   - **PriceCharting** : lien vers la VRAIE page produit exacte -- pas une
     recherche. PriceCharting est en plus la source même du prix de
     référence (`shared/verdict.py::compute_verdict_for_card`), donc le plus
@@ -219,17 +244,15 @@ Fait :
     supplémentaire (même scrape que celui qui sert déjà le prix). Absent
     (pas de bouton) si PriceCharting n'a pas matché cette carte -- jamais
     un lien de recherche de repli qui laisserait croire à un lien exact.
-  - **Cardmarket** : pas d'ID exploitable en base (`items.cardmarket_id`
-    existe mais n'est jamais rempli par apitcg.com pour ce catalogue) --
-    lien de RECHERCHE plutôt qu'un lien produit deviné (même principe "ne
-    jamais deviner", §01). Recherche par `card.code` (ex. "OP13-037"),
-    bien plus précis que le nom seul -- vérifié en conditions réelles :
-    5 résultats, tous la bonne carte, contre une dilution sur toute carte
-    contenant les mêmes mots avec le nom seul. Repli sur le nom pour le
-    scellé (pas de `code`).
   - Testé via un harness jsdom ponctuel : présence conditionnelle correcte
-    selon `sources_compared[].url` (PriceCharting) et présence système
-    (Cardmarket, toujours calculable), URLs exactes vérifiées.
+    selon `sources_compared[].url`, URL exacte vérifiée.
+  - **Cardmarket** (lien de recherche, ajouté le 2026-08-22) **et bouton
+    "Analyse complète sur CardQuant"** (`renderCta`, ouvrait
+    `/catalog/[id]` sur le site via `CARDQUANT_OPEN_CARD`) **retirés le
+    2026-08-23** à la demande utilisateur -- `CARDQUANT_OPEN_CARD` supprimé
+    de `background.js` avec eux (plus rien ne l'envoie). `.cardquant-cardmarket-link`
+    (CSS) reste utilisée par le lien PriceCharting, qui partageait déjà ce
+    style.
 
 - **Set + année (demande utilisateur, 2026-08-23)** : le badge de set,
   auparavant un simple préfixe de code ("OP13", tiré de `card.code.split("-")[0]`),
@@ -268,6 +291,99 @@ Fait :
   harness jsdom : deux candidats identiques hors langue rendent bien deux
   drapeaux distincts (🇬🇧/🇯🇵).
 
+- **Médiane récente à fenêtre adaptative au lieu de moy. 3 dernières ventes
+  fixe (2026-08-28)** : `avg_last_3` (`SalesStatsOut`) devient
+  `median_recent`, libellé panneau "Moy. 3 dernières ventes" →
+  "Médiane ventes récentes (N)" (N = taille réelle de la fenêtre, toujours
+  affichée, plus seulement si <3). Constaté en auditant la table `sales` en
+  conditions réelles (carte `item_id=73783`, Roronoa Zoro OP06-118
+  [Alternate Art Manga] -- une vente à $30,64 mêlée à des ventes à
+  $1475/$1750 faussait le score d'opportunité de -33% environ) : ~15% des
+  couples (carte, grade) avaient au moins 1 vente aberrante (>5x d'écart)
+  dans leurs 3 dernières ventes, une moyenne arithmétique s'y fait fausser
+  en entier par une seule valeur. Passage à une médiane, étendue de 3 à 5
+  ventes SEULEMENT quand la 4e/5e reste à <=180j de la 3e (sinon reste à 3)
+  -- au-delà, la vente supplémentaire n'est plus un point de "maintenant"
+  mais une vraie tendance de marché sur une carte peu liquide, que mélanger
+  au signal récent biaiserait au lieu de le robustifier. Validé contre
+  `price_snapshots` (référence indépendante, non dérivée de `sales`) :
+  médiane-5 bat médiane-3 sous 180j, mais perd nettement au-delà -- détail
+  complet et méthode de mesure dans `pricing/sales_stats.py`.
+
+- **Watchlist (§10 handoff, 2026-08-29)** : bouton "☆ Ajouter à ma
+  watchlist" affiché sous le verdict dès qu'une carte est identifiée
+  (`content.js::renderFavoriteButton`), sauvegardant la carte + sa langue
+  précise (EN/JP sont deux `items` distincts, donc deux favoris distincts)
+  sur le compte de l'utilisateur via `pricing_api` (`GET/POST /favorites`,
+  `DELETE /favorites/{item_id}`). État initial ("…", désactivé) confirmé
+  après coup par `GET /favorites/{item_id}` (`refreshFavoriteStatus`) --
+  jamais deviné depuis la réponse `/verdict`, qui n'a aucune notion de
+  favoris. 3 favoris gratuits, au-delà réservé au premium (pas encore de
+  parcours de paiement, cf. `tcg-index-handoff.md` §10) : un 402 affiche le
+  message serveur tel quel sous le bouton (`.cardquant-favorite-note`),
+  jamais un texte de seuil réinventé côté client. Toggle add/remove relayé
+  par le service worker (`background.js::favoritesFetch`), même schéma
+  d'auth (jeton Firebase rafraîchi via `getValidIdToken`) que
+  `CARDQUANT_GET_VERDICT`. L'écran Watchlist du site qui liste ces favoris
+  a depuis été construit (`app/(cardquant)/watchlist`, cf. mémoire projet
+  "cardquant-rebrand") -- la ligne ci-dessus n'est plus à jour sur ce point
+  précis mais gardée telle quelle pour l'historique.
+
+- **Reskin "CardQuant Panel" (design system Slabline, 2026-08-31/09-02)** :
+  `content/panel.css` et `content/content.js` réhabillés en dur sur les
+  mêmes tokens couleur que le Terminal/la Landing (`--cq-*` recopiés depuis
+  `web/styles/cardquant/tokens/colors.css` + la surcharge sombre partagée,
+  cf. `web/components/cardquant/darkTokenOverride.ts` -- un content script
+  ne peut pas hériter des custom properties de `tcgindex.vercel.app`,
+  recopie manuelle à resynchroniser à la main si la palette du Terminal
+  change). Identité de carte, jauge de score et rangées d'analyse
+  (population/liquidité/langue/ROI/divergence/positionnement/arbitrage)
+  regroupées dans une seule carte à rangées repliables plutôt que des
+  sections indépendantes, même esprit que la maquette du handoff. Header
+  avec avatar + prénom (`session.displayName`, déjà relayée par le site).
+  - **"Ouvrir la fiche sur CardQuant" réintroduit** : ce CTA existait dans
+    une version antérieure, retiré le 2026-08-23 faute d'URL de fiche
+    carte fixe côté site à l'époque. `app/(cardquant)/catalog/[id]` existe
+    désormais (§ Fiche carte du handoff, construite depuis) -- le bouton
+    rouvre `/catalog/{item_id}` dans un nouvel onglet
+    (`background.js::CARDQUANT_OPEN_CARD`).
+  - **Score gardé "Score d'opportunité", jamais renommé "Score
+    structurel"** malgré ce nom dans la maquette : côté Terminal,
+    "Score structurel" désigne un signal DIFFÉRENT (`undervalued_scores`/
+    `relative_value_scores`, ratio valeur théorique/marché recalculé
+    chaque nuit par comparaison aux pairs, cf.
+    `web/components/cardquant/undervalued/StructuralScorePanel.tsx` et
+    `pricing/opportunity_score.py`) -- une couverture partielle (seuls les
+    sets avec Booster Box mappé ou un groupe de pairs complet) et une
+    échelle en ratio, pas un score continu 0-100 adapté à une jauge par
+    annonce. Réutiliser le même nom pour deux mesures différentes aurait
+    été trompeur ; seul l'HABILLAGE (barre segmentée 14 pas, rampe de
+    couleur, libellés de palier à 5 niveaux) vient de la maquette, la
+    donnée reste `opportunity_score` (`pricing/opportunity_score.py`,
+    inchangé).
+  - **3 nouveaux signaux `/verdict`** (`shared/verdict.py::
+    compute_extended_signals`, `pricing/repository.py`) : "Population par
+    note" (dernier `population_snapshots` de CETTE carte, mêmes 5 paliers
+    que `GradeDistributionPanel.tsx` côté Terminal -- PSA10/9/8/7/≤6, pas
+    le regroupement "≤ PSA 7" à 4 paliers de la maquette d'origine, pour un
+    vocabulaire identique aux deux surfaces -- + gem rate, delta POP10/30j,
+    prime PSA10/9) ; "Divergence prix/volume" (nb de ventes + prix médian
+    sur les 30 derniers jours vs les 30 jours précédents, même grade que la
+    consultation) ; "Positionnement dans le set" (rang par prix ungraded
+    décroissant parmi les singles du set qui ont eux-mêmes un prix connu,
+    même définition que `getSetTopCards(sortBy='price')` côté Terminal).
+    Les trois restent `None`/absents plutôt qu'une valeur devinée quand la
+    donnée manque (item hors tracking population, fenêtre de 30j vide des
+    deux côtés, carte sans set_code ou sans prix connu).
+  - **"Noter l'achat"** : journalise directement une position au
+    portefeuille (écran PnL du site, backend construit le 2026-08-31, cf.
+    mémoire projet "cardquant-rebrand") au prix affiché de l'annonce (déjà
+    converti en USD), grade courant, quantité 1, date du jour --
+    `background.js::CARDQUANT_PORTFOLIO_ADD` (`POST /portfolio`, même
+    endpoint que `web/lib/portfolioApi.ts`). Pas de mini-formulaire dans le
+    panneau (tout est déjà connu) ; la position reste éditable/supprimable
+    ensuite sur `/pnl`.
+
 Pas fait (hors scope de ce scaffold) :
 - Vinted, Cardmarket — seul eBay (14 domaines pays, cf. `manifest.json`)
   est scopé pour l'instant.
@@ -294,6 +410,15 @@ Pas fait (hors scope de ce scaffold) :
 
 ## Icônes
 
-Placeholders générés par script (monogramme "CQ", accent bleu `#3b82f6` du
-site, cf. `web/app/globals.css`) — à remplacer par un vrai logo avant toute
-soumission au Store.
+Icônes réelles (2026-09-04) — plus des placeholders. Piste "1B · Monogramme
+CQ" retenue parmi 3 proposées dans le zip design (`CardQuant Icon.dc.html`,
+cf. mémoire projet "cardquant-rebrand") : fond `--green-400` (`#76FB91`),
+texte noir "CQ" (128/48px) ou "Q" seul (16px, la fiche design note que "CQ"
+ne reste pas lisible à cette taille). Générées en rendant le SVG source du
+zip dans un vrai navigateur (fidélité de police/anti-aliasing) sur fond
+chroma-key, puis recadrées/dékeyées/réduites via un script ponctuel
+(`Add-Type System.Drawing`, pas conservé dans le repo) — `icon128.png` et
+`icon48.png` utilisent la variante "CQ" du design (tailles de police et
+tracé de la barre ajustés séparément pour chaque taille dans le fichier
+source), `icon16.png` la variante "Q" seul. Fond transparent en dehors du
+carré arrondi (`rx` du SVG), pas un carré plein.

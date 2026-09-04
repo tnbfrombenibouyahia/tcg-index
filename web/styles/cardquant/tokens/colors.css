@@ -1,0 +1,62 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   CardQuant / Slabline — Tokens couleur.
+   Copie fidèle de design-system/tokens/colors.css du handoff (zip "zip md
+   designed.zip", cf. mémoire projet "cardquant-rebrand"). Purement additif :
+   ces noms de variables (--surface-page, --ink-000, --green-400, ...) ne
+   collisionnent avec aucune variable de l'ancien design system TCG Index
+   (--foreground, --bg-from, ...), donc aucun impact visuel sur les pages pas
+   encore migrées tant qu'aucune règle ne les consomme.
+
+   Le thème "de base" ici est CLAIR (--surface-page:var(--grey-100)) --
+   c'est la variante marketing/landing. Le Terminal applique par-dessus une
+   surcharge sombre en inline sur son conteneur racine (cf.
+   components/cardquant/dashboard/DashboardScreen.tsx), exactement comme le
+   .dc.html d'origine. Ne pas transformer ce fichier en thème sombre : la
+   surcharge doit rester scopée au Terminal, pas globale.
+   ───────────────────────────────────────────────────────────────────────────── */
+:root{
+  /* ---- base ramp: brand sheet #76FB91 / #000000 / #EDEDED / #CCCCCC ---- */
+  --green-100:#EAFEEF;--green-200:#C9FDD7;--green-300:#A6FCBB;--green-400:#76FB91;--green-500:#4EE873;--green-600:#21C94E;--green-700:#128A34;--green-800:#0B5721;
+  --ink-000:#000000;--ink-900:#0B0C0B;--ink-800:#171A18;--ink-700:#232724;--ink-600:#3A403C;--ink-500:#5C645F;
+  --grey-400:#8C948F;--grey-300:#CCCCCC;--grey-200:#E2E2E2;--grey-100:#EDEDED;--grey-050:#F6F7F6;--white:#FFFFFF;
+
+  /* ---- market signal ---- */
+  --up-400:#4EE873;--up-600:#21C94E;
+  --down-400:#FF5A72;--down-500:#F80E35;--down-700:#A6081F;
+  --warn-400:#EEDF10;--warn-600:#C9B60A;
+  --info-400:#0DBDE9;--cool-600:#0A87A8;
+
+  /* ---- surfaces ---- */
+  --surface-page:var(--grey-100);
+  --surface-card:var(--white);
+  --surface-sunken:var(--grey-050);
+  --surface-inverse:var(--ink-000);
+  --surface-accent:var(--green-400);
+  --surface-rail:var(--grey-200);
+  --surface-overlay:rgba(255,255,255,.72);
+
+  /* ---- text ---- */
+  --text-strong:var(--ink-000);
+  --text-body:var(--ink-700);
+  --text-muted:var(--grey-400);
+  --text-inverse:var(--white);
+  --text-on-accent:var(--ink-000);
+  --text-link:var(--green-700);
+  --text-link-hover:var(--ink-000);
+
+  /* ---- lines ---- */
+  --border-hairline:#E6E6E6;
+  --border-strong:var(--grey-300);
+  --border-focus:var(--ink-000);
+
+  /* ---- data viz series ---- */
+  --viz-1:var(--ink-000);--viz-2:var(--green-400);--viz-3:var(--grey-300);--viz-4:var(--info-400);--viz-5:var(--down-500);--viz-6:var(--warn-400);
+  --viz-grid:#E0E0E0;
+
+  /* ---- grading / provenance accents ---- */
+  --grade-psa:#E8B10C;--grade-cgc:#1D6FE0;--grade-raw:var(--grey-400);
+
+  /* ---- brand gradients (soft accent glow, never full-page) ---- */
+  --grad-accent:linear-gradient(150deg,var(--green-400) 0%,var(--green-300) 45%,rgba(255,255,255,.85) 100%);
+  --grad-fade-white:linear-gradient(180deg,rgba(255,255,255,0) 0%,var(--white) 70%);
+}

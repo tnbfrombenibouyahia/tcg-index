@@ -1,0 +1,64 @@
+/* Holo-foil card engine, adapté de simeydotme/pokemon-cards-css (MIT) --
+   copie fidèle du handoff CardQuant (cf. mémoire projet "cardquant-rebrand"),
+   seuls les chemins des 4 textures ont changé : les url() relatifs
+   ("../assets/foil/...") du handoff sont réécrits vers /cardquant/foil/...
+   (public/, cf. cp effectué en même temps que ce fichier) puisque ce projet
+   n'a pas la même arborescence _ds/ que le prototype. Pilote .tcg-card via
+   des custom properties posées en JS par HoloCard.tsx (--rotate-x,
+   --pointer-x, etc.).
+
+   Seul le foil "holo" est utilisé à ce jour (Scène 3D de la landing,
+   cf. mémoire projet) -- il ne référence d'ailleurs aucune des 4 textures
+   (juste des gradients CSS), les autres variantes (rainbow/metal/raw) sont
+   portées "au cas où" mais leurs images ne sont jamais chargées tant
+   qu'aucun élément n'utilise data-foil="rainbow|metal|raw" (un navigateur
+   ne récupère pas l'url() d'une custom property non appliquée). */
+:root{
+  --pointer-x:50%;
+  --pointer-y:50%;
+  --card-scale:1;
+  --card-opacity:0;
+  --translate-x:0px;--translate-y:0px;
+  --rotate-x:0deg;
+  --rotate-y:0deg;
+  --background-x:var(--pointer-x);--background-y:var(--pointer-y);
+  --pointer-from-center:0;--pointer-from-top:var(--pointer-from-center);--pointer-from-left:var(--pointer-from-center);
+  --card-aspect:0.718;
+  --foil-glitter:url("/cardquant/foil/glitter.png");
+  --foil-grain:url("/cardquant/foil/grain.webp");
+  --foil-illusion:url("/cardquant/foil/illusion-mask.png");
+  --foil-metal:url("/cardquant/foil/metal.png");
+  --glittersize:25%;
+  --foil-scanline-space:1px;
+  --foil-scanline-light:#666666;
+  --foil-scanline-dark:#000000;
+  --foil-rainbow-1:hsl(0,57%,37%);--foil-rainbow-2:hsl(40,53%,39%);--foil-rainbow-3:hsl(90,60%,35%);--foil-rainbow-4:hsl(180,60%,35%);--foil-rainbow-5:hsl(210,57%,39%);--foil-rainbow-6:hsl(280,55%,31%);
+  --foil-red:#f80e35;--foil-yellow:#eedf10;--foil-green:#21e985;--foil-blue:#0dbde9;--foil-violet:#c929f1;
+}
+.tcg-card{aspect-ratio:var(--card-aspect);border-radius:var(--radius-tcg);transform:translate3d(0,0,.01px);transform-style:preserve-3d;will-change:transform;pointer-events:none}
+.tcg-card__translater,.tcg-card__rotator{display:grid;perspective:600px;transform-origin:center;transform-style:preserve-3d;aspect-ratio:var(--card-aspect);border-radius:var(--radius-tcg)}
+.tcg-card__translater{position:relative;transform:translate3d(var(--translate-x),var(--translate-y),calc(var(--card-scale) * 60px + .01px)) scale(var(--card-scale))}
+.tcg-card__rotator{transform:rotateY(var(--rotate-x)) rotateX(var(--rotate-y));pointer-events:auto;border:none;background:transparent;padding:0;appearance:none;transition:box-shadow var(--dur-slow) var(--ease-out);box-shadow:0 10px 20px -5px rgba(0,0,0,.45),0 2px 15px -5px rgba(0,0,0,.4)}
+.tcg-card.is-active .tcg-card__rotator,.tcg-card__rotator:focus-visible{box-shadow:0 0 3px -1px #fff,0 0 3px 1px var(--green-300),0 0 14px 2px var(--green-400),0 10px 24px -6px rgba(0,0,0,.5)}
+.tcg-card__rotator>*{width:100%;display:grid;grid-area:1/1;aspect-ratio:var(--card-aspect);border-radius:var(--radius-tcg);overflow:hidden;transform-style:preserve-3d;pointer-events:none}
+.tcg-card__front,.tcg-card__front *{backface-visibility:hidden}
+.tcg-card__front{transform:translate3d(0,0,.01px);background:var(--ink-800)}
+.tcg-card__front img{width:100%;height:100%;object-fit:cover}
+.tcg-card__shine{transform:translateZ(1px);overflow:hidden;z-index:3;background-size:cover;background-position:center;filter:brightness(.85) contrast(2.75) saturate(.65);mix-blend-mode:color-dodge;opacity:var(--card-opacity)}
+.tcg-card__shine::before,.tcg-card__shine::after{grid-area:1/1;transform:translateZ(1px);border-radius:var(--radius-tcg)}
+.tcg-card__glare{transform:translateZ(1.41px);overflow:hidden;background-image:radial-gradient(farthest-corner circle at var(--pointer-x) var(--pointer-y),hsla(0,0%,100%,.8) 10%,hsla(0,0%,100%,.65) 20%,hsla(0,0%,0%,.5) 90%);opacity:var(--card-opacity);mix-blend-mode:overlay}
+
+/* --- foil: holo (scanline rainbow bars) --- */
+.tcg-card[data-foil="holo"] .tcg-card__shine{background-image:repeating-linear-gradient(110deg,var(--foil-violet),var(--foil-blue),var(--foil-green),var(--foil-yellow),var(--foil-red),var(--foil-violet),var(--foil-blue),var(--foil-green),var(--foil-yellow),var(--foil-red)),repeating-linear-gradient(90deg,var(--foil-scanline-dark) 0,var(--foil-scanline-dark) calc(var(--foil-scanline-space)*2),var(--foil-scanline-light) calc(var(--foil-scanline-space)*2),var(--foil-scanline-light) calc(var(--foil-scanline-space)*4));background-position:calc(((50% - var(--background-x)) * 2.6) + 50%) calc(((50% - var(--background-y)) * 3.5) + 50%),center center;background-size:400% 400%,cover;background-blend-mode:overlay;filter:brightness(1.1) contrast(1.1) saturate(1.2);mix-blend-mode:color-dodge}
+.tcg-card[data-foil="holo"] .tcg-card__shine::after{content:"";background-image:radial-gradient(farthest-corner circle at var(--pointer-x) var(--pointer-y),hsla(0,0%,90%,.8) 0%,hsla(0,0%,78%,.1) 25%,#000 90%);background-size:cover;mix-blend-mode:luminosity;filter:brightness(.6) contrast(4)}
+
+/* --- foil: rainbow (glitter + spectrum) --- */
+.tcg-card[data-foil="rainbow"] .tcg-card__shine{background-image:linear-gradient(-45deg,var(--foil-rainbow-1),var(--foil-rainbow-4)),var(--foil-glitter),linear-gradient(-30deg,var(--foil-rainbow-1),var(--foil-rainbow-2),var(--foil-rainbow-3),var(--foil-rainbow-4),var(--foil-rainbow-5),var(--foil-rainbow-6),var(--foil-rainbow-1),var(--foil-rainbow-2),var(--foil-rainbow-3),var(--foil-rainbow-4),var(--foil-rainbow-5),var(--foil-rainbow-6),var(--foil-rainbow-1));background-blend-mode:luminosity,soft-light;background-size:200% 200%,var(--glittersize) var(--glittersize),400% 400%;background-position:calc(25% + (50% * var(--pointer-from-left))) calc(25% + (50% * var(--pointer-from-top))),center center,calc(25% + (var(--pointer-x)/2)) calc(25% + (var(--pointer-y)/2));filter:brightness(calc((var(--pointer-from-center)*.25) + .6)) contrast(2.2) saturate(.75)}
+.tcg-card[data-foil="rainbow"] .tcg-card__shine::before{content:"";background-image:var(--foil-illusion);background-size:33%;background-position:center;filter:brightness(2.5);opacity:calc((var(--pointer-from-center) + .4) * .6);background-blend-mode:difference;mix-blend-mode:darken}
+.tcg-card[data-foil="rainbow"] .tcg-card__glare{background-image:radial-gradient(farthest-corner circle at var(--pointer-x) var(--pointer-y),hsl(0,0%,80%),hsla(187,10%,85%,.25) 30%,hsl(197,6%,25%) 120%);filter:brightness(.9) contrast(1.75);opacity:calc(var(--pointer-from-center) * .9);mix-blend-mode:hard-light}
+
+/* --- foil: metal (graded slab / sealed product) --- */
+.tcg-card[data-foil="metal"] .tcg-card__shine{background-image:var(--foil-metal),linear-gradient(120deg,#8f8f8f,#f4f4f4 40%,#6e6e6e 70%,#e9e9e9);background-size:cover,300% 300%;background-position:center,calc(50% + (50% - var(--background-x))) calc(50% + (50% - var(--background-y)));background-blend-mode:soft-light;filter:brightness(1.05) contrast(1.4) saturate(.2);mix-blend-mode:color-dodge}
+
+/* --- foil: none, just grain + glare --- */
+.tcg-card[data-foil="raw"] .tcg-card__shine{background-image:var(--foil-grain);background-size:cover;filter:brightness(.9) contrast(1.2);mix-blend-mode:soft-light;opacity:calc(var(--card-opacity) * .5)}

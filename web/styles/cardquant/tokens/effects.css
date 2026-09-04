@@ -1,0 +1,20 @@
+/* CardQuant / Slabline — rayons, ombres, flou. Copie fidèle du handoff. */
+:root{
+  --radius-xs:4px;--radius-sm:6px;--radius-md:10px;--radius-lg:14px;--radius-xl:20px;--radius-pill:999px;
+  --radius-card:12px;
+  --radius-tcg:4.55% / 3.5%; /* trading-card corner ratio, from pokemon-cards-css */
+
+  --border-width:1px;
+  --shadow-none:none;
+  --shadow-card:0 1px 2px rgba(0,0,0,.04);
+  --shadow-raised:0 6px 18px -8px rgba(0,0,0,.18);
+  --shadow-pop:0 18px 40px -18px rgba(0,0,0,.28);
+  --shadow-accent-glow:0 12px 36px -14px rgba(118,251,145,.9);
+  --shadow-inset-track:inset 0 0 0 1px rgba(0,0,0,.05);
+  --shadow-focus:0 0 0 2px var(--white),0 0 0 4px var(--ink-000);
+
+  --blur-glass:18px;
+  --glass-bg:rgba(255,255,255,.62);
+  --glass-accent-bg:rgba(118,251,145,.55);
+  --hatch:repeating-linear-gradient(90deg,var(--grey-300) 0 1px,transparent 1px 3px);
+}
