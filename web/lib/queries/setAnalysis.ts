@@ -173,6 +173,10 @@ export interface SetTopCardRow {
   psa10ChangePct: number | null;
 }
 
+// `CURRENT_DATE - ${windowDays}::int` ci-dessous -- le `::int` est
+// obligatoire, cf. commentaire de tête de lib/queries/transactionsOverview.ts
+// pour le pourquoi (ambiguïté d'opérateur côté Postgres sur un paramètre
+// postgres.js non typé, plantage systématique de la requête sans lui).
 export async function getSetTopCards(setCode: string, { sortBy = "volume", windowDays = 30, limit = 20 }: { sortBy?: "volume" | "price"; windowDays?: number; limit?: number } = {}): Promise<SetTopCardRow[]> {
   const rows = await sql<{ itemId: number; name: string; volume: number; rawPrice: number | null; psa10Price: number | null; prevPsa10Price: number | null }[]>`
     WITH set_items AS (
@@ -181,7 +185,7 @@ export async function getSetTopCards(setCode: string, { sortBy = "volume", windo
     vol AS (
       SELECT item_id, COUNT(*)::int4 AS volume
       FROM sales s JOIN set_items si ON si.id = s.item_id
-      WHERE s.grade = 'ungraded' AND s.sale_date >= CURRENT_DATE - ${windowDays}
+      WHERE s.grade = 'ungraded' AND s.sale_date >= CURRENT_DATE - ${windowDays}::int
       GROUP BY item_id
     ),
     raw_price AS (
@@ -199,7 +203,7 @@ export async function getSetTopCards(setCode: string, { sortBy = "volume", windo
     psa10_prev AS (
       SELECT DISTINCT ON (ps.item_id) ps.item_id, ps.price::float8 AS price
       FROM price_snapshots ps JOIN set_items si ON si.id = ps.item_id
-      WHERE ps.grade = 'psa10' AND ps.captured_at <= CURRENT_DATE - ${windowDays}
+      WHERE ps.grade = 'psa10' AND ps.captured_at <= CURRENT_DATE - ${windowDays}::int
       ORDER BY ps.item_id, ps.captured_at DESC, ps.created_at DESC
     )
     SELECT

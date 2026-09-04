@@ -12,6 +12,19 @@ import type { Tcg } from "@/lib/constants";
 // divergence.ts/gradingRoi.ts -- mélanger les grades fausse les agrégats de
 // valeur, cf. leur commentaire) et s'appuient sur idx_sales_grade_date
 // (grade, sale_date) pour éviter un scan des 1M+ lignes de `sales`.
+//
+// `CURRENT_DATE - ${windowDays}::int` -- le `::int` est obligatoire : postgres.js
+// envoie un nombre JS interpolé avec un type de paramètre "unknown" (cf.
+// node_modules/postgres/cjs/src/types.js, `number: { to: 0, ... }`), et
+// l'opérateur `-` a plusieurs surcharges pour `date` (date, integer, interval)
+// -- Postgres ne peut pas lever l'ambiguïté tout seul et rejette la requête
+// ("operator does not exist: date >= integer"), plantage SYSTÉMATIQUE de
+// /transactions (confirmé via les runtime errors Vercel du 2026-09-04, un
+// reload ne change rien). divergence.ts/dashboardOverview.ts contournent
+// pareil avec `(${windowDays} || ' days')::interval` -- les deux formes
+// marchent, celle-ci change moins le type de retour (reste `date`, pas
+// `timestamp`). Repéré aussi dans setAnalysis.ts::getSetTopCards, même bug,
+// même fix.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface SalesKpis {
@@ -50,13 +63,13 @@ export async function getSalesBreakdown(windowDays = 30): Promise<{ byTcg: Break
     sql<BreakdownSlice[]>`
       SELECT i.tcg AS key, COUNT(*)::int4 AS count, COALESCE(SUM(s.price), 0)::float8 AS value
       FROM sales s JOIN items i ON i.id = s.item_id
-      WHERE s.grade = 'ungraded' AND s.sale_date >= CURRENT_DATE - ${windowDays}
+      WHERE s.grade = 'ungraded' AND s.sale_date >= CURRENT_DATE - ${windowDays}::int
       GROUP BY i.tcg
     `,
     sql<BreakdownSlice[]>`
       SELECT i.language AS key, COUNT(*)::int4 AS count, COALESCE(SUM(s.price), 0)::float8 AS value
       FROM sales s JOIN items i ON i.id = s.item_id
-      WHERE s.grade = 'ungraded' AND s.sale_date >= CURRENT_DATE - ${windowDays}
+      WHERE s.grade = 'ungraded' AND s.sale_date >= CURRENT_DATE - ${windowDays}::int
       GROUP BY i.language
     `,
   ]);
@@ -80,14 +93,14 @@ export async function getTopSetsBySales({ windowDays = 30, limit = 10 }: { windo
       SELECT i.tcg, i.set_code, MIN(EXTRACT(YEAR FROM i.release_date))::int4 AS release_year,
         COUNT(*)::int4 AS count, COALESCE(SUM(s.price), 0)::float8 AS value
       FROM sales s JOIN items i ON i.id = s.item_id
-      WHERE s.grade = 'ungraded' AND s.sale_date >= CURRENT_DATE - ${windowDays} AND i.set_code IS NOT NULL
+      WHERE s.grade = 'ungraded' AND s.sale_date >= CURRENT_DATE - ${windowDays}::int AND i.set_code IS NOT NULL
       GROUP BY i.tcg, i.set_code
     ),
     prev AS (
       SELECT i.tcg, i.set_code, COUNT(*)::int4 AS count
       FROM sales s JOIN items i ON i.id = s.item_id
       WHERE s.grade = 'ungraded'
-        AND s.sale_date >= CURRENT_DATE - ${windowDays * 2} AND s.sale_date < CURRENT_DATE - ${windowDays}
+        AND s.sale_date >= CURRENT_DATE - ${windowDays * 2}::int AND s.sale_date < CURRENT_DATE - ${windowDays}::int
         AND i.set_code IS NOT NULL
       GROUP BY i.tcg, i.set_code
     )
