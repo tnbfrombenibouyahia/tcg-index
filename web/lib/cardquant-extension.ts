@@ -1,12 +1,14 @@
 import type { User } from "firebase/auth";
 
-// ID de l'extension CardQuant (cf. extension/manifest.json `key`) -- stable
-// en dev grâce à la clé figée dans le manifest, mais CHANGERA à la
-// publication sur le Chrome Web Store (Chrome assigne un ID définitif à la
-// création de la fiche). À mettre à jour ici ET dans
-// extension/manifest.json (`externally_connectable`) le jour venu -- les
-// deux doivent rester synchronisés, cf. extension/README.md.
-const CARDQUANT_EXTENSION_ID = "diipacpliojnijgdhcgjkjhlipednoch";
+// ID définitif assigné par Chrome à la création de la fiche Chrome Web
+// Store (2026-09-04) -- ne changera plus. L'ancien ID de dev
+// (diipacpliojnijgdhcgjkjhlipednoch, dérivé de la clé qui était figée dans
+// extension/manifest.json) ne correspond plus à rien : le champ `key` a dû
+// être retiré du manifeste (le Developer Dashboard refuse tout upload qui
+// le contient), donc l'ID local (extension non empaquetée, chrome://extensions)
+// redevient dérivé du chemin du dossier et diffère de celui-ci -- normal,
+// cf. extension/README.md.
+const CARDQUANT_EXTENSION_ID = "jkkonkcdkcadadfffonjlhlonmgcbmbm";
 
 type ChromeRuntime = {
   sendMessage: (extensionId: string, message: unknown, callback?: (response: unknown) => void) => void;

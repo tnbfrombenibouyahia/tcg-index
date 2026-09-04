@@ -128,13 +128,19 @@ Fait :
     l'expiration (1h de durée de vie, cf. `lib/auth.js::getValidIdToken`).
   - ⚠️ **Couplage à surveiller à la publication Store** : le relais
     (`externally_connectable` du manifest + `CARDQUANT_EXTENSION_ID` codé
-    en dur dans `web/lib/cardquant-extension.ts`) référence l'ID d'extension
-    actuel (`diipacpliojnijgdhcgjkjhlipednoch`, stable en dev grâce à la clé
-    figée dans `manifest.json`). Chrome assigne un ID définitif à la
-    publication sur le Store — il faudra alors mettre à jour cette constante
-    côté site **et redéployer le site** (pas juste un réglage Console cette
-    fois), sans quoi le relais silencieusement ne fait plus rien (jamais
-    d'erreur bloquante par design, cf. docstring de `relaySessionToExtension`).
+    en dur dans `web/lib/cardquant-extension.ts`) référence l'ID d'extension.
+    Le champ `key` avait été figé dans `manifest.json` pour garder cet ID
+    stable en dev (`diipacpliojnijgdhcgjkjhlipednoch`) — mais le Developer
+    Dashboard **refuse tout upload dont le manifeste contient `key`**
+    ("Le champ key n'est pas autorisé dans le fichier manifeste", constaté
+    2026-09-04), il a donc été retiré. L'ID local (dev, extension non
+    empaquetée) redevient dérivé du chemin du dossier, différent de l'ID
+    définitif que Chrome assigne à la création de l'item sur le Store (visible
+    dans le dashboard dès le brouillon, pas besoin d'attendre l'approbation).
+    Une fois cet ID connu : mettre à jour `CARDQUANT_EXTENSION_ID` côté site
+    **et redéployer** (pas juste un réglage Console), sans quoi le relais
+    silencieusement ne fait plus rien (jamais d'erreur bloquante par design,
+    cf. docstring de `relaySessionToExtension`).
 
 - **Panneau v2 (score, moy. ventes, liquidité, comparaison langue, display
   scellé, grade éditable)** : contrat étendu (`pricing_api/schemas.py`),

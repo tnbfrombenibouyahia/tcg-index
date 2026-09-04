@@ -7,3 +7,4 @@ __pycache__/
 .env*
 firebase-debug.log
 .pytest_cache/
+extension/*.zip
