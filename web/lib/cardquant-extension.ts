@@ -1,14 +1,18 @@
 import type { User } from "firebase/auth";
 
-// ID définitif assigné par Chrome à la création de la fiche Chrome Web
-// Store (2026-09-04) -- ne changera plus. L'ancien ID de dev
-// (diipacpliojnijgdhcgjkjhlipednoch, dérivé de la clé qui était figée dans
-// extension/manifest.json) ne correspond plus à rien : le champ `key` a dû
-// être retiré du manifeste (le Developer Dashboard refuse tout upload qui
-// le contient), donc l'ID local (extension non empaquetée, chrome://extensions)
-// redevient dérivé du chemin du dossier et diffère de celui-ci -- normal,
-// cf. extension/README.md.
-const CARDQUANT_EXTENSION_ID = "jkkonkcdkcadadfffonjlhlonmgcbmbm";
+// ID Chrome Web Store définitif (créé 2026-09-04) -- valeur à restaurer
+// UNE FOIS L'EXTENSION RÉELLEMENT PUBLIÉE (elle ne l'est pas encore, cf.
+// extension/STORE_LISTING.md) : "jkkonkcdkcadadfffonjlhlonmgcbmbm".
+// D'ici là, aucune extension installée nulle part n'a cet ID -- le pointer
+// vers l'ID de dev local (chrome://extensions -> CardQuant, dérivé du
+// chemin du dossier depuis le retrait de `key` du manifeste, cf.
+// extension/README.md) permet au relais ci-dessous d'atteindre la seule
+// extension qui existe réellement pour l'instant (celle de test local).
+// Var d'env plutôt qu'une valeur figée : NEXT_PUBLIC_CARDQUANT_EXTENSION_ID
+// prend le dessus si définie (Vercel/​.env.local), pour ne plus jamais avoir
+// à rééditer ce fichier à chaque changement d'ID local -- seul le défaut
+// ci-dessous doit repasser à l'ID Store au moment de la publication.
+const CARDQUANT_EXTENSION_ID = process.env.NEXT_PUBLIC_CARDQUANT_EXTENSION_ID || "pmdembnghhboeceipedchpgiffmclaja";
 
 type ChromeRuntime = {
   sendMessage: (extensionId: string, message: unknown, callback?: (response: unknown) => void) => void;

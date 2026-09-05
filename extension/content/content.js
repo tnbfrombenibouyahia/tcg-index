@@ -267,6 +267,116 @@
     </div>
   `;
 
+  // -- Largeur du panneau, réglable à la souris -------------------------
+  // Demande utilisateur (2026-09-05) : 340px fixe est parfois trop étroit
+  // pour analyser une fiche. Largeur pilotée par la custom property
+  // --cq-panel-width (cf. panel.css, lue par #cardquant-card et par la
+  // poignée elle-même) et persistée par onglet eBay -> ouvertures futures
+  // via chrome.storage.local (déjà le mécanisme de session/session cache,
+  // cf. lib/auth.js/lib/fx.js -- "storage" est déjà dans les permissions du
+  // manifeste, pas de changement de permissions nécessaire).
+  const PANEL_WIDTH_STORAGE_KEY = "cardquant_panel_width";
+  const PANEL_WIDTH_DEFAULT = 340;
+  const PANEL_WIDTH_MIN = 300;
+  const PANEL_WIDTH_MAX = 720;
+  const PANEL_WIDTH_STEP = 20; // pas d'ajustement au clavier (flèches ←/→)
+
+  // Bornée par une largeur mini/maxi fixes ET par la fenêtre courante --
+  // sur un écran étroit, PANEL_WIDTH_MAX (720) laisserait le panneau
+  // avaler toute la page hôte, donc jamais plus que innerWidth - 80 (marge
+  // pour garder la page hôte au moins un peu visible/cliquable à côté).
+  function clampPanelWidth(px) {
+    const viewportMax = Math.max(PANEL_WIDTH_MIN, window.innerWidth - 80);
+    const max = Math.min(PANEL_WIDTH_MAX, viewportMax);
+    return Math.min(Math.max(px, PANEL_WIDTH_MIN), max);
+  }
+
+  function currentPanelWidth(root) {
+    const raw = getComputedStyle(root).getPropertyValue("--cq-panel-width");
+    return parseFloat(raw) || PANEL_WIDTH_DEFAULT;
+  }
+
+  function applyPanelWidth(root, px) {
+    const width = clampPanelWidth(px);
+    root.style.setProperty("--cq-panel-width", `${width}px`);
+    return width;
+  }
+
+  function setupResize(root, handle) {
+    // Restaure la dernière largeur choisie (avant même le 1er rendu du
+    // verdict) -- asynchrone (chrome.storage.local), donc un bref instant
+    // au chargement le panneau garde le défaut CSS (340px) le temps que ça
+    // réponde ; pas de saut visible car la largeur n'est pas transitionnée
+    // (cf. panel.css, seule `transform` l'est).
+    chrome.storage.local.get(PANEL_WIDTH_STORAGE_KEY).then((stored) => {
+      const saved = stored[PANEL_WIDTH_STORAGE_KEY];
+      if (typeof saved === "number" && Number.isFinite(saved)) applyPanelWidth(root, saved);
+    });
+
+    // Reclamp si la fenêtre est redimensionnée pendant que le panneau est
+    // ouvert (ex. largeur choisie sur un grand écran, puis fenêtre
+    // réduite) -- évite qu'il finisse plus large que la fenêtre.
+    window.addEventListener("resize", () => applyPanelWidth(root, currentPanelWidth(root)));
+
+    let resizing = false;
+
+    function persist(width) {
+      chrome.storage.local.set({ [PANEL_WIDTH_STORAGE_KEY]: width });
+    }
+
+    handle.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0) return; // clic principal seulement
+      e.preventDefault();
+      resizing = true;
+      handle.setPointerCapture(e.pointerId);
+      root.classList.add("cardquant-resizing");
+      // Évite qu'un drag rapide sélectionne le texte de la page hôte
+      // derrière le panneau, et garde le curseur ew-resize même quand le
+      // pointeur dépasse la poignée par-dessus la page hôte pendant le
+      // drag (setPointerCapture ne redirige que les événements, pas le
+      // curseur affiché) -- les deux restaurés au relâchement ci-dessous.
+      document.documentElement.style.userSelect = "none";
+      document.documentElement.style.cursor = "ew-resize";
+    });
+    handle.addEventListener("pointermove", (e) => {
+      if (!resizing) return;
+      // Le panneau est ancré à droite (right: 0) : sa largeur est la
+      // distance entre le bord droit de la fenêtre et le pointeur, pas un
+      // delta depuis la position de la poignée -- plus simple et robuste
+      // qu'un tracking de deltaX (marche même si le pointeur "dépasse" la
+      // poignée pendant un drag rapide, cf. setPointerCapture ci-dessus).
+      applyPanelWidth(root, window.innerWidth - e.clientX);
+    });
+    function endResize(e) {
+      if (!resizing) return;
+      resizing = false;
+      root.classList.remove("cardquant-resizing");
+      document.documentElement.style.userSelect = "";
+      document.documentElement.style.cursor = "";
+      if (handle.hasPointerCapture(e.pointerId)) handle.releasePointerCapture(e.pointerId);
+      persist(currentPanelWidth(root));
+    }
+    handle.addEventListener("pointerup", endResize);
+    handle.addEventListener("pointercancel", endResize);
+
+    // Double-clic sur la poignée = retour à la largeur par défaut, idiome
+    // courant des panneaux redimensionnables (ex. VS Code).
+    handle.addEventListener("dblclick", () => {
+      persist(applyPanelWidth(root, PANEL_WIDTH_DEFAULT));
+    });
+
+    // Flèches gauche/droite au clavier -- la poignée est focusable
+    // (tabIndex=0, role="separator", cf. buildPanel) pour rester utilisable
+    // sans souris. Gauche = agrandit (le bord gauche du panneau s'éloigne
+    // du bord droit de l'écran), même sens que le drag souris.
+    handle.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      const delta = e.key === "ArrowLeft" ? PANEL_WIDTH_STEP : -PANEL_WIDTH_STEP;
+      persist(applyPanelWidth(root, currentPanelWidth(root) + delta));
+    });
+  }
+
   function buildPanel() {
     const root = document.createElement("div");
     root.id = "cardquant-root";
@@ -288,7 +398,21 @@
       <div id="cardquant-body">${SKELETON}</div>
     `;
 
-    root.append(tab, card);
+    // Poignée de redimensionnement (cf. panel.css) -- élément à part de
+    // #cardquant-card plutôt qu'un enfant, pour rester accrochée sur toute
+    // la hauteur visible même quand le panneau scrolle. Rôle "separator" +
+    // flèches gauche/droite au clavier (setupResize ci-dessous) en plus du
+    // drag souris -- même effort d'accessibilité que le reste du panneau
+    // (cf. onKeydown pour les candidats).
+    const resizeHandle = document.createElement("div");
+    resizeHandle.id = "cardquant-resize-handle";
+    resizeHandle.setAttribute("role", "separator");
+    resizeHandle.setAttribute("aria-orientation", "vertical");
+    resizeHandle.setAttribute("aria-label", "Redimensionner le panneau CardQuant");
+    resizeHandle.tabIndex = 0;
+
+    root.append(tab, card, resizeHandle);
+    setupResize(root, resizeHandle);
 
     let open = false;
     function setOpen(next) {

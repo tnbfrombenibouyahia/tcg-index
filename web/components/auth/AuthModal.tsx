@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "@/lib/firebase-client";
+import { syncSessionCookie } from "@/lib/useAuth";
 import { relaySessionToExtension } from "@/lib/cardquant-extension";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -59,6 +60,16 @@ export function AuthModal({
     setError(null);
     try {
       const result = await signInWithPopup(auth, new GoogleAuthProvider());
+      // Posé AVANT tout appelant qui enchaîne sur une route gardée (cf.
+      // LandingPage.tsx::onSubmit -> router.push("/dashboard"), déclenché
+      // depuis le flow "Se connecter sur CardQuant" de l'extension,
+      // ?cardquant_login=1) -- sans ça, proxy.ts ne verrait pas encore
+      // `cq_session` (posé sinon seulement par le listener onAuthStateChanged
+      // de useAuth.ts, asynchrone) et rebondirait l'utilisateur vers /auth
+      // juste après une connexion pourtant réussie. Même correctif déjà en
+      // place dans AuthPage.tsx::afterAuthSuccess -- cf. lib/useAuth.ts pour
+      // le détail de la course évitée.
+      syncSessionCookie(true);
       // Best-effort, ne bloque jamais la connexion sur le site elle-même
       // si l'extension n'est pas installée ou que le relais échoue (cf.
       // lib/cardquant-extension.ts).
