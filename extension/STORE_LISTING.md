@@ -49,6 +49,45 @@ CONFIDENTIALITÉ
 Lecture de la page active uniquement, sur les pages d'annonce eBay listées ci-dessus — jamais un autre site. Pas de suivi publicitaire, pas de revente de données. Politique de confidentialité complète : cardquant.io/privacy
 ```
 
+## Description détaillée (English)
+
+Traduction fidèle de la version FR ci-dessus — pas une nouvelle promesse.
+Le panneau reste **FR only** aujourd'hui (`content/content.js`, pas d'i18n) ;
+l'anglais/espagnol pour l'interface elle-même est un objectif futur, pas
+encore commencé, donc volontairement absent de ce texte (cf. mémoire
+projet "cardquant-i18n-roadmap"). "EN/JP" ci-dessous désigne la langue des
+**cartes** (Pokémon/One Piece), pas celle du panneau.
+
+```
+CardQuant shows a live price verdict on eBay listings for Pokémon and One Piece trading cards (EN/JP, raw and graded) — without switching tabs.
+
+HOW IT WORKS
+Open an eBay listing, click the CardQuant icon: the panel identifies the card (from the title, or from the photo if the title isn't enough) and compares the listed price to recent actual sales and the reference catalog price.
+
+WHAT THE PANEL SHOWS
+— One-off verdict: this exact price vs. the market (good deal / fair price / overpriced)
+— Median of recent sales, currently active listings
+— Known PSA graded population for this card
+— Grading ROI calculator (editable inputs: target PSA grade, fees, downgrade risk)
+— EN ↔ JP price comparison
+— Price/volume divergence (last 30 days vs. prior period)
+— Price ranking within its set
+— Cross-check link to the exact PriceCharting listing
+
+ACCOUNT REQUIRED
+Sign-in happens on cardquant.io (Google Sign-In), not inside the extension — once signed in on the site, the session is automatically recognized by the extension. Alerts, history and watchlist follow the same account, including on the full site terminal.
+
+CURRENT COVERAGE
+— Marketplace: eBay (.com, .fr, .de, .co.uk, .it, .es, .ca, .com.au, .at, .ch, .ie, .nl, .be, .pl)
+— Games: Pokémon and One Piece, English and Japanese, raw and PSA/CGC graded
+— Indicative prices, aggregated from third-party sources (PriceCharting, closed eBay sales) — not investment advice.
+
+The panel interface is currently in French only; English and Spanish are planned.
+
+PRIVACY
+Reads the active page only, on the eBay listing pages listed above — never any other site. No ad tracking, no data resale. Full privacy policy: cardquant.io/privacy
+```
+
 ## Icône fiche Store (128px) et captures d'écran
 
 Voir `icons/icon128.png` (généré depuis la piste "1B · Monogramme CQ" du zip design, cf. mémoire projet "cardquant-rebrand").
