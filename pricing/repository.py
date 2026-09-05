@@ -90,23 +90,86 @@ def fetch_items_by_code(code: str) -> list[Card]:
         conn.close()
 
 
-def fetch_items_by_name_tokens(tokens: set[str], *, tcg: str = "one-piece", limit: int = 200) -> list[Card]:
-    """Pré-filtre par ILIKE '%token%' sur name pour chaque token (OR), tcg
-    fixé -- réduit le set de candidats avant le scoring Dice fait en Python
-    par pricing/matching.py (pas de scan de tout le catalogue à chaque
-    requête). `limit` en filet de sécurité si les tokens sont trop
-    génériques."""
+def fetch_items_by_name_tokens(tokens: set[str], *, tcg: str | None = "one-piece", limit: int = 200) -> list[Card]:
+    """Pré-filtre par ILIKE '%token%' sur name pour chaque token (OR),
+    optionnellement restreint à un `tcg` -- réduit le set de candidats
+    avant le scoring Dice fait en Python par pricing/matching.py (pas de
+    scan de tout le catalogue à chaque requête). `limit` en filet de
+    sécurité si les tokens sont trop génériques.
+
+    Trié par nombre de tokens matchés décroissant avant application de
+    `limit` -- sans ça, un token très générique (ex. "ex", présent dans le
+    nom de milliers de cartes Pokémon modernes type "... ex") peut à lui
+    seul remplir les `limit` lignes avec des résultats sans rapport avant
+    même que Postgres n'atteigne la ligne recherchée, qui matche pourtant
+    PLUSIEURS tokens à la fois (ex. "mega"+"rayquaza"+"ex") -- l'ordre
+    naturel de la table n'a aucune raison de favoriser les lignes les plus
+    pertinentes. Repéré en testant le repli fuzzy Pokémon (cf.
+    pricing/matching.py::fuzzy_match_by_name_and_rarity) sur "Mega
+    Rayquaza ex ...", absent des 200 premières lignes à cause de "ex" seul.
+
+    `tcg=None` ne filtre pas par jeu -- recherche cross-catalogue,
+    utilisée par le repli fuzzy multi-TCG (cf.
+    pricing/matching.py::fuzzy_match_by_name_and_rarity) quand le texte
+    libre ne contient ni code officiel One Piece ni numéro de carte
+    Pokémon reconnaissable : plutôt que de deviner le jeu à partir
+    d'indices peu fiables, on cherche partout et on laisse le score Dice
+    sur le nom complet départager (le vocabulaire des deux jeux ne se
+    recoupe quasiment jamais)."""
     if not tokens:
         return []
     conn = get_connection()
     try:
         with conn.cursor() as cur:
+            like_params = [f"%{token}%" for token in tokens]
             or_clause = " OR ".join(["name ILIKE %s"] * len(tokens))
-            params = [f"%{token}%" for token in tokens] + [tcg, limit]
+            match_count_expr = " + ".join(["(name ILIKE %s)::int"] * len(tokens))
+            where = f"({or_clause})"
+            # `like_params` répété : une 1ère fois pour le score de
+            # pertinence dans le SELECT, une 2e pour le filtre WHERE --
+            # deux jeux de placeholders distincts sur la même requête.
+            params = list(like_params) + list(like_params)
+            if tcg is not None:
+                where += " AND tcg = %s"
+                params.append(tcg)
+            params.append(limit)
+            cur.execute(
+                f"SELECT {_CARD_COLUMNS}, {match_count_expr} AS match_count FROM items "
+                f"WHERE {where} ORDER BY match_count DESC LIMIT %s",
+                params,
+            )
+            return [_row_to_card(row[:9]) for row in cur.fetchall()]
+    finally:
+        conn.close()
+
+
+def fetch_pokemon_items_by_number(number: str) -> list[Card]:
+    """items.tcg='pokemon' AND numérateur du code (partie avant un '/' s'il
+    y en a un, zéros de tête ignorés des deux côtés) OU code promo
+    alphanumérique = `number` normalisé (cf.
+    pricing/matching.py::extract_pokemon_number). Une seule expression
+    couvre les deux formats observés en base -- EN (source apitcg) stocke
+    souvent "101/159" (numérateur/dénominateur), JP (source pricecharting,
+    pas de dénominateur disponible côté JP) stocke le numérateur seul
+    ("58") parfois avec ou sans zéros de tête selon le set ; un code promo
+    alphanumérique ("SWSH029") n'a pas de '/', split_part le laisse intact
+    et le retrait de zéros de tête ne mord jamais sur un préfixe de lettre.
+
+    Peut renvoyer des dizaines de lignes : un numéro Pokémon est TOUJOURS
+    unique AU SEIN d'un set (jamais entre sets différents, cf.
+    ingestion/sources/limitlesstcg.py, docstring module + fonction
+    build_pokemon_set_mapping) -- la désambiguïsation (quel set/langue)
+    se fait ensuite en Python, cf.
+    pricing/matching.py::disambiguate_pokemon_candidates."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
             cur.execute(
                 f"SELECT {_CARD_COLUMNS} FROM items "
-                f"WHERE ({or_clause}) AND tcg = %s LIMIT %s",
-                params,
+                "WHERE tcg = 'pokemon' AND code IS NOT NULL AND "
+                "UPPER(regexp_replace(split_part(code, '/', 1), '^0+', '')) "
+                "= UPPER(regexp_replace(%s, '^0+', ''))",
+                (number,),
             )
             return [_row_to_card(row) for row in cur.fetchall()]
     finally:
