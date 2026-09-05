@@ -52,5 +52,5 @@ class MatchResult:
     card: Card | None = None
     candidates: list[Card] = field(default_factory=list)
     confidence: float = 0.0
-    strategy: str | None = None  # 'code' | 'code+qualifier' | 'fuzzy_name_rarity' | None
+    strategy: str | None = None  # 'code' | 'code+qualifier' | 'pokemon_number' | 'pokemon_number+set' | 'fuzzy_name_rarity' | None
     message: str | None = None

@@ -3,9 +3,12 @@ partir de titres réels observés dans
 ingestion/_probe_output/ebay_report_one-piece_en.json.
 """
 from pricing.matching import (
+    _pokemon_set_tokens,
     _qualifier_tokens,
     disambiguate_candidates,
+    disambiguate_pokemon_candidates,
     extract_one_piece_code,
+    extract_pokemon_number,
     fuzzy_match_by_name_and_rarity,
     identify_card,
 )
@@ -14,6 +17,11 @@ from pricing.models import Card
 
 def _card(id, name, code, set_code="one-piece-starter-deck-22-ace-newgate", rarity="Super Rare", language="EN"):
     return Card(id=id, name=name, code=code, set_code=set_code, tcg="one-piece",
+                category="single", language=language, rarity=rarity)
+
+
+def _poke_card(id, name, code, set_code, rarity=None, language="EN"):
+    return Card(id=id, name=name, code=code, set_code=set_code, tcg="pokemon",
                 category="single", language=language, rarity=rarity)
 
 
@@ -76,6 +84,91 @@ class TestQualifierTokens:
         # bracket-hash), pas un qualificatif de variante -- même traitement
         # que le "(105)" purement numérique ci-dessus.
         assert _qualifier_tokens("Roronoa Zoro OP06 [#118]") == frozenset()
+
+
+class TestExtractPokemonNumber:
+    def test_finds_numerator_denominator_form(self):
+        # Cas réel : annonce eBay.fr 800613059079, "Mega Rayquaza EX
+        # 110/078 Storm Emerald Japonais CCC 9.5 PV 280 Dragon".
+        assert extract_pokemon_number("Mega Rayquaza EX 110/078 Storm Emerald Japonais") == "110"
+
+    def test_keeps_leading_zeros_normalization_to_sql(self):
+        # Le retrait des zéros de tête se fait côté SQL (cf.
+        # fetch_pokemon_items_by_number), pas ici -- la fonction renvoie
+        # le numérateur brut.
+        assert extract_pokemon_number("Dunsparce 110/168 Celestial Storm") == "110"
+
+    def test_rejects_single_digit_denominator_lot_quantity(self):
+        # "3/5 cards" (quantité de lot) ne doit pas être pris pour un
+        # numéro de carte -- aucun set réel n'a un total à un seul chiffre.
+        assert extract_pokemon_number("Lot of 3/5 cards near mint") is None
+
+    def test_finds_promo_code_without_slash(self):
+        assert extract_pokemon_number("Rayquaza - SWSH029 Promo") == "SWSH029"
+
+    def test_promo_code_reconstructed_without_space(self):
+        assert extract_pokemon_number("Rayquaza SWSH 029") == "SWSH029"
+
+    def test_no_number_in_plain_text(self):
+        assert extract_pokemon_number("Mega Rayquaza ex Storm Emerald near mint") is None
+
+
+class TestPokemonSetTokens:
+    def test_strips_pokemon_prefix(self):
+        assert _pokemon_set_tokens("pokemon-jp-storm-emeralda") == frozenset({"jp", "storm", "emeralda"})
+
+    def test_strips_generation_code_fragment(self):
+        # "ex" ici est un fragment d'ère de set (Scarlet & Violet-ex), pas
+        # un nom de carte -- cf. _POKEMON_GEN_CODE_RE.
+        assert _pokemon_set_tokens("pokemon-jp-mega-dream-ex") == frozenset({"jp", "mega", "dream"})
+
+    def test_none_set_code_is_empty(self):
+        assert _pokemon_set_tokens(None) == frozenset()
+
+
+class TestDisambiguatePokemonCandidates:
+    def test_single_candidate_matches_without_scoring(self):
+        card = _poke_card(1, "Rayquaza", "101", "pokemon-crown-zenith")
+        result = disambiguate_pokemon_candidates("anything at all", [card])
+        assert result.status == "matched"
+        assert result.card is card
+        assert result.confidence == 1.0
+
+    def test_picks_matching_set_and_name_across_many_same_number_candidates(self):
+        # Cas réel qui a motivé ce chemin : 83 cartes Pokémon partagent le
+        # numérateur "110" tous sets confondus (mesuré sur le catalogue
+        # réel), la bonne carte se départage par nom+set+rareté, pas par
+        # numéro seul.
+        target = _poke_card(64196, "Mega Rayquaza ex", "110", "pokemon-jp-storm-emeralda",
+                             rarity="Special Art Rare", language="JP")
+        decoy_same_number_en = _poke_card(8314, "Dunsparce", "110/168", "pokemon-sm-celestial-storm", language="EN")
+        decoy_same_number_jp = _poke_card(51638, "Mega Charizard X Ex", "110", "pokemon-jp-inferno-x", language="JP")
+        text = "Mega Rayquaza EX 110/078 Storm Emerald Japonais CCC 9.5 PV 280 Dragon"
+
+        result = disambiguate_pokemon_candidates(text, [target, decoy_same_number_en, decoy_same_number_jp])
+
+        assert result.status == "matched"
+        assert result.card is target
+
+    def test_language_hint_narrows_to_single_survivor_without_token_overlap(self):
+        # Numéro + langue déjà univoques (un seul candidat JP survit) --
+        # ne doit PAS retomber à "ambiguous" faute de recouvrement de
+        # tokens texte/carte, contrairement au qualificatif One Piece (qui
+        # peut légitimement être vide des deux côtés, cf. _dice) : ici le
+        # texte est délibérément laconique, sans nom de set.
+        jp_card = _poke_card(1, "Obscure Card Name", "42", "pokemon-jp-some-obscure-set", language="JP")
+        en_card = _poke_card(2, "Obscure Card Name", "42", "pokemon-some-obscure-set", language="EN")
+        text = "PSA 10 Japan 42/100 Near Mint"
+        result = disambiguate_pokemon_candidates(text, [jp_card, en_card])
+        assert result.status == "matched"
+        assert result.card is jp_card
+
+    def test_ambiguous_when_no_signal_decisive(self):
+        a = _poke_card(1, "Some Card", "42", "pokemon-set-a", language="EN")
+        b = _poke_card(2, "Other Card", "42", "pokemon-set-b", language="EN")
+        result = disambiguate_pokemon_candidates("42/100 Near Mint", [a, b])
+        assert result.status == "ambiguous"
+        assert len(result.candidates) == 2
 
 
 class TestDisambiguateCandidates:
@@ -158,6 +251,53 @@ class TestDisambiguateCandidates:
 
 
 class TestFuzzyMatchByNameAndRarity:
+    def test_pokemon_reissued_promo_ambiguous_without_year(self, monkeypatch):
+        # Cas réel : "Pikachu McDonalds Promo" (aucune année) -- 8 lignes
+        # candidates plausibles (7 promos McDonald's EN, une par année, +
+        # 1 promo JP dont le nom contient littéralement "McDonalds").
+        # Avant le passage par set_code dans le score (_fuzzy_candidate_tokens),
+        # la ligne JP gagnait à tort (son nom plus court, sans numéro de
+        # carte, gonflait artificiellement son score de Dice) -- doit
+        # rester ambigu : rien dans le texte ne permet de choisir l'année
+        # EN, ni de départager JP vs EN.
+        jp_mcdo = _poke_card(1, "Pikachu [McDonalds Promo]", "84/PCG-P", "pokemon-jp-promo", rarity="Promo", language="JP")
+        en_2022 = _poke_card(2, "Pikachu - 7/15", "007/015", "pokemon-mcdonalds-promos-2022", rarity="Promo")
+        en_2023 = _poke_card(3, "Pikachu", "006/015", "pokemon-mcdonalds-promos-2023", rarity="Promo")
+        monkeypatch.setattr("pricing.matching.fetch_items_by_name_tokens",
+                             lambda tokens, **k: [jp_mcdo, en_2022, en_2023])
+
+        result = fuzzy_match_by_name_and_rarity("Pikachu McDonalds Promo")
+
+        assert result.status == "ambiguous"
+        assert len(result.candidates) == 3
+
+    def test_pokemon_reissued_promo_resolved_when_year_specified(self, monkeypatch):
+        jp_mcdo = _poke_card(1, "Pikachu [McDonalds Promo]", "84/PCG-P", "pokemon-jp-promo", rarity="Promo", language="JP")
+        en_2022 = _poke_card(2, "Pikachu - 7/15", "007/015", "pokemon-mcdonalds-promos-2022", rarity="Promo")
+        en_2023 = _poke_card(3, "Pikachu", "006/015", "pokemon-mcdonalds-promos-2023", rarity="Promo")
+        monkeypatch.setattr("pricing.matching.fetch_items_by_name_tokens",
+                             lambda tokens, **k: [jp_mcdo, en_2022, en_2023])
+
+        result = fuzzy_match_by_name_and_rarity("Pikachu McDonalds Promo 2022")
+
+        assert result.status == "matched"
+        assert result.card is en_2022
+
+    def test_one_piece_scoring_ignores_set_code_unlike_pokemon(self, monkeypatch):
+        # Verrou de non-régression : l'ajout des tokens de set (motivé par
+        # le cas Pokémon ci-dessus) ne doit rien changer au score One
+        # Piece, calibré/testé sur le nom seul (cf. les autres tests de
+        # cette classe, notamment test_matches_despite_different_punctuation
+        # dont le score dépend explicitement de l'absence des tokens de
+        # set_code).
+        candidate = _card(1, "Luffy", "OP01-001", set_code="one-piece-totally-unrelated-set-name", rarity="Common")
+        monkeypatch.setattr("pricing.matching.fetch_items_by_name_tokens", lambda tokens, **k: [candidate])
+
+        result = fuzzy_match_by_name_and_rarity("Luffy One Piece Near Mint")
+
+        assert result.status == "matched"
+        assert result.card is candidate
+
     def test_matches_despite_different_punctuation(self, monkeypatch):
         candidate = _card(1, "Marshall.D.Teach", "OP12-054", rarity="Common")
         monkeypatch.setattr("pricing.matching.fetch_items_by_name_tokens", lambda tokens, **k: [candidate])
@@ -217,6 +357,47 @@ class TestIdentifyCard:
         monkeypatch.setattr("pricing.matching.fetch_items_by_name_tokens", lambda tokens, **k: [candidate])
 
         result = identify_card(text="Marshall D Teach One Piece Legacy Of The Master")
+
+        assert result.status == "matched"
+        assert result.strategy == "fuzzy_name_rarity"
+
+    def test_pokemon_number_delegates_to_pokemon_lookup(self, monkeypatch):
+        # Cas réel qui a motivé toute cette extension : annonce eBay.fr
+        # 800613059079, aucun code One Piece dans le titre -> doit passer
+        # par le numéro Pokémon, jamais par le fuzzy One Piece (qui
+        # renvoyait à tort des cartes One Piece sans rapport, cf. session).
+        card = _poke_card(64196, "Mega Rayquaza ex", "110", "pokemon-jp-storm-emeralda",
+                           rarity="Special Art Rare", language="JP")
+        monkeypatch.setattr("pricing.matching.fetch_pokemon_items_by_number", lambda number: [card])
+
+        result = identify_card(text="Mega Rayquaza EX 110/078 Storm Emerald Japonais CCC 9.5 PV 280 Dragon")
+
+        assert result.status == "matched"
+        assert result.card is card
+        assert result.strategy == "pokemon_number"
+
+    def test_one_piece_code_takes_priority_over_pokemon_lookup(self, monkeypatch):
+        card = _card(1, "Cavendish", "OP10-105")
+        monkeypatch.setattr("pricing.matching.fetch_items_by_code", lambda code: [card])
+        called = []
+        monkeypatch.setattr("pricing.matching.fetch_pokemon_items_by_number", lambda number: called.append(number) or [])
+
+        result = identify_card(text="Cavendish (105) OP10-105 Royal Blood Regular")
+
+        assert result.status == "matched"
+        assert result.card is card
+        assert not called  # jamais tenté : le code One Piece a déjà tranché
+
+    def test_pokemon_number_recognized_but_not_in_catalog_falls_back_to_fuzzy(self, monkeypatch):
+        # Contrairement au code One Piece (regex ancrée -> "not_found"
+        # direct si absent), un numéro Pokémon "reconnu" mais sans
+        # candidat peut être un faux positif regex -- on retombe sur le
+        # fuzzy plutôt que de conclure à tort.
+        candidate = _poke_card(1, "Mega Rayquaza ex", "110", "pokemon-jp-storm-emeralda")
+        monkeypatch.setattr("pricing.matching.fetch_pokemon_items_by_number", lambda number: [])
+        monkeypatch.setattr("pricing.matching.fetch_items_by_name_tokens", lambda tokens, **k: [candidate])
+
+        result = identify_card(text="Mega Rayquaza EX 110/078 Storm Emerald")
 
         assert result.status == "matched"
         assert result.strategy == "fuzzy_name_rarity"
