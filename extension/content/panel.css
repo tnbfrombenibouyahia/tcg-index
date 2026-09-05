@@ -48,6 +48,11 @@
   --cq-radius-sm:      10px;
   --cq-font-sans: -apple-system, "Segoe UI", Roboto, sans-serif;
   --cq-font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  /* Largeur du panneau -- réglable à la souris (cf. #cardquant-resize-handle
+     ci-dessous) et persistée par content.js (chrome.storage.local,
+     clé cardquant_panel_width) via setProperty sur ce même élément.
+     340px = largeur d'origine, gardée comme valeur par défaut. */
+  --cq-panel-width: 340px;
 
   font-family: var(--cq-font-sans);
   color: var(--cq-text-body);
@@ -102,7 +107,7 @@
   position: absolute;
   top: 0;
   right: 0;
-  width: 340px;
+  width: var(--cq-panel-width);
   height: 100%;
   /* Pas de backdrop-filter : le panneau s'affiche sur des pages eBay dont
      le contenu derrière n'est jamais contrôlé -- un fond quasi opaque reste
@@ -122,6 +127,59 @@
 
 #cardquant-root.cardquant-open #cardquant-card {
   transform: translateX(0);
+}
+
+/* -- Poignée de redimensionnement -- barre invisible de 8px à cheval sur le
+   bord gauche du panneau (frontière calculée via --cq-panel-width, pas via
+   la position du panneau, insensible à sa transform d'ouverture/fermeture),
+   cf. content.js pour le drag au pointeur + la persistance
+   (chrome.storage.local, clé cardquant_panel_width). Élément à part, PAS
+   dans #cardquant-card : ce dernier scrolle (overflow-y: auto) et une
+   poignée qui y vivrait défilerait avec le contenu au lieu de rester
+   accrochée sur toute la hauteur visible du panneau. Masquée/inerte tant
+   que le panneau est fermé (rien à redimensionner, et ça éviterait une
+   bande invisible cliquable flottant sur la page hôte). */
+#cardquant-resize-handle {
+  position: absolute;
+  top: 0;
+  right: var(--cq-panel-width);
+  transform: translateX(50%);
+  width: 8px;
+  height: 100%;
+  cursor: ew-resize;
+  z-index: 3;
+  touch-action: none;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+#cardquant-root.cardquant-open #cardquant-resize-handle {
+  opacity: 1;
+  pointer-events: auto;
+}
+#cardquant-resize-handle::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 3px;
+  width: 2px;
+  height: 100%;
+  border-radius: 2px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+#cardquant-resize-handle:hover::before,
+#cardquant-resize-handle:focus-visible::before,
+#cardquant-root.cardquant-resizing #cardquant-resize-handle::before {
+  background: var(--cq-green);
+}
+#cardquant-resize-handle:focus-visible {
+  outline: none;
+}
+/* Pendant le drag : le curseur ew-resize reste correct même si le pointeur
+   dépasse temporairement la poignée (capture de pointeur, cf. content.js). */
+#cardquant-root.cardquant-resizing {
+  cursor: ew-resize;
 }
 
 /* -- Header persistant : marque + statut d'identification + avatar/prénom

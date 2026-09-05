@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "CardQuant",
   "short_name": "CardQuant",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Verdict en direct sur les annonces de cartes One Piece TCG : bonne affaire, prix normal ou survendu, en un coup d'œil.",
   "action": {
     "default_title": "CardQuant — afficher/masquer le panneau"
