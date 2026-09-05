@@ -398,14 +398,48 @@ def _extract_name_tokens(text: str) -> set[str]:
     return tokens
 
 
+def _fuzzy_candidate_tokens(c: Card) -> frozenset:
+    """Tokens de nom, complétés par les tokens de set (cf.
+    _pokemon_set_tokens) pour un candidat Pokémon -- One Piece inchangé
+    (nom seul, comportement historique, cf. les tests existants qui
+    dépendent de ce score exact).
+
+    Cas réel qui a motivé cet ajout : "Pikachu McDonalds Promo" (aucune
+    année précisée) matchait à tort la seule ligne JP dont le nom contient
+    littéralement "McDonalds" ('Pikachu [McDonalds Promo]') plutôt que de
+    rester ambigu entre elle et les ~7 promos McDonald's EN, une par année
+    (2014-2024) -- l'info "McDonald's" de ces dernières vit uniquement
+    dans `set_code` (ex. 'pokemon-mcdonalds-promos-2022'), invisible à un
+    score sur le nom seul ("Pikachu - 7/15" ne dit rien de McDonald's).
+
+    Les tokens purement numériques de 1 à 3 chiffres sont retirés (numéro
+    de carte intégré au nom, ex. "Pikachu - 7/15" -> tokens "7"/"15") :
+    propres à CE candidat, jamais un signal de texte libre pertinent (s'il
+    l'était, on serait déjà passé par le chemin numéro dédié, pas ici) --
+    les laisser gonflait le vocabulaire des promos EN sans jamais pouvoir
+    matcher un texte qui ne les mentionne pas, les désavantageant à tort
+    face à la ligne JP (vocabulaire plus court, donc score de Dice plus
+    haut à recouvrement égal). Un token à 4 chiffres est conservé (presque
+    toujours une année, ex. "...-promos-2022" -> "2022" -- signal utile
+    pour départager les promos McDonald's par année quand le texte la
+    précise)."""
+    name_toks = frozenset(_normalize_name(c.name).split())
+    if c.tcg != "pokemon":
+        return name_toks
+    combined = name_toks | _pokemon_set_tokens(c.set_code)
+    return frozenset(t for t in combined if not (t.isdigit() and len(t) != 4))
+
+
 def fuzzy_match_by_name_and_rarity(text: str) -> MatchResult:
     """Priorité 2 (fallback) : ni code One Piece ni numéro Pokémon
     exploitable. Pré-filtre en DB par tokens de nom sur TOUT le catalogue
     (`tcg=None`, cf. pricing/repository.py::fetch_items_by_name_tokens) --
     pas de tri par jeu au préalable, plutôt que deviner lequel à partir
     d'indices peu fiables -- puis score de Dice sur le nom normalisé
-    complet (+ filtre optionnel par rareté détectée) -- ne devine jamais si
-    le meilleur score est sous le seuil ou s'il y a égalité."""
+    complet (+ tokens de set pour un candidat Pokémon, cf.
+    _fuzzy_candidate_tokens) (+ filtre optionnel par rareté détectée) --
+    ne devine jamais si le meilleur score est sous le seuil ou s'il y a
+    égalité."""
     tokens = _extract_name_tokens(text)
     if not tokens:
         return MatchResult(status="not_found", strategy="fuzzy_name_rarity",
@@ -423,7 +457,7 @@ def fuzzy_match_by_name_and_rarity(text: str) -> MatchResult:
 
     text_norm = frozenset(_normalize_name(" ".join(tokens)).split())
     scored = sorted(
-        ((_dice(text_norm, frozenset(_normalize_name(c.name).split())), c) for c in candidates),
+        ((_dice(text_norm, _fuzzy_candidate_tokens(c)), c) for c in candidates),
         key=lambda pair: pair[0], reverse=True,
     )
     best_score, best = scored[0]

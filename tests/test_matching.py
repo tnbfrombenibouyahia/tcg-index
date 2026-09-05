@@ -251,6 +251,53 @@ class TestDisambiguateCandidates:
 
 
 class TestFuzzyMatchByNameAndRarity:
+    def test_pokemon_reissued_promo_ambiguous_without_year(self, monkeypatch):
+        # Cas réel : "Pikachu McDonalds Promo" (aucune année) -- 8 lignes
+        # candidates plausibles (7 promos McDonald's EN, une par année, +
+        # 1 promo JP dont le nom contient littéralement "McDonalds").
+        # Avant le passage par set_code dans le score (_fuzzy_candidate_tokens),
+        # la ligne JP gagnait à tort (son nom plus court, sans numéro de
+        # carte, gonflait artificiellement son score de Dice) -- doit
+        # rester ambigu : rien dans le texte ne permet de choisir l'année
+        # EN, ni de départager JP vs EN.
+        jp_mcdo = _poke_card(1, "Pikachu [McDonalds Promo]", "84/PCG-P", "pokemon-jp-promo", rarity="Promo", language="JP")
+        en_2022 = _poke_card(2, "Pikachu - 7/15", "007/015", "pokemon-mcdonalds-promos-2022", rarity="Promo")
+        en_2023 = _poke_card(3, "Pikachu", "006/015", "pokemon-mcdonalds-promos-2023", rarity="Promo")
+        monkeypatch.setattr("pricing.matching.fetch_items_by_name_tokens",
+                             lambda tokens, **k: [jp_mcdo, en_2022, en_2023])
+
+        result = fuzzy_match_by_name_and_rarity("Pikachu McDonalds Promo")
+
+        assert result.status == "ambiguous"
+        assert len(result.candidates) == 3
+
+    def test_pokemon_reissued_promo_resolved_when_year_specified(self, monkeypatch):
+        jp_mcdo = _poke_card(1, "Pikachu [McDonalds Promo]", "84/PCG-P", "pokemon-jp-promo", rarity="Promo", language="JP")
+        en_2022 = _poke_card(2, "Pikachu - 7/15", "007/015", "pokemon-mcdonalds-promos-2022", rarity="Promo")
+        en_2023 = _poke_card(3, "Pikachu", "006/015", "pokemon-mcdonalds-promos-2023", rarity="Promo")
+        monkeypatch.setattr("pricing.matching.fetch_items_by_name_tokens",
+                             lambda tokens, **k: [jp_mcdo, en_2022, en_2023])
+
+        result = fuzzy_match_by_name_and_rarity("Pikachu McDonalds Promo 2022")
+
+        assert result.status == "matched"
+        assert result.card is en_2022
+
+    def test_one_piece_scoring_ignores_set_code_unlike_pokemon(self, monkeypatch):
+        # Verrou de non-régression : l'ajout des tokens de set (motivé par
+        # le cas Pokémon ci-dessus) ne doit rien changer au score One
+        # Piece, calibré/testé sur le nom seul (cf. les autres tests de
+        # cette classe, notamment test_matches_despite_different_punctuation
+        # dont le score dépend explicitement de l'absence des tokens de
+        # set_code).
+        candidate = _card(1, "Luffy", "OP01-001", set_code="one-piece-totally-unrelated-set-name", rarity="Common")
+        monkeypatch.setattr("pricing.matching.fetch_items_by_name_tokens", lambda tokens, **k: [candidate])
+
+        result = fuzzy_match_by_name_and_rarity("Luffy One Piece Near Mint")
+
+        assert result.status == "matched"
+        assert result.card is candidate
+
     def test_matches_despite_different_punctuation(self, monkeypatch):
         candidate = _card(1, "Marshall.D.Teach", "OP12-054", rarity="Common")
         monkeypatch.setattr("pricing.matching.fetch_items_by_name_tokens", lambda tokens, **k: [candidate])
