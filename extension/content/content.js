@@ -258,12 +258,27 @@
   // Statut d'identification affiché dans le header persistant -- distinct
   // du verdict de prix (pill verte/ambre/rouge dans le corps) : répond à
   // "l'extension a-t-elle trouvé la carte ?", pas "est-ce une bonne affaire ?".
+  //
+  // Chargement (maquette "CardQuant Panel" mise à jour, 2026-09-06) : mime
+  // un scan de carte (viseur + ligne de scan animée + shimmer) plutôt qu'un
+  // simple squelette de barres -- fait mieux comprendre QUOI se passe
+  // (analyse de LA carte identifiée, pas un chargement générique) pendant
+  // les quelques secondes de croisement des sources de prix.
   const SKELETON = `
-    <div class="cardquant-skeleton">
-      <div class="cardquant-skeleton-bar cardquant-skeleton-bar--wide"></div>
-      <div class="cardquant-skeleton-bar cardquant-skeleton-bar--pill"></div>
-      <div class="cardquant-skeleton-bar cardquant-skeleton-bar--half"></div>
-      <div class="cardquant-skeleton-bar cardquant-skeleton-bar--half"></div>
+    <div class="cardquant-loading">
+      <div class="cardquant-loading-scan" aria-hidden="true">
+        <div class="cardquant-loading-shimmer"></div>
+        <div class="cardquant-loading-scanline"></div>
+        <div class="cardquant-loading-frame"></div>
+      </div>
+      <p class="cardquant-loading-title">Analyse de la carte en cours</p>
+      <p class="cardquant-loading-sub">Croisement des sources de prix. Cela peut prendre jusqu'à 15 secondes.</p>
+      <div class="cardquant-loading-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="cardquant-loading-bars" aria-hidden="true">
+        <span style="width: 92%;"></span>
+        <span style="width: 68%;"></span>
+        <span style="width: 80%;"></span>
+      </div>
     </div>
   `;
 
@@ -392,7 +407,7 @@
     card.innerHTML = `
       <div class="cardquant-header">
         <span class="cardquant-brand">CARDQUANT</span>
-        <span id="cardquant-status" class="cardquant-status cardquant-status--pending">…</span>
+        <span id="cardquant-status" class="cardquant-status cardquant-status--pending">Recherche…</span>
         <span id="cardquant-user" class="cardquant-user" hidden></span>
       </div>
       <div id="cardquant-body">${SKELETON}</div>
@@ -522,7 +537,7 @@
         // panneau) -- sinon le statut/verdict de la page précédente reste
         // affiché pendant l'attente de la réponse suivante.
         tab.classList.remove("cardquant-green", "cardquant-yellow", "cardquant-red");
-        setStatus("…", "pending");
+        setStatus("Recherche…", "pending");
         body().innerHTML = SKELETON;
       },
     };
