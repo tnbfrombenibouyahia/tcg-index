@@ -40,6 +40,10 @@ export interface CatalogueBrowseRow {
   price: number | null;
   currency: string | null;
   priceChangePct: number | null;
+  // Logo du set (table `sets`, cf. ingestion/sources/pokecardex_mapping.py) --
+  // null si ce set n'est pas (encore) mappé côté PokéCardex, l'UI se rabat
+  // alors sur `setCode` en texte (pas de couverture garantie à 100%).
+  setLogoUrl: string | null;
 }
 
 interface BrowseRow {
@@ -56,6 +60,7 @@ interface BrowseRow {
   price: number | null;
   currency: string | null;
   prevPrice: number | null;
+  setLogoUrl: string | null;
 }
 
 function priceStateFragment(priceState?: PriceState) {
@@ -116,10 +121,12 @@ export async function browseCatalogue(params: CatalogueBrowseParams): Promise<{ 
         p.interest_tier  AS "interestTier",
         lp.price,
         lp.currency,
-        pv.price         AS "prevPrice"
+        pv.price         AS "prevPrice",
+        s.logo_url       AS "setLogoUrl"
       FROM page p
       LEFT JOIN latest_price lp ON lp.item_id = p.id
       LEFT JOIN prev_price pv ON pv.item_id = p.id
+      LEFT JOIN sets s ON s.tcg = p.tcg AND s.set_code = p.set_code
       ORDER BY p.name ASC, p.id ASC
     `,
     sql<{ count: number }[]>`
@@ -143,6 +150,7 @@ export async function browseCatalogue(params: CatalogueBrowseParams): Promise<{ 
       price: r.price,
       currency: r.currency,
       priceChangePct: r.price != null && r.prevPrice != null && r.prevPrice !== 0 ? ((r.price - r.prevPrice) / r.prevPrice) * 100 : null,
+      setLogoUrl: r.setLogoUrl,
     })),
   };
 }

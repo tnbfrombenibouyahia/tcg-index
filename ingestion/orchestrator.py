@@ -412,6 +412,49 @@ def run_population_sync(run_type: str) -> None:
     finish_run(run_id, status="error" if errors else "success", rows_written=rows_written, detail=detail)
 
 
+def run_pokecardex_images_sync(run_type: str) -> None:
+    """Images PokéCardex (cf. ingestion/sources/pokecardex_mapping.py +
+    pokecardex.py) : uniformité totale décidée le 2026-09-06 (remplace
+    l'ancienne allowlist de 5 sets, cf. docstring de pokecardex.py). Deux
+    passes -- (1) mapping : re-scrape le catalogue PokéCardex (~250 sets EN +
+    ~235 JP) et ré-essaie de mapper les set_code internes pas encore dans
+    `sets` (les nouveaux sets sortis depuis le dernier run, backfillés par le
+    référentiel API TCG mensuel juste avant celui-ci dans le run --items-only,
+    cf. run_items_sync) ; (2) backfill : scrape + écrit les images des sets
+    fraîchement mappés (`sets.images_synced_at IS NULL`, cf.
+    sync_all_mapped_sets(only_unsynced=True) -- ne retouche jamais les ~313
+    sets déjà backfillés le 2026-09-06). Cadence mensuelle (cf.
+    --pokecardex-images) : un nouveau set ne sort pas assez souvent pour
+    justifier plus, et le scrape complet du catalogue PokéCardex (~1-2 min)
+    reste cher à répéter plus souvent pour un bénéfice quasi nul entre deux
+    sorties. Volontairement PAS dans le pipeline quotidien/--tier (Playwright
+    + scraping DOM, nature très différente du reste de ce fichier -- requêtes
+    HTTP/API)."""
+    print("\n=== Images PokéCardex : mapping + backfill des nouveaux sets ===")
+    from ingestion.sources import pokecardex, pokecardex_mapping
+
+    run_id = start_run(run_type, "pokecardex_images")
+    try:
+        mapping = pokecardex_mapping.build_mapping()
+        pokecardex_mapping.write_matched_to_db(mapping["matched"])
+        print(
+            f"  Mapping : {len(mapping['matched'])} set(s) mappé(s) au total "
+            f"({len(mapping['ambiguous'])} ambigu(s), {len(mapping['unmatched'])} non-matché(s))"
+        )
+        results = pokecardex.sync_all_mapped_sets(only_unsynced=True)
+    except Exception as exc:
+        finish_run(run_id, status="error", detail=str(exc))
+        raise
+    ok = [r for r in results if "error" not in r]
+    errors = [r for r in results if "error" in r]
+    rows_written = sum(r["matched"] for r in ok)
+    detail = f"{len(ok)} nouveau(x) set(s) backfillé(s), {rows_written} image(s)"
+    if errors:
+        detail += f", {len(errors)} erreur(s)"
+    print(f"  {detail}")
+    finish_run(run_id, status="error" if errors else "success", rows_written=rows_written, detail=detail)
+
+
 def run_index_calculation(run_type: str) -> None:
     """Recalcule tous les indices de prix (cf. index/methodology.py) à partir
     des prix qu'on vient de synchroniser. Tourne à chaque run (quotidien et
@@ -579,6 +622,16 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--pokecardex-images", action="store_true",
+        help=(
+            "Lance UNIQUEMENT le mapping + backfill d'images PokéCardex des NOUVEAUX sets (cf. "
+            "run_pokecardex_images_sync) et sort -- ne retouche jamais les sets déjà backfillés. "
+            "Nouvelle source indépendante à cadence mensuelle, après le référentiel API TCG mensuel "
+            "(--items-only) pour que les sets tout juste ajoutés soient déjà dans `items` avant d'essayer "
+            "de les mapper."
+        ),
+    )
+    parser.add_argument(
         "--items-only", action="store_true",
         help=(
             "Lance UNIQUEMENT la sync référentiel API TCG (cf. run_items_sync) et sort -- retiré du run "
@@ -602,6 +655,18 @@ def main() -> int:
         except Exception as exc:
             had_errors = True
             print(f"\n!! Erreur pendant la sync référentiel : {exc}")
+        elapsed = time.monotonic() - started
+        print(f"\n=== Terminé en {elapsed / 60:.1f} min ({'avec erreurs' if had_errors else 'OK'}) ===")
+        return 1 if had_errors else 0
+
+    if args.pokecardex_images:
+        started = time.monotonic()
+        had_errors = False
+        try:
+            run_pokecardex_images_sync("monthly")
+        except Exception as exc:
+            had_errors = True
+            print(f"\n!! Erreur pendant le mapping/backfill PokéCardex : {exc}")
         elapsed = time.monotonic() - started
         print(f"\n=== Terminé en {elapsed / 60:.1f} min ({'avec erreurs' if had_errors else 'OK'}) ===")
         return 1 if had_errors else 0

@@ -1,195 +1,328 @@
-"""Source d'images (scraping partiel) : PokéCardex (pokecardex.com).
+"""Source d'images : PokéCardex (pokecardex.com) -- backfill `items.image_url`
+pour TOUT le catalogue Pokémon (EN + JP) mappé dans la table `sets`.
 
-Suite à une suggestion utilisateur de sourcer les images JP/CN sur ce site
-(scans de meilleure qualité que TCGPlayer/PriceCharting sur certains sets),
-évalué en profondeur le 2026-08-06. Deux découvertes ont scopé ce module à
-beaucoup moins que "toutes les images" :
+Historique -- pourquoi ce module a longtemps été limité à 5 sets
+------------------------------------------------------------------
+Ce module s'est d'abord arrêté à une allowlist manuelle de 5 sets
+(`POKECARDEX_IMAGE_SETS`, retirée le 2026-09-06, cf. git history si besoin),
+suite à une évaluation du 2026-08-06 qui avait trouvé :
+1. **Filigrane pas systématique mais pas prévisible à l'échelle du set** --
+   les scans PokéCardex sont propres sur les sets très récents, mais
+   certaines cartes plus anciennes portent un filigrane, vérifié carte par
+   carte à la main.
+2. **"Récent" ne veut pas dire "meilleure résolution"** -- comparé
+   set-par-set contre la source actuelle (TCGPlayer EN, PriceCharting JP),
+   la moitié des sets récents testés étaient à résolution égale ou
+   *inférieure*.
 
-1. **Watermark pas systématique, mais pas prévisible à l'échelle du set.**
-   Les scans PokéCardex sont propres sur les sets très récents, mais
-   certaines cartes plus anciennes portent un filigrane -- parfois
-   "POKECARDEX" (leur propre marque), parfois celui d'un contributeur tiers
-   repris tel quel (ex. "viper.fox" trouvé sur PCG9/2006, un set pourtant
-   postérieur à la coupure vintage évidente). Un unique sample par set ne
-   suffit donc PAS à certifier un set "propre" -- vérifié à la main,
-   carte par carte, pour chaque entrée de `POKECARDEX_IMAGE_SETS` ci-dessous.
-   Sets non retenus : toute la coupure vintage (avant ~2006, filigranée de
-   façon quasi systématique) + les sets récents dont la résolution
-   PokéCardex s'est avérée égale ou inférieure à ce qu'on a déjà (voir point
-   2) -- ne pas étendre cette liste sans reproduire la vérification manuelle
-   (fetch `?class=original`, inspection visuelle du filigrane, comparaison
-   de résolution avec `items.image_url` actuel).
+Décision utilisateur du 2026-09-06 (cf. mémoire projet/plan de session) :
+**uniformité totale** -- PokéCardex remplace la source actuelle pour tout le
+catalogue mappé, même si ça réintroduit un filigrane sur du vintage ou une
+résolution parfois inférieure. Ce module ne compare donc plus watermark/
+résolution -- ce garde-fou est explicitement abandonné, sur demande.
 
-2. **"Récent" ne veut pas dire "meilleure résolution".** Comparé
-   set-par-set contre la source actuelle (TCGPlayer pour EN, PriceCharting
-   pour JP -- déjà upscalées, cf. mémoire projet sur la qualité d'image), la
-   moitié des sets récents testés étaient à résolution égale ou *inférieure*
-   sur PokéCardex (ex. Stellar Crown EN 662x920 actuel vs 573x800 PokéCardex
-   -- on garde l'existant). Chaque entrée listée ici a été vérifiée
-   strictement meilleure sur un échantillon.
+Ce qui RESTE un garde-fou (indépendant du choix ci-dessus, cf.
+`pokecardex_mapping.py`) : le set PokéCardex ciblé doit être identifié
+correctement (via la table `sets`, remplie par un fuzzy-match qui refuse de
+trancher les cas ambigus), et la carte scrapée doit correspondre par NUMÉRO
+ET PAR NOM à l'item interne avant écriture -- un set mal identifié ou un
+numéro qui ne correspond pas écrirait la carte d'une tout autre édition, ce
+qui est un bug de justesse, pas une simple différence de qualité.
 
-**CN jamais évalué** : pas de catalogue CN dans `items` à ce jour (JP
-sealed/singles couvre Pokémon + One Piece, pas de Chinois, cf. mémoire
-projet). Resterait à faire si le tracking CN démarre un jour.
+Mécanique : scraping du set entier via Playwright (cf. `pokecardex_scrape.py`
+-- les pages du site sont une SPA React, aucune donnée exploitable en HTML
+brut), qui renvoie directement (numéro imprimé, nom, URL image pleine
+résolution) par carte -- plus besoin de deviner un numéro et de vérifier en
+HEAD comme dans les versions précédentes de ce module.
 
-Format d'URL (CDN public Bunny, aucune protection -- contrairement à l'API
-`/api/carte/...` du site elle-même, gated par le WAF hébergeur "PowerBoost",
-cf. session du 2026-08-06) :
+Format d'URL des scans (CDN public Bunny, aucune protection) :
 - JP : `https://pokecardex-scans.b-cdn.net/sets_jp/{code}/{num}.jpg?class=original`
 - EN (impression "US") : `https://pokecardex-scans.b-cdn.net/sets/{code}/US/{num}.jpg?class=original`
-
-`{num}` = numéro imprimé sans padding ni total (ex. "7", pas "007/086") --
-dérivé de `items.code` en retirant le zéro-padding et le "/XXX" final côté
-EN, pris tel quel côté JP.
 """
+import argparse
 import re
 import time
+import unicodedata
 
-import requests
+from dotenv import load_dotenv
 
+from ingestion.sources import pokecardex_scrape
+from ingestion.sources.pokecardex_scrape import PoliteBrowser, scrape_set_cards
 from shared.db import get_connection
 
 BASE_URL = "https://pokecardex-scans.b-cdn.net"
 
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-    ),
-}
+# En dessous de ce score de Dice (nom carte scrapée <-> items.name), on
+# considère que le numéro imprimé ne pointe pas vers la même carte (numéro
+# secret/alt-art qui ne s'aligne pas entre les deux catalogues, ou set mal
+# identifié en amont) -- on n'écrit rien plutôt que de deviner. Seuil plus
+# permissif que pricing/matching.py (cartes courtes -- "Pikachu" vs "Pikachu
+# ex" ne doit pas être rejeté) : affiné à la main sur quelques sets si le
+# taux de "skipped" s'avère anormalement élevé.
+NAME_MATCH_THRESHOLD = 0.4
 
-# Pas de quota documenté (CDN statique, CORS ouvert), mais on reste poli
-# comme pour PriceCharting.
-MIN_SECONDS_BETWEEN_REQUESTS = 0.5
-
-# items.set_code -> (zone PokéCardex, code de série PokéCardex)
-# zone = "sets_jp" (JP) ou "sets" (EN, impression "US" -- ajouté par
-# `image_url()` ci-dessous).
-#
-# Vérifié à la main le 2026-08-06 : filigrane absent (plusieurs cartes
-# inspectées par set) ET résolution strictement meilleure que la source
-# actuelle. Voir le docstring du module avant d'ajouter une entrée -- un
-# sample unique ou une comparaison de résolution sautée a déjà produit un
-# faux positif dans cette même session (Pitch Black EN, écarté après
-# vérification : 744x1040 PokéCardex vs 752x1048 TCGPlayer déjà en place).
-POKECARDEX_IMAGE_SETS = {
-    "pokemon-jp-storm-emeralda": ("sets_jp", "M6"),       # 1085x1515 vs 868x1212 PriceCharting
-    "pokemon-jp-black-bolt": ("sets_jp", "SV11B"),        # 868x1212 vs 513x730 PriceCharting
-    "pokemon-jp-white-flare": ("sets_jp", "SV11W"),       # 868x1212 vs 520x730 PriceCharting
-    "pokemon-sv-black-bolt": ("sets", "BLK"),             # 733x1024 vs 446x620 TCGPlayer
-    "pokemon-sv-white-flare": ("sets", "WHT"),            # 733x1024 vs 446x620 TCGPlayer
-}
+# Seuil du repli nom-seul (cf. sync_set_images, cas items.code = numéro de
+# Pokédex/SKU produit plutôt que position imprimée) -- bien plus strict que
+# NAME_MATCH_THRESHOLD : sans numéro pour ancrer, seule une quasi-identité de
+# nom (après nettoyage des qualificatifs) est acceptée, jamais un simple
+# recouvrement partiel de tokens.
+NAME_FALLBACK_THRESHOLD = 0.8
 
 
 def _extract_number(item_code):
-    """items.code -> numéro imprimé nu pour l'URL PokéCardex.
-
-    EN: "001/086" -> "1". JP: déjà nu ("1", "10") -> inchangé.
-    Renvoie None si aucun nombre n'est extractible (carte sans numéro).
-    """
+    """items.code -> numéro imprimé nu, pour l'apparier au numéro scrapé
+    PokéCardex (lui-même normalisé en int ci-dessous, donc peu importe le
+    padding des deux côtés). EN: "001/086" -> 1. JP: déjà nu ("1", "10").
+    Préfixe alpha optionnel toléré (ex. "SWSH001" -> 1, cf. cartes promo
+    Sword & Shield relevées 2026-09-06 : un code promo peut porter un
+    préfixe d'ère SANS "/", contrairement à "001/086") -- le garde-fou reste
+    le score de nom avant écriture, pas cette extraction. None si aucun
+    nombre n'est extractible (carte sans numéro...)."""
     if not item_code:
         return None
-    m = re.match(r"0*(\d+)", item_code)
-    return m.group(1) if m else None
+    m = re.match(r"^[A-Za-z]*0*(\d+)", item_code)
+    return int(m.group(1)) if m else None
 
 
-def image_url(set_code, item_code, image_class="original"):
-    """Construit l'URL PokéCardex pour cet item, ou None si le set n'est
-    pas dans `POKECARDEX_IMAGE_SETS` ou si le numéro n'est pas extractible.
-    N'effectue aucune requête -- appelant responsable de vérifier le 200
-    avant d'écrire en base (les numéros secrets/alt-art ne matchent pas
-    tous, cf. `verify_image_url`).
-    """
-    mapping = POKECARDEX_IMAGE_SETS.get(set_code)
-    if mapping is None:
-        return None
-    zone, pcx_code = mapping
-    num = _extract_number(item_code)
-    if num is None:
-        return None
-    lang_segment = "/US" if zone == "sets" else ""
-    return f"{BASE_URL}/{zone}/{pcx_code}{lang_segment}/{num}.jpg?class={image_class}"
+# items.name porte souvent un qualificatif/numéro que le nom scrapé (brut,
+# juste "Charmeleon") n'a jamais -- ex. relevé 2026-09-06 sur les sets
+# Battle Academy : "Charmeleon - 8/68 (#30 Charizard Stamped)" (le "#30"
+# identifie un exemplaire numéroté du même produit stampé, pas une variante
+# de carte différente). Sans ce nettoyage, le score de Dice s'effondrait
+# sous NAME_MATCH_THRESHOLD (trop de tokens de bruit type "8"/"68"/"30"/
+# "stamped" face au nom scrapé nu) -- ~50% de faux "nom discordant" sur ces
+# sets alors que la carte était la bonne. Même principe que
+# pricing/matching.py::_qualifier_tokens (parenthèses/crochets = bruit de
+# variante), mais ici on le RETIRE avant comparaison plutôt que de le
+# comparer à part : cette fonction ne fait qu'identifier LA carte, pas
+# départager des variantes entre elles.
+_QUALIFIER_RE = re.compile(r"[\(\[][^\)\]]*[\)\]]")
+_TRAILING_NUMBER_RE = re.compile(r"\s*-\s*\d+[\w/]*\s*$")
 
 
-def verify_image_url(url, timeout=15):
-    """True si l'URL répond 200 (CDN public, pas de session/cookie requis)."""
-    try:
-        r = requests.head(url, headers=HEADERS, timeout=timeout, allow_redirects=True)
-        if r.status_code == 405:  # certains CDN n'aiment pas HEAD
-            r = requests.get(url, headers=HEADERS, timeout=timeout, stream=True)
-        return r.status_code == 200
-    except requests.RequestException:
-        return False
+def _clean_card_name(name):
+    name = _QUALIFIER_RE.sub(" ", name or "")
+    name = _TRAILING_NUMBER_RE.sub("", name)
+    return name
 
 
-def sync_mapped_items(set_codes=None):
-    """Backfill `items.image_url` pour les sets de `POKECARDEX_IMAGE_SETS`
-    (déjà vérifiés à la main : sans filigrane et strictement mieux résolus
-    que la source actuelle, cf. docstring module). Un seul item à la fois --
-    catalogue concerné petit (5 sets), pas besoin d'`execute_values` -- et
-    chaque URL est vérifiée en HEAD avant écriture, parce que les numéros
-    secrets/alt-art ne matchent pas forcément le même schéma que PokéCardex
-    (`verify_image_url`) : un miss laisse `image_url` inchangé plutôt que
-    d'écrire une image cassée.
+def _normalize_name(text):
+    text = unicodedata.normalize("NFKD", text or "").encode("ascii", "ignore").decode()
+    text = re.sub(r"[^a-z0-9]+", " ", text.lower())
+    return " ".join(text.split())
 
-    Ce backfill n'a normalement besoin d'être rejoué qu'une fois par set (les
-    scans PokéCardex ne changent pas) -- mais safe à relancer : idempotent,
-    et les resyncs quotidiens (référentiel API TCG + prix PriceCharting JP)
-    ne reviennent plus dessus, cf. le garde `LIKE 'https://pokecardex%'`
-    ajouté à leurs `_UPSERT_*_SQL` (apitcg.py / pricecharting.py) --
-    sans lui, l'écrasement serait silencieux au prochain run."""
-    codes = list(POKECARDEX_IMAGE_SETS) if set_codes is None else list(set_codes)
-    results = []
+
+def _dice(a, b):
+    if not a and not b:
+        return 1.0
+    if not a or not b:
+        return 0.0
+    return 2 * len(a & b) / (len(a) + len(b))
+
+
+def _name_score(a, b):
+    return _dice(
+        frozenset(_normalize_name(_clean_card_name(a)).split()),
+        frozenset(_normalize_name(_clean_card_name(b)).split()),
+    )
+
+
+def _fetch_mapped_sets(tcg="pokemon", only_unsynced=False):
     conn = get_connection()
     try:
         with conn.cursor() as cur:
-            for i, set_code in enumerate(codes):
-                if i > 0:
-                    time.sleep(MIN_SECONDS_BETWEEN_REQUESTS)
-                cur.execute(
-                    "SELECT id, code FROM items WHERE set_code = %s AND category = 'single'",
-                    (set_code,),
-                )
-                rows = cur.fetchall()
-                checked = written = 0
-                for item_id, code in rows:
-                    url = image_url(set_code, code)
-                    if url is None:
-                        continue
-                    checked += 1
-                    time.sleep(MIN_SECONDS_BETWEEN_REQUESTS)
-                    if not verify_image_url(url):
-                        continue
-                    cur.execute("UPDATE items SET image_url = %s WHERE id = %s", (url, item_id))
-                    written += 1
-                conn.commit()
-                stats = {"set_code": set_code, "items_total": len(rows), "checked": checked, "written": written}
-                print(f"{set_code}: {written}/{checked} image(s) mise(s) à jour ({len(rows)} item(s) au total)")
-                results.append(stats)
+            query = (
+                "SELECT set_code, language, pokecardex_zone, pokecardex_code "
+                "FROM sets WHERE tcg = %s"
+            )
+            if only_unsynced:
+                query += " AND images_synced_at IS NULL"
+            cur.execute(query, (tcg,))
+            return cur.fetchall()
     finally:
         conn.close()
+
+
+# Bundles à deux demi-decks (revue manuelle du 2026-09-06, cf.
+# pokecardex_mapping.py::MANUAL_OVERRIDES) : PokéCardex liste chaque
+# personnage du kit comme une tuile/set séparée là où le catalogue interne
+# n'a qu'UN set_code pour les deux (vérifié : mêmes numéros imprimés
+# réutilisés par les deux decks, ex. items "10/30 Fairy Energy" ET "10/30
+# Psychic Energy" coexistent sous le même set_code -- un seul `by_number`
+# écraserait l'un des deux). `sets.pokecardex_code` ne porte donc qu'un code
+# représentatif (logo) pour ces set_code -- le backfill ci-dessous scrape
+# RÉELLEMENT les deux codes listés ici et route chaque item vers celui des
+# deux dont le nom correspond le mieux, jamais un choix arbitraire entre les
+# deux images candidates.
+MULTI_CODE_SETS = {
+    "pokemon-sm-trainer-kit-alolan-sandslash-alolan-ninetales": ["TK11-S", "TK11-F"],
+    "pokemon-battle-academy": ["ADC-M", "ADC-P"],
+    "pokemon-ex-trainer-kit-1-latias-latios": ["TK1-LO", "TK1-LA"],
+    "pokemon-battle-academy-2022": ["ADC2-E", "ADC2-P"],
+    "pokemon-ex-trainer-kit-2-plusle-minun": ["TK2-P", "TK2-N"],
+    "pokemon-hgss-trainer-kit-gyarados-raichu": ["TK4-R", "TK4-L"],
+    "pokemon-xy-trainer-kit-latias-latios": ["TK8-LO", "TK8-LA"],
+    "pokemon-battle-academy-2024": ["ADC3-D", "ADC3-P"],
+    "pokemon-xy-trainer-kit-sylveon-noivern": ["TK6-B", "TK6-N"],
+    "pokemon-xy-trainer-kit-bisharp-wigglytuff": ["TK7-G", "TK7-S"],
+    # 2e passe de revue (2026-09-06, cf. pokecardex_mapping.py::MANUAL_OVERRIDES).
+    "pokemon-dp-trainer-kit-manaphy-lucario": ["TK3-M", "TK3-L"],
+    "pokemon-bw-trainer-kit-excadrill-zoroark": ["TK5-M", "TK5-Z"],
+}
+
+
+def sync_set_images(page, tcg, set_code, language, pokecardex_zone, pokecardex_code):
+    """Backfill `items.image_url` pour un seul set déjà mappé (`sets`) : un
+    scrape complet du set PokéCardex (ou des DEUX codes si `set_code` est un
+    bundle à deux demi-decks, cf. MULTI_CODE_SETS), puis appariement par
+    numéro imprimé + vérification du nom avant chaque écriture. Renvoie des
+    stats pour le résumé du run appelant."""
+    scrape_zone = "jp" if pokecardex_zone == "sets_jp" else "en"
+    codes = MULTI_CODE_SETS.get(set_code, [pokecardex_code])
+    decks = []  # liste de by_number (un dict par code scrapé)
+    all_cards = []
+    for i, code in enumerate(codes):
+        if i > 0:
+            time.sleep(pokecardex_scrape.MIN_SECONDS_BETWEEN_PAGES)
+        cards = scrape_set_cards(page, scrape_zone, code)
+        all_cards.extend(cards)
+        by_number = {}
+        for card in cards:
+            by_number.setdefault(int(card["number"]), card)
+        decks.append(by_number)
+
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, code, name FROM items WHERE tcg = %s AND set_code = %s AND category = 'single'",
+                (tcg, set_code),
+            )
+            rows = cur.fetchall()
+            matched = skipped_no_number = skipped_no_card = skipped_name_mismatch = 0
+            matched_by_name_fallback = 0
+            for item_id, code, name in rows:
+                number = _extract_number(code)
+                best_card = None
+                if number is not None:
+                    # Plusieurs decks (MULTI_CODE_SETS) : le même numéro peut
+                    # exister dans chacun (cartes différentes) -- on garde le
+                    # meilleur score de nom parmi tous les decks candidats,
+                    # jamais le premier trouvé arbitrairement.
+                    candidates = [deck[number] for deck in decks if number in deck]
+                    if candidates:
+                        candidate = max(candidates, key=lambda c: _name_score(name, c["name"]))
+                        if _name_score(name, candidate["name"]) >= NAME_MATCH_THRESHOLD:
+                            best_card = candidate
+                if best_card is not None:
+                    cur.execute("UPDATE items SET image_url = %s WHERE id = %s", (best_card["image_url"], item_id))
+                    matched += 1
+                    continue
+                # Repli nom-seul (sans ancrage numéro) : certains vieux sets JP
+                # stockent en fait un numéro de Pokédex national ou un SKU
+                # produit dans items.code, PAS la position imprimée sur la
+                # carte (relevé 2026-09-06, ex. items.code="228" pour
+                # "Mismagius" -- son n° de Pokédex national, pas sa position
+                # dans le set JP "Space-Time Creation" -- ou items.code=NULL
+                # pour d'autres lignes du même set). Le numéro ne sert alors à
+                # rien : on cherche la meilleure correspondance de nom dans
+                # TOUT le pool scrapé, avec un seuil bien plus strict que
+                # NAME_MATCH_THRESHOLD (aucun numéro pour départager deux
+                # cartes au nom proche, donc on n'accepte qu'une quasi-identité).
+                best_anywhere = max(all_cards, key=lambda c: _name_score(name, c["name"]), default=None)
+                if best_anywhere is not None and _name_score(name, best_anywhere["name"]) >= NAME_FALLBACK_THRESHOLD:
+                    cur.execute("UPDATE items SET image_url = %s WHERE id = %s", (best_anywhere["image_url"], item_id))
+                    matched += 1
+                    matched_by_name_fallback += 1
+                    continue
+                if number is None:
+                    skipped_no_number += 1
+                elif not any(number in deck for deck in decks):
+                    skipped_no_card += 1
+                else:
+                    skipped_name_mismatch += 1
+            cur.execute(
+                "UPDATE sets SET images_synced_at = now() WHERE tcg = %s AND set_code = %s",
+                (tcg, set_code),
+            )
+        conn.commit()
+    finally:
+        conn.close()
+    return {
+        "set_code": set_code,
+        "language": language,
+        "items_total": len(rows),
+        "cards_scraped": len(all_cards),
+        "matched": matched,
+        "matched_by_name_fallback": matched_by_name_fallback,
+        "skipped_no_number": skipped_no_number,
+        "skipped_no_card": skipped_no_card,
+        "skipped_name_mismatch": skipped_name_mismatch,
+    }
+
+
+def sync_all_mapped_sets(tcg="pokemon", only_unsynced=True):
+    """Parcourt tous les sets mappés (`sets`, cf. `pokecardex_mapping.py`) et
+    backfille leurs images. `only_unsynced=True` (défaut) saute les sets déjà
+    traités (`images_synced_at` non NULL) -- reprise après interruption sans
+    tout refaire ; passer `only_unsynced=False` pour forcer un re-sync
+    complet (ex. après un changement du site source)."""
+    targets = _fetch_mapped_sets(tcg, only_unsynced=only_unsynced)
+    results = []
+    with PoliteBrowser() as pb:
+        for i, (set_code, language, pokecardex_zone, pokecardex_code) in enumerate(targets):
+            if i > 0:
+                pb.throttle()
+            try:
+                stats = sync_set_images(pb.page, tcg, set_code, language, pokecardex_zone, pokecardex_code)
+            except Exception as exc:
+                stats = {"set_code": set_code, "language": language, "error": str(exc)}
+            results.append(stats)
+            if "error" in stats:
+                print(f"  ! {set_code} ({language}): erreur -- {stats['error']}")
+            else:
+                fallback_note = f", {stats['matched_by_name_fallback']} par repli nom-seul" if stats["matched_by_name_fallback"] else ""
+                print(
+                    f"  {set_code} ({language}): {stats['matched']}/{stats['items_total']} image(s) "
+                    f"({stats['cards_scraped']} carte(s) scrapée(s), "
+                    f"{stats['skipped_no_card']} sans correspondance, "
+                    f"{stats['skipped_name_mismatch']} nom discordant{fallback_note})"
+                )
     return results
 
 
 def main():
-    import argparse
-
-    from dotenv import load_dotenv
-
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--set-code",
-        help="set_code interne (items.set_code) parmi POKECARDEX_IMAGE_SETS. Omis => tous les sets mappés.",
+        "--resync-all", action="store_true",
+        help="Retraite aussi les sets déjà backfillés (par défaut, ne traite que ceux avec images_synced_at NULL).",
     )
+    parser.add_argument("--set-code", help="Limite le run à un seul set_code interne (debug).")
     args = parser.parse_args()
 
-    set_codes = [args.set_code] if args.set_code else None
-    print(f"== Backfill images PokéCardex ({args.set_code or 'tous les sets mappés'}) ==")
-    results = sync_mapped_items(set_codes)
-    total_written = sum(r["written"] for r in results)
-    total_checked = sum(r["checked"] for r in results)
-    print(f"\nTerminé : {total_written}/{total_checked} image(s) mise(s) à jour sur {len(results)} set(s).")
+    print("== Backfill images PokéCardex (catalogue Pokémon mappé) ==")
+    started = time.monotonic()
+    if args.set_code:
+        rows = _fetch_mapped_sets(only_unsynced=False)
+        rows = [r for r in rows if r[0] == args.set_code]
+        if not rows:
+            print(f"'{args.set_code}' absent de la table `sets` (pas mappé ou pas encore --write dans pokecardex_mapping).")
+            return
+        with PoliteBrowser() as pb:
+            results = [sync_set_images(pb.page, "pokemon", *rows[0])]
+    else:
+        results = sync_all_mapped_sets(only_unsynced=not args.resync_all)
+
+    ok = [r for r in results if "error" not in r]
+    errors = [r for r in results if "error" in r]
+    total_matched = sum(r["matched"] for r in ok)
+    total_items = sum(r["items_total"] for r in ok)
+    elapsed = time.monotonic() - started
+    print(
+        f"\nTerminé en {elapsed / 60:.1f} min : {total_matched}/{total_items} image(s) mise(s) à jour "
+        f"sur {len(ok)} set(s) ({len(errors)} erreur(s))."
+    )
 
 
 if __name__ == "__main__":

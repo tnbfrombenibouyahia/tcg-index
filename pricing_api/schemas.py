@@ -53,6 +53,12 @@ class CardCandidateOut(BaseModel):
     # jamais une classification binaire devinée à leur place.
     set_name: str | None = None
     set_release_year: int | None = None
+    # Logo du set (table `sets`, cf. pricing/repository.py::fetch_set_logo_url)
+    # -- None si ce set n'est pas (encore) mappé côté PokéCardex (fuzzy-match
+    # sous le seuil de confiance, ou langue/set absent de leur catalogue) :
+    # l'appelant doit alors se rabattre proprement sur `set_name` en texte,
+    # pas de couverture garantie à 100%.
+    set_logo_url: str | None = None
 
 
 class SourcePriceOut(BaseModel):
@@ -127,6 +133,7 @@ class FavoriteOut(BaseModel):
     image_url: str | None = None
     set_name: str | None = None
     set_release_year: int | None = None
+    set_logo_url: str | None = None  # cf. CardCandidateOut.set_logo_url
     current_price: float | None = None
     current_currency: str | None = None
 

@@ -24,6 +24,7 @@ export interface WatchedCard {
   imageUrl: string | null;
   setName: string | null;
   setReleaseYear: number | null;
+  setLogoUrl: string | null;
   currentPrice: number | null;
   currentCurrency: string | null;
 }
@@ -38,6 +39,7 @@ interface RawFavorite {
   image_url: string | null;
   set_name: string | null;
   set_release_year: number | null;
+  set_logo_url: string | null;
   current_price: number | null;
   current_currency: string | null;
 }
@@ -46,6 +48,7 @@ function fromRaw(r: RawFavorite): WatchedCard {
   return {
     itemId: r.card_id, name: r.name, code: r.code, setCode: r.set_code, rarity: r.rarity,
     language: r.language, imageUrl: r.image_url, setName: r.set_name, setReleaseYear: r.set_release_year,
+    setLogoUrl: r.set_logo_url,
     currentPrice: r.current_price, currentCurrency: r.current_currency,
   };
 }

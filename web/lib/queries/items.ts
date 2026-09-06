@@ -20,24 +20,26 @@ export async function searchItems(params: ItemSearchParams): Promise<ItemSummary
 
   const rows = await sql<ItemSummary[]>`
     SELECT
-      id::int4 AS id, name, tcg, category,
-      set_code AS "setCode", code, image_url AS "imageUrl", language, rarity,
-      interest_tier AS "interestTier"
-    FROM items
-    WHERE (name ILIKE ${pattern} OR code ILIKE ${pattern})
-      ${params.tcg ? sql`AND tcg = ${params.tcg}` : sql``}
-      ${params.setCode ? sql`AND set_code = ${params.setCode}` : sql``}
+      i.id::int4 AS id, i.name, i.tcg, i.category,
+      i.set_code AS "setCode", i.code, i.image_url AS "imageUrl", i.language, i.rarity,
+      i.interest_tier AS "interestTier",
+      s.logo_url AS "setLogoUrl"
+    FROM items i
+    LEFT JOIN sets s ON s.tcg = i.tcg AND s.set_code = i.set_code
+    WHERE (i.name ILIKE ${pattern} OR i.code ILIKE ${pattern})
+      ${params.tcg ? sql`AND i.tcg = ${params.tcg}` : sql``}
+      ${params.setCode ? sql`AND i.set_code = ${params.setCode}` : sql``}
     -- id ASC final : tiebreaker déterministe. Sans lui, plusieurs cartes
     -- au nom strictement identique (ex. plusieurs "Pikachu") sont à égalité
     -- sur toutes les clés de tri -- l'ordre renvoyé devient alors non
     -- garanti par le SQL et peut différer d'un moteur à l'autre (repéré en
     -- comparant Supabase/CockroachDB, cf. db/COCKROACHDB_MIGRATION.md).
     ORDER BY
-      (code ILIKE ${q}) DESC,
-      (code ILIKE ${q + "/%"}) DESC,
-      (name ILIKE ${q}) DESC,
-      name ASC,
-      id ASC
+      (i.code ILIKE ${q}) DESC,
+      (i.code ILIKE ${q + "/%"}) DESC,
+      (i.name ILIKE ${q}) DESC,
+      i.name ASC,
+      i.id ASC
     LIMIT ${limit}
   `;
 

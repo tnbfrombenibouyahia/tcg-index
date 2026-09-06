@@ -246,7 +246,7 @@ CREATE TABLE IF NOT EXISTS sync_runs (
   id            BIGSERIAL PRIMARY KEY,
   run_type      TEXT NOT NULL,        -- 'daily' | 'tier' | 'weekly' | 'monthly'
   tier          TEXT,                 -- palier (cf. orchestrator.TIERS) si run_type='tier', sinon NULL
-  step          TEXT NOT NULL,        -- 'items' | 'prices' | 'grades_sales' | 'index' | 'sealed_ev' | 'volume' | 'active_listings' | 'population'
+  step          TEXT NOT NULL,        -- 'items' | 'prices' | 'grades_sales' | 'index' | 'sealed_ev' | 'volume' | 'active_listings' | 'population' | 'rarity_backfill' | 'pokecardex_images'
   tcg           TEXT,                 -- 'pokemon' | 'one-piece' | NULL (étape globale aux deux TCG)
   status        TEXT NOT NULL DEFAULT 'running',  -- 'running' | 'success' | 'error'
   started_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -413,6 +413,31 @@ CREATE INDEX IF NOT EXISTS idx_prices_item ON prices (item_id);
 -- fichier, cf. db/apply_schema.py (rejoue tout schema.sql tel quel, cette
 -- ligne doit donc rester idempotente comme le reste).
 ALTER TABLE prices ADD COLUMN IF NOT EXISTS url TEXT;
+
+-- Référentiel des sets PokéCardex (cf. ingestion/sources/pokecardex_mapping.py) :
+-- aucun nom de set lisible ni logo n'existait en base avant ça (le nom affiché
+-- ailleurs, ex. pricing_api, est dérivé à la volée du slug, cf.
+-- pricing/repository.py::set_label_from_code). Une ligne par (tcg, set_code)
+-- interne mappé vers son équivalent PokéCardex -- alimente à la fois le
+-- backfill d'images (ingestion/sources/pokecardex.py) et l'affichage du logo
+-- (pricing_api, web, extension). Un set interne peut rester absent de cette
+-- table (pas encore mappé, ou score de confiance trop faible côté fuzzy-match
+-- -- cf. docstring du module de mapping) : les appelants doivent gérer le cas
+-- "logo absent" proprement plutôt que supposer une couverture à 100%.
+CREATE TABLE IF NOT EXISTS sets (
+  tcg               TEXT NOT NULL,        -- 'pokemon' (seul jeu couvert par PokéCardex ici)
+  set_code          TEXT NOT NULL,        -- items.set_code
+  language          TEXT NOT NULL,        -- 'EN' | 'JP'
+  pokecardex_zone   TEXT NOT NULL,        -- 'sets' (EN, impression "US") | 'sets_jp'
+  pokecardex_code   TEXT NOT NULL,        -- ex. 'M6', 'PBL' -- code PokéCardex, pas items.set_code
+  name              TEXT,                 -- nom scrapé PokéCardex (info/debug, PAS la clé de matching)
+  logo_url          TEXT,                 -- assets/images/logos[_jp]/{...}/{code}.png, CDN ouvert
+  match_confidence  NUMERIC,              -- score du fuzzy-match set_label_from_code <-> nom PokéCardex
+  matched_at        TIMESTAMPTZ,
+  images_synced_at  TIMESTAMPTZ,          -- dernier backfill d'images réussi pour ce set (reprise)
+  created_at        TIMESTAMPTZ DEFAULT now(),
+  PRIMARY KEY (tcg, set_code)
+);
 
 -- Watchlist utilisateur : cartes qu'un utilisateur veut surveiller,
 -- ajoutées/retirées depuis le panneau extension ou le site (§10

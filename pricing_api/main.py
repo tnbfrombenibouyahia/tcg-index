@@ -29,7 +29,13 @@ from pricing.favorites import (
 from pricing.matching import identify_card
 from pricing.models import Card
 from pricing.portfolio import Position, add_position, delete_position, fetch_position, fetch_positions, update_position
-from pricing.repository import fetch_card_by_id, fetch_latest_price_snapshot, fetch_set_release_year, set_label_from_code
+from pricing.repository import (
+    fetch_card_by_id,
+    fetch_latest_price_snapshot,
+    fetch_set_logo_url,
+    fetch_set_release_year,
+    set_label_from_code,
+)
 from pricing_api.schemas import (
     CardCandidateOut,
     FavoriteAddRequest,
@@ -77,7 +83,8 @@ def _card_out(card: Card, confidence: float) -> CardCandidateOut:
                              rarity=card.rarity, language=card.language, confidence=confidence,
                              image_url=card.image_url,
                              set_name=set_label_from_code(card.set_code, card.tcg),
-                             set_release_year=fetch_set_release_year(card.tcg, card.set_code))
+                             set_release_year=fetch_set_release_year(card.tcg, card.set_code),
+                             set_logo_url=fetch_set_logo_url(card.set_code, card.tcg))
 
 
 def _favorite_out(card: Card) -> FavoriteOut:
@@ -90,6 +97,7 @@ def _favorite_out(card: Card) -> FavoriteOut:
                         rarity=card.rarity, language=card.language, image_url=card.image_url,
                         set_name=set_label_from_code(card.set_code, card.tcg),
                         set_release_year=fetch_set_release_year(card.tcg, card.set_code),
+                        set_logo_url=fetch_set_logo_url(card.set_code, card.tcg),
                         current_price=snapshot[0] if snapshot else None,
                         current_currency=snapshot[1] if snapshot else None)
 

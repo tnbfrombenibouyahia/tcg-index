@@ -390,6 +390,12 @@
   color: var(--cq-grey-400);
   margin: 8px 0 0;
 }
+.cardquant-set-logo {
+  height: 14px;
+  max-width: 140px;
+  object-fit: contain;
+  display: block;
+}
 .cardquant-identity-photo {
   flex: none;
   width: 78px;

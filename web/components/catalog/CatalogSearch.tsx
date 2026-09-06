@@ -226,7 +226,16 @@ function ItemResultCard({ item, onSelect }: { item: ItemSummary; onSelect: () =>
           <LanguageFlag language={item.language} size={12} />
           {item.code && <span className="text-[11px] text-muted-foreground">#{item.code}</span>}
         </div>
-        {item.setCode && <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{item.setCode}</p>}
+        {item.setCode && (
+          <div className="mt-0.5 flex items-center justify-center gap-1">
+            {item.setLogoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- hôte CDN externe (PokéCardex), cf. plan §5
+              <img src={item.setLogoUrl} alt={item.setCode} className="h-3 max-w-[4.5rem] object-contain" loading="lazy" />
+            ) : (
+              <p className="truncate text-[10px] text-muted-foreground">{item.setCode}</p>
+            )}
+          </div>
+        )}
       </div>
     </button>
   );

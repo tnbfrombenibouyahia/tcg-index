@@ -42,7 +42,12 @@ export function CatalogueGrid({ rows }: { rows: CatalogueBrowseRow[] }) {
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
               <span style={{ fontSize: 12.5, fontWeight: 500, color: "var(--text-strong)", lineHeight: 1.25, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</span>
-              <span style={{ fontSize: 11, color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.setCode ?? "—"}</span>
+              {c.setLogoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- hôte CDN externe (PokéCardex), cf. plan §5
+                <img src={c.setLogoUrl} alt={c.setCode ?? ""} style={{ height: 13, maxWidth: "80%", objectFit: "contain" }} />
+              ) : (
+                <span style={{ fontSize: 11, color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.setCode ?? "—"}</span>
+              )}
             </div>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 6, marginTop: "auto" }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--text-strong)" }}>{formatPrice(c.price, c.currency)}</span>
