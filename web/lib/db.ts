@@ -95,6 +95,13 @@ function buildAuthClient() {
 // savoir du tunnel. /tmp : seul répertoire garanti inscriptible dans une
 // fonction Vercel (le répertoire de déploiement lui-même est en lecture seule).
 async function createClient() {
+  // Chronométrage temporaire (2026-09-07) -- diagnostic de lenteur perçue en
+  // nav réelle ("~10s par page", cf. retour utilisateur) : isole combien vient
+  // de la poignée de main du connecteur (OIDC -> STS -> impersonation -> mTLS,
+  // seulement au 1er appel par instance froide) vs du reste. À retirer une
+  // fois la vraie source identifiée -- ne change aucun comportement, juste des
+  // logs.
+  const t0 = Date.now();
   const connector = new Connector({ auth: buildAuthClient() });
   const socketDir = "/tmp/cardquant-cloudsql";
   const socketPath = `${socketDir}/.s.PGSQL.5432`;
@@ -108,6 +115,7 @@ async function createClient() {
     authType: AuthTypes.IAM,
     listenOptions: { path: socketPath },
   });
+  console.log(`[cardquant-db-timing] startLocalProxy: ${Date.now() - t0}ms (instance froide)`);
 
   return postgres({
     host: socketPath.slice(0, socketPath.lastIndexOf("/")),
@@ -171,9 +179,15 @@ declare global {
   var __pgClient: ReturnType<typeof postgres> | undefined;
 }
 
+// Chronométrage temporaire (2026-09-07), cf. commentaire dans createClient().
+const __wasWarm = globalThis.__pgClient !== undefined;
+const __tModule = Date.now();
 const sql =
   globalThis.__pgClient ??
   (await withTimeout(createClient(), 15_000, "Cloud SQL Connector : startLocalProxy n'a pas répondu sous 15s."));
+console.log(
+  `[cardquant-db-timing] module lib/db.ts: ${Date.now() - __tModule}ms (${__wasWarm ? "instance réchauffée, singleton réutilisé" : "instance froide, connector initialisé"})`,
+);
 
 globalThis.__pgClient = sql;
 
