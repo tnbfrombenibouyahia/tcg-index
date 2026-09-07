@@ -258,12 +258,27 @@
   // Statut d'identification affiché dans le header persistant -- distinct
   // du verdict de prix (pill verte/ambre/rouge dans le corps) : répond à
   // "l'extension a-t-elle trouvé la carte ?", pas "est-ce une bonne affaire ?".
+  //
+  // Chargement (maquette "CardQuant Panel" mise à jour, 2026-09-06) : mime
+  // un scan de carte (viseur + ligne de scan animée + shimmer) plutôt qu'un
+  // simple squelette de barres -- fait mieux comprendre QUOI se passe
+  // (analyse de LA carte identifiée, pas un chargement générique) pendant
+  // les quelques secondes de croisement des sources de prix.
   const SKELETON = `
-    <div class="cardquant-skeleton">
-      <div class="cardquant-skeleton-bar cardquant-skeleton-bar--wide"></div>
-      <div class="cardquant-skeleton-bar cardquant-skeleton-bar--pill"></div>
-      <div class="cardquant-skeleton-bar cardquant-skeleton-bar--half"></div>
-      <div class="cardquant-skeleton-bar cardquant-skeleton-bar--half"></div>
+    <div class="cardquant-loading">
+      <div class="cardquant-loading-scan" aria-hidden="true">
+        <div class="cardquant-loading-shimmer"></div>
+        <div class="cardquant-loading-scanline"></div>
+        <div class="cardquant-loading-frame"></div>
+      </div>
+      <p class="cardquant-loading-title">Analyse de la carte en cours</p>
+      <p class="cardquant-loading-sub">Croisement des sources de prix. Cela peut prendre jusqu'à 15 secondes.</p>
+      <div class="cardquant-loading-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="cardquant-loading-bars" aria-hidden="true">
+        <span style="width: 92%;"></span>
+        <span style="width: 68%;"></span>
+        <span style="width: 80%;"></span>
+      </div>
     </div>
   `;
 
@@ -392,7 +407,7 @@
     card.innerHTML = `
       <div class="cardquant-header">
         <span class="cardquant-brand">CARDQUANT</span>
-        <span id="cardquant-status" class="cardquant-status cardquant-status--pending">…</span>
+        <span id="cardquant-status" class="cardquant-status cardquant-status--pending">Recherche…</span>
         <span id="cardquant-user" class="cardquant-user" hidden></span>
       </div>
       <div id="cardquant-body">${SKELETON}</div>
@@ -522,7 +537,7 @@
         // panneau) -- sinon le statut/verdict de la page précédente reste
         // affiché pendant l'attente de la réponse suivante.
         tab.classList.remove("cardquant-green", "cardquant-yellow", "cardquant-red");
-        setStatus("…", "pending");
+        setStatus("Recherche…", "pending");
         body().innerHTML = SKELETON;
       },
     };
@@ -625,10 +640,26 @@
   function formatSetBadge(card) {
     if (!card.set_name) return null;
     const year = card.set_release_year ? ` (${card.set_release_year})` : "";
-    // "One Piece" en dur : l'extension ne couvre que ce jeu pour l'instant
-    // (cf. manifest.json, pricing/matching.py) -- à remplacer par un vrai
-    // champ si un 2e TCG est ajouté un jour.
-    return `One Piece · ${card.set_name}${year}`;
+    // Pas de préfixe TCG en dur ici (One Piece/Pokémon) : CardCandidateOut ne
+    // porte pas ce champ, et l'extension identifie désormais les deux jeux
+    // (cf. commit "Étend l'identification de carte au Pokémon") -- un texte
+    // "One Piece · Storm Emeralda" serait faux la moitié du temps. `set_name`
+    // seul reste sans ambiguïté.
+    return `${card.set_name}${year}`;
+  }
+
+  // Logo du set (PokéCardex, Pokémon uniquement pour l'instant -- cf.
+  // pricing_api/schemas.py::CardCandidateOut.set_logo_url, ingestion/sources/
+  // pokecardex_mapping.py) à la place du texte quand disponible -- même
+  // philosophie de repli que le reste du panneau (masqué au chargement en
+  // échec, cf. onImgError, jamais l'icône "cassée" du navigateur).
+  function renderSetBadge(card) {
+    const text = formatSetBadge(card);
+    if (!text) return "";
+    if (card.set_logo_url) {
+      return `<p class="cardquant-set-badge"><img class="cardquant-set-logo" src="${escapeHtml(card.set_logo_url)}" alt="${escapeHtml(text)}" loading="lazy"></p>`;
+    }
+    return `<p class="cardquant-set-badge">${escapeHtml(text)}</p>`;
   }
 
   // -- Section identité de carte -------------------------------------------
@@ -640,7 +671,7 @@
   // cf. tcg-index-handoff.md §04 -- case vide plutôt qu'une image cassée.
   function renderIdentityCard(data, original, currentGrade) {
     const { base, qualifier } = splitQualifier(data.card.name);
-    const setBadge = formatSetBadge(data.card);
+    const setBadge = renderSetBadge(data.card);
     const lang = data.card.language;
     const photo = data.card.image_url
       ? `<img class="cardquant-identity-photo" src="${escapeHtml(data.card.image_url)}" alt="" loading="lazy">`
@@ -682,7 +713,7 @@
               ${data.card.rarity ? `<span class="cardquant-badge">${escapeHtml(data.card.rarity)}</span>` : ""}
               ${renderGradeBadge(currentGrade)}
             </div>
-            ${setBadge ? `<p class="cardquant-set-badge">${escapeHtml(setBadge)}</p>` : ""}
+            ${setBadge}
           </div>
           ${photo}
         </div>
@@ -1493,6 +1524,10 @@
   panel.onClick(".cardquant-candidate", selectCandidate);
   panel.onKeydown(".cardquant-candidate", selectCandidate);
   panel.onImgError(".cardquant-candidate-thumb", (el) => el.remove());
+  // Logo de set PokéCardex -- même garde qu'au-dessus (cf. renderSetBadge) :
+  // si le CDN échoue au runtime (rare), on retire tout le badge plutôt que
+  // de laisser l'icône "image cassée" du navigateur.
+  panel.onImgError(".cardquant-set-logo", (el) => el.closest(".cardquant-set-badge")?.remove());
 
   // Passage 2 (OCR sur la photo de l'annonce) -- cf. renderVerdict pour la
   // condition d'affichage du bouton et requestVerdict pour le mode useImage.

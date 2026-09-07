@@ -24,6 +24,7 @@ interface ItemRow {
   rarity: string | null;
   interestTier: string | null;
   releaseDate: string | null;
+  setLogoUrl: string | null;
 }
 
 interface LiquidityRow {
@@ -37,12 +38,14 @@ export async function getItemById(itemId: number): Promise<ItemDetail | null> {
   const [itemRows, priceRows, undervaluedRows, sealedEvRows, liquidityRows, populationRows] = await Promise.all([
     sql<ItemRow[]>`
       SELECT
-        id::int4 AS id, name, tcg, category,
-        set_code AS "setCode", code, image_url AS "imageUrl", language, rarity,
-        interest_tier AS "interestTier",
-        release_date::text AS "releaseDate"
-      FROM items
-      WHERE id = ${itemId}
+        i.id::int4 AS id, i.name, i.tcg, i.category,
+        i.set_code AS "setCode", i.code, i.image_url AS "imageUrl", i.language, i.rarity,
+        i.interest_tier AS "interestTier",
+        i.release_date::text AS "releaseDate",
+        s.logo_url AS "setLogoUrl"
+      FROM items i
+      LEFT JOIN sets s ON s.tcg = i.tcg AND s.set_code = i.set_code
+      WHERE i.id = ${itemId}
       LIMIT 1
     `,
     // Un prix par grade -- le plus récent (captured_at, puis created_at pour
@@ -174,6 +177,7 @@ export async function getItemById(itemId: number): Promise<ItemDetail | null> {
     rarity: item.rarity,
     interestTier: item.interestTier,
     releaseDate: item.releaseDate,
+    setLogoUrl: item.setLogoUrl,
     latestPrices: priceRows.map((r) => ({ ...r, grade: r.grade as Grade })),
     undervalued: undervaluedRows[0] ?? null,
     sealedEv: sealedEvRows[0] ?? null,

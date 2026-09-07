@@ -34,7 +34,12 @@ export function WatchlistTable({ cards, onRemove }: { cards: WatchedCard[]; onRe
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 12.5, color: "var(--text-strong)", textAlign: "right", whiteSpace: "nowrap" }}>
                   {c.currentPrice != null ? `$${c.currentPrice.toFixed(2)}` : "—"}
                 </span>
-                <span style={{ fontSize: 11, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.setCode ?? "—"}</span>
+                {c.setLogoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- hôte CDN externe (PokéCardex), cf. plan §5
+                  <img src={c.setLogoUrl} alt={c.setCode ?? ""} style={{ height: 13, maxWidth: "100%", objectFit: "contain" }} />
+                ) : (
+                  <span style={{ fontSize: 11, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.setCode ?? "—"}</span>
+                )}
                 <span style={{ display: "flex", justifyContent: "flex-end", gap: 4 }}>
                   <Link href={`/catalog/${c.itemId}`}>
                     <Button variant="ghost" size="sm">Fiche</Button>

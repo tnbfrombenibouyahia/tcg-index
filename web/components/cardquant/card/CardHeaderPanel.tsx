@@ -73,7 +73,12 @@ export function CardHeaderPanel({
       <div style={{ display: "flex", alignItems: "flex-start", gap: 18, flexWrap: "wrap" }}>
         <CardArt item={item} />
         <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1, minWidth: 150 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, letterSpacing: "0.08em", color: "var(--text-muted)" }}>{item.setCode ?? item.code ?? "—"}</span>
+          {item.setLogoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- hôte CDN externe (PokéCardex), cf. plan §5
+            <img src={item.setLogoUrl} alt={item.setCode ?? ""} style={{ height: 16, maxWidth: 120, objectFit: "contain", alignSelf: "flex-start" }} />
+          ) : (
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, letterSpacing: "0.08em", color: "var(--text-muted)" }}>{item.setCode ?? item.code ?? "—"}</span>
+          )}
           <h1 style={{ margin: 0, fontSize: "clamp(19px, 2.8vh, 26px)", fontWeight: 300, letterSpacing: "-0.02em", color: "var(--text-strong)", lineHeight: 1.15 }}>{item.name}</h1>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 5, paddingTop: 4 }}>
             <Badge tone="outline" mono>{item.language}</Badge>

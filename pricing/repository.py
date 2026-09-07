@@ -514,6 +514,29 @@ def set_label_from_code(set_code: str | None, tcg: str) -> str | None:
     return bare.replace("-", " ").title()
 
 
+def fetch_set_logo_url(set_code: str | None, tcg: str) -> str | None:
+    """Logo du set (table `sets`, cf. db/schema.sql + ingestion/sources/
+    pokecardex_mapping.py) -- None si `set_code` est None ou si ce set n'est
+    pas (encore) mappé côté PokéCardex (fuzzy-match sous le seuil de
+    confiance, ou set_code absent du catalogue PokéCardex, cf. rapport
+    ingestion/_probe_output/pokecardex_set_mapping_report.json). Appelants
+    attendus pour gérer ce None proprement (repli sur `set_label_from_code`
+    en texte), pas une couverture garantie à 100% du catalogue."""
+    if not set_code:
+        return None
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT logo_url FROM sets WHERE tcg = %s AND set_code = %s",
+                (tcg, set_code),
+            )
+            row = cur.fetchone()
+            return row[0] if row else None
+    finally:
+        conn.close()
+
+
 def fetch_set_release_year(tcg: str, set_code: str | None) -> int | None:
     """Année du set, dérivée de items.release_date -- None si absente pour
     TOUT item de ce (tcg, set_code), y compris quand `release_date` est

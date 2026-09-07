@@ -1,0 +1,5407 @@
+{
+  "matched": [
+    {
+      "set_code": "pokemon-jp-limited-vs",
+      "language": "JP",
+      "label": "Limited Vs",
+      "pokecardex_code": "MCVS5",
+      "pokecardex_name": "Theater Limited VS Pack",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/MCVS5.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 0.667
+    },
+    {
+      "set_code": "pokemon-swsh03-darkness-ablaze",
+      "language": "EN",
+      "label": "Swsh03 Darkness Ablaze",
+      "pokecardex_code": "SWSH3",
+      "pokecardex_name": "Darkness Ablaze",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SWSH3.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-swsh02-rebel-clash",
+      "language": "EN",
+      "label": "Swsh02 Rebel Clash",
+      "pokecardex_code": "SWSH2",
+      "pokecardex_name": "Rebel Clash",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SWSH2.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-sv10-destined-rivals",
+      "language": "EN",
+      "label": "Sv10 Destined Rivals",
+      "pokecardex_code": "DRI",
+      "pokecardex_name": "Destined Rivals",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/DRI.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-countdown-calendar-promos",
+      "language": "EN",
+      "label": "Countdown Calendar Promos",
+      "pokecardex_code": "CP09",
+      "pokecardex_name": "Pokémon Countdown Calendar",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/CP09.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667
+    },
+    {
+      "set_code": "pokemon-jp-super-electric-breaker",
+      "language": "JP",
+      "label": "Super Electric Breaker",
+      "pokecardex_code": "SV8",
+      "pokecardex_name": "Super Electric Breaker",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV8.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-infinity-zone",
+      "language": "JP",
+      "label": "Infinity Zone",
+      "pokecardex_code": "S3",
+      "pokecardex_name": "Infinity Zone",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S3.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-heartgold-collection",
+      "language": "JP",
+      "label": "Heartgold Collection",
+      "pokecardex_code": "L1HG",
+      "pokecardex_name": "HeartGold Collection",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/L1HG.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-sm-cosmic-eclipse",
+      "language": "EN",
+      "label": "Sm Cosmic Eclipse",
+      "pokecardex_code": "SM12",
+      "pokecardex_name": "Cosmic Eclipse",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SM12.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-legend-maker",
+      "language": "EN",
+      "label": "Legend Maker",
+      "pokecardex_code": "LM",
+      "pokecardex_name": "EX : Legend Maker",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/LM.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-best-of-xy",
+      "language": "JP",
+      "label": "Best Of Xy",
+      "pokecardex_code": "XY",
+      "pokecardex_name": "The Best of XY",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/XY.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 0.857
+    },
+    {
+      "set_code": "pokemon-pop-series-4",
+      "language": "EN",
+      "label": "Pop Series 4",
+      "pokecardex_code": "POP4",
+      "pokecardex_name": "POP 4",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/POP4.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-boundaries-crossed",
+      "language": "EN",
+      "label": "Boundaries Crossed",
+      "pokecardex_code": "BCR",
+      "pokecardex_name": "Boundaries Crossed",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/BCR.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-wild-blaze",
+      "language": "JP",
+      "label": "Wild Blaze",
+      "pokecardex_code": "XY2",
+      "pokecardex_name": "Wild Blaze",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/XY2.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-lost-abyss",
+      "language": "JP",
+      "label": "Lost Abyss",
+      "pokecardex_code": "S11",
+      "pokecardex_name": "Lost Abyss",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S11.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-jet-black-spirit",
+      "language": "JP",
+      "label": "Jet Black Spirit",
+      "pokecardex_code": "S6K",
+      "pokecardex_name": "Jet-Black Spirit",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S6K.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-neo-revelation",
+      "language": "EN",
+      "label": "Neo Revelation",
+      "pokecardex_code": "NR",
+      "pokecardex_name": "Neo Revelation",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/NR.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-power-keepers",
+      "language": "EN",
+      "label": "Power Keepers",
+      "pokecardex_code": "PK",
+      "pokecardex_name": "EX : Power Keepers",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/PK.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-sm-team-up",
+      "language": "EN",
+      "label": "Sm Team Up",
+      "pokecardex_code": "SM09",
+      "pokecardex_name": "Team Up",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SM09.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-platinum",
+      "language": "EN",
+      "label": "Platinum",
+      "pokecardex_code": "PT",
+      "pokecardex_name": "Platinum",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/PT.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-legendary-shine-collection",
+      "language": "JP",
+      "label": "Legendary Shine Collection",
+      "pokecardex_code": "CP2",
+      "pokecardex_name": "Legendary Shine Collection",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/CP2.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-double-blaze",
+      "language": "JP",
+      "label": "Double Blaze",
+      "pokecardex_code": "SM10",
+      "pokecardex_name": "Double Blaze",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM10.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-collection-y",
+      "language": "JP",
+      "label": "Collection Y",
+      "pokecardex_code": "XY1R",
+      "pokecardex_name": "Collection Y",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/XY1R.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-xy-furious-fists",
+      "language": "EN",
+      "label": "Xy Furious Fists",
+      "pokecardex_code": "FFI",
+      "pokecardex_name": "Furious Fists",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/FFI.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-xy-primal-clash",
+      "language": "EN",
+      "label": "Xy Primal Clash",
+      "pokecardex_code": "PRC",
+      "pokecardex_name": "Primal Clash",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/PRC.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-legendary-treasures",
+      "language": "EN",
+      "label": "Legendary Treasures",
+      "pokecardex_code": "LTR",
+      "pokecardex_name": "Legendary Treasures",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/LTR.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "shared_with": [
+        "pokemon-legendary-treasures-radiant-collection"
+      ]
+    },
+    {
+      "set_code": "pokemon-legendary-treasures-radiant-collection",
+      "language": "EN",
+      "label": "Legendary Treasures Radiant Collection",
+      "pokecardex_code": "LTR",
+      "pokecardex_name": "Legendary Treasures",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/LTR.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)",
+      "shared_with": [
+        "pokemon-legendary-treasures"
+      ]
+    },
+    {
+      "set_code": "pokemon-swsh12-silver-tempest",
+      "language": "EN",
+      "label": "Swsh12 Silver Tempest",
+      "pokecardex_code": "SIT",
+      "pokecardex_name": "Silver Tempest",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SIT.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8,
+      "shared_with": [
+        "pokemon-swsh12-silver-tempest-trainer-gallery"
+      ]
+    },
+    {
+      "set_code": "pokemon-swsh12-silver-tempest-trainer-gallery",
+      "language": "EN",
+      "label": "Swsh12 Silver Tempest Trainer Gallery",
+      "pokecardex_code": "SIT",
+      "pokecardex_name": "Silver Tempest",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SIT.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)",
+      "shared_with": [
+        "pokemon-swsh12-silver-tempest"
+      ]
+    },
+    {
+      "set_code": "pokemon-sv-prismatic-evolutions",
+      "language": "EN",
+      "label": "Sv Prismatic Evolutions",
+      "pokecardex_code": "PRE",
+      "pokecardex_name": "Prismatic Evolutions",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/PRE.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-mcdonalds-promos-2011",
+      "language": "EN",
+      "label": "Mcdonalds Promos 2011",
+      "pokecardex_code": "MC1",
+      "pokecardex_name": "Promo McDonald's 2011",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/MC1.png",
+      "pokecardex_zone": "sets",
+      "score": 0.857
+    },
+    {
+      "set_code": "pokemon-jp-shiny-collection",
+      "language": "JP",
+      "label": "Shiny Collection",
+      "pokecardex_code": "SC",
+      "pokecardex_name": "Shiny Collection",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SC.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-skyscraping-perfection",
+      "language": "JP",
+      "label": "Skyscraping Perfection",
+      "pokecardex_code": "S7D",
+      "pokecardex_name": "Skyscraping Perfection",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S7D.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-sv-scarlet-violet-promo-cards",
+      "language": "EN",
+      "label": "Sv Scarlet Violet Promo Cards",
+      "pokecardex_code": "SVP",
+      "pokecardex_name": "Promos Scarlet & Violet",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SVP.png",
+      "pokecardex_zone": "sets",
+      "score": 0.75
+    },
+    {
+      "set_code": "pokemon-sm-guardians-rising",
+      "language": "EN",
+      "label": "Sm Guardians Rising",
+      "pokecardex_code": "SM02",
+      "pokecardex_name": "Guardians Rising",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SM02.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-legends-awakened",
+      "language": "EN",
+      "label": "Legends Awakened",
+      "pokecardex_code": "LA",
+      "pokecardex_name": "Diamond & Pearl : Legends Awakened",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/LA.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667
+    },
+    {
+      "set_code": "pokemon-jp-red-collection",
+      "language": "JP",
+      "label": "Red Collection",
+      "pokecardex_code": "BW2",
+      "pokecardex_name": "Red Collection",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/BW2.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-me02-phantasmal-flames",
+      "language": "EN",
+      "label": "Me02 Phantasmal Flames",
+      "pokecardex_code": "PFL",
+      "pokecardex_name": "Phantasmal Flames",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/PFL.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-cold-flare",
+      "language": "JP",
+      "label": "Cold Flare",
+      "pokecardex_code": "BW6O",
+      "pokecardex_name": "Cold Flare",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/BW6O.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-legendary-collection",
+      "language": "EN",
+      "label": "Legendary Collection",
+      "pokecardex_code": "LC",
+      "pokecardex_name": "Legendary Collection",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/LC.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-magma-vs-aqua-two-ambitions",
+      "language": "JP",
+      "label": "Magma Vs Aqua Two Ambitions",
+      "pokecardex_code": "ADV4",
+      "pokecardex_name": "Magma VS Aqua: Two Ambitions",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/ADV4.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-sm-crimson-invasion",
+      "language": "EN",
+      "label": "Sm Crimson Invasion",
+      "pokecardex_code": "SM04",
+      "pokecardex_name": "Crimson Invasion",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SM04.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-mcdonalds-promos-2019",
+      "language": "EN",
+      "label": "Mcdonalds Promos 2019",
+      "pokecardex_code": "MC9US",
+      "pokecardex_name": "Promo McDonald's 2019",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/MC9US.png",
+      "pokecardex_zone": "sets",
+      "score": 0.857
+    },
+    {
+      "set_code": "pokemon-mcdonalds-promos-2018",
+      "language": "EN",
+      "label": "Mcdonalds Promos 2018",
+      "pokecardex_code": "MC8US",
+      "pokecardex_name": "Promo McDonald's 2018",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/MC8US.png",
+      "pokecardex_zone": "sets",
+      "score": 0.857
+    },
+    {
+      "set_code": "pokemon-jp-beat-of-the-frontier",
+      "language": "JP",
+      "label": "Beat Of The Frontier",
+      "pokecardex_code": "PT3",
+      "pokecardex_name": "Beat of the Frontier",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/PT3.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-unleashed",
+      "language": "EN",
+      "label": "Unleashed",
+      "pokecardex_code": "UL",
+      "pokecardex_name": "HS : Unleashed",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/UL.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667
+    },
+    {
+      "set_code": "pokemon-pop-series-3",
+      "language": "EN",
+      "label": "Pop Series 3",
+      "pokecardex_code": "POP3",
+      "pokecardex_name": "POP 3",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/POP3.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-mcdonalds-promos-2022",
+      "language": "EN",
+      "label": "Mcdonalds Promos 2022",
+      "pokecardex_code": "MC11US",
+      "pokecardex_name": "Promo McDonald's 2022",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/MC11US.png",
+      "pokecardex_zone": "sets",
+      "score": 0.857
+    },
+    {
+      "set_code": "pokemon-jp-freeze-bolt",
+      "language": "JP",
+      "label": "Freeze Bolt",
+      "pokecardex_code": "BW6B",
+      "pokecardex_name": "Freeze Bolt",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/BW6B.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-psycho-drive",
+      "language": "JP",
+      "label": "Psycho Drive",
+      "pokecardex_code": "BW3P",
+      "pokecardex_name": "Psycho Drive",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/BW3P.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-bandit-ring",
+      "language": "JP",
+      "label": "Bandit Ring",
+      "pokecardex_code": "XY7",
+      "pokecardex_name": "Bandit Ring",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/XY7.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-dark-explorers",
+      "language": "EN",
+      "label": "Dark Explorers",
+      "pokecardex_code": "DEX",
+      "pokecardex_name": "Dark Explorers",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/DEX.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-sv-paldean-fates",
+      "language": "EN",
+      "label": "Sv Paldean Fates",
+      "pokecardex_code": "PAF",
+      "pokecardex_name": "Paldean Fates",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/PAF.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-heartgold-soulsilver",
+      "language": "EN",
+      "label": "Heartgold Soulsilver",
+      "pokecardex_code": "HGSS",
+      "pokecardex_name": "HeartGold SoulSilver",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/HGSS.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-swsh11-lost-origin",
+      "language": "EN",
+      "label": "Swsh11 Lost Origin",
+      "pokecardex_code": "LOR",
+      "pokecardex_name": "Lost Origin",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/LOR.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8,
+      "shared_with": [
+        "pokemon-swsh11-lost-origin-trainer-gallery"
+      ]
+    },
+    {
+      "set_code": "pokemon-swsh11-lost-origin-trainer-gallery",
+      "language": "EN",
+      "label": "Swsh11 Lost Origin Trainer Gallery",
+      "pokecardex_code": "LOR",
+      "pokecardex_name": "Lost Origin",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/LOR.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)",
+      "shared_with": [
+        "pokemon-swsh11-lost-origin"
+      ]
+    },
+    {
+      "set_code": "pokemon-jp-premium-champion-pack",
+      "language": "JP",
+      "label": "Premium Champion Pack",
+      "pokecardex_code": "CP4",
+      "pokecardex_name": "Premium Champion Pack",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/CP4.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-xy-fates-collide",
+      "language": "EN",
+      "label": "Xy Fates Collide",
+      "pokecardex_code": "FAC",
+      "pokecardex_name": "Fates Collide",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/FAC.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-rumble",
+      "language": "EN",
+      "label": "Rumble",
+      "pokecardex_code": "RUM",
+      "pokecardex_name": "Rumble set",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/RUM.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667
+    },
+    {
+      "set_code": "pokemon-jp-paradigm-trigger",
+      "language": "JP",
+      "label": "Paradigm Trigger",
+      "pokecardex_code": "S12",
+      "pokecardex_name": "Paradigm Trigger",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S12.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-web",
+      "language": "JP",
+      "label": "Web",
+      "pokecardex_code": "PW",
+      "pokecardex_name": "Pokémon Web",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/PW.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 0.667
+    },
+    {
+      "set_code": "pokemon-me01-mega-evolution",
+      "language": "EN",
+      "label": "Me01 Mega Evolution",
+      "pokecardex_code": "MEG",
+      "pokecardex_name": "Mega Evolution",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/MEG.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-swsh10-astral-radiance",
+      "language": "EN",
+      "label": "Swsh10 Astral Radiance",
+      "pokecardex_code": "ASR",
+      "pokecardex_name": "Astral Radiance",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/ASR.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8,
+      "shared_with": [
+        "pokemon-swsh10-astral-radiance-trainer-gallery"
+      ]
+    },
+    {
+      "set_code": "pokemon-swsh10-astral-radiance-trainer-gallery",
+      "language": "EN",
+      "label": "Swsh10 Astral Radiance Trainer Gallery",
+      "pokecardex_code": "ASR",
+      "pokecardex_name": "Astral Radiance",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/ASR.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)",
+      "shared_with": [
+        "pokemon-swsh10-astral-radiance"
+      ]
+    },
+    {
+      "set_code": "pokemon-team-rocket",
+      "language": "EN",
+      "label": "Team Rocket",
+      "pokecardex_code": "TR",
+      "pokecardex_name": "Team Rocket",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/TR.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-dragon-frontiers",
+      "language": "EN",
+      "label": "Dragon Frontiers",
+      "pokecardex_code": "DF",
+      "pokecardex_name": "EX : Dragon Frontiers",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/DF.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-arceus",
+      "language": "EN",
+      "label": "Arceus",
+      "pokecardex_code": "AR",
+      "pokecardex_name": "Platinum : Arceus",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/AR.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667
+    },
+    {
+      "set_code": "pokemon-jp-fever-burst-fighter",
+      "language": "JP",
+      "label": "Fever Burst Fighter",
+      "pokecardex_code": "XY11P",
+      "pokecardex_name": "Fever-Burst Fighter",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/XY11P.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-thunder-knuckle",
+      "language": "JP",
+      "label": "Thunder Knuckle",
+      "pokecardex_code": "BW8B",
+      "pokecardex_name": "Thunder Knuckle",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/BW8B.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-mcdonalds-promos-2023",
+      "language": "EN",
+      "label": "Mcdonalds Promos 2023",
+      "pokecardex_code": "M23",
+      "pokecardex_name": "Promo McDonald's 2023",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/M23.png",
+      "pokecardex_zone": "sets",
+      "score": 0.857
+    },
+    {
+      "set_code": "pokemon-xy-ancient-origins",
+      "language": "EN",
+      "label": "Xy Ancient Origins",
+      "pokecardex_code": "AOR",
+      "pokecardex_name": "Ancient Origins",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/AOR.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-blue-shock",
+      "language": "JP",
+      "label": "Blue Shock",
+      "pokecardex_code": "XY8B",
+      "pokecardex_name": "Blue Shock",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/XY8B.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-detective-pikachu",
+      "language": "EN",
+      "label": "Detective Pikachu",
+      "pokecardex_code": "DPK",
+      "pokecardex_name": "Detective Pikachu",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/DPK.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-spiral-force",
+      "language": "JP",
+      "label": "Spiral Force",
+      "pokecardex_code": "BW8P",
+      "pokecardex_name": "Spiral Force",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/BW8P.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-white-collection",
+      "language": "JP",
+      "label": "White Collection",
+      "pokecardex_code": "BW1W",
+      "pokecardex_name": "White Collection",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/BW1W.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-pokemon-go",
+      "language": "EN",
+      "label": "Pokemon Go",
+      "pokecardex_code": "PGO",
+      "pokecardex_name": "Pokémon GO",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/PGO.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-celebrations",
+      "language": "EN",
+      "label": "Celebrations",
+      "pokecardex_code": "CEL",
+      "pokecardex_name": "Celebrations",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/CEL.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-blue-sky-stream",
+      "language": "JP",
+      "label": "Blue Sky Stream",
+      "pokecardex_code": "S7R",
+      "pokecardex_name": "Blue Sky Stream",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S7R.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-alternate-art-promos",
+      "language": "EN",
+      "label": "Alternate Art Promos",
+      "pokecardex_code": "PRAL",
+      "pokecardex_name": "Alternate Promos",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/PRAL.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-swsh05-battle-styles",
+      "language": "EN",
+      "label": "Swsh05 Battle Styles",
+      "pokecardex_code": "SWSH5",
+      "pokecardex_name": "Battle Styles",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SWSH5.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-swsh07-evolving-skies",
+      "language": "EN",
+      "label": "Swsh07 Evolving Skies",
+      "pokecardex_code": "EVS",
+      "pokecardex_name": "Evolving Skies",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/EVS.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-cyber-judge",
+      "language": "JP",
+      "label": "Cyber Judge",
+      "pokecardex_code": "SV5M",
+      "pokecardex_name": "Cyber Judge",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV5M.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-next-destinies",
+      "language": "EN",
+      "label": "Next Destinies",
+      "pokecardex_code": "NXD",
+      "pokecardex_name": "Next Destinies",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/NXD.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-black-collection",
+      "language": "JP",
+      "label": "Black Collection",
+      "pokecardex_code": "BW1B",
+      "pokecardex_name": "Black Collection",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/BW1B.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-fairy-rise",
+      "language": "JP",
+      "label": "Fairy Rise",
+      "pokecardex_code": "SM7B",
+      "pokecardex_name": "Fairy Rise",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM7B.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-gym-heroes",
+      "language": "EN",
+      "label": "Gym Heroes",
+      "pokecardex_code": "GH",
+      "pokecardex_name": "Gym Heroes",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/GH.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-phantom-gate",
+      "language": "JP",
+      "label": "Phantom Gate",
+      "pokecardex_code": "XY4",
+      "pokecardex_name": "Phantom Gate",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/XY4.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-miracle-twins",
+      "language": "JP",
+      "label": "Miracle Twins",
+      "pokecardex_code": "SM11",
+      "pokecardex_name": "Miracle Twin",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM11.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-sv06-twilight-masquerade",
+      "language": "EN",
+      "label": "Sv06 Twilight Masquerade",
+      "pokecardex_code": "TWM",
+      "pokecardex_name": "Twilight Masquerade",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/TWM.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-islands-await-you",
+      "language": "JP",
+      "label": "Islands Await You",
+      "pokecardex_code": "SM2K",
+      "pokecardex_name": "Islands Await You",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM2K.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-shining-darkness",
+      "language": "JP",
+      "label": "Shining Darkness",
+      "pokecardex_code": "DP3",
+      "pokecardex_name": "Shining Darkness",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/DP3.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-sm-burning-shadows",
+      "language": "EN",
+      "label": "Sm Burning Shadows",
+      "pokecardex_code": "SM03",
+      "pokecardex_name": "Burning Shadows",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SM03.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-sm-trainer-kit-lycanroc-alolan-raichu",
+      "language": "EN",
+      "label": "Sm Trainer Kit Lycanroc Alolan Raichu",
+      "pokecardex_code": "TK10-R",
+      "pokecardex_name": "SM Trainer Kit (Alolan Raichu)",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/TK10-R.png",
+      "pokecardex_zone": "sets",
+      "score": 0.909
+    },
+    {
+      "set_code": "pokemon-mysterious-treasures",
+      "language": "EN",
+      "label": "Mysterious Treasures",
+      "pokecardex_code": "MT",
+      "pokecardex_name": "Diamond & Pearl : Mysterious Treasures",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/MT.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667
+    },
+    {
+      "set_code": "pokemon-jp-mystery-of-the-fossils",
+      "language": "JP",
+      "label": "Mystery Of The Fossils",
+      "pokecardex_code": "OR3",
+      "pokecardex_name": "Mystery of the Fossils",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/OR3.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-swsh09-brilliant-stars",
+      "language": "EN",
+      "label": "Swsh09 Brilliant Stars",
+      "pokecardex_code": "BRS",
+      "pokecardex_name": "Brilliant Stars",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/BRS.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8,
+      "shared_with": [
+        "pokemon-swsh09-brilliant-stars-trainer-gallery"
+      ]
+    },
+    {
+      "set_code": "pokemon-swsh09-brilliant-stars-trainer-gallery",
+      "language": "EN",
+      "label": "Swsh09 Brilliant Stars Trainer Gallery",
+      "pokecardex_code": "BRS",
+      "pokecardex_name": "Brilliant Stars",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/BRS.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)",
+      "shared_with": [
+        "pokemon-swsh09-brilliant-stars"
+      ]
+    },
+    {
+      "set_code": "pokemon-sv09-journey-together",
+      "language": "EN",
+      "label": "Sv09 Journey Together",
+      "pokecardex_code": "JTG",
+      "pokecardex_name": "Journey Together",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/JTG.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-cruel-traitor",
+      "language": "JP",
+      "label": "Cruel Traitor",
+      "pokecardex_code": "XY11B",
+      "pokecardex_name": "Cruel Traitor",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/XY11B.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-plasma-blast",
+      "language": "EN",
+      "label": "Plasma Blast",
+      "pokecardex_code": "PLB",
+      "pokecardex_name": "Plasma Blast",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/PLB.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-mega-symphonia",
+      "language": "JP",
+      "label": "Mega Symphonia",
+      "pokecardex_code": "M1S",
+      "pokecardex_name": "Mega Symphonia",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/M1S.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-sv-shrouded-fable",
+      "language": "EN",
+      "label": "Sv Shrouded Fable",
+      "pokecardex_code": "SFA",
+      "pokecardex_name": "Shrouded Fable",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SFA.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-mcdonalds-promos-2015",
+      "language": "EN",
+      "label": "Mcdonalds Promos 2015",
+      "pokecardex_code": "MC5",
+      "pokecardex_name": "Promo McDonald's 2015",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/MC5.png",
+      "pokecardex_zone": "sets",
+      "score": 0.857
+    },
+    {
+      "set_code": "pokemon-jp-gg-end",
+      "language": "JP",
+      "label": "Gg End",
+      "pokecardex_code": "SM10A",
+      "pokecardex_name": "GG End",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM10A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-me-mega-evolution-promo",
+      "language": "EN",
+      "label": "Me Mega Evolution Promo",
+      "pokecardex_code": "MEP",
+      "pokecardex_name": "Promos Mega Evolution",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/MEP.png",
+      "pokecardex_zone": "sets",
+      "score": 0.857
+    },
+    {
+      "set_code": "pokemon-jp-snow-hazard",
+      "language": "JP",
+      "label": "Snow Hazard",
+      "pokecardex_code": "SV2P",
+      "pokecardex_name": "Snow Hazard",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV2P.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-mask-of-change",
+      "language": "JP",
+      "label": "Mask Of Change",
+      "pokecardex_code": "SV6",
+      "pokecardex_name": "Mask of Change",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV6.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-detective-pikachu",
+      "language": "JP",
+      "label": "Detective Pikachu",
+      "pokecardex_code": "SMP2",
+      "pokecardex_name": "Detective Pikachu",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SMP2.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-sv-white-flare",
+      "language": "EN",
+      "label": "Sv White Flare",
+      "pokecardex_code": "WHT",
+      "pokecardex_name": "White Flare",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/WHT.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-sv02-paldea-evolved",
+      "language": "EN",
+      "label": "Sv02 Paldea Evolved",
+      "pokecardex_code": "PAL",
+      "pokecardex_name": "Paldea Evolved",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/PAL.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-base-set-2",
+      "language": "EN",
+      "label": "Base Set 2",
+      "pokecardex_code": "BS2",
+      "pokecardex_name": "Base Set 2",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/BS2.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-skyridge",
+      "language": "EN",
+      "label": "Skyridge",
+      "pokecardex_code": "SK",
+      "pokecardex_name": "Skyridge",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SK.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-future-flash",
+      "language": "JP",
+      "label": "Future Flash",
+      "pokecardex_code": "SV4M",
+      "pokecardex_name": "Future Flash",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV4M.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-dragon-blast",
+      "language": "JP",
+      "label": "Dragon Blast",
+      "pokecardex_code": "BW5G",
+      "pokecardex_name": "Dragon Blast",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/BW5G.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-hidden-fates-shiny-vault",
+      "language": "EN",
+      "label": "Hidden Fates Shiny Vault",
+      "pokecardex_code": "SM115",
+      "pokecardex_name": "Hidden Fates",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SM115.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667,
+      "shared_with": [
+        "pokemon-hidden-fates"
+      ]
+    },
+    {
+      "set_code": "pokemon-hidden-fates",
+      "language": "EN",
+      "label": "Hidden Fates",
+      "pokecardex_code": "SM115",
+      "pokecardex_name": "Hidden Fates",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SM115.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "shared_with": [
+        "pokemon-hidden-fates-shiny-vault"
+      ]
+    },
+    {
+      "set_code": "pokemon-jp-ultra-moon",
+      "language": "JP",
+      "label": "Ultra Moon",
+      "pokecardex_code": "SM5M",
+      "pokecardex_name": "Ultra Moon",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM5M.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-champions-path",
+      "language": "EN",
+      "label": "Champions Path",
+      "pokecardex_code": "SWSH35",
+      "pokecardex_name": "Champion's Path",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SWSH35.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-abyss-eye",
+      "language": "JP",
+      "label": "Abyss Eye",
+      "pokecardex_code": "M5",
+      "pokecardex_name": "Abyss Eye",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/M5.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-shining-fates-shiny-vault",
+      "language": "EN",
+      "label": "Shining Fates Shiny Vault",
+      "pokecardex_code": "SWSH45",
+      "pokecardex_name": "Shining Fates",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SWSH45.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667,
+      "shared_with": [
+        "pokemon-shining-fates"
+      ]
+    },
+    {
+      "set_code": "pokemon-shining-fates",
+      "language": "EN",
+      "label": "Shining Fates",
+      "pokecardex_code": "SWSH45",
+      "pokecardex_name": "Shining Fates",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SWSH45.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "shared_with": [
+        "pokemon-shining-fates-shiny-vault"
+      ]
+    },
+    {
+      "set_code": "pokemon-team-magma-vs-team-aqua",
+      "language": "EN",
+      "label": "Team Magma Vs Team Aqua",
+      "pokecardex_code": "TMTA",
+      "pokecardex_name": "EX : Team Magma VS Team Aqua",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/TMTA.png",
+      "pokecardex_zone": "sets",
+      "score": 0.889
+    },
+    {
+      "set_code": "pokemon-jp-25th-anniversary-promo",
+      "language": "JP",
+      "label": "25Th Anniversary Promo",
+      "pokecardex_code": "S8AP",
+      "pokecardex_name": "25th Anniversary Collection - Promo",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S8AP.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 0.857
+    },
+    {
+      "set_code": "pokemon-jp-eevee-heroes",
+      "language": "JP",
+      "label": "Eevee Heroes",
+      "pokecardex_code": "S6A",
+      "pokecardex_name": "Eevee Heroes",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S6A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0,
+      "shared_with": [
+        "pokemon-jp-eevee-heroes-special"
+      ]
+    },
+    {
+      "set_code": "pokemon-jp-eevee-heroes-special",
+      "language": "JP",
+      "label": "Eevee Heroes Special",
+      "pokecardex_code": "S6A",
+      "pokecardex_name": "Eevee Heroes",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S6A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 0.8,
+      "shared_with": [
+        "pokemon-jp-eevee-heroes"
+      ]
+    },
+    {
+      "set_code": "pokemon-jp-mysterious-mountains",
+      "language": "JP",
+      "label": "Mysterious Mountains",
+      "pokecardex_code": "ES5",
+      "pokecardex_name": "Mysterious Mountains",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/ES5.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-expedition",
+      "language": "EN",
+      "label": "Expedition",
+      "pokecardex_code": "EX",
+      "pokecardex_name": "Expedition",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/EX.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-shining-legends",
+      "language": "EN",
+      "label": "Shining Legends",
+      "pokecardex_code": "SLE",
+      "pokecardex_name": "Shining Legends",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SLE.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-explosive-walker",
+      "language": "JP",
+      "label": "Explosive Walker",
+      "pokecardex_code": "S2A",
+      "pokecardex_name": "Explosive Walker",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S2A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-darkness-and-to-light",
+      "language": "JP",
+      "label": "Darkness And To Light",
+      "pokecardex_code": "NEO4",
+      "pokecardex_name": "Darkness, and to Light...",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/NEO4.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jungle",
+      "language": "EN",
+      "label": "Jungle",
+      "pokecardex_code": "JU",
+      "pokecardex_name": "Jungle",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/JU.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-25th-anniversary-collection",
+      "language": "JP",
+      "label": "25Th Anniversary Collection",
+      "pokecardex_code": "S8A",
+      "pokecardex_name": "25th Anniversary Collection",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S8A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-sm-celestial-storm",
+      "language": "EN",
+      "label": "Sm Celestial Storm",
+      "pokecardex_code": "SM07",
+      "pokecardex_name": "Celestial Storm",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SM07.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-base-set",
+      "language": "EN",
+      "label": "Base Set",
+      "pokecardex_code": "BS",
+      "pokecardex_name": "Base Set",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/BS.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "shared_with": [
+        "pokemon-base-set-shadowless"
+      ]
+    },
+    {
+      "set_code": "pokemon-base-set-shadowless",
+      "language": "EN",
+      "label": "Base Set Shadowless",
+      "pokecardex_code": "BS",
+      "pokecardex_name": "Base Set",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/BS.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8,
+      "shared_with": [
+        "pokemon-base-set"
+      ]
+    },
+    {
+      "set_code": "pokemon-jp-mirage-forest",
+      "language": "JP",
+      "label": "Mirage Forest",
+      "pokecardex_code": "PCG5",
+      "pokecardex_name": "Mirage Forest",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/PCG5.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-my-first-battle",
+      "language": "EN",
+      "label": "My First Battle",
+      "pokecardex_code": "MFB23",
+      "pokecardex_name": "My First Battle",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/MFB23.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-vmax-rising",
+      "language": "JP",
+      "label": "Vmax Rising",
+      "pokecardex_code": "S1A",
+      "pokecardex_name": "VMAX Rising",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S1A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-night-unison",
+      "language": "JP",
+      "label": "Night Unison",
+      "pokecardex_code": "SM9A",
+      "pokecardex_name": "Night Unison",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM9A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-undone-seal",
+      "language": "JP",
+      "label": "Undone Seal",
+      "pokecardex_code": "ADV5",
+      "pokecardex_name": "Undone Seal",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/ADV5.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-pop-series-1",
+      "language": "EN",
+      "label": "Pop Series 1",
+      "pokecardex_code": "POP1",
+      "pokecardex_name": "POP 1",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/POP1.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-inferno-x",
+      "language": "JP",
+      "label": "Inferno X",
+      "pokecardex_code": "M2",
+      "pokecardex_name": "Inferno X",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/M2.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-dark-rush",
+      "language": "JP",
+      "label": "Dark Rush",
+      "pokecardex_code": "BW4",
+      "pokecardex_name": "Dark Rush",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/BW4.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-pop-series-9",
+      "language": "EN",
+      "label": "Pop Series 9",
+      "pokecardex_code": "POP9",
+      "pokecardex_name": "POP 9",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/POP9.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-emerald",
+      "language": "EN",
+      "label": "Emerald",
+      "pokecardex_code": "EM",
+      "pokecardex_name": "EX : Emerald",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/EM.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667
+    },
+    {
+      "set_code": "pokemon-jp-mega-dream-ex",
+      "language": "JP",
+      "label": "Mega Dream Ex",
+      "pokecardex_code": "M2A",
+      "pokecardex_name": "MEGA Dream ex",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/M2A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-darkness-that-consumes-light",
+      "language": "JP",
+      "label": "Darkness That Consumes Light",
+      "pokecardex_code": "SM3N",
+      "pokecardex_name": "Darkness that Consumes Light",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM3N.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-sv04-paradox-rift",
+      "language": "EN",
+      "label": "Sv04 Paradox Rift",
+      "pokecardex_code": "PAR",
+      "pokecardex_name": "Paradox Rift",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/PAR.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-best-of-promos",
+      "language": "EN",
+      "label": "Best Of Promos",
+      "pokecardex_code": "WBP",
+      "pokecardex_name": "WOTC Best Promos",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/WBP.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667,
+      "shared_with": [
+        "pokemon-wotc-promo"
+      ]
+    },
+    {
+      "set_code": "pokemon-wotc-promo",
+      "language": "EN",
+      "label": "Wotc Promo",
+      "pokecardex_code": "WBP",
+      "pokecardex_name": "WOTC Best Promos",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/WBP.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8,
+      "shared_with": [
+        "pokemon-best-of-promos"
+      ]
+    },
+    {
+      "set_code": "pokemon-jp-ultra-force",
+      "language": "JP",
+      "label": "Ultra Force",
+      "pokecardex_code": "SM5P",
+      "pokecardex_name": "Ultra Force",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM5P.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-vstar-universe",
+      "language": "JP",
+      "label": "Vstar Universe",
+      "pokecardex_code": "S12A",
+      "pokecardex_name": "VSTAR Universe",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S12A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-vmax-climax",
+      "language": "JP",
+      "label": "Vmax Climax",
+      "pokecardex_code": "S8B",
+      "pokecardex_name": "VMAX Climax",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S8B.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-hidden-legends",
+      "language": "EN",
+      "label": "Hidden Legends",
+      "pokecardex_code": "HL",
+      "pokecardex_name": "EX : Hidden Legends",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/HL.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-pop-series-7",
+      "language": "EN",
+      "label": "Pop Series 7",
+      "pokecardex_code": "POP7",
+      "pokecardex_name": "POP 7",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/POP7.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-fossil",
+      "language": "EN",
+      "label": "Fossil",
+      "pokecardex_code": "FO",
+      "pokecardex_name": "Fossil",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/FO.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-sky-legend",
+      "language": "JP",
+      "label": "Sky Legend",
+      "pokecardex_code": "SM10B",
+      "pokecardex_name": "Sky Legend",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM10B.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-sv08-surging-sparks",
+      "language": "EN",
+      "label": "Sv08 Surging Sparks",
+      "pokecardex_code": "SSP",
+      "pokecardex_name": "Surging Sparks",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SSP.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-go",
+      "language": "JP",
+      "label": "Go",
+      "pokecardex_code": "S10B",
+      "pokecardex_name": "Pokémon GO",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S10B.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 0.667
+    },
+    {
+      "set_code": "pokemon-jp-clash-of-the-blue-sky",
+      "language": "JP",
+      "label": "Clash Of The Blue Sky",
+      "pokecardex_code": "PCG2",
+      "pokecardex_name": "Clash of the Blue Sky",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/PCG2.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-space-juggler",
+      "language": "JP",
+      "label": "Space Juggler",
+      "pokecardex_code": "S10P",
+      "pokecardex_name": "Space Juggler",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S10P.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-secret-of-the-lakes",
+      "language": "JP",
+      "label": "Secret Of The Lakes",
+      "pokecardex_code": "DP2",
+      "pokecardex_name": "Secret of the Lakes",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/DP2.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-forbidden-light",
+      "language": "JP",
+      "label": "Forbidden Light",
+      "pokecardex_code": "SM6",
+      "pokecardex_name": "Forbidden Light",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM6.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-crimson-haze",
+      "language": "JP",
+      "label": "Crimson Haze",
+      "pokecardex_code": "SV5A",
+      "pokecardex_name": "Crimson Haze",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV5A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-movie-commemoration-random",
+      "language": "JP",
+      "label": "Movie Commemoration Random",
+      "pokecardex_code": "MCRP",
+      "pokecardex_name": "Movie Commemoration Random Pack",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/MCRP.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 0.857
+    },
+    {
+      "set_code": "pokemon-pop-series-2",
+      "language": "EN",
+      "label": "Pop Series 2",
+      "pokecardex_code": "POP2",
+      "pokecardex_name": "POP 2",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/POP2.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-awakening-legends",
+      "language": "JP",
+      "label": "Awakening Legends",
+      "pokecardex_code": "NEO3",
+      "pokecardex_name": "Awakening Legends",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/NEO3.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-full-metal-wall",
+      "language": "JP",
+      "label": "Full Metal Wall",
+      "pokecardex_code": "SM9B",
+      "pokecardex_name": "Full Metal Wall",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM9B.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-super-burst-impact",
+      "language": "JP",
+      "label": "Super Burst Impact",
+      "pokecardex_code": "SM8",
+      "pokecardex_name": "Super-Burst Impact",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM8.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-aquapolis",
+      "language": "EN",
+      "label": "Aquapolis",
+      "pokecardex_code": "AQ",
+      "pokecardex_name": "Aquapolis",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/AQ.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-expedition-expansion-pack",
+      "language": "JP",
+      "label": "Expedition Expansion Pack",
+      "pokecardex_code": "OR1",
+      "pokecardex_name": "Expansion Pack",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/OR1.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 0.8,
+      "shared_with": [
+        "pokemon-jp-expansion-pack"
+      ]
+    },
+    {
+      "set_code": "pokemon-jp-expansion-pack",
+      "language": "JP",
+      "label": "Expansion Pack",
+      "pokecardex_code": "OR1",
+      "pokecardex_name": "Expansion Pack",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/OR1.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0,
+      "shared_with": [
+        "pokemon-jp-expedition-expansion-pack"
+      ]
+    },
+    {
+      "set_code": "pokemon-jp-ruler-of-the-black-flame",
+      "language": "JP",
+      "label": "Ruler Of The Black Flame",
+      "pokecardex_code": "SV3",
+      "pokecardex_name": "Ruler of the Black Flame",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV3.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0,
+      "shared_with": [
+        "pokemon-jp-rule-of-the-black-flame-build"
+      ]
+    },
+    {
+      "set_code": "pokemon-jp-rule-of-the-black-flame-build",
+      "language": "JP",
+      "label": "Rule Of The Black Flame Build",
+      "pokecardex_code": "SV3",
+      "pokecardex_name": "Ruler of the Black Flame",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV3.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 0.727,
+      "shared_with": [
+        "pokemon-jp-ruler-of-the-black-flame"
+      ]
+    },
+    {
+      "set_code": "pokemon-jp-amazing-volt-tackle",
+      "language": "JP",
+      "label": "Amazing Volt Tackle",
+      "pokecardex_code": "S4",
+      "pokecardex_name": "Amazing Volt Tackle",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S4.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-starter-pack",
+      "language": "JP",
+      "label": "Starter Pack",
+      "pokecardex_code": "20TH",
+      "pokecardex_name": "Starter Pack",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/20TH.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-collection-sun",
+      "language": "JP",
+      "label": "Collection Sun",
+      "pokecardex_code": "SM1S",
+      "pokecardex_name": "Collection Sun",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM1S.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-cry-from-the-mysterious",
+      "language": "JP",
+      "label": "Cry From The Mysterious",
+      "pokecardex_code": "DP5C",
+      "pokecardex_name": "Cry from the Mysterious",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/DP5C.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-majestic-dawn",
+      "language": "EN",
+      "label": "Majestic Dawn",
+      "pokecardex_code": "MD",
+      "pokecardex_name": "Diamond & Pearl : Majestic Dawn",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/MD.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667
+    },
+    {
+      "set_code": "pokemon-xy-trainer-kit-pikachu-libre-suicune",
+      "language": "EN",
+      "label": "Xy Trainer Kit Pikachu Libre Suicune",
+      "pokecardex_code": "TK9-P",
+      "pokecardex_name": "XY Trainer Kit (Pikachu Libre)",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/TK9-P.png",
+      "pokecardex_zone": "sets",
+      "score": 0.909
+    },
+    {
+      "set_code": "pokemon-jp-dark-order",
+      "language": "JP",
+      "label": "Dark Order",
+      "pokecardex_code": "SM8A",
+      "pokecardex_name": "Dark Order",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM8A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-sm-unified-minds",
+      "language": "EN",
+      "label": "Sm Unified Minds",
+      "pokecardex_code": "SM11",
+      "pokecardex_name": "Unified Minds",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SM11.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-ultradimensional-beasts",
+      "language": "JP",
+      "label": "Ultradimensional Beasts",
+      "pokecardex_code": "SM4A",
+      "pokecardex_name": "Ultradimensional Beasts",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM4A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-ultra-sun",
+      "language": "JP",
+      "label": "Ultra Sun",
+      "pokecardex_code": "SM5S",
+      "pokecardex_name": "Ultra Sun",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM5S.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-rulers-of-the-heavens",
+      "language": "JP",
+      "label": "Rulers Of The Heavens",
+      "pokecardex_code": "ADV3",
+      "pokecardex_name": "Rulers of the Heavens",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/ADV3.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-temple-of-anger",
+      "language": "JP",
+      "label": "Temple Of Anger",
+      "pokecardex_code": "DP5T",
+      "pokecardex_name": "Temple of Anger",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/DP5T.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-me04-chaos-rising",
+      "language": "EN",
+      "label": "Me04 Chaos Rising",
+      "pokecardex_code": "CRI",
+      "pokecardex_name": "Chaos Rising",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/CRI.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-scarlet-ex",
+      "language": "JP",
+      "label": "Scarlet Ex",
+      "pokecardex_code": "SV1S",
+      "pokecardex_name": "Scarlet ex",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV1S.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-the-town-on-no-map",
+      "language": "JP",
+      "label": "The Town On No Map",
+      "pokecardex_code": "ES2",
+      "pokecardex_name": "The Town on No Map",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/ES2.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-supreme-victors",
+      "language": "EN",
+      "label": "Supreme Victors",
+      "pokecardex_code": "SV",
+      "pokecardex_name": "Platinum : Supreme Victors",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SV.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-intense-fight-in-the-destroyed-sky",
+      "language": "JP",
+      "label": "Intense Fight In The Destroyed Sky",
+      "pokecardex_code": "DP6",
+      "pokecardex_name": "Intense Fight in the Destroyed Sky",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/DP6.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-mee-mega-evolution-energies",
+      "language": "EN",
+      "label": "Mee Mega Evolution Energies",
+      "pokecardex_code": "MEE",
+      "pokecardex_name": "Mega Evolution Energy",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/MEE.png",
+      "pokecardex_zone": "sets",
+      "score": 0.857
+    },
+    {
+      "set_code": "pokemon-jp-mega-brave",
+      "language": "JP",
+      "label": "Mega Brave",
+      "pokecardex_code": "M1L",
+      "pokecardex_name": "Mega Brave",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/M1L.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-ruby-and-sapphire",
+      "language": "EN",
+      "label": "Ruby And Sapphire",
+      "pokecardex_code": "RS",
+      "pokecardex_name": "EX : Ruby & Sapphire",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/RS.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667
+    },
+    {
+      "set_code": "pokemon-jp-star-birth",
+      "language": "JP",
+      "label": "Star Birth",
+      "pokecardex_code": "S9",
+      "pokecardex_name": "Star Birth",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S9.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-neo-genesis",
+      "language": "EN",
+      "label": "Neo Genesis",
+      "pokecardex_code": "NG",
+      "pokecardex_name": "Neo Genesis",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/NG.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-rising-rivals",
+      "language": "EN",
+      "label": "Rising Rivals",
+      "pokecardex_code": "RR",
+      "pokecardex_name": "Platinum : Rising Rivals",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/RR.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-battle-region",
+      "language": "JP",
+      "label": "Battle Region",
+      "pokecardex_code": "S9A",
+      "pokecardex_name": "Battle Region",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S9A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-neo-destiny",
+      "language": "EN",
+      "label": "Neo Destiny",
+      "pokecardex_code": "N4",
+      "pokecardex_name": "Neo Destiny",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/N4.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-awakened-heroes",
+      "language": "JP",
+      "label": "Awakened Heroes",
+      "pokecardex_code": "SM4S",
+      "pokecardex_name": "Awakened Heroes",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM4S.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-dragons-exalted",
+      "language": "EN",
+      "label": "Dragons Exalted",
+      "pokecardex_code": "DRX",
+      "pokecardex_name": "Dragons Exalted",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/DRX.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-gx-ultra-shiny",
+      "language": "JP",
+      "label": "Gx Ultra Shiny",
+      "pokecardex_code": "SM8B",
+      "pokecardex_name": "GX Ultra Shiny",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM8B.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-shield",
+      "language": "JP",
+      "label": "Shield",
+      "pokecardex_code": "S1H",
+      "pokecardex_name": "Shield",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S1H.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-me05-pitch-black",
+      "language": "EN",
+      "label": "Me05 Pitch Black",
+      "pokecardex_code": "PBL",
+      "pokecardex_name": "Pitch Black",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/PBL.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-dragon-storm",
+      "language": "JP",
+      "label": "Dragon Storm",
+      "pokecardex_code": "SM6A",
+      "pokecardex_name": "Dragon Storm",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM6A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-storm-emeralda",
+      "language": "JP",
+      "label": "Storm Emeralda",
+      "pokecardex_code": "M6",
+      "pokecardex_name": "Storm Emeralda",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/M6.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-tag-all-stars",
+      "language": "JP",
+      "label": "Tag All Stars",
+      "pokecardex_code": "SM12A",
+      "pokecardex_name": "Tag All Stars",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM12A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-legendary-heartbeat",
+      "language": "JP",
+      "label": "Legendary Heartbeat",
+      "pokecardex_code": "S3A",
+      "pokecardex_name": "Legendary Heartbeat",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S3A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-world-champions-pack",
+      "language": "JP",
+      "label": "World Champions Pack",
+      "pokecardex_code": "WCP",
+      "pokecardex_name": "World Champions Pack",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/WCP.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-swsh06-chilling-reign",
+      "language": "EN",
+      "label": "Swsh06 Chilling Reign",
+      "pokecardex_code": "CRE",
+      "pokecardex_name": "Chilling Reign",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/CRE.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-diamond-and-pearl",
+      "language": "EN",
+      "label": "Diamond And Pearl",
+      "pokecardex_code": "DP",
+      "pokecardex_name": "Diamond & Pearl",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/DP.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-noble-victories",
+      "language": "EN",
+      "label": "Noble Victories",
+      "pokecardex_code": "NVI",
+      "pokecardex_name": "Noble Victories",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/NVI.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-sm-unbroken-bonds",
+      "language": "EN",
+      "label": "Sm Unbroken Bonds",
+      "pokecardex_code": "SM10",
+      "pokecardex_name": "Unbroken Bonds",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SM10.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-xy-phantom-forces",
+      "language": "EN",
+      "label": "Xy Phantom Forces",
+      "pokecardex_code": "PHF",
+      "pokecardex_name": "Phantom Forces",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/PHF.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-thunderclap-spark",
+      "language": "JP",
+      "label": "Thunderclap Spark",
+      "pokecardex_code": "SM7A",
+      "pokecardex_name": "Thunderclap Spark",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM7A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-shining-legends",
+      "language": "JP",
+      "label": "Shining Legends",
+      "pokecardex_code": "SM3P",
+      "pokecardex_name": "Shining Legends ",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM3P.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-trick-or-trade-booster-bundle-2023",
+      "language": "EN",
+      "label": "Trick Or Trade Booster Bundle 2023",
+      "pokecardex_code": "TOT23",
+      "pokecardex_name": "Trick or Trade 2023",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/TOT23.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-triplet-beat",
+      "language": "JP",
+      "label": "Triplet Beat",
+      "pokecardex_code": "SV1A",
+      "pokecardex_name": "Triplet Beat",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV1A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-alter-genesis",
+      "language": "JP",
+      "label": "Alter Genesis",
+      "pokecardex_code": "SM12",
+      "pokecardex_name": "Alter Genesis",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM12.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-10th-movie-commemoration-promo",
+      "language": "JP",
+      "label": "10Th Movie Commemoration Promo",
+      "pokecardex_code": "MCS10",
+      "pokecardex_name": "10th Movie Commemoration Set",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/MCS10.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 0.75
+    },
+    {
+      "set_code": "pokemon-unseen-forces",
+      "language": "EN",
+      "label": "Unseen Forces",
+      "pokecardex_code": "UF",
+      "pokecardex_name": "EX : Unseen Forces",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/UF.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-mcdonalds-promos-2017",
+      "language": "EN",
+      "label": "Mcdonalds Promos 2017",
+      "pokecardex_code": "MC7",
+      "pokecardex_name": "Promo McDonald's 2017",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/MC7.png",
+      "pokecardex_zone": "sets",
+      "score": 0.857
+    },
+    {
+      "set_code": "pokemon-jp-incandescent-arcana",
+      "language": "JP",
+      "label": "Incandescent Arcana",
+      "pokecardex_code": "S11A",
+      "pokecardex_name": "Incandescent Arcana",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S11A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-me03-perfect-order",
+      "language": "EN",
+      "label": "Me03 Perfect Order",
+      "pokecardex_code": "POR",
+      "pokecardex_name": "Perfect Order",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/POR.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-rage-of-the-broken-heavens",
+      "language": "JP",
+      "label": "Rage Of The Broken Heavens",
+      "pokecardex_code": "XY9",
+      "pokecardex_name": "Rage of the Broken Heavens",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/XY9.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-violet-ex",
+      "language": "JP",
+      "label": "Violet Ex",
+      "pokecardex_code": "SV1V",
+      "pokecardex_name": "Violet ex",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV1V.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-crown-zenith-galarian-gallery",
+      "language": "EN",
+      "label": "Crown Zenith Galarian Gallery",
+      "pokecardex_code": "CRZ",
+      "pokecardex_name": "Crown Zenith",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/CRZ.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667,
+      "shared_with": [
+        "pokemon-crown-zenith"
+      ]
+    },
+    {
+      "set_code": "pokemon-crown-zenith",
+      "language": "EN",
+      "label": "Crown Zenith",
+      "pokecardex_code": "CRZ",
+      "pokecardex_name": "Crown Zenith",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/CRZ.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "shared_with": [
+        "pokemon-crown-zenith-galarian-gallery"
+      ]
+    },
+    {
+      "set_code": "pokemon-jp-miracle-of-the-desert",
+      "language": "JP",
+      "label": "Miracle Of The Desert",
+      "pokecardex_code": "ADV2",
+      "pokecardex_name": "Miracle of the Desert",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/ADV2.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-holon-research",
+      "language": "JP",
+      "label": "Holon Research",
+      "pokecardex_code": "PCG6",
+      "pokecardex_name": "Holon Research Tower",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/PCG6.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-southern-islands",
+      "language": "JP",
+      "label": "Southern Islands",
+      "pokecardex_code": "SOIS",
+      "pokecardex_name": "Southern Islands",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SOIS.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-black-bolt",
+      "language": "JP",
+      "label": "Black Bolt",
+      "pokecardex_code": "SV11B",
+      "pokecardex_name": "Black Bolt",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV11B.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-neo-discovery",
+      "language": "EN",
+      "label": "Neo Discovery",
+      "pokecardex_code": "ND",
+      "pokecardex_name": "Neo Discovery",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/ND.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-gym-challenge",
+      "language": "EN",
+      "label": "Gym Challenge",
+      "pokecardex_code": "GC",
+      "pokecardex_name": "Gym Challenge",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/GC.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-collection-x",
+      "language": "JP",
+      "label": "Collection X",
+      "pokecardex_code": "XY1B",
+      "pokecardex_name": "Collection X",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/XY1B.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-call-of-legends",
+      "language": "EN",
+      "label": "Call Of Legends",
+      "pokecardex_code": "CL",
+      "pokecardex_name": "Call of Legend",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/CL.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-xy-promos",
+      "language": "EN",
+      "label": "Xy Promos",
+      "pokecardex_code": "XY",
+      "pokecardex_name": "XY",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/XY.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667,
+      "shared_with": [
+        "pokemon-xy-base-set"
+      ]
+    },
+    {
+      "set_code": "pokemon-xy-base-set",
+      "language": "EN",
+      "label": "Xy Base Set",
+      "pokecardex_code": "XY",
+      "pokecardex_name": "XY",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/XY.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)",
+      "shared_with": [
+        "pokemon-xy-promos"
+      ]
+    },
+    {
+      "set_code": "pokemon-jp-night-wanderer",
+      "language": "JP",
+      "label": "Night Wanderer",
+      "pokecardex_code": "SV6A",
+      "pokecardex_name": "Night Wanderer",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV6A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-11th-movie-commemoration-promo",
+      "language": "JP",
+      "label": "11Th Movie Commemoration Promo",
+      "pokecardex_code": "MCS11",
+      "pokecardex_name": "11th Movie Commemoration Set",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/MCS11.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 0.75
+    },
+    {
+      "set_code": "pokemon-mcdonalds-promos-2024",
+      "language": "EN",
+      "label": "Mcdonalds Promos 2024",
+      "pokecardex_code": "M24",
+      "pokecardex_name": "Promo McDonald's 2024",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/M24.png",
+      "pokecardex_zone": "sets",
+      "score": 0.857
+    },
+    {
+      "set_code": "pokemon-jp-crossing-the-ruins",
+      "language": "JP",
+      "label": "Crossing The Ruins",
+      "pokecardex_code": "NEO2",
+      "pokecardex_name": "Crossing the Ruins...",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/NEO2.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-southern-islands",
+      "language": "EN",
+      "label": "Southern Islands",
+      "pokecardex_code": "SI",
+      "pokecardex_name": "Southern Islands",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SI.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-space-time",
+      "language": "JP",
+      "label": "Space Time",
+      "pokecardex_code": "DP1",
+      "pokecardex_name": "Space-Time Creation",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/DP1.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-shiny-treasure-ex",
+      "language": "JP",
+      "label": "Shiny Treasure Ex",
+      "pokecardex_code": "SV4A",
+      "pokecardex_name": "Shiny Treasure ex",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV4A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-megalo-cannon",
+      "language": "JP",
+      "label": "Megalo Cannon",
+      "pokecardex_code": "BW9",
+      "pokecardex_name": "Megalo Cannon",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/BW9.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-rising-fist",
+      "language": "JP",
+      "label": "Rising Fist",
+      "pokecardex_code": "XY3",
+      "pokecardex_name": "Rising Fist",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/XY3.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-pokekyun-collection",
+      "language": "JP",
+      "label": "Pokekyun Collection",
+      "pokecardex_code": "CP3",
+      "pokecardex_name": "PokéKyun Collection",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/CP3.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-wind-from-the-sea",
+      "language": "JP",
+      "label": "Wind From The Sea",
+      "pokecardex_code": "ES3",
+      "pokecardex_name": "Wind from the Sea",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/ES3.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-advent-of-arceus",
+      "language": "JP",
+      "label": "Advent Of Arceus",
+      "pokecardex_code": "PT4",
+      "pokecardex_name": "Advent of Arceus",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/PT4.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-rocket-gang",
+      "language": "JP",
+      "label": "Rocket Gang",
+      "pokecardex_code": "OR4",
+      "pokecardex_name": "Rocket Gang",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/OR4.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-nihil-zero",
+      "language": "JP",
+      "label": "Nihil Zero",
+      "pokecardex_code": "M3",
+      "pokecardex_name": "Nihil Zero",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/M3.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-alolan-moonlight",
+      "language": "JP",
+      "label": "Alolan Moonlight",
+      "pokecardex_code": "SM2L",
+      "pokecardex_name": "Alolan Moonlight",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM2L.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-plasma-freeze",
+      "language": "EN",
+      "label": "Plasma Freeze",
+      "pokecardex_code": "PLF",
+      "pokecardex_name": "Plasma Freeze",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/PLF.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-pop-series-6",
+      "language": "EN",
+      "label": "Pop Series 6",
+      "pokecardex_code": "POP6",
+      "pokecardex_name": "POP 6",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/POP6.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-flight-of-legends",
+      "language": "JP",
+      "label": "Flight Of Legends",
+      "pokecardex_code": "PCG1",
+      "pokecardex_name": "Flight of Legends",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/PCG1.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-movie-commemoration-vs-pack",
+      "language": "JP",
+      "label": "Movie Commemoration Vs Pack",
+      "pokecardex_code": "MCVS6",
+      "pokecardex_name": "Movie Commemoration VS Pack",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/MCVS6.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-black-and-white",
+      "language": "EN",
+      "label": "Black And White",
+      "pokecardex_code": "BLW",
+      "pokecardex_name": "Black & White",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/BLW.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-clay-burst",
+      "language": "JP",
+      "label": "Clay Burst",
+      "pokecardex_code": "SV2D",
+      "pokecardex_name": "Clay Burst",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV2D.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-sv07-stellar-crown",
+      "language": "EN",
+      "label": "Sv07 Stellar Crown",
+      "pokecardex_code": "SCR",
+      "pokecardex_name": "Stellar Crown",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SCR.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-generations",
+      "language": "EN",
+      "label": "Generations",
+      "pokecardex_code": "GNR",
+      "pokecardex_name": "Generations",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/GNR.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-ninja-spinner",
+      "language": "JP",
+      "label": "Ninja Spinner",
+      "pokecardex_code": "M4",
+      "pokecardex_name": "Ninja Spinner",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/M4.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-glory-of-team-rocket",
+      "language": "JP",
+      "label": "Glory Of Team Rocket",
+      "pokecardex_code": "SV10",
+      "pokecardex_name": "Glory of the Team Rocket",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV10.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 0.889
+    },
+    {
+      "set_code": "pokemon-jp-ex-battle-boost",
+      "language": "JP",
+      "label": "Ex Battle Boost",
+      "pokecardex_code": "EBB",
+      "pokecardex_name": "EX Battle Boost",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/EBB.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-pokepark-forest",
+      "language": "JP",
+      "label": "Pokepark Forest",
+      "pokecardex_code": "PKF",
+      "pokecardex_name": "PokéPark Forest",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/PKF.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-swsh-sword-shield-promo-cards",
+      "language": "EN",
+      "label": "Swsh Sword Shield Promo Cards",
+      "pokecardex_code": "PRSWSH",
+      "pokecardex_name": "Promos Sword&Shield",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/PRSWSH.png",
+      "pokecardex_zone": "sets",
+      "score": 0.75
+    },
+    {
+      "set_code": "pokemon-swsh04-vivid-voltage",
+      "language": "EN",
+      "label": "Swsh04 Vivid Voltage",
+      "pokecardex_code": "SWSH4",
+      "pokecardex_name": "Vivid Voltage",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SWSH4.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-stellar-miracle",
+      "language": "JP",
+      "label": "Stellar Miracle",
+      "pokecardex_code": "SV7",
+      "pokecardex_name": "Stellar Miracle",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV7.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0,
+      "shared_with": [
+        "pokemon-jp-stellar-miracle-deck-build-box"
+      ]
+    },
+    {
+      "set_code": "pokemon-jp-stellar-miracle-deck-build-box",
+      "language": "JP",
+      "label": "Stellar Miracle Deck Build Box",
+      "pokecardex_code": "SV7",
+      "pokecardex_name": "Stellar Miracle",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV7.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)",
+      "shared_with": [
+        "pokemon-jp-stellar-miracle"
+      ]
+    },
+    {
+      "set_code": "pokemon-jp-miracle-crystal",
+      "language": "JP",
+      "label": "Miracle Crystal",
+      "pokecardex_code": "PCG8",
+      "pokecardex_name": "Miracle Crystal",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/PCG8.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-champion-road",
+      "language": "JP",
+      "label": "Champion Road",
+      "pokecardex_code": "SM6B",
+      "pokecardex_name": "Champion Road",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM6B.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-sv03-obsidian-flames",
+      "language": "EN",
+      "label": "Sv03 Obsidian Flames",
+      "pokecardex_code": "OBF",
+      "pokecardex_name": "Obsidian Flames",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/OBF.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-battle-partners",
+      "language": "JP",
+      "label": "Battle Partners",
+      "pokecardex_code": "SV9",
+      "pokecardex_name": "Battle Partners",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV9.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0,
+      "shared_with": [
+        "pokemon-jp-battle-partners-deck-build-box"
+      ]
+    },
+    {
+      "set_code": "pokemon-jp-battle-partners-deck-build-box",
+      "language": "JP",
+      "label": "Battle Partners Deck Build Box",
+      "pokecardex_code": "SV9",
+      "pokecardex_name": "Battle Partners",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV9.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)",
+      "shared_with": [
+        "pokemon-jp-battle-partners"
+      ]
+    },
+    {
+      "set_code": "pokemon-sv05-temporal-forces",
+      "language": "EN",
+      "label": "Sv05 Temporal Forces",
+      "pokecardex_code": "TEF",
+      "pokecardex_name": "Temporal Forces",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/TEF.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-prize-pack-series-cards",
+      "language": "EN",
+      "label": "Prize Pack Series Cards",
+      "pokecardex_code": "PRZP",
+      "pokecardex_name": "Prize Pack",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/PRZP.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667
+    },
+    {
+      "set_code": "pokemon-jp-heat-wave-arena",
+      "language": "JP",
+      "label": "Heat Wave Arena",
+      "pokecardex_code": "SV9A",
+      "pokecardex_name": "Heat Wave Arena",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV9A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-me-ascended-heroes",
+      "language": "EN",
+      "label": "Me Ascended Heroes",
+      "pokecardex_code": "ASC",
+      "pokecardex_name": "Ascended Heroes",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/ASC.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-pop-series-8",
+      "language": "EN",
+      "label": "Pop Series 8",
+      "pokecardex_code": "POP8",
+      "pokecardex_name": "POP 8",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/POP8.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-dragon-blade",
+      "language": "JP",
+      "label": "Dragon Blade",
+      "pokecardex_code": "BW5O",
+      "pokecardex_name": "Dragon Blade",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/BW5O.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-dragon-vault",
+      "language": "EN",
+      "label": "Dragon Vault",
+      "pokecardex_code": "DRV",
+      "pokecardex_name": "Dragon Vault",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/DRV.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-plasma-gale",
+      "language": "JP",
+      "label": "Plasma Gale",
+      "pokecardex_code": "BW7",
+      "pokecardex_name": "Plasma Gale",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/BW7.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-hail-blizzard",
+      "language": "JP",
+      "label": "Hail Blizzard",
+      "pokecardex_code": "BW3B",
+      "pokecardex_name": "Hail Blizzard",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/BW3B.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-facing-a-new-trial",
+      "language": "JP",
+      "label": "Facing A New Trial",
+      "pokecardex_code": "SM2P",
+      "pokecardex_name": "Facing a New Trial",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM2P.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-sv-black-bolt",
+      "language": "EN",
+      "label": "Sv Black Bolt",
+      "pokecardex_code": "BLK",
+      "pokecardex_name": "Black Bolt",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/BLK.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-clash-at-the-summit",
+      "language": "JP",
+      "label": "Clash At The Summit",
+      "pokecardex_code": "L3",
+      "pokecardex_name": "Clash at the Summit",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/L3.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-challenge-from-the-darkness",
+      "language": "JP",
+      "label": "Challenge From The Darkness",
+      "pokecardex_code": "OR6",
+      "pokecardex_name": "Challenge from the Darkness",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/OR6.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-dragon-majesty",
+      "language": "EN",
+      "label": "Dragon Majesty",
+      "pokecardex_code": "SM75",
+      "pokecardex_name": "Dragon Majesty",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SM75.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-sandstorm",
+      "language": "EN",
+      "label": "Sandstorm",
+      "pokecardex_code": "SS",
+      "pokecardex_name": "EX : Sandstorm",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SS.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667
+    },
+    {
+      "set_code": "pokemon-triumphant",
+      "language": "EN",
+      "label": "Triumphant",
+      "pokecardex_code": "TM",
+      "pokecardex_name": "HS : Triumphant",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/TM.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667
+    },
+    {
+      "set_code": "pokemon-jp-vs",
+      "language": "JP",
+      "label": "Vs",
+      "pokecardex_code": "VS",
+      "pokecardex_name": "Pokémon VS",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/VS.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 0.667
+    },
+    {
+      "set_code": "pokemon-jp-remix-bout",
+      "language": "JP",
+      "label": "Remix Bout",
+      "pokecardex_code": "SM11A",
+      "pokecardex_name": "Remix Bout",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM11A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-mcdonalds-promos-2016",
+      "language": "EN",
+      "label": "Mcdonalds Promos 2016",
+      "pokecardex_code": "MC6",
+      "pokecardex_name": "Promo McDonald's 2016",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/MC6.png",
+      "pokecardex_zone": "sets",
+      "score": 0.857
+    },
+    {
+      "set_code": "pokemon-swsh08-fusion-strike",
+      "language": "EN",
+      "label": "Swsh08 Fusion Strike",
+      "pokecardex_code": "FST",
+      "pokecardex_name": "Fusion Strike",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/FST.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-dream-league",
+      "language": "JP",
+      "label": "Dream League",
+      "pokecardex_code": "SM11B",
+      "pokecardex_name": "Dream League",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM11B.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-xy-steam-siege",
+      "language": "EN",
+      "label": "Xy Steam Siege",
+      "pokecardex_code": "STS",
+      "pokecardex_name": "Steam Siege",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/STS.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-moonlit-pursuit",
+      "language": "JP",
+      "label": "Moonlit Pursuit",
+      "pokecardex_code": "DP4M",
+      "pokecardex_name": "Moonlit Pursuit",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/DP4M.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-red-flash",
+      "language": "JP",
+      "label": "Red Flash",
+      "pokecardex_code": "XY8R",
+      "pokecardex_name": "Red Flash",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/XY8R.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-wild-force",
+      "language": "JP",
+      "label": "Wild Force",
+      "pokecardex_code": "SV5K",
+      "pokecardex_name": "Wild Force",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV5K.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-tag-bolt",
+      "language": "JP",
+      "label": "Tag Bolt",
+      "pokecardex_code": "SM9",
+      "pokecardex_name": "Tag Bolt",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM9.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-melee-pokemon-scramble",
+      "language": "JP",
+      "label": "Melee Pokemon Scramble",
+      "pokecardex_code": "MPS",
+      "pokecardex_name": "Melee! Pokémon Scramble",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/MPS.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-deoxys",
+      "language": "EN",
+      "label": "Deoxys",
+      "pokecardex_code": "DX",
+      "pokecardex_name": "EX : Deoxys",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/DX.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667
+    },
+    {
+      "set_code": "pokemon-sve-scarlet-violet-energies",
+      "language": "EN",
+      "label": "Sve Scarlet Violet Energies",
+      "pokecardex_code": "SVE",
+      "pokecardex_name": "Scarlet & Violet Energy",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SVE.png",
+      "pokecardex_zone": "sets",
+      "score": 0.857
+    },
+    {
+      "set_code": "pokemon-jp-lost-link",
+      "language": "JP",
+      "label": "Lost Link",
+      "pokecardex_code": "LL",
+      "pokecardex_name": "Lost Link",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/LL.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-awakening-psychic-king",
+      "language": "JP",
+      "label": "Awakening Psychic King",
+      "pokecardex_code": "XY10",
+      "pokecardex_name": "Awakening Psychic King",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/XY10.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-white-flare",
+      "language": "JP",
+      "label": "White Flare",
+      "pokecardex_code": "SV11W",
+      "pokecardex_name": "White Flare",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV11W.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-secret-wonders",
+      "language": "EN",
+      "label": "Secret Wonders",
+      "pokecardex_code": "SW",
+      "pokecardex_name": "Diamond & Pearl : Secret Wonders",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SW.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667
+    },
+    {
+      "set_code": "pokemon-mcdonalds-promos-2012",
+      "language": "EN",
+      "label": "Mcdonalds Promos 2012",
+      "pokecardex_code": "MC2",
+      "pokecardex_name": "Promo McDonald's 2012",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/MC2.png",
+      "pokecardex_zone": "sets",
+      "score": 0.857
+    },
+    {
+      "set_code": "pokemon-jp-time-gazer",
+      "language": "JP",
+      "label": "Time Gazer",
+      "pokecardex_code": "S10D",
+      "pokecardex_name": "Time Gazer",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S10D.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-mcdonalds-promos-2014",
+      "language": "EN",
+      "label": "Mcdonalds Promos 2014",
+      "pokecardex_code": "MC4",
+      "pokecardex_name": "Promo McDonald's 2014",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/MC4.png",
+      "pokecardex_zone": "sets",
+      "score": 0.857
+    },
+    {
+      "set_code": "pokemon-jp-gaia-volcano",
+      "language": "JP",
+      "label": "Gaia Volcano",
+      "pokecardex_code": "XY5Y",
+      "pokecardex_name": "Gaia Volcano",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/XY5Y.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-tidal-storm",
+      "language": "JP",
+      "label": "Tidal Storm",
+      "pokecardex_code": "XY5G",
+      "pokecardex_name": "Tidal Storm",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/XY5G.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-gold-silver-new-world",
+      "language": "JP",
+      "label": "Gold Silver New World",
+      "pokecardex_code": "NEO1",
+      "pokecardex_name": "Gold, Silver, to a New World...",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/NEO1.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-ancient-roar",
+      "language": "JP",
+      "label": "Ancient Roar",
+      "pokecardex_code": "SV4K",
+      "pokecardex_name": "Ancient Roar",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV4K.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-kalos-starter-set",
+      "language": "EN",
+      "label": "Kalos Starter Set",
+      "pokecardex_code": "KSS",
+      "pokecardex_name": "Kalos Starter Set",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/KSS.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-sm-forbidden-light",
+      "language": "EN",
+      "label": "Sm Forbidden Light",
+      "pokecardex_code": "SM06",
+      "pokecardex_name": "Forbidden Light",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SM06.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-undaunted",
+      "language": "EN",
+      "label": "Undaunted",
+      "pokecardex_code": "UD",
+      "pokecardex_name": "HS : Undaunted",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/UD.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667
+    },
+    {
+      "set_code": "pokemon-crystal-guardians",
+      "language": "EN",
+      "label": "Crystal Guardians",
+      "pokecardex_code": "CG",
+      "pokecardex_name": "EX : Crystal Guardians",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/CG.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-split-earth",
+      "language": "JP",
+      "label": "Split Earth",
+      "pokecardex_code": "ES4",
+      "pokecardex_name": "Split Earth",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/ES4.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-emerald-break",
+      "language": "JP",
+      "label": "Emerald Break",
+      "pokecardex_code": "XY6",
+      "pokecardex_name": "Emerald Break",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/XY6.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-emerging-powers",
+      "language": "EN",
+      "label": "Emerging Powers",
+      "pokecardex_code": "EPO",
+      "pokecardex_name": "Emerging Powers",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/EPO.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-rapid-strike-master",
+      "language": "JP",
+      "label": "Rapid Strike Master",
+      "pokecardex_code": "S5R",
+      "pokecardex_name": "Rapid Strike Master",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S5R.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-20th-anniversary",
+      "language": "JP",
+      "label": "20Th Anniversary",
+      "pokecardex_code": "CP6",
+      "pokecardex_name": "Expansion Pack 20th Anniversary",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/CP6.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 0.667
+    },
+    {
+      "set_code": "pokemon-jp-holon-phantom",
+      "language": "JP",
+      "label": "Holon Phantom",
+      "pokecardex_code": "PCG7",
+      "pokecardex_name": "Holon Phantom",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/PCG7.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-double-crisis",
+      "language": "EN",
+      "label": "Double Crisis",
+      "pokecardex_code": "DCR",
+      "pokecardex_name": "Double Crisis",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/DCR.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-holon-phantoms",
+      "language": "EN",
+      "label": "Holon Phantoms",
+      "pokecardex_code": "HP",
+      "pokecardex_name": "EX : Holon Phantoms",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/HP.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-sword",
+      "language": "JP",
+      "label": "Sword",
+      "pokecardex_code": "S1W",
+      "pokecardex_name": "Sword",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S1W.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-sky-splitting-charisma",
+      "language": "JP",
+      "label": "Sky Splitting Charisma",
+      "pokecardex_code": "SM7",
+      "pokecardex_name": "Sky-Splitting Charisma",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM7.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-jungle",
+      "language": "JP",
+      "label": "Jungle",
+      "pokecardex_code": "OR2",
+      "pokecardex_name": "Pokémon Jungle",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/OR2.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 0.667
+    },
+    {
+      "set_code": "pokemon-jp-single-strike-master",
+      "language": "JP",
+      "label": "Single Strike Master",
+      "pokecardex_code": "S5I",
+      "pokecardex_name": "Single Strike Master",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S5I.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-sm-lost-thunder",
+      "language": "EN",
+      "label": "Sm Lost Thunder",
+      "pokecardex_code": "SM08",
+      "pokecardex_name": "Lost Thunder",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SM08.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-dark-phantasma",
+      "language": "JP",
+      "label": "Dark Phantasma",
+      "pokecardex_code": "S10A",
+      "pokecardex_name": "Dark Phantasma",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S10A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-dawn-dash",
+      "language": "JP",
+      "label": "Dawn Dash",
+      "pokecardex_code": "DP4D",
+      "pokecardex_name": "Dawn Dash",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/DP4D.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-dragon-selection",
+      "language": "JP",
+      "label": "Dragon Selection",
+      "pokecardex_code": "DS",
+      "pokecardex_name": "Dragon Selection",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/DS.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jumbo-cards",
+      "language": "EN",
+      "label": "Jumbo Cards",
+      "pokecardex_code": "JUMBO",
+      "pokecardex_name": "Jumbo",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/JUMBO.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667
+    },
+    {
+      "set_code": "pokemon-jp-silver-lance",
+      "language": "JP",
+      "label": "Silver Lance",
+      "pokecardex_code": "S6H",
+      "pokecardex_name": "Silver Lance",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S6H.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-bonds-to-the-end-of-time",
+      "language": "JP",
+      "label": "Bonds To The End Of Time",
+      "pokecardex_code": "PT2",
+      "pokecardex_name": "Bonds to the End of Time",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/PT2.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-raging-surf",
+      "language": "JP",
+      "label": "Raging Surf",
+      "pokecardex_code": "SV3A",
+      "pokecardex_name": "Raging Surf",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV3A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-golden-sky-silvery-ocean",
+      "language": "JP",
+      "label": "Golden Sky Silvery Ocean",
+      "pokecardex_code": "PCG4",
+      "pokecardex_name": "Golden Sky, Silvery Ocean",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/PCG4.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-rocket-gang-strikes-back",
+      "language": "JP",
+      "label": "Rocket Gang Strikes Back",
+      "pokecardex_code": "PCG3",
+      "pokecardex_name": "Rocket Gang Strikes Back",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/PCG3.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-soulsilver-collection",
+      "language": "JP",
+      "label": "Soulsilver Collection",
+      "pokecardex_code": "L1SS",
+      "pokecardex_name": "SoulSilver Collection",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/L1SS.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-great-encounters",
+      "language": "EN",
+      "label": "Great Encounters",
+      "pokecardex_code": "GE",
+      "pokecardex_name": "Diamond & Pearl : Great Encounters",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/GE.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667
+    },
+    {
+      "set_code": "pokemon-jp-offense-and-defense-of-the-furthest-ends",
+      "language": "JP",
+      "label": "Offense And Defense Of The Furthest Ends",
+      "pokecardex_code": "PCG9",
+      "pokecardex_name": "Offense and Defense of the Furthest Ends",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/PCG9.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-xy-roaring-skies",
+      "language": "EN",
+      "label": "Xy Roaring Skies",
+      "pokecardex_code": "ROS",
+      "pokecardex_name": "Roaring Skies",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/ROS.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-delta-species",
+      "language": "EN",
+      "label": "Delta Species",
+      "pokecardex_code": "DS",
+      "pokecardex_name": "EX : Delta Species",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/DS.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-plasma-storm",
+      "language": "EN",
+      "label": "Plasma Storm",
+      "pokecardex_code": "PLS",
+      "pokecardex_name": "Plasma Storm",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/PLS.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-reviving-legends",
+      "language": "JP",
+      "label": "Reviving Legends",
+      "pokecardex_code": "L2",
+      "pokecardex_name": "Reviving Legends",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/L2.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-gx-battle-boost",
+      "language": "JP",
+      "label": "Gx Battle Boost",
+      "pokecardex_code": "SM4P",
+      "pokecardex_name": "GX Battle Boost",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM4P.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-jp-paradise-dragona",
+      "language": "JP",
+      "label": "Paradise Dragona",
+      "pokecardex_code": "SV7A",
+      "pokecardex_name": "Paradise Dragona",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SV7A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-sm-ultra-prism",
+      "language": "EN",
+      "label": "Sm Ultra Prism",
+      "pokecardex_code": "SM05",
+      "pokecardex_name": "Ultra Prism",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SM05.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-collection-moon",
+      "language": "JP",
+      "label": "Collection Moon",
+      "pokecardex_code": "SM1M",
+      "pokecardex_name": "Collection Moon",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/SM1M.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-pop-series-5",
+      "language": "EN",
+      "label": "Pop Series 5",
+      "pokecardex_code": "POP5",
+      "pokecardex_name": "POP 5",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/POP5.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-jp-shiny-star-v",
+      "language": "JP",
+      "label": "Shiny Star V",
+      "pokecardex_code": "S4A",
+      "pokecardex_name": "Shiny Star V",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/S4A.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0
+    },
+    {
+      "set_code": "pokemon-trick-or-trade-booster-bundle-2024",
+      "language": "EN",
+      "label": "Trick Or Trade Booster Bundle 2024",
+      "pokecardex_code": "TOT24",
+      "pokecardex_name": "Trick or Trade 2024",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/TOT24.png",
+      "pokecardex_zone": "sets",
+      "score": 0.8
+    },
+    {
+      "set_code": "pokemon-xy-breakthrough",
+      "language": "EN",
+      "label": "Xy Breakthrough",
+      "pokecardex_code": "BKT",
+      "pokecardex_name": "BREAKThrough",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/BKT.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-xy-breakpoint",
+      "language": "EN",
+      "label": "Xy Breakpoint",
+      "pokecardex_code": "BKP",
+      "pokecardex_name": "BREAKpoint",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/BKP.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-xy-evolutions",
+      "language": "EN",
+      "label": "Xy Evolutions",
+      "pokecardex_code": "EVO",
+      "pokecardex_name": "Evolutions",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/EVO.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-xy-flashfire",
+      "language": "EN",
+      "label": "Xy Flashfire",
+      "pokecardex_code": "FLF",
+      "pokecardex_name": "Flashfire",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/FLF.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-black-and-white-promos",
+      "language": "EN",
+      "label": "Black And White Promos",
+      "pokecardex_code": "PRBW",
+      "pokecardex_name": "Promos Black Star Black & White",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/PRBW.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-team-rocket-returns",
+      "language": "EN",
+      "label": "Team Rocket Returns",
+      "pokecardex_code": "TRR",
+      "pokecardex_name": "EX : Team Rocket Returns",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/TRR.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-jp-dream-shine-collection",
+      "language": "JP",
+      "label": "Dream Shine Collection",
+      "pokecardex_code": "CP5",
+      "pokecardex_name": "Mythical & Legendary Dream Shine Collection",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos_jp/CP5.png",
+      "pokecardex_zone": "sets_jp",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-dragon",
+      "language": "EN",
+      "label": "Dragon",
+      "pokecardex_code": "DR",
+      "pokecardex_name": "EX : Dragon",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/DR.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-trick-or-trade-booster-bundle",
+      "language": "EN",
+      "label": "Trick Or Trade Booster Bundle",
+      "pokecardex_code": "TOT22",
+      "pokecardex_name": "Trick or Trade 2022",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/TOT22.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-sv-scarlet-violet-151",
+      "language": "EN",
+      "label": "Sv Scarlet Violet 151",
+      "pokecardex_code": "MEW",
+      "pokecardex_name": "151",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/MEW.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-sm-base-set",
+      "language": "EN",
+      "label": "Sm Base Set",
+      "pokecardex_code": "SM01",
+      "pokecardex_name": "Sun & Moon",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SM01.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-sm-trainer-kit-alolan-sandslash-alolan-ninetales",
+      "language": "EN",
+      "label": "Sm Trainer Kit Alolan Sandslash Alolan Ninetales",
+      "pokecardex_code": "TK11-S",
+      "pokecardex_name": "SL Trainer Kit (Alolan Sandslash)",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/TK11-S.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-battle-academy",
+      "language": "EN",
+      "label": "Battle Academy",
+      "pokecardex_code": "ADC-M",
+      "pokecardex_name": "Battle Academy (Mewtwo Deck)",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/ADC-M.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-ex-trainer-kit-1-latias-latios",
+      "language": "EN",
+      "label": "Ex Trainer Kit 1 Latias Latios",
+      "pokecardex_code": "TK1-LO",
+      "pokecardex_name": "EX Trainer Kit (Latios)",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/TK1-LO.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-battle-academy-2022",
+      "language": "EN",
+      "label": "Battle Academy 2022",
+      "pokecardex_code": "ADC2-E",
+      "pokecardex_name": "Battle Academy 2022 (Eevee Deck)",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/ADC2-E.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-ex-trainer-kit-2-plusle-minun",
+      "language": "EN",
+      "label": "Ex Trainer Kit 2 Plusle Minun",
+      "pokecardex_code": "TK2-P",
+      "pokecardex_name": "EX Trainer Kit (Plusle)",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/TK2-P.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-hgss-trainer-kit-gyarados-raichu",
+      "language": "EN",
+      "label": "Hgss Trainer Kit Gyarados Raichu",
+      "pokecardex_code": "TK4-R",
+      "pokecardex_name": "HS Trainer Kit (Raichu)",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/TK4-R.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-xy-trainer-kit-latias-latios",
+      "language": "EN",
+      "label": "Xy Trainer Kit Latias Latios",
+      "pokecardex_code": "TK8-LO",
+      "pokecardex_name": "XY Trainer Kit (Latios)",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/TK8-LO.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-battle-academy-2024",
+      "language": "EN",
+      "label": "Battle Academy 2024",
+      "pokecardex_code": "ADC3-D",
+      "pokecardex_name": "Battle Academy 2024 (Darkrai Deck)",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/ADC3-D.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-xy-trainer-kit-sylveon-noivern",
+      "language": "EN",
+      "label": "Xy Trainer Kit Sylveon Noivern",
+      "pokecardex_code": "TK6-B",
+      "pokecardex_name": "XY Trainer Kit (Noivern)",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/TK6-B.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-xy-trainer-kit-bisharp-wigglytuff",
+      "language": "EN",
+      "label": "Xy Trainer Kit Bisharp Wigglytuff",
+      "pokecardex_code": "TK7-G",
+      "pokecardex_name": "XY Trainer Kit (Wigglytuff)",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/TK7-G.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-swsh01-sword-shield-base-set",
+      "language": "EN",
+      "label": "Swsh01 Sword Shield Base Set",
+      "pokecardex_code": "SWSH1",
+      "pokecardex_name": "Sword & Shield",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SWSH1.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-sv01-scarlet-violet-base-set",
+      "language": "EN",
+      "label": "Sv01 Scarlet Violet Base Set",
+      "pokecardex_code": "SVI",
+      "pokecardex_name": "Scarlet & Violet",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/SVI.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-dp-trainer-kit-manaphy-lucario",
+      "language": "EN",
+      "label": "Dp Trainer Kit Manaphy Lucario",
+      "pokecardex_code": "TK3-M",
+      "pokecardex_name": "D&P Trainer Kit (Manaphy)",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/TK3-M.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    },
+    {
+      "set_code": "pokemon-bw-trainer-kit-excadrill-zoroark",
+      "language": "EN",
+      "label": "Bw Trainer Kit Excadrill Zoroark",
+      "pokecardex_code": "TK5-M",
+      "pokecardex_name": "B&W Trainer Kit (Excadrill)",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/TK5-M.png",
+      "pokecardex_zone": "sets",
+      "score": 1.0,
+      "override": "manuel (revue 2026-09-06, cf. MANUAL_OVERRIDES)"
+    }
+  ],
+  "ambiguous": [
+    {
+      "set_code": "pokemon-pikachu-world-collection-promos",
+      "language": "EN",
+      "label": "Pikachu World Collection Promos",
+      "pokecardex_code": "PWC98",
+      "pokecardex_name": "Pikachu World Collection 2000",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/PWC98.png",
+      "pokecardex_zone": "sets",
+      "score": 0.75,
+      "runner_up": {
+        "pokecardex_code": "PWC10",
+        "pokecardex_name": "Pikachu World Collection 2010",
+        "score": 0.75
+      }
+    },
+    {
+      "set_code": "pokemon-diamond-and-pearl-promos",
+      "language": "EN",
+      "label": "Diamond And Pearl Promos",
+      "pokecardex_code": "DP",
+      "pokecardex_name": "Diamond & Pearl",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/DP.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667,
+      "runner_up": {
+        "pokecardex_code": "SF",
+        "pokecardex_name": "Diamond & Pearl : Stormfront",
+        "score": 0.571
+      }
+    },
+    {
+      "set_code": "pokemon-world-championship-decks",
+      "language": "EN",
+      "label": "World Championship Decks",
+      "pokecardex_code": "WC25",
+      "pokecardex_name": "World Championships 2025",
+      "logo_url": "https://pokecardex.b-cdn.net/assets/images/logos/US/WC25.png",
+      "pokecardex_zone": "sets",
+      "score": 0.667,
+      "runner_up": {
+        "pokecardex_code": "WC24",
+        "pokecardex_name": "World Championships 2024",
+        "score": 0.667
+      }
+    }
+  ],
+  "unmatched": [
+    {
+      "set_code": "pokemon-jp-entry-pack-2008",
+      "language": "JP",
+      "label": "Entry Pack 2008",
+      "best_score": 0.4,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-deoxys-constructed-starter-deck",
+      "language": "JP",
+      "label": "Deoxys Constructed Starter Deck",
+      "best_score": 0.333,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-terrakion-battle-strength",
+      "language": "JP",
+      "label": "Terrakion Battle Strength",
+      "best_score": 0.4,
+      "best_candidate": "Battle Partners"
+    },
+    {
+      "set_code": "pokemon-jp-rebel-clash",
+      "language": "JP",
+      "label": "Rebel Clash",
+      "best_score": 0.333,
+      "best_candidate": "Clash at the Summit"
+    },
+    {
+      "set_code": "pokemon-jp-palkia-half-deck",
+      "language": "JP",
+      "label": "Palkia Half Deck",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-yamabuki-city-gym",
+      "language": "JP",
+      "label": "Yamabuki City Gym",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-zygarde-ex-perfect-battle-deck",
+      "language": "JP",
+      "label": "Zygarde Ex Perfect Battle Deck",
+      "best_score": 0.5,
+      "best_candidate": "EX Battle Boost"
+    },
+    {
+      "set_code": "pokemon-jp-2000-carddass",
+      "language": "JP",
+      "label": "2000 Carddass",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-raichu-break-evolution",
+      "language": "JP",
+      "label": "Raichu Break Evolution",
+      "best_score": 0.4,
+      "best_candidate": "Emerald Break"
+    },
+    {
+      "set_code": "pokemon-jp-regigigas-half-deck",
+      "language": "JP",
+      "label": "Regigigas Half Deck",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-sealdass-series-2",
+      "language": "JP",
+      "label": "Sealdass Series 2",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-stormfront",
+      "language": "EN",
+      "label": "Stormfront",
+      "best_score": 0.5,
+      "best_candidate": "Diamond & Pearl : Stormfront"
+    },
+    {
+      "set_code": "pokemon-firered-leafgreen",
+      "language": "EN",
+      "label": "Firered Leafgreen",
+      "best_score": 0.0,
+      "best_candidate": "Pitch Black"
+    },
+    {
+      "set_code": "pokemon-jp-deoxys-half-deck",
+      "language": "JP",
+      "label": "Deoxys Half Deck",
+      "best_score": 0.2,
+      "best_candidate": "Movie Commemoration VS Pack: Sky-Splitting Deoxys"
+    },
+    {
+      "set_code": "pokemon-jp-squirtle-deck",
+      "language": "JP",
+      "label": "Squirtle Deck",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-miscellaneous-cards-products",
+      "language": "EN",
+      "label": "Miscellaneous Cards Products",
+      "best_score": 0.286,
+      "best_candidate": "Poké Card Creator Pack"
+    },
+    {
+      "set_code": "pokemon-jp-master-deck-build-box-ex",
+      "language": "JP",
+      "label": "Master Deck Build Box Ex",
+      "best_score": 0.286,
+      "best_candidate": "Violet ex"
+    },
+    {
+      "set_code": "pokemon-jp-starter-deck-generations",
+      "language": "JP",
+      "label": "Starter Deck Generations",
+      "best_score": 0.4,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-vmax-special-set",
+      "language": "JP",
+      "label": "Vmax Special Set",
+      "best_score": 0.4,
+      "best_candidate": "VMAX Climax"
+    },
+    {
+      "set_code": "pokemon-jp-2005-gift-box",
+      "language": "JP",
+      "label": "2005 Gift Box",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-celebrations-classic-collection",
+      "language": "EN",
+      "label": "Celebrations Classic Collection",
+      "best_score": 0.5,
+      "best_candidate": "Celebrations"
+    },
+    {
+      "set_code": "pokemon-jp-flygon-starter-deck",
+      "language": "JP",
+      "label": "Flygon Starter Deck",
+      "best_score": 0.4,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-generations-radiant-collection",
+      "language": "EN",
+      "label": "Generations Radiant Collection",
+      "best_score": 0.5,
+      "best_candidate": "Generations"
+    },
+    {
+      "set_code": "pokemon-jp-1995-combo-deck",
+      "language": "JP",
+      "label": "1995 Combo Deck",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-heatran-half-deck",
+      "language": "JP",
+      "label": "Heatran Half Deck",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-emerald-half-deck",
+      "language": "JP",
+      "label": "Emerald Half Deck",
+      "best_score": 0.4,
+      "best_candidate": "Emerald Break"
+    },
+    {
+      "set_code": "pokemon-jp-tag-team-gx-premium",
+      "language": "JP",
+      "label": "Tag Team Gx Premium",
+      "best_score": 0.333,
+      "best_candidate": "Tag Bolt"
+    },
+    {
+      "set_code": "pokemon-jp-xy-beginning-set-girls",
+      "language": "JP",
+      "label": "Xy Beginning Set Girls",
+      "best_score": 0.286,
+      "best_candidate": "XY-P Promotional"
+    },
+    {
+      "set_code": "pokemon-jp-extra-regulation-box",
+      "language": "JP",
+      "label": "Extra Regulation Box",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-starter-set-smi",
+      "language": "JP",
+      "label": "Starter Set Smi",
+      "best_score": 0.4,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-first-partner-collection-2026",
+      "language": "EN",
+      "label": "First Partner Collection 2026",
+      "best_score": 0.333,
+      "best_candidate": "Legendary Collection"
+    },
+    {
+      "set_code": "pokemon-jp-black-kyurem-ex-battle-strength-deck",
+      "language": "JP",
+      "label": "Black Kyurem Ex Battle Strength Deck",
+      "best_score": 0.444,
+      "best_candidate": "EX Battle Boost"
+    },
+    {
+      "set_code": "pokemon-jp-ex-special-set",
+      "language": "JP",
+      "label": "Ex Special Set",
+      "best_score": 0.4,
+      "best_candidate": "Violet ex"
+    },
+    {
+      "set_code": "pokemon-jp-gengar-vmax-high-class",
+      "language": "JP",
+      "label": "Gengar Vmax High Class",
+      "best_score": 0.333,
+      "best_candidate": "VMAX Climax"
+    },
+    {
+      "set_code": "pokemon-jp-darkrai-starter",
+      "language": "JP",
+      "label": "Darkrai Starter",
+      "best_score": 0.5,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-e-reader-sample-cards",
+      "language": "EN",
+      "label": "E Reader Sample Cards",
+      "best_score": 0.25,
+      "best_candidate": "Poké Card Creator Pack"
+    },
+    {
+      "set_code": "pokemon-jp-mewtwo-ex-starter-deck",
+      "language": "JP",
+      "label": "Mewtwo Ex Starter Deck",
+      "best_score": 0.333,
+      "best_candidate": "Violet ex"
+    },
+    {
+      "set_code": "pokemon-jp-national-beginning",
+      "language": "JP",
+      "label": "National Beginning",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-sealdass-series-3",
+      "language": "JP",
+      "label": "Sealdass Series 3",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-battle-gift-set-thundurus-vs-tornadus",
+      "language": "JP",
+      "label": "Battle Gift Set Thundurus Vs Tornadus",
+      "best_score": 0.25,
+      "best_candidate": "Battle Partners"
+    },
+    {
+      "set_code": "pokemon-jp-trainers-magazine",
+      "language": "JP",
+      "label": "Trainers Magazine",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-m-master-deck-build-box",
+      "language": "JP",
+      "label": "M Master Deck Build Box",
+      "best_score": 0.25,
+      "best_candidate": "M-P Promotional"
+    },
+    {
+      "set_code": "pokemon-jp-fusion-arts",
+      "language": "JP",
+      "label": "Fusion Arts",
+      "best_score": 0.5,
+      "best_candidate": "Fusion Strike"
+    },
+    {
+      "set_code": "pokemon-nintendo-promos",
+      "language": "EN",
+      "label": "Nintendo Promos",
+      "best_score": 0.5,
+      "best_candidate": "Alternate Promos"
+    },
+    {
+      "set_code": "pokemon-jp-steelix-constructed-starter-deck",
+      "language": "JP",
+      "label": "Steelix Constructed Starter Deck",
+      "best_score": 0.333,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-svc",
+      "language": "JP",
+      "label": "Svc",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-salamence-starter-deck",
+      "language": "JP",
+      "label": "Salamence Starter Deck",
+      "best_score": 0.4,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-battle-academy",
+      "language": "JP",
+      "label": "Battle Academy",
+      "best_score": 0.5,
+      "best_candidate": "Battle Partners"
+    },
+    {
+      "set_code": "pokemon-league-championship-cards",
+      "language": "EN",
+      "label": "League Championship Cards",
+      "best_score": 0.333,
+      "best_candidate": "World Championships 2025"
+    },
+    {
+      "set_code": "pokemon-jp-xy-beginning-set",
+      "language": "JP",
+      "label": "Xy Beginning Set",
+      "best_score": 0.333,
+      "best_candidate": "XY-P Promotional"
+    },
+    {
+      "set_code": "pokemon-jp-ex-starter-decks",
+      "language": "JP",
+      "label": "Ex Starter Decks",
+      "best_score": 0.4,
+      "best_candidate": "Violet ex"
+    },
+    {
+      "set_code": "pokemon-jp-kyogre-ex-starter-deck",
+      "language": "JP",
+      "label": "Kyogre Ex Starter Deck",
+      "best_score": 0.333,
+      "best_candidate": "Violet ex"
+    },
+    {
+      "set_code": "pokemon-jp-25th-anniversary-golden-box",
+      "language": "JP",
+      "label": "25Th Anniversary Golden Box",
+      "best_score": 0.571,
+      "best_candidate": "25th Anniversary Collection"
+    },
+    {
+      "set_code": "pokemon-jp-2000-merlin-sticker",
+      "language": "JP",
+      "label": "2000 Merlin Sticker",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-classic-venusaur",
+      "language": "JP",
+      "label": "Classic Venusaur",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-svam",
+      "language": "JP",
+      "label": "Svam",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-charizard-rayquaza",
+      "language": "JP",
+      "label": "Charizard Rayquaza",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-battle-master-chien-pao",
+      "language": "JP",
+      "label": "Battle Master Chien Pao",
+      "best_score": 0.333,
+      "best_candidate": "Battle Partners"
+    },
+    {
+      "set_code": "pokemon-hgss-promos",
+      "language": "EN",
+      "label": "Hgss Promos",
+      "best_score": 0.5,
+      "best_candidate": "Alternate Promos"
+    },
+    {
+      "set_code": "pokemon-jp-mega-starter-deck-diancie-ex",
+      "language": "JP",
+      "label": "Mega Starter Deck Diancie Ex",
+      "best_score": 0.5,
+      "best_candidate": "MEGA Dream ex"
+    },
+    {
+      "set_code": "pokemon-jp-vending",
+      "language": "JP",
+      "label": "Vending",
+      "best_score": 0.5,
+      "best_candidate": "Vending Machine (Green)"
+    },
+    {
+      "set_code": "pokemon-jp-sm1",
+      "language": "JP",
+      "label": "Sm1",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-double-crisis",
+      "language": "JP",
+      "label": "Double Crisis",
+      "best_score": 0.5,
+      "best_candidate": "Double Blaze"
+    },
+    {
+      "set_code": "pokemon-jp-gardevoir-constructed-starter-deck",
+      "language": "JP",
+      "label": "Gardevoir Constructed Starter Deck",
+      "best_score": 0.333,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-future-miraidon-ex-starter-deck",
+      "language": "JP",
+      "label": "Future Miraidon Ex Starter Deck",
+      "best_score": 0.286,
+      "best_candidate": "Future Flash"
+    },
+    {
+      "set_code": "pokemon-jp-stellar-tera-starter-set-ceruledge-ex",
+      "language": "JP",
+      "label": "Stellar Tera Starter Set Ceruledge Ex",
+      "best_score": 0.25,
+      "best_candidate": "Stellar Miracle"
+    },
+    {
+      "set_code": "pokemon-jp-black-deck-kit",
+      "language": "JP",
+      "label": "Black Deck Kit",
+      "best_score": 0.4,
+      "best_candidate": "Black Bolt"
+    },
+    {
+      "set_code": "pokemon-jp-torchic-starter-deck",
+      "language": "JP",
+      "label": "Torchic Starter Deck",
+      "best_score": 0.4,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-emboar-ex-vs-togekiss-ex-deck-kit",
+      "language": "JP",
+      "label": "Emboar Ex Vs Togekiss Ex Deck Kit",
+      "best_score": 0.25,
+      "best_candidate": "Violet ex"
+    },
+    {
+      "set_code": "pokemon-blister-exclusives",
+      "language": "EN",
+      "label": "Blister Exclusives",
+      "best_score": 0.0,
+      "best_candidate": "Pitch Black"
+    },
+    {
+      "set_code": "pokemon-jp-tyranitar-constructed-starter-deck",
+      "language": "JP",
+      "label": "Tyranitar Constructed Starter Deck",
+      "best_score": 0.333,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-promo",
+      "language": "JP",
+      "label": "Promo",
+      "best_score": 0.4,
+      "best_candidate": "25th Anniversary Collection - Promo"
+    },
+    {
+      "set_code": "pokemon-jp-charizard-vmax-starter-set",
+      "language": "JP",
+      "label": "Charizard Vmax Starter Set",
+      "best_score": 0.333,
+      "best_candidate": "VMAX Climax"
+    },
+    {
+      "set_code": "pokemon-jp-rainbow-island",
+      "language": "JP",
+      "label": "Rainbow Island",
+      "best_score": 0.5,
+      "best_candidate": "Southern Islands"
+    },
+    {
+      "set_code": "pokemon-jp-ancient-koraidon-ex-starter-deck",
+      "language": "JP",
+      "label": "Ancient Koraidon Ex Starter Deck",
+      "best_score": 0.286,
+      "best_candidate": "Ancient Roar"
+    },
+    {
+      "set_code": "pokemon-jp-sealdass-series-1",
+      "language": "JP",
+      "label": "Sealdass Series 1",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-mcdonalds-25th-anniversary-promos",
+      "language": "EN",
+      "label": "Mcdonalds 25Th Anniversary Promos",
+      "best_score": 0.5,
+      "best_candidate": "Promo McDonald's 2024"
+    },
+    {
+      "set_code": "pokemon-jp-rockruff-full-power-deck",
+      "language": "JP",
+      "label": "Rockruff Full Power Deck",
+      "best_score": 0.286,
+      "best_candidate": "Full Metal Wall"
+    },
+    {
+      "set_code": "pokemon-jp-magma-deck-kit",
+      "language": "JP",
+      "label": "Magma Deck Kit",
+      "best_score": 0.25,
+      "best_candidate": "Magma VS Aqua: Two Ambitions"
+    },
+    {
+      "set_code": "pokemon-jp-sealdass-stitch-touch",
+      "language": "JP",
+      "label": "Sealdass Stitch Touch",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-starter-set-svod",
+      "language": "JP",
+      "label": "Starter Set Svod",
+      "best_score": 0.4,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-old-maid",
+      "language": "JP",
+      "label": "Old Maid",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-pikachu-v-deck",
+      "language": "JP",
+      "label": "Pikachu V Deck",
+      "best_score": 0.4,
+      "best_candidate": "Detective Pikachu"
+    },
+    {
+      "set_code": "pokemon-jp-m-charizard-ex-mega-battle-deck",
+      "language": "JP",
+      "label": "M Charizard Ex Mega Battle Deck",
+      "best_score": 0.444,
+      "best_candidate": "MEGA Dream ex"
+    },
+    {
+      "set_code": "pokemon-jp-battle-starter-decks",
+      "language": "JP",
+      "label": "Battle Starter Decks",
+      "best_score": 0.4,
+      "best_candidate": "Battle Partners"
+    },
+    {
+      "set_code": "pokemon-jp-intro-pack-neo",
+      "language": "JP",
+      "label": "Intro Pack Neo",
+      "best_score": 0.4,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-world-championships-2023",
+      "language": "JP",
+      "label": "World Championships 2023",
+      "best_score": 0.333,
+      "best_candidate": "World Champions Pack"
+    },
+    {
+      "set_code": "pokemon-professor-program-promos",
+      "language": "EN",
+      "label": "Professor Program Promos",
+      "best_score": 0.4,
+      "best_candidate": "Alternate Promos"
+    },
+    {
+      "set_code": "pokemon-jp-silver-deck-kit",
+      "language": "JP",
+      "label": "Silver Deck Kit",
+      "best_score": 0.4,
+      "best_candidate": "Silver Lance"
+    },
+    {
+      "set_code": "pokemon-jp-1997-carddass",
+      "language": "JP",
+      "label": "1997 Carddass",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-mudkip-starter-deck",
+      "language": "JP",
+      "label": "Mudkip Starter Deck",
+      "best_score": 0.4,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-v-starter-set-sa",
+      "language": "JP",
+      "label": "V Starter Set Sa",
+      "best_score": 0.333,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-family",
+      "language": "JP",
+      "label": "Family",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-bulbasaur-deck",
+      "language": "JP",
+      "label": "Bulbasaur Deck",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-beginning-set-hs",
+      "language": "JP",
+      "label": "Beginning Set Hs",
+      "best_score": 0.286,
+      "best_candidate": "11th Movie Commemoration Set"
+    },
+    {
+      "set_code": "pokemon-jp-alpha-playtest",
+      "language": "JP",
+      "label": "Alpha Playtest",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-world-hobby-fair",
+      "language": "JP",
+      "label": "World Hobby Fair",
+      "best_score": 0.333,
+      "best_candidate": "World Champions Pack"
+    },
+    {
+      "set_code": "pokemon-jp-mega-starter-deck-gengar-ex",
+      "language": "JP",
+      "label": "Mega Starter Deck Gengar Ex",
+      "best_score": 0.5,
+      "best_candidate": "MEGA Dream ex"
+    },
+    {
+      "set_code": "pokemon-jp-stellar-tera-starter-set-sylveon-ex",
+      "language": "JP",
+      "label": "Stellar Tera Starter Set Sylveon Ex",
+      "best_score": 0.25,
+      "best_candidate": "Stellar Miracle"
+    },
+    {
+      "set_code": "pokemon-jp-gx-starter-decks",
+      "language": "JP",
+      "label": "Gx Starter Decks",
+      "best_score": 0.4,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-ash-vs-rocket-deck-kit",
+      "language": "JP",
+      "label": "Ash Vs Rocket Deck Kit",
+      "best_score": 0.286,
+      "best_candidate": "Pokémon VS"
+    },
+    {
+      "set_code": "pokemon-jp-team-aqua-deck",
+      "language": "JP",
+      "label": "Team Aqua Deck",
+      "best_score": 0.25,
+      "best_candidate": "Glory of the Team Rocket"
+    },
+    {
+      "set_code": "pokemon-jp-lucario-starter",
+      "language": "JP",
+      "label": "Lucario Starter",
+      "best_score": 0.5,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-hanada-city-gym",
+      "language": "JP",
+      "label": "Hanada City Gym",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-trainer-battle-decks",
+      "language": "JP",
+      "label": "Trainer Battle Decks",
+      "best_score": 0.4,
+      "best_candidate": "Battle Partners"
+    },
+    {
+      "set_code": "pokemon-jp-garchomp-half-deck",
+      "language": "JP",
+      "label": "Garchomp Half Deck",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-charizard-half-deck",
+      "language": "JP",
+      "label": "Charizard Half Deck",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-meiji-promo",
+      "language": "JP",
+      "label": "Meiji Promo",
+      "best_score": 0.333,
+      "best_candidate": "25th Anniversary Collection - Promo"
+    },
+    {
+      "set_code": "pokemon-jp-ampharos-ex-starter-set",
+      "language": "JP",
+      "label": "Ampharos Ex Starter Set",
+      "best_score": 0.333,
+      "best_candidate": "Violet ex"
+    },
+    {
+      "set_code": "pokemon-jp-keldeo-battle-strength-deck",
+      "language": "JP",
+      "label": "Keldeo Battle Strength Deck",
+      "best_score": 0.333,
+      "best_candidate": "Battle Partners"
+    },
+    {
+      "set_code": "pokemon-jp-taruka",
+      "language": "JP",
+      "label": "Taruka",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-v-starter-deck-sd",
+      "language": "JP",
+      "label": "V Starter Deck Sd",
+      "best_score": 0.333,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-grimmsnarl-vmax-starter-set",
+      "language": "JP",
+      "label": "Grimmsnarl Vmax Starter Set",
+      "best_score": 0.333,
+      "best_candidate": "VMAX Climax"
+    },
+    {
+      "set_code": "pokemon-jp-hyper-metal-chain-deck",
+      "language": "JP",
+      "label": "Hyper Metal Chain Deck",
+      "best_score": 0.286,
+      "best_candidate": "Full Metal Wall"
+    },
+    {
+      "set_code": "pokemon-jp-rayquaza-constructed-starter-deck",
+      "language": "JP",
+      "label": "Rayquaza Constructed Starter Deck",
+      "best_score": 0.333,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-classic-charizard",
+      "language": "JP",
+      "label": "Classic Charizard",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-yveltal-half-deck",
+      "language": "JP",
+      "label": "Yveltal Half Deck",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-meganium-starter-deck",
+      "language": "JP",
+      "label": "Meganium Starter Deck",
+      "best_score": 0.4,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-kids-wb-promos",
+      "language": "EN",
+      "label": "Kids Wb Promos",
+      "best_score": 0.4,
+      "best_candidate": "Alternate Promos"
+    },
+    {
+      "set_code": "pokemon-jp-infernape-half-deck",
+      "language": "JP",
+      "label": "Infernape Half Deck",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-blastoise-vmax-starter-set",
+      "language": "JP",
+      "label": "Blastoise Vmax Starter Set",
+      "best_score": 0.333,
+      "best_candidate": "VMAX Climax"
+    },
+    {
+      "set_code": "pokemon-jp-amada-super-dx",
+      "language": "JP",
+      "label": "Amada Super Dx",
+      "best_score": 0.333,
+      "best_candidate": "Super Electric Breaker"
+    },
+    {
+      "set_code": "pokemon-jp-super-legend",
+      "language": "JP",
+      "label": "Super Legend",
+      "best_score": 0.5,
+      "best_candidate": "Sky Legend"
+    },
+    {
+      "set_code": "pokemon-jp-leafeon-vs-metagross-expert-deck",
+      "language": "JP",
+      "label": "Leafeon Vs Metagross Expert Deck",
+      "best_score": 0.286,
+      "best_candidate": "Pokémon VS"
+    },
+    {
+      "set_code": "pokemon-me-30th-celebration",
+      "language": "EN",
+      "label": "Me 30Th Celebration",
+      "best_score": 0.5,
+      "best_candidate": "Celebrations"
+    },
+    {
+      "set_code": "pokemon-jp-white-kyurem-ex-battle-strength-deck",
+      "language": "JP",
+      "label": "White Kyurem Ex Battle Strength Deck",
+      "best_score": 0.444,
+      "best_candidate": "EX Battle Boost"
+    },
+    {
+      "set_code": "pokemon-jp-collection-pack",
+      "language": "JP",
+      "label": "Collection Pack",
+      "best_score": 0.5,
+      "best_candidate": "Collection Moon"
+    },
+    {
+      "set_code": "pokemon-jp-nivi-city-gym",
+      "language": "JP",
+      "label": "Nivi City Gym",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-classic-blastoise",
+      "language": "JP",
+      "label": "Classic Blastoise",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-tag-team-starter-set",
+      "language": "JP",
+      "label": "Tag Team Starter Set",
+      "best_score": 0.333,
+      "best_candidate": "Tag Bolt"
+    },
+    {
+      "set_code": "pokemon-jp-ana-gold-boarding-pass",
+      "language": "JP",
+      "label": "Ana Gold Boarding Pass",
+      "best_score": 0.2,
+      "best_candidate": "Gold, Silver, to a New World..."
+    },
+    {
+      "set_code": "pokemon-deck-exclusives",
+      "language": "EN",
+      "label": "Deck Exclusives",
+      "best_score": 0.333,
+      "best_candidate": "Battle Academy (Mewtwo Deck)"
+    },
+    {
+      "set_code": "pokemon-jp-charizard-g-half-deck",
+      "language": "JP",
+      "label": "Charizard G Half Deck",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-thunder-starter-set",
+      "language": "JP",
+      "label": "Thunder Starter Set",
+      "best_score": 0.4,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-groudon-constructed-starter-deck",
+      "language": "JP",
+      "label": "Groudon Constructed Starter Deck",
+      "best_score": 0.333,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-venusaur-vmax-starter-set",
+      "language": "JP",
+      "label": "Venusaur Vmax Starter Set",
+      "best_score": 0.333,
+      "best_candidate": "VMAX Climax"
+    },
+    {
+      "set_code": "pokemon-jp-starter-set-svom",
+      "language": "JP",
+      "label": "Starter Set Svom",
+      "best_score": 0.4,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-rampardos-the-attacker",
+      "language": "JP",
+      "label": "Rampardos The Attacker",
+      "best_score": 0.333,
+      "best_candidate": "Crossing the Ruins..."
+    },
+    {
+      "set_code": "pokemon-jp-shockwave-starter-deck",
+      "language": "JP",
+      "label": "Shockwave Starter Deck",
+      "best_score": 0.4,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-deoxys-high-class",
+      "language": "JP",
+      "label": "Deoxys High Class",
+      "best_score": 0.2,
+      "best_candidate": "Movie Commemoration VS Pack: Sky-Splitting Deoxys"
+    },
+    {
+      "set_code": "pokemon-jp-battle-rainbow",
+      "language": "JP",
+      "label": "Battle Rainbow",
+      "best_score": 0.5,
+      "best_candidate": "Battle Partners"
+    },
+    {
+      "set_code": "pokemon-jp-bandai-kids",
+      "language": "JP",
+      "label": "Bandai Kids",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-1998-carddass",
+      "language": "JP",
+      "label": "1998 Carddass",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-journey-together-collection-sheet",
+      "language": "JP",
+      "label": "Journey Together Collection Sheet",
+      "best_score": 0.333,
+      "best_candidate": "Collection Moon"
+    },
+    {
+      "set_code": "pokemon-sm-promos",
+      "language": "EN",
+      "label": "Sm Promos",
+      "best_score": 0.5,
+      "best_candidate": "Alternate Promos"
+    },
+    {
+      "set_code": "pokemon-jp-entry-pack-dpt",
+      "language": "JP",
+      "label": "Entry Pack Dpt",
+      "best_score": 0.4,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-topsun",
+      "language": "JP",
+      "label": "Topsun",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-m-master-deck-build-box-speed",
+      "language": "JP",
+      "label": "M Master Deck Build Box Speed",
+      "best_score": 0.222,
+      "best_candidate": "M-P Promotional"
+    },
+    {
+      "set_code": "pokemon-jp-start-deck-100-corocoro",
+      "language": "JP",
+      "label": "Start Deck 100 Corocoro",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-garchomp-c-half-deck",
+      "language": "JP",
+      "label": "Garchomp C Half Deck",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-team-plasma-battle-gift-set",
+      "language": "JP",
+      "label": "Team Plasma Battle Gift Set",
+      "best_score": 0.286,
+      "best_candidate": "Battle Partners"
+    },
+    {
+      "set_code": "pokemon-jp-rayquaza-ex-mega-battle-deck",
+      "language": "JP",
+      "label": "Rayquaza Ex Mega Battle Deck",
+      "best_score": 0.5,
+      "best_candidate": "MEGA Dream ex"
+    },
+    {
+      "set_code": "pokemon-jp-1996-carddass",
+      "language": "JP",
+      "label": "1996 Carddass",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-neo-premium-file",
+      "language": "JP",
+      "label": "Neo Premium File",
+      "best_score": 0.333,
+      "best_candidate": "Premium Champion Pack"
+    },
+    {
+      "set_code": "pokemon-jp-totodile-side-deck",
+      "language": "JP",
+      "label": "Totodile Side Deck",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-matchless-fighter",
+      "language": "JP",
+      "label": "Matchless Fighter",
+      "best_score": 0.5,
+      "best_candidate": "Peerless Fighters"
+    },
+    {
+      "set_code": "pokemon-southeast-asia-exclusives",
+      "language": "EN",
+      "label": "Southeast Asia Exclusives",
+      "best_score": 0.0,
+      "best_candidate": "Pitch Black"
+    },
+    {
+      "set_code": "pokemon-jp-zekrom-ex-battle-strength-deck",
+      "language": "JP",
+      "label": "Zekrom Ex Battle Strength Deck",
+      "best_score": 0.5,
+      "best_candidate": "EX Battle Boost"
+    },
+    {
+      "set_code": "pokemon-jp-arceus-lvx-deck",
+      "language": "JP",
+      "label": "Arceus Lvx Deck",
+      "best_score": 0.333,
+      "best_candidate": "Advent of Arceus"
+    },
+    {
+      "set_code": "pokemon-jp-terastal-festival",
+      "language": "JP",
+      "label": "Terastal Festival",
+      "best_score": 0.4,
+      "best_candidate": "Terastal Fest ex"
+    },
+    {
+      "set_code": "pokemon-jp-battle-master-terastal-charizard",
+      "language": "JP",
+      "label": "Battle Master Terastal Charizard",
+      "best_score": 0.333,
+      "best_candidate": "Battle Partners"
+    },
+    {
+      "set_code": "pokemon-jp-virizion-battle-strength-deck",
+      "language": "JP",
+      "label": "Virizion Battle Strength Deck",
+      "best_score": 0.333,
+      "best_candidate": "Battle Partners"
+    },
+    {
+      "set_code": "pokemon-ex-battle-stadium",
+      "language": "EN",
+      "label": "Ex Battle Stadium",
+      "best_score": 0.4,
+      "best_candidate": "Battle Styles"
+    },
+    {
+      "set_code": "pokemon-jp-sp3",
+      "language": "JP",
+      "label": "Sp3",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-tropical-island",
+      "language": "JP",
+      "label": "Tropical Island",
+      "best_score": 0.5,
+      "best_candidate": "Southern Islands"
+    },
+    {
+      "set_code": "pokemon-jp-palkia-lvx-constructed-deck",
+      "language": "JP",
+      "label": "Palkia Lvx Constructed Deck",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-hanafuda",
+      "language": "JP",
+      "label": "Hanafuda",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-player-placement-trainer-promos",
+      "language": "EN",
+      "label": "Player Placement Trainer Promos",
+      "best_score": 0.333,
+      "best_candidate": "Alternate Promos"
+    },
+    {
+      "set_code": "pokemon-jp-feraligatr-starter-deck",
+      "language": "JP",
+      "label": "Feraligatr Starter Deck",
+      "best_score": 0.4,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-1999-merlin",
+      "language": "JP",
+      "label": "1999 Merlin",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-start-deck-100-battle-collection",
+      "language": "JP",
+      "label": "Start Deck 100 Battle Collection",
+      "best_score": 0.286,
+      "best_candidate": "Battle Partners"
+    },
+    {
+      "set_code": "pokemon-jp-vstar-special-set",
+      "language": "JP",
+      "label": "Vstar Special Set",
+      "best_score": 0.4,
+      "best_candidate": "VSTAR Universe"
+    },
+    {
+      "set_code": "pokemon-jp-metagross-constructed-starter-deck",
+      "language": "JP",
+      "label": "Metagross Constructed Starter Deck",
+      "best_score": 0.333,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-1999-carddass",
+      "language": "JP",
+      "label": "1999 Carddass",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-vstar-premium-trainer-sk",
+      "language": "JP",
+      "label": "Vstar Premium Trainer Sk",
+      "best_score": 0.333,
+      "best_candidate": "VSTAR Universe"
+    },
+    {
+      "set_code": "pokemon-jp-master-kit",
+      "language": "JP",
+      "label": "Master Kit",
+      "best_score": 0.4,
+      "best_candidate": "Rapid Strike Master"
+    },
+    {
+      "set_code": "pokemon-me06-delta-reign",
+      "language": "EN",
+      "label": "Me06 Delta Reign",
+      "best_score": 0.4,
+      "best_candidate": "Chilling Reign"
+    },
+    {
+      "set_code": "pokemon-jp-svg-special-set",
+      "language": "JP",
+      "label": "Svg Special Set",
+      "best_score": 0.286,
+      "best_candidate": "11th Movie Commemoration Set"
+    },
+    {
+      "set_code": "pokemon-jp-inteleon-vmax-high-class",
+      "language": "JP",
+      "label": "Inteleon Vmax High Class",
+      "best_score": 0.333,
+      "best_candidate": "VMAX Climax"
+    },
+    {
+      "set_code": "pokemon-jp-guren-town-gym",
+      "language": "JP",
+      "label": "Guren Town Gym",
+      "best_score": 0.25,
+      "best_candidate": "The Town on No Map"
+    },
+    {
+      "set_code": "pokemon-me-30th-celebration-classic-collection",
+      "language": "EN",
+      "label": "Me 30Th Celebration Classic Collection",
+      "best_score": 0.333,
+      "best_candidate": "Celebrations"
+    },
+    {
+      "set_code": "pokemon-jp-typhlosion-starter-deck",
+      "language": "JP",
+      "label": "Typhlosion Starter Deck",
+      "best_score": 0.4,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-trading-card-game-classic",
+      "language": "EN",
+      "label": "Trading Card Game Classic",
+      "best_score": 0.25,
+      "best_candidate": "TCG Classic Blastoise & Suicune"
+    },
+    {
+      "set_code": "pokemon-jp-audino-ex-mega-battle-deck",
+      "language": "JP",
+      "label": "Audino Ex Mega Battle Deck",
+      "best_score": 0.5,
+      "best_candidate": "MEGA Dream ex"
+    },
+    {
+      "set_code": "pokemon-burger-king-promos",
+      "language": "EN",
+      "label": "Burger King Promos",
+      "best_score": 0.4,
+      "best_candidate": "Alternate Promos"
+    },
+    {
+      "set_code": "pokemon-jp-start-deck-100-battle-collection-corociao",
+      "language": "JP",
+      "label": "Start Deck 100 Battle Collection Corociao",
+      "best_score": 0.25,
+      "best_candidate": "Battle Partners"
+    },
+    {
+      "set_code": "pokemon-jp-ichigeki-rengeki",
+      "language": "JP",
+      "label": "Ichigeki Rengeki",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-mewtwo-vs-genesect",
+      "language": "JP",
+      "label": "Mewtwo Vs Genesect",
+      "best_score": 0.4,
+      "best_candidate": "Pokémon VS"
+    },
+    {
+      "set_code": "pokemon-jp-regigigas-lvx-collection",
+      "language": "JP",
+      "label": "Regigigas Lvx Collection",
+      "best_score": 0.4,
+      "best_candidate": "Collection Moon"
+    },
+    {
+      "set_code": "pokemon-jp-treecko-starter-deck",
+      "language": "JP",
+      "label": "Treecko Starter Deck",
+      "best_score": 0.4,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-zeraora-high-class",
+      "language": "JP",
+      "label": "Zeraora High Class",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-hydreigon-half-deck",
+      "language": "JP",
+      "label": "Hydreigon Half Deck",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-marumiya",
+      "language": "JP",
+      "label": "Marumiya",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-start-deck-100",
+      "language": "JP",
+      "label": "Start Deck 100",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-pikachu-half-deck",
+      "language": "JP",
+      "label": "Pikachu Half Deck",
+      "best_score": 0.4,
+      "best_candidate": "Detective Pikachu"
+    },
+    {
+      "set_code": "pokemon-jp-cd-promo",
+      "language": "JP",
+      "label": "Cd Promo",
+      "best_score": 0.333,
+      "best_candidate": "25th Anniversary Collection - Promo"
+    },
+    {
+      "set_code": "pokemon-jp-battle-theme-deck-victini",
+      "language": "JP",
+      "label": "Battle Theme Deck Victini",
+      "best_score": 0.333,
+      "best_candidate": "Battle Partners"
+    },
+    {
+      "set_code": "pokemon-jp-sealdass-series-4",
+      "language": "JP",
+      "label": "Sealdass Series 4",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-v-union-special-set",
+      "language": "JP",
+      "label": "V Union Special Set",
+      "best_score": 0.286,
+      "best_candidate": "Shiny Star V"
+    },
+    {
+      "set_code": "pokemon-jp-2004-carddass-zukan",
+      "language": "JP",
+      "label": "2004 Carddass Zukan",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-reshiram-ex-battle-strength-deck",
+      "language": "JP",
+      "label": "Reshiram Ex Battle Strength Deck",
+      "best_score": 0.5,
+      "best_candidate": "EX Battle Boost"
+    },
+    {
+      "set_code": "pokemon-jp-e-starter-deck",
+      "language": "JP",
+      "label": "E Starter Deck",
+      "best_score": 0.4,
+      "best_candidate": "Starter Pack"
+    },
+    {
+      "set_code": "pokemon-jp-2005-carddass-zukan",
+      "language": "JP",
+      "label": "2005 Carddass Zukan",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-jp-gallade-half-deck",
+      "language": "JP",
+      "label": "Gallade Half Deck",
+      "best_score": 0.0,
+      "best_candidate": "Storm Emeralda"
+    },
+    {
+      "set_code": "pokemon-first-partner-pack",
+      "language": "EN",
+      "label": "First Partner Pack",
+      "best_score": 0.4,
+      "best_candidate": "Prize Pack"
+    }
+  ]
+}

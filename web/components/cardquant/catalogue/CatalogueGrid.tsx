@@ -30,6 +30,16 @@ export function CatalogueGrid({ rows }: { rows: CatalogueBrowseRow[] }) {
           <Link
             key={c.itemId}
             href={`/catalog/${c.itemId}`}
+            // prefetch={false} : incident du 2026-09-06 -- avec le prefetch
+            // par défaut de Next.js (déclenché dès qu'un <Link> entre dans le
+            // viewport), une grille de plusieurs dizaines de cartes ouvre
+            // autant de requêtes RSC quasi simultanées vers /catalog/{id},
+            // épuisant les connexions de l'instance Cloud SQL (tier micro,
+            // cf. web/lib/db.ts) et faisant planter /catalog lui-même
+            // ("This page could not load"). La navigation au clic reste
+            // instantanée (Server Component déjà léger) -- seul le
+            // préchargement anticipé au survol/scroll est désactivé.
+            prefetch={false}
             style={{ background: "var(--white)", border: "1px solid var(--border-hairline)", borderRadius: 12, boxShadow: "var(--shadow-card)", padding: 12, display: "flex", flexDirection: "column", gap: 10, color: "inherit" }}
           >
             <div style={{ position: "relative", aspectRatio: "3.5 / 4.55", borderRadius: 8, overflow: "hidden", background: "var(--surface-sunken)", border: c.imageUrl ? "1px solid var(--border-hairline)" : "1px dashed var(--border-strong)", display: "grid", placeItems: "center", padding: 8, textAlign: "center" }}>
@@ -42,7 +52,12 @@ export function CatalogueGrid({ rows }: { rows: CatalogueBrowseRow[] }) {
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
               <span style={{ fontSize: 12.5, fontWeight: 500, color: "var(--text-strong)", lineHeight: 1.25, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</span>
-              <span style={{ fontSize: 11, color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.setCode ?? "—"}</span>
+              {c.setLogoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- hôte CDN externe (PokéCardex), cf. plan §5
+                <img src={c.setLogoUrl} alt={c.setCode ?? ""} style={{ height: 13, maxWidth: "80%", objectFit: "contain" }} />
+              ) : (
+                <span style={{ fontSize: 11, color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.setCode ?? "—"}</span>
+              )}
             </div>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 6, marginTop: "auto" }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--text-strong)" }}>{formatPrice(c.price, c.currency)}</span>

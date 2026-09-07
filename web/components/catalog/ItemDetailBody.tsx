@@ -73,8 +73,15 @@ export function ItemDetailBody({
             <LanguageFlag language={item.language} />
             <h1 className="truncate text-xl font-bold tracking-tight">{item.name}</h1>
           </div>
-          <p className="mt-1 text-sm capitalize text-muted-foreground">
-            {item.tcg} {item.setCode ? `· ${item.setCode}` : ""} {item.code ? `· #${item.code}` : ""}
+          <p className="mt-1 flex items-center gap-1.5 text-sm capitalize text-muted-foreground">
+            <span>{item.tcg}</span>
+            {item.setCode && item.setLogoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- hôte CDN externe (PokéCardex), cf. plan §5
+              <img src={item.setLogoUrl} alt={item.setCode} className="h-3.5 max-w-[6rem] object-contain" />
+            ) : (
+              item.setCode && <span>· {item.setCode}</span>
+            )}
+            {item.code && <span>· #{item.code}</span>}
           </p>
           {item.releaseDate && <p className="text-xs text-muted-foreground">{formatDate(item.releaseDate)}</p>}
 

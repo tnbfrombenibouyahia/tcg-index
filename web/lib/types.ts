@@ -40,6 +40,12 @@ export interface ItemSummary {
   language: string;
   rarity: string | null;
   interestTier: string | null;
+  // Logo du set (table `sets`, cf. ingestion/sources/pokecardex_mapping.py) --
+  // optionnel : seuls les appelants qui le sélectionnent explicitement en SQL
+  // (cf. lib/queries/itemDetail.ts, catalogueBrowse.ts) le renseignent ;
+  // absent ou null ailleurs, PAS une garantie de couverture à 100% du
+  // catalogue (set pas encore mappé côté PokéCardex).
+  setLogoUrl?: string | null;
 }
 
 export interface SaleRow {
@@ -375,8 +381,11 @@ export interface ItemDetail extends ItemSummary {
 // Agrégats dédiés au Dashboard CardQuant (cf. lib/queries/dashboardOverview.ts
 // et mémoire projet "cardquant-rebrand") -- pas de champ `name`/`setName` :
 // items.set_code n'a pas de nom humain lisible en base (cf. db/schema.sql),
-// seul le code brut (ex. "SWSH7") existe. Ne pas inventer un libellé --
-// afficher le code seul jusqu'à ce qu'une table de référence des sets existe.
+// seul le code brut (ex. "SWSH7") existe. Une table de référence `sets`
+// existe désormais (nom + logo, cf. ingestion/sources/pokecardex_mapping.py)
+// mais ne couvre pas encore 100% du catalogue (fuzzy-match, cas ambigus
+// laissés de côté) -- pas branchée ici pour l'instant, ces agrégats restent
+// au code brut jusqu'à ce que ce soit demandé.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface SetHeatmapRow {
