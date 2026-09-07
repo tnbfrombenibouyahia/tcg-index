@@ -118,16 +118,24 @@ async function createClient() {
     // sur cette dernière étape locale (unix socket, hors réseau de toute façon).
     ssl: false,
     prepare: false,
-    // 1 (pas 5) : incident du 2026-09-06 -- une rafale de requêtes simultanées
-    // sur /catalog (prefetch Next.js de la grille, cf. CatalogueGrid.tsx) a
-    // fait s'ouvrir jusqu'à 5 connexions PAR INSTANCE serverless réchauffée en
-    // parallèle, épuisant les connexions de l'instance Cloud SQL (tier
-    // db-f1-micro, max_connections par défaut très bas) -- erreur Postgres
-    // 53300 "remaining connection slots are reserved...". Sur Fluid Compute
-    // une instance réchauffée sert les requêtes en série : une seule connexion
-    // partagée (postgres.js met en file plutôt que d'en ouvrir une 2e) suffit
-    // très largement, et limite le pire cas (N instances x 1) au lieu de (N x 5).
-    max: 1,
+    // 3 (pas 5, pas 1) : incident du 2026-09-06 -- une rafale de requêtes
+    // simultanées sur /catalog (prefetch Next.js de la grille, cf.
+    // CatalogueGrid.tsx) a fait s'ouvrir jusqu'à 5 connexions PAR INSTANCE
+    // serverless réchauffée en parallèle, épuisant les connexions de
+    // l'instance Cloud SQL (tier db-f1-micro, max_connections par défaut très
+    // bas) -- erreur Postgres 53300 "remaining connection slots are
+    // reserved...". Passé une première fois à 1 (une instance réchauffée sert
+    // en série, une connexion partagée suffit), mais ce singleton est aussi
+    // celui utilisé par `next build` (chaque route qui importe ce module
+    // partage la MÊME connexion pendant "Generating static pages") -- à 1, les
+    // pages qui exécutent plusieurs requêtes (pnl, transactions, undervalued,
+    // watchlist) se sont retrouvées sérialisées sur une connexion unique et
+    // ont dépassé le budget de 60s/page imposé par Next, faisant échouer le
+    // build de prod du 2026-09-07 (cf. dpl_7JSDVRPFfggbq8yT244JEkfHgPm8).
+    // 3 : garde le pire cas d'une rafale runtime très en dessous de l'ancien
+    // (N instances x 3 au lieu de x 5), tout en laissant assez de parallélisme
+    // au build pour ne pas re-sérialiser ces pages.
+    max: 3,
     idle_timeout: 20,
     connect_timeout: 10,
   });
