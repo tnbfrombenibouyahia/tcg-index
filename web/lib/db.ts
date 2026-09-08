@@ -1,34 +1,87 @@
-import { mkdirSync } from "node:fs";
-import { AuthTypes, Connector } from "@google-cloud/cloud-sql-connector";
 import { ExternalAccountClient } from "google-auth-library";
 import postgres from "postgres";
 import { getVercelOidcToken } from "@vercel/oidc";
 
-// Cloud SQL (cardquant-tcg), pas Supabase -- migration du 2026-08-19 (cf.
-// tcg-index-handoff.md, shared/db.py côté Python). Connexion via le
-// connecteur Cloud SQL + authentification IAM fédérée depuis le jeton OIDC
-// Vercel (Workload Identity Federation), PAS un mot de passe statique dans
-// une variable d'env : le compte de service cardquant-web-db@ n'est
-// impersonnable QUE par ce projet Vercel précis (tcg_index), environnements
-// production/preview (cf. condition sur le pool cardquant-vercel-pool), et
-// n'a que SELECT côté Postgres (cf. db/create_web_user_cloudsql.py -- même
-// principe pour le compte de service, granté à la main lors de la
-// migration, pas par ce script-là qui gère le compte à mot de passe).
+// Cloud SQL (cardquant-tcg) -- connexion TCP directe (2026-09-07), PAS via
+// @google-cloud/cloud-sql-connector. Remplace le tunnel local (mTLS + socket
+// Unix /tmp, cf. git blame -- migration du 2026-08-19) qui s'est révélé
+// fragile en usage serverless réel : 3 incidents en 24h le 2026-09-06/07 --
+// épuisement de connexions (rafale de prefetch Next.js), timeout de build
+// (singleton partagé sérialisé sur 1 connexion pendant `next build`), puis
+// des blocages francs (`write CONNECT_TIMEOUT` sur le socket local, jusqu'à
+// des invocations qui épuisaient les 300s de timeout Vercel) -- cf. mémoire
+// projet. Le chronométrage ajouté pour diagnostiquer ces derniers a montré
+// que la poignée de main IAM/OIDC elle-même est rapide (500-700ms) : le
+// tunnel local (processus séparé par instance, socket qui peut rester
+// "vivant" sur le disque /tmp d'un conteneur gelé/dégelé sans qu'un vrai
+// listener réponde derrière) était le vrai point de fragilité, pas
+// l'authentification.
 //
-// Pourquoi pas juste une IP publique + mot de passe (ce que faisait
-// Supabase, et CockroachDB avant) : Vercel n'a pas d'IP de sortie fixe pour
-// ses fonctions serverless -- impossible de restreindre Cloud SQL par IP
-// sans l'ouvrir à 0.0.0.0/0. Le connecteur IAM élimine le besoin
-// d'autoriser une IP publique : aucune n'est autorisée sur l'instance
-// (authorizedNetworks vide), tout passe par un tunnel mTLS établi via
-// l'Admin API Cloud SQL.
-const INSTANCE_CONNECTION_NAME = "cardquant-tcg:europe-west3:cardquant-db";
+// Toujours PAS de mot de passe statique : le jeton d'accès OAuth du compte
+// de service impersonné (même chaîne Workload Identity Federation qu'avant)
+// sert de mot de passe Postgres (authentification IAM Cloud SQL native,
+// supportée nativement en TCP+SSL, sans connecteur -- cf.
+// https://cloud.google.com/sql/docs/postgres/iam-authentication). postgres.js
+// accepte `password` comme fonction (rappelée à chaque nouvelle connexion
+// physique du pool, cf. node_modules/postgres/types/index.d.ts) : chaque
+// connexion récupère un jeton frais, pas de logique de rafraîchissement
+// manuelle à écrire.
+//
+// IP publique + authorizedNetworks ouvert à 0.0.0.0/0 (Vercel n'a pas d'IP de
+// sortie fixe pour ses fonctions serverless, cf. commentaire historique de ce
+// fichier) : le compromis sécurité assumé le 2026-09-07 -- la vraie barrière
+// n'est plus le réseau mais l'auth (jeton IAM éphémère, ~1h, imposssible à
+// obtenir sans l'identité du déploiement Vercel) + SSL obligatoire
+// (sslMode=ENCRYPTED_ONLY côté instance, CA épinglée ci-dessous côté client,
+// pas de rejectUnauthorized:false).
+//
+// Lue depuis l'environnement, PAS codée en dur : ce repo est public sur
+// GitHub -- une IP fixe de base de prod confirmée acceptant 0.0.0.0/0 n'a
+// rien à faire en clair dans l'historique git, même si l'IP seule ne
+// suffit pas à se connecter (jeton IAM obligatoire derrière). À définir
+// dans Vercel (env Production ET Preview, ce module tourne dans les deux) :
+// CLOUD_SQL_HOST=35.242.206.132 (cf. `gcloud sql instances describe
+// cardquant-db --format="value(ipAddresses)"` pour la retrouver si elle
+// change).
+const CLOUD_SQL_HOST = process.env.CLOUD_SQL_HOST;
+if (!CLOUD_SQL_HOST) throw new Error("CLOUD_SQL_HOST manquante (variable d'environnement Vercel).");
+const CLOUD_SQL_PORT = 5432;
 // Utilisateur IAM (cf. gcloud sql users create ... --type=cloud_iam_service_account)
 // -- email du compte de service SANS le suffixe .gserviceaccount.com, limite
 // de longueur d'identifiant Postgres oblige (contrainte Cloud SQL, pas un
 // choix arbitraire).
 const IAM_DB_USER = "cardquant-web-db@cardquant-tcg.iam";
 const DATABASE_NAME = "cardquant";
+
+// CA du serveur Cloud SQL (`gcloud sql instances describe cardquant-db
+// --format="value(serverCaCert.cert)"`) -- pas un secret (c'est un
+// certificat public), épinglé ici pour vérifier l'identité du serveur plutôt
+// que `rejectUnauthorized: false`. Valide jusqu'au 2036-08-13 ; si Cloud SQL
+// fait tourner sa CA avant cette date (serverCaMode), reconnecter le nouveau
+// certificat ici -- la connexion échouera proprement (erreur de vérification
+// TLS) plutôt que de se dégrader silencieusement.
+const CLOUD_SQL_SERVER_CA = `-----BEGIN CERTIFICATE-----
+MIIDcTCCAlmgAwIBAgIBADANBgkqhkiG9w0BAQsFADBwMS0wKwYDVQQuEyQzNTg2
+ZDM2My1lY2VjLTRiMmEtOTJkOC0zNDBkNjdjMTg0ODUxHDAaBgNVBAMTE0Nsb3Vk
+IFNRTCBTZXJ2ZXIgQ0ExFDASBgNVBAoTC0dvb2dsZSwgSW5jMQswCQYDVQQGEwJV
+UzAeFw0yNjA4MTYwOTE5MzRaFw0zNjA4MTMwOTIwMzRaMHAxLTArBgNVBC4TJDM1
+ODZkMzYzLWVjZWMtNGIyYS05MmQ4LTM0MGQ2N2MxODQ4NTEcMBoGA1UEAxMTQ2xv
+dWQgU1FMIFNlcnZlciBDQTEUMBIGA1UEChMLR29vZ2xlLCBJbmMxCzAJBgNVBAYT
+AlVTMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxaVrzFst9TFThLbU
+g0Li9sscepa/rvNjkMN4ASFU72rwYOkHWKwvvUgI41Q6iPpkkndhgA2HHGdKxzwK
+WVufvGOGqU5ps8rk1XJox4IBvGp/1sYJSzXjf6+RabYYk4bINjWh+bSX+RzQcpqt
+vSJ8w6EEFRi6bJmRxzFODrXfncg+rdaVIjYWk216QIf5wOHwx54Aa4F3sc5aDBF1
+tvV5+wJQNe/Zkiv4tMSTcMr3xmC2PE7ngPxMuXw7Mz8l9YDnl4bUpERbrJirw1jA
+wWOiuyItlu9qA3oXAyqUze12rT/7GnleWYhr4Zcn/ZAs07X3aV3jtBZdUFpIZRVg
+qYsUtwIDAQABoxYwFDASBgNVHRMBAf8ECDAGAQH/AgEAMA0GCSqGSIb3DQEBCwUA
+A4IBAQCToBBkEAWrqXSYHsZkfHLGFSHuLQGx1jw4rNA4RVHlst0Dhjz+Rh72lkS5
+BRrSO99PivVX2pF4r/pQtq8SFbcRFFEQqbeHxqhFL35wFwvCOpNv+uAbWRBhmDAV
+VfekXZrVPOlbaahG3QN2Ksk3Jb9Nf3fs00waxR+2mBFkYDATWOxMssShum4tdQSp
+gZRGJzK+FmtkPQ0SkU1jnRN6wSXhbhgjlxzDheC/ZFu9oLvQLVHHvwHHudfrozGb
+BhVzqSKE5nvLoA2JebjiplQxdzBoNtMTCgqE9AGkgwGdYDaY130oLbuo96htqw/r
+5eAaWG1JcXAv2gerbMpk8FJyuLGu
+-----END CERTIFICATE-----
+`;
 
 const GCP_PROJECT_NUMBER = "606137510344";
 const GCP_WORKLOAD_IDENTITY_POOL_ID = "cardquant-vercel-pool";
@@ -66,6 +119,13 @@ const GCP_AUDIENCE = [
 // jamais un secret stocké) contre des identifiants Google via Workload
 // Identity Federation, avec impersonation du compte de service ci-dessus.
 // Doc Vercel : https://vercel.com/docs/oidc/gcp
+//
+// Portée par défaut (cloud-platform, cf. google-auth-library::
+// baseexternalclient.js DEFAULT_OAUTH_SCOPE) -- pas restreinte explicitement
+// à sqlservice.admin : cloud-platform la couvre déjà (superset), et c'est
+// cette même portée qui fonctionnait déjà pour le connecteur avant ce
+// changement (l'authentification n'a jamais été le problème, cf. commentaire
+// de tête -- seul le transport change ici).
 function buildAuthClient() {
   // fromJSON() type le retour en nullable (cas générique : JSON qui ne
   // décrirait pas un compte external_account) -- ne peut pas arriver avec
@@ -89,105 +149,50 @@ function buildAuthClient() {
   return client;
 }
 
-// startLocalProxy() (pas getOptions(), pensé pour le driver `pg`) : ouvre un
-// socket Unix local que le connecteur relaie vers Cloud SQL en mTLS --
-// postgres.js s'y connecte comme à un Postgres local classique, sans rien
-// savoir du tunnel. /tmp : seul répertoire garanti inscriptible dans une
-// fonction Vercel (le répertoire de déploiement lui-même est en lecture seule).
-async function createClient() {
-  // Chronométrage temporaire (2026-09-07) -- diagnostic de lenteur perçue en
-  // nav réelle ("~10s par page", cf. retour utilisateur) : isole combien vient
-  // de la poignée de main du connecteur (OIDC -> STS -> impersonation -> mTLS,
-  // seulement au 1er appel par instance froide) vs du reste. À retirer une
-  // fois la vraie source identifiée -- ne change aucun comportement, juste des
-  // logs.
-  const t0 = Date.now();
-  const connector = new Connector({ auth: buildAuthClient() });
-  const socketDir = "/tmp/cardquant-cloudsql";
-  const socketPath = `${socketDir}/.s.PGSQL.5432`;
-  // Le connecteur ne crée pas le dossier parent lui-même -- idempotent
-  // (recursive: true ne relève pas d'erreur si déjà là, cf. conteneur
-  // réutilisé entre invocations, même garde-fou que le singleton ci-dessous).
-  mkdirSync(socketDir, { recursive: true });
-
-  await connector.startLocalProxy({
-    instanceConnectionName: INSTANCE_CONNECTION_NAME,
-    authType: AuthTypes.IAM,
-    listenOptions: { path: socketPath },
-  });
-  console.log(`[cardquant-db-timing] startLocalProxy: ${Date.now() - t0}ms (instance froide)`);
+// Un seul client d'auth par instance serverless (le cache interne de
+// google-auth-library réutilise déjà le jeton tant qu'il n'est pas expiré --
+// pas besoin de le refaire nous-mêmes), un `postgres()` par instance
+// (singleton via globalThis ci-dessous, toujours utile : `next build`
+// réévalue ce module plusieurs fois au sein du même worker pendant la
+// collecte des pages, cf. commentaire historique -- sans garde, chaque
+// réévaluation créerait un nouveau pool pour rien, plus de risque de
+// contention réseau qu'avant vu qu'il n'y a plus de socket partagé à
+// verrouiller).
+function createClient() {
+  const authClient = buildAuthClient();
 
   return postgres({
-    host: socketPath.slice(0, socketPath.lastIndexOf("/")),
-    port: 5432,
+    host: CLOUD_SQL_HOST,
+    port: CLOUD_SQL_PORT,
     user: IAM_DB_USER,
     database: DATABASE_NAME,
-    // Le tunnel du connecteur est déjà chiffré (mTLS) -- pas de SSL en plus
-    // sur cette dernière étape locale (unix socket, hors réseau de toute façon).
-    ssl: false,
+    ssl: { ca: CLOUD_SQL_SERVER_CA }, // vérifie l'identité du serveur (pas rejectUnauthorized:false)
+    // Jeton d'accès du compte de service impersonné, rappelé par postgres.js
+    // à CHAQUE nouvelle connexion physique du pool -- toujours frais (durée
+    // de vie ~1h, largement supérieure à la durée d'une invocation), aucune
+    // logique de rafraîchissement à écrire ici.
+    password: async () => {
+      const { token } = await authClient.getAccessToken();
+      if (!token) throw new Error("Cloud SQL : jeton d'accès IAM vide (getAccessToken).");
+      return token;
+    },
     prepare: false,
-    // 3 (pas 5, pas 1) : incident du 2026-09-06 -- une rafale de requêtes
-    // simultanées sur /catalog (prefetch Next.js de la grille, cf.
-    // CatalogueGrid.tsx) a fait s'ouvrir jusqu'à 5 connexions PAR INSTANCE
-    // serverless réchauffée en parallèle, épuisant les connexions de
-    // l'instance Cloud SQL (tier db-f1-micro, max_connections par défaut très
-    // bas) -- erreur Postgres 53300 "remaining connection slots are
-    // reserved...". Passé une première fois à 1 (une instance réchauffée sert
-    // en série, une connexion partagée suffit), mais ce singleton est aussi
-    // celui utilisé par `next build` (chaque route qui importe ce module
-    // partage la MÊME connexion pendant "Generating static pages") -- à 1, les
-    // pages qui exécutent plusieurs requêtes (pnl, transactions, undervalued,
-    // watchlist) se sont retrouvées sérialisées sur une connexion unique et
-    // ont dépassé le budget de 60s/page imposé par Next, faisant échouer le
-    // build de prod du 2026-09-07 (cf. dpl_7JSDVRPFfggbq8yT244JEkfHgPm8).
-    // 3 : garde le pire cas d'une rafale runtime très en dessous de l'ancien
-    // (N instances x 3 au lieu de x 5), tout en laissant assez de parallélisme
-    // au build pour ne pas re-sérialiser ces pages.
+    // 3 : garde le pire cas d'une rafale runtime (N instances x 3) très en
+    // dessous d'une éventuelle rafale x5, cf. incident du 2026-09-06 --
+    // toujours pertinent même sans connecteur (protège le nombre de
+    // connexions PostgreSQL, pas le tunnel local qui a disparu).
     max: 3,
     idle_timeout: 20,
     connect_timeout: 10,
   });
 }
 
-// Filet de sécurité : `Connector.startLocalProxy()` peut rester bloqué
-// indéfiniment sans jamais rejeter sa promesse si l'écoute du socket échoue
-// en interne (constaté en conditions réelles le 2026-08-19 -- EACCES sur
-// Windows en dev local, cause probablement différente en prod mais le même
-// symptôme -- pendaison plutôt qu'erreur -- resterait catastrophique pour
-// une fonction serverless). Sans ce timeout, une seule connexion bloquée
-// suffirait à faire pendre indéfiniment toute requête qui dépend de `sql`.
-function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(message)), ms);
-    promise.then(
-      (value) => { clearTimeout(timer); resolve(value); },
-      (err) => { clearTimeout(timer); reject(err); },
-    );
-  });
-}
-
-// Singleton via globalThis, TOUJOURS (pas seulement hors production comme
-// l'ancienne version Supabase de ce fichier) : `next build` réévalue ce
-// module plusieurs fois au sein du même worker lors de la collecte des
-// pages (une fois par route qui l'importe, directement ou non), et sans ce
-// garde-fou chaque réévaluation retente startLocalProxy() sur le MÊME
-// chemin de socket -- EADDRINUSE dès la 2e tentative (constaté en
-// conditions réelles sur Vercel le 2026-08-20). L'ancienne restriction
-// "hors production" supposait un process = une évaluation en prod, vraie
-// pour un import applicatif classique, fausse pour cette phase de build.
+// Singleton via globalThis, cf. commentaire de createClient() ci-dessus.
 declare global {
   var __pgClient: ReturnType<typeof postgres> | undefined;
 }
 
-// Chronométrage temporaire (2026-09-07), cf. commentaire dans createClient().
-const __wasWarm = globalThis.__pgClient !== undefined;
-const __tModule = Date.now();
-const sql =
-  globalThis.__pgClient ??
-  (await withTimeout(createClient(), 15_000, "Cloud SQL Connector : startLocalProxy n'a pas répondu sous 15s."));
-console.log(
-  `[cardquant-db-timing] module lib/db.ts: ${Date.now() - __tModule}ms (${__wasWarm ? "instance réchauffée, singleton réutilisé" : "instance froide, connector initialisé"})`,
-);
+const sql = globalThis.__pgClient ?? createClient();
 
 globalThis.__pgClient = sql;
 
