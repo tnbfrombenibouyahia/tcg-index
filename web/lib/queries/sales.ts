@@ -1,6 +1,8 @@
+import { unstable_cache } from "next/cache";
 import sql from "@/lib/db";
 import { GRADES } from "@/lib/constants";
 import type { SaleRow, SalesFiltersResponse, SalesResponse, SetOption } from "@/lib/types";
+import { SYNC_DATA_REVALIDATE_SECONDS, SYNC_DATA_TAG } from "@/lib/queryCache";
 
 export interface SalesFilterParams {
   tcg?: string;
@@ -84,7 +86,12 @@ interface SaleQueryRow {
   itemInterestTier: string | null;
 }
 
-export async function getSales(filters: SalesFilterParams): Promise<SalesResponse> {
+// Mise en cache (5 min, cf. lib/queryCache.ts) : appelée à chaque
+// navigation vers /transactions (args fixes) et depuis /api/sales (args
+// libres selon les filtres de l'appelant -- une clé de cache par
+// combinaison de filtres, aucune n'est risquée : la table `sales` ne bouge
+// qu'au rythme des jobs de sync).
+async function getSalesUncached(filters: SalesFilterParams): Promise<SalesResponse> {
   const page = Math.max(1, filters.page ?? 1);
   const pageSize = Math.min(100, Math.max(1, filters.pageSize ?? 25));
   const offset = (page - 1) * pageSize;
@@ -174,6 +181,11 @@ export async function getSales(filters: SalesFilterParams): Promise<SalesRespons
     maxPrice,
   };
 }
+
+export const getSales = unstable_cache(getSalesUncached, ["sales"], {
+  revalidate: SYNC_DATA_REVALIDATE_SECONDS,
+  tags: [SYNC_DATA_TAG],
+});
 
 export async function getSalesFilters(tcg: string): Promise<SalesFiltersResponse> {
   const [sets, rarityRows] = await Promise.all([

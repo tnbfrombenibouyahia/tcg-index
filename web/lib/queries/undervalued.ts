@@ -1,6 +1,8 @@
+import { unstable_cache } from "next/cache";
 import sql from "@/lib/db";
 import type { UndervaluedRow } from "@/lib/types";
 import type { Tcg } from "@/lib/constants";
+import { SYNC_DATA_REVALIDATE_SECONDS, SYNC_DATA_TAG } from "@/lib/queryCache";
 
 interface UndervaluedQueryRow {
   itemId: number;
@@ -70,7 +72,9 @@ function whereFragment(tcg: Tcg | undefined, minMarketPrice: number) {
   `;
 }
 
-export async function getUndervalued({
+// Mise en cache (5 min, cf. lib/queryCache.ts) : appelée à chaque
+// navigation vers /undervalued (2 fois, une par univers).
+async function getUndervaluedUncached({
   tcg,
   minMarketPrice = 5,
   limit = 50,
@@ -139,6 +143,11 @@ export async function getUndervalued({
     undervaluedScore: r.undervaluedScore,
   }));
 }
+
+export const getUndervalued = unstable_cache(getUndervaluedUncached, ["undervalued"], {
+  revalidate: SYNC_DATA_REVALIDATE_SECONDS,
+  tags: [SYNC_DATA_TAG],
+});
 
 // Total de lignes matchant les mêmes filtres, pour calculer totalPages côté
 // page.tsx (Promise.all avec getUndervalued, cf. app/undervalued/page.tsx).

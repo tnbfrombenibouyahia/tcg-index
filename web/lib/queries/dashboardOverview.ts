@@ -1,6 +1,8 @@
+import { unstable_cache } from "next/cache";
 import sql from "@/lib/db";
 import type { MonthlySalesPoint, PopulationBySetRow, SetHeatmapRow } from "@/lib/types";
 import type { Tcg } from "@/lib/constants";
+import { SYNC_DATA_REVALIDATE_SECONDS, SYNC_DATA_TAG } from "@/lib/queryCache";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Agrégats spécifiques au Dashboard CardQuant (redesign Slabline, cf. mémoire
@@ -36,7 +38,10 @@ interface SetHeatmapQueryRow {
 // Même principe fenêtre-courante/fenêtre-précédente que
 // lib/queries/divergence.ts, mais agrégé par (tcg, set_code) plutôt que par
 // item_id -- une "carte" du dashboard est un set, pas un item.
-export async function getSetHeatmap({ tcg, windowDays = 30, limit = 40 }: SetHeatmapParams): Promise<SetHeatmapRow[]> {
+// Les 3 requêtes de ce fichier sont mises en cache (5 min, cf.
+// lib/queryCache.ts) : appelées à chaque chargement de /dashboard, sur des
+// agrégats qui ne bougent qu'au rythme des jobs de sync (heures).
+async function getSetHeatmapUncached({ tcg, windowDays = 30, limit = 40 }: SetHeatmapParams): Promise<SetHeatmapRow[]> {
   const rows = await sql<SetHeatmapQueryRow[]>`
     WITH cur AS (
       SELECT i.tcg, i.set_code, COUNT(*)::int4 AS vol, AVG(s.price)::float8 AS avg_price, SUM(s.price)::float8 AS total_value
@@ -82,6 +87,11 @@ export async function getSetHeatmap({ tcg, windowDays = 30, limit = 40 }: SetHea
   }));
 }
 
+export const getSetHeatmap = unstable_cache(getSetHeatmapUncached, ["dashboard-set-heatmap"], {
+  revalidate: SYNC_DATA_REVALIDATE_SECONDS,
+  tags: [SYNC_DATA_TAG],
+});
+
 export interface MonthlySalesParams {
   months?: number;
 }
@@ -95,7 +105,7 @@ interface MonthlySalesQueryRow {
 // "Ventes eBay · 12 mois" du dashboard -- marketplace = 'ebay' explicitement
 // (sales.marketplace vaut aussi 'tcgplayer', cf. db/schema.sql) : le libellé
 // promet spécifiquement eBay, pas toutes sources confondues.
-export async function getMonthlyEbaySales({ months = 12 }: MonthlySalesParams = {}): Promise<MonthlySalesPoint[]> {
+async function getMonthlyEbaySalesUncached({ months = 12 }: MonthlySalesParams = {}): Promise<MonthlySalesPoint[]> {
   const rows = await sql<MonthlySalesQueryRow[]>`
     SELECT
       i.tcg,
@@ -113,6 +123,11 @@ export async function getMonthlyEbaySales({ months = 12 }: MonthlySalesParams = 
   return rows.map((r) => ({ tcg: r.tcg as Tcg, month: r.month, salesCount: r.salesCount }));
 }
 
+export const getMonthlyEbaySales = unstable_cache(getMonthlyEbaySalesUncached, ["dashboard-monthly-ebay-sales"], {
+  revalidate: SYNC_DATA_REVALIDATE_SECONDS,
+  tags: [SYNC_DATA_TAG],
+});
+
 export interface PopulationBySetParams {
   limit?: number;
 }
@@ -129,7 +144,7 @@ interface PopulationBySetQueryRow {
 // par (tcg, set_code). gem_rate = pop_grade10 / pop_total, pondéré par set
 // (pas la moyenne des gem rates par carte, qui écraserait les cartes à
 // faible population).
-export async function getPopulationBySet({ limit = 5 }: PopulationBySetParams = {}): Promise<PopulationBySetRow[]> {
+async function getPopulationBySetUncached({ limit = 5 }: PopulationBySetParams = {}): Promise<PopulationBySetRow[]> {
   const rows = await sql<PopulationBySetQueryRow[]>`
     WITH latest AS (
       SELECT DISTINCT ON (item_id) item_id, pop_grade10, pop_total
@@ -156,3 +171,8 @@ export async function getPopulationBySet({ limit = 5 }: PopulationBySetParams = 
     gemRatePct: r.gemRatePct ?? 0,
   }));
 }
+
+export const getPopulationBySet = unstable_cache(getPopulationBySetUncached, ["dashboard-population-by-set"], {
+  revalidate: SYNC_DATA_REVALIDATE_SECONDS,
+  tags: [SYNC_DATA_TAG],
+});

@@ -44,14 +44,15 @@ function median(values: number[]): number | null {
 }
 
 export default async function CardQuantDashboardPage() {
-  // Chronométrage temporaire (2026-09-07) -- diagnostic de lenteur perçue en
-  // nav réelle, cf. lib/db.ts::createClient(). À retirer une fois la vraie
-  // source identifiée.
-  const __tPage = Date.now();
   const universe = await getUniverse();
-  console.log(`[cardquant-db-timing] dashboard getUniverse: ${Date.now() - __tPage}ms`);
 
-  const __tBatch = Date.now();
+  // Les 8 requêtes ci-dessous sont maintenant mises en cache 5 min côté
+  // module (cf. lib/queryCache.ts, chaque lib/queries/*.ts concerné) --
+  // diagnostiqué le 2026-09-07 : ~1,5s de temps DB pur ici même à chaud, à
+  // cause de la file d'attente derrière le pool à 3 connexions (Cloud SQL
+  // tier db-f1-micro). Sans cache, ce coût était payé à CHAQUE navigation
+  // par CHAQUE utilisateur -- ne scale pas avec le trafic. Avec, seule la
+  // première requête après expiration du cache le paie.
   const [indicesResponse, divergenceRows, gradingRoi, liquidityRows, heatmapRows, salesTrendPoints, populationRows, syncLabel] =
     await Promise.all([
       getAllIndices(21),
@@ -63,7 +64,6 @@ export default async function CardQuantDashboardPage() {
       getPopulationBySet({ limit: 5 }),
       buildSyncLabel(),
     ]);
-  console.log(`[cardquant-db-timing] dashboard Promise.all (8 requêtes, max:3 connexions): ${Date.now() - __tBatch}ms -- total page: ${Date.now() - __tPage}ms`);
 
   const { salesWeek, salesPrevWeek, salesDeltaPct } = computeWeeklySales(indicesResponse.indices, universe);
 

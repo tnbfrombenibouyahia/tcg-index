@@ -1,6 +1,8 @@
+import { unstable_cache } from "next/cache";
 import sql from "@/lib/db";
 import type { LiquidityRow } from "@/lib/types";
 import type { Tcg } from "@/lib/constants";
+import { SYNC_DATA_REVALIDATE_SECONDS, SYNC_DATA_TAG } from "@/lib/queryCache";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Page /liquidity : classement des items scellés EN qui ont à la fois un
@@ -96,7 +98,9 @@ export interface LiquidityParams {
   sort?: LiquiditySort;
 }
 
-export async function getLiquidity({ tcg, limit = 50, page = 1, sort }: LiquidityParams): Promise<LiquidityRow[]> {
+// Mise en cache (5 min, cf. lib/queryCache.ts) : appelée à chaque
+// navigation vers /dashboard et /liquidity.
+async function getLiquidityUncached({ tcg, limit = 50, page = 1, sort }: LiquidityParams): Promise<LiquidityRow[]> {
   const order = orderFragment(sort);
   const offset = (Math.max(1, page) - 1) * limit;
 
@@ -135,6 +139,11 @@ export async function getLiquidity({ tcg, limit = 50, page = 1, sort }: Liquidit
       r.salesCount30d + r.listingCount > 0 ? r.salesCount30d / (r.salesCount30d + r.listingCount) : null,
   }));
 }
+
+export const getLiquidity = unstable_cache(getLiquidityUncached, ["liquidity"], {
+  revalidate: SYNC_DATA_REVALIDATE_SECONDS,
+  tags: [SYNC_DATA_TAG],
+});
 
 export async function getLiquidityCount({ tcg }: Pick<LiquidityParams, "tcg">): Promise<number> {
   const [row] = await sql<{ count: number }[]>`
