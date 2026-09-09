@@ -43,6 +43,15 @@ function median(values: number[]): number | null {
   return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
 }
 
+// force-dynamic : explicite plutôt qu'implicite -- cette page échappait déjà
+// au timeout de build du 2026-09-09 (cf. commentaire dans
+// app/(cardquant)/pnl/page.tsx) uniquement parce que son premier appel,
+// getUniverse(), lit un cookie et fait bifurquer Next vers du rendu
+// dynamique avant même d'atteindre le Promise.all des 8 requêtes DB. Fragile
+// (un futur réordonnancement du code casserait ça silencieusement) -- autant
+// le déclarer franchement, cette page n'a de toute façon rien de statique.
+export const dynamic = "force-dynamic";
+
 export default async function CardQuantDashboardPage() {
   const universe = await getUniverse();
 

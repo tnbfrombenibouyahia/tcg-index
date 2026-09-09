@@ -9,6 +9,11 @@ import { buildSyncLabel } from "@/lib/cardquant/syncLabel";
 // par pricing_api directement depuis le navigateur.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// force-dynamic : cf. commentaire équivalent dans app/(cardquant)/pnl/page.tsx
+// (timeout de build du 2026-09-09, requêtes exécutées pour de vrai contre
+// Cloud SQL depuis une machine de build US vers europe-west3).
+export const dynamic = "force-dynamic";
+
 export default async function CardQuantWatchlistPage() {
   const syncLabel = await buildSyncLabel();
   return <WatchlistScreen syncLabel={syncLabel} />;

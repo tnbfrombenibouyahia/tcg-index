@@ -19,6 +19,21 @@ import { buildSyncLabel } from "@/lib/cardquant/syncLabel";
 // pas déployé.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// force-dynamic : sans ça, `next build` tente de pré-rendre cette page --
+// aucun appel à cookies()/headers() ici pour le faire bifurquer tout seul
+// vers du dynamique (contrairement à /dashboard, dont le premier appel
+// getUniverse() lit un cookie et court-circuite le reste avant les
+// requêtes DB). Résultat : buildSyncLabel() s'exécute pour de vrai pendant
+// le build, depuis une machine de build US (iad1) vers Cloud SQL en
+// europe-west3 -- la latence transatlantique dépasse le budget de 60s/page
+// de Next (constaté le 2026-09-09 sur /live, /pnl, /transactions,
+// /undervalued, /watchlist -- même symptôme que l'incident du 2026-09-07,
+// mais qui passait alors sous le radar grâce à un bug TLS qui faisait
+// échouer ces mêmes requêtes instantanément plutôt que lentement). Cette
+// page n'a de toute façon aucune raison d'être statique : le badge de
+// synchro doit être frais à chaque visite.
+export const dynamic = "force-dynamic";
+
 export default async function CardQuantPnlPage() {
   const syncLabel = await buildSyncLabel();
   return <PnlScreen syncLabel={syncLabel} />;
