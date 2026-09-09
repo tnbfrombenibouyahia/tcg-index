@@ -166,7 +166,24 @@ function createClient() {
     port: CLOUD_SQL_PORT,
     user: IAM_DB_USER,
     database: DATABASE_NAME,
-    ssl: { ca: CLOUD_SQL_SERVER_CA }, // vérifie l'identité du serveur (pas rejectUnauthorized:false)
+    ssl: {
+      ca: CLOUD_SQL_SERVER_CA, // vérifie que le certificat est signé par la CA Cloud SQL (pas rejectUnauthorized:false)
+      // checkServerIdentity SAUTE la vérification du nom d'hôte (pas la
+      // vérification de la CA ci-dessus) -- modèle "verify-ca" de Postgres,
+      // pas "verify-full". Nécessaire : le certificat Cloud SQL est émis
+      // pour un nom interne Google (ex. <uid>.europe-west3.sql.goog),
+      // JAMAIS pour l'IP publique ni pour "localhost". Sans ce override,
+      // Node vérifie le nom d'hôte de la connexion contre le certificat --
+      // et par défaut, quand `servername` n'est pas fourni explicitement,
+      // Node compare contre le literal "localhost" (pas contre l'IP de
+      // connexion) -- échec garanti à 100% des requêtes, confirmé en prod
+      // via les runtime logs Vercel (ERR_TLS_CERT_ALTNAME_INVALID, "Host:
+      // localhost. is not in the cert's altnames: DNS:...sql.goog").
+      // Documenté par Google elle-même pour une connexion TCP+SSL directe
+      // par IP (sans le connecteur) : cf.
+      // https://cloud.google.com/sql/docs/postgres/connect-overview#network-connections.
+      checkServerIdentity: () => undefined,
+    },
     // Jeton d'accès du compte de service impersonné, rappelé par postgres.js
     // à CHAQUE nouvelle connexion physique du pool -- toujours frais (durée
     // de vie ~1h, largement supérieure à la durée d'une invocation), aucune
