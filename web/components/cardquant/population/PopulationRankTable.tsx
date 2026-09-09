@@ -89,6 +89,11 @@ export function PopulationRankTable({
             <Link
               key={r.itemId}
               href={`/catalog/${r.itemId}`}
+              // prefetch={false} : même bug que CatalogueGrid.tsx (incident du
+              // 2026-09-06, épuisement des connexions Cloud SQL) -- réapparu ici
+              // car ce fix n'avait été posé que sur ce seul fichier, pas sur les
+              // autres grilles/tableaux ajoutés depuis (redesign CardQuant).
+              prefetch={false}
               style={{ display: "grid", gridTemplateColumns: "minmax(96px, 1.35fr) 22px minmax(56px, 0.7fr) 52px 46px 46px 52px", gap: 5, alignItems: "center", padding: "4px 0", color: "inherit" }}
             >
               <span style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>

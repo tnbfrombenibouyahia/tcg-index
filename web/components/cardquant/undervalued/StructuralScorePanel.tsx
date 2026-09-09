@@ -53,6 +53,11 @@ export function StructuralScorePanel({ byTcg }: { byTcg: Record<Tcg, Undervalued
               <Link
                 key={r.itemId}
                 href={`/catalog/${r.itemId}`}
+                // prefetch={false} : même bug que CatalogueGrid.tsx (incident du
+                // 2026-09-06, épuisement des connexions Cloud SQL) -- réapparu ici
+                // car ce fix n'avait été posé que sur ce seul fichier, pas sur les
+                // autres grilles/tableaux ajoutés depuis (redesign CardQuant).
+                prefetch={false}
                 style={{ display: "grid", gridTemplateColumns: "18px 28px minmax(0, 1fr) 62px 56px", gap: 8, alignItems: "center", borderRadius: 6, padding: "4px 4px", color: "inherit" }}
               >
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text-muted)" }}>{i + 1}</span>

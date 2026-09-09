@@ -40,7 +40,11 @@ export function PriceVolumeDivergencePanel({ rows }: { rows: DivergenceRow[] }) 
           rows.map((r) => {
             const tag = classifyDivergence(r.priceChangePct, r.volumeChangePct);
             return (
-              <Link key={r.itemId} href={`/catalog/${r.itemId}`} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.5fr) 58px 54px 54px 92px", gap: 8, alignItems: "center", color: "inherit" }}>
+              // prefetch={false} : même bug que CatalogueGrid.tsx (incident du
+              // 2026-09-06, épuisement des connexions Cloud SQL) -- réapparu ici
+              // car ce fix n'avait été posé que sur ce seul fichier, pas sur les
+              // autres grilles/tableaux ajoutés depuis (redesign CardQuant).
+              <Link key={r.itemId} href={`/catalog/${r.itemId}`} prefetch={false} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.5fr) 58px 54px 54px 92px", gap: 8, alignItems: "center", color: "inherit" }}>
                 <span style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
                   <span style={{ fontSize: 11.5, color: "var(--text-strong)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span>
                   <span style={{ fontSize: 9.5, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.setCode ?? "—"}</span>

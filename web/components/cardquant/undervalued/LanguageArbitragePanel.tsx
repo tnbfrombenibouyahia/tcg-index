@@ -27,6 +27,11 @@ export function LanguageArbitragePanel({ rows }: { rows: LanguageArbitrageRow[] 
             <Link
               key={`${r.enItemId}-${r.jpItemId}`}
               href={`/catalog/${r.enItemId}`}
+              // prefetch={false} : même bug que CatalogueGrid.tsx (incident du
+              // 2026-09-06, épuisement des connexions Cloud SQL) -- réapparu ici
+              // car ce fix n'avait été posé que sur ce seul fichier, pas sur les
+              // autres grilles/tableaux ajoutés depuis (redesign CardQuant).
+              prefetch={false}
               style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.5fr) 58px 58px 52px 78px", gap: 8, alignItems: "center", color: "inherit" }}
             >
               <span style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
