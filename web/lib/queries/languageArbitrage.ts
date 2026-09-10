@@ -1,5 +1,7 @@
+import { unstable_cache } from "next/cache";
 import sql from "@/lib/db";
 import type { Tcg } from "@/lib/constants";
+import { SYNC_DATA_REVALIDATE_SECONDS, SYNC_DATA_TAG } from "@/lib/queryCache";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Panneau "Arbitrage inter-langues" de l'écran Sous-évalué CardQuant (cf.
@@ -24,7 +26,9 @@ export interface LanguageArbitrageRow {
   gapPct: number; // (jp - en) / en * 100
 }
 
-export async function getLanguageArbitrage({ minGapPct = 15, limit = 12 }: { minGapPct?: number; limit?: number } = {}): Promise<LanguageArbitrageRow[]> {
+// Mise en cache (5 min, cf. lib/queryCache.ts) : appelée à chaque
+// navigation vers /undervalued.
+async function getLanguageArbitrageUncached({ minGapPct = 15, limit = 12 }: { minGapPct?: number; limit?: number } = {}): Promise<LanguageArbitrageRow[]> {
   const rows = await sql<{ tcg: string; name: string; enItemId: number; jpItemId: number; enSetCode: string | null; jpSetCode: string | null; enPrice: number; jpPrice: number }[]>`
     WITH en_unique AS (
       SELECT MIN(id) AS id, tcg, lower(trim(name)) AS nm, lower(trim(rarity)) AS rr
@@ -78,3 +82,8 @@ export async function getLanguageArbitrage({ minGapPct = 15, limit = 12 }: { min
     .sort((a, b) => Math.abs(b.gapPct) - Math.abs(a.gapPct))
     .slice(0, limit);
 }
+
+export const getLanguageArbitrage = unstable_cache(getLanguageArbitrageUncached, ["language-arbitrage"], {
+  revalidate: SYNC_DATA_REVALIDATE_SECONDS,
+  tags: [SYNC_DATA_TAG],
+});

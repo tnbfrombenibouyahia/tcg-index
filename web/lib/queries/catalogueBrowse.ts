@@ -1,5 +1,7 @@
+import { unstable_cache } from "next/cache";
 import sql from "@/lib/db";
 import type { Tcg } from "@/lib/constants";
+import { SYNC_DATA_REVALIDATE_SECONDS, SYNC_DATA_TAG } from "@/lib/queryCache";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Parcours du catalogue complet (écran Catalogue du Terminal CardQuant, cf.
@@ -82,7 +84,11 @@ function filterFragment({ tcg, language, rarity, priceState }: CatalogueBrowsePa
   `;
 }
 
-export async function browseCatalogue(params: CatalogueBrowseParams): Promise<{ rows: CatalogueBrowseRow[]; totalCount: number }> {
+// Mise en cache (5 min, cf. lib/queryCache.ts) : appelée à chaque
+// chargement de /catalog, en concurrence avec 4 autres requêtes
+// (count, options de filtres x2, badge de synchro) sur le même pool à 3
+// connexions -- même levier que le dashboard/transactions/undervalued.
+async function browseCatalogueUncached(params: CatalogueBrowseParams): Promise<{ rows: CatalogueBrowseRow[]; totalCount: number }> {
   const page = Math.max(1, params.page ?? 1);
   const pageSize = Math.min(60, Math.max(1, params.pageSize ?? 30));
   const offset = (page - 1) * pageSize;
@@ -155,11 +161,20 @@ export async function browseCatalogue(params: CatalogueBrowseParams): Promise<{ 
   };
 }
 
+export const browseCatalogue = unstable_cache(browseCatalogueUncached, ["catalogue-browse"], {
+  revalidate: SYNC_DATA_REVALIDATE_SECONDS,
+  tags: [SYNC_DATA_TAG],
+});
+
 // Options des Select "Rareté" / "Langue" -- valeurs distinctes réellement
 // présentes en base plutôt qu'une liste en dur (le vocabulaire de rareté
 // diverge fortement entre Pokémon et One Piece, cf. lib/constants.ts::GRADES
 // pour un exemple similaire de vocabulaire non partagé).
-export async function getCatalogueFilterOptions(): Promise<{ rarities: string[]; languages: string[] }> {
+// Mise en cache (5 min, cf. lib/queryCache.ts) : zéro paramètre, appelée à
+// chaque chargement de /catalog -- le meilleur candidat possible (le
+// vocabulaire de rareté/langue ne bouge qu'au rythme de l'ingestion de
+// nouveaux sets, jamais en cours de journée).
+async function getCatalogueFilterOptionsUncached(): Promise<{ rarities: string[]; languages: string[] }> {
   const [rarityRows, languageRows] = await Promise.all([
     sql<{ rarity: string }[]>`SELECT DISTINCT rarity FROM items WHERE rarity IS NOT NULL ORDER BY rarity`,
     sql<{ language: string }[]>`SELECT DISTINCT language FROM items ORDER BY language`,
@@ -169,3 +184,8 @@ export async function getCatalogueFilterOptions(): Promise<{ rarities: string[];
     languages: languageRows.map((r) => r.language),
   };
 }
+
+export const getCatalogueFilterOptions = unstable_cache(getCatalogueFilterOptionsUncached, ["catalogue-filter-options"], {
+  revalidate: SYNC_DATA_REVALIDATE_SECONDS,
+  tags: [SYNC_DATA_TAG],
+});

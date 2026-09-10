@@ -1,6 +1,8 @@
+import { unstable_cache } from "next/cache";
 import sql from "@/lib/db";
 import { TCGS } from "@/lib/constants";
 import type { FreshnessCell, SyncRun, SyncStatusResponse } from "@/lib/types";
+import { SYNC_DATA_REVALIDATE_SECONDS, SYNC_DATA_TAG } from "@/lib/queryCache";
 
 // Toutes les dates ::text (cf. lib/queries/indices.ts) -- évite l'ambiguïté
 // de fuseau d'un objet JS Date sur une colonne DATE/TIMESTAMPTZ.
@@ -63,7 +65,14 @@ export async function getRunningSyncs(): Promise<SyncRun[]> {
   return rows.map(toSyncRun);
 }
 
-export async function getRecentRuns(limit = 100): Promise<SyncRun[]> {
+// Mise en cache (5 min, cf. lib/queryCache.ts) : c'est cette requête que
+// buildSyncLabel() appelle pour le badge "Synchro OK · Xh" affiché sur
+// toutes les pages migrées CardQuant -- une fraîcheur affichée à l'heure
+// près n'a rien à perdre à 5 minutes de cache. Contrairement à
+// getRunningSyncs/getRecentErrors ci-dessus (page /live, doivent rester
+// temps réel pour surveiller un run en cours), volontairement pas mises en
+// cache.
+async function getRecentRunsUncached(limit = 100): Promise<SyncRun[]> {
   const rows = await sql<SyncRunRow[]>`
     SELECT ${syncRunColumns()}
     FROM sync_runs
@@ -72,6 +81,11 @@ export async function getRecentRuns(limit = 100): Promise<SyncRun[]> {
   `;
   return rows.map(toSyncRun);
 }
+
+export const getRecentRuns = unstable_cache(getRecentRunsUncached, ["sync-recent-runs"], {
+  revalidate: SYNC_DATA_REVALIDATE_SECONDS,
+  tags: [SYNC_DATA_TAG],
+});
 
 // Requête séparée plutôt qu'un simple .filter() côté client sur recentRuns :
 // les erreurs sont rares et doivent rester visibles même une fois que

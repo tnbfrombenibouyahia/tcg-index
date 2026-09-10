@@ -41,7 +41,11 @@ export function WatchlistTable({ cards, onRemove }: { cards: WatchedCard[]; onRe
                   <span style={{ fontSize: 11, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.setCode ?? "—"}</span>
                 )}
                 <span style={{ display: "flex", justifyContent: "flex-end", gap: 4 }}>
-                  <Link href={`/catalog/${c.itemId}`}>
+                  {/* prefetch={false} : même bug que CatalogueGrid.tsx (incident du
+                      2026-09-06, épuisement des connexions Cloud SQL) -- réapparu ici
+                      car ce fix n'avait été posé que sur ce seul fichier, pas sur les
+                      autres grilles/tableaux ajoutés depuis (redesign CardQuant). */}
+                  <Link href={`/catalog/${c.itemId}`} prefetch={false}>
                     <Button variant="ghost" size="sm">Fiche</Button>
                   </Link>
                   <Button variant="ghost" size="sm" onClick={() => onRemove(c.itemId)}>Retirer</Button>

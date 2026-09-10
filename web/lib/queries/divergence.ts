@@ -1,6 +1,8 @@
+import { unstable_cache } from "next/cache";
 import sql from "@/lib/db";
 import type { DivergenceRow } from "@/lib/types";
 import { DIVERGENCE_WINDOWS, type DivergenceWindowDays, type Grade, type Tcg } from "@/lib/constants";
+import { SYNC_DATA_REVALIDATE_SECONDS, SYNC_DATA_TAG } from "@/lib/queryCache";
 
 // Ré-exportées pour les Server Components qui les récupèrent déjà via ce
 // module (app/divergence/page.tsx, DivergenceTable.tsx) -- sans risque
@@ -115,7 +117,10 @@ export interface DivergenceParams {
 // de duplication. MIN_SALES_PER_WINDOW s'applique quand même : une carte
 // avec trop peu de ventes sur l'une des deux fenêtres ne renvoie aucune
 // ligne plutôt qu'un delta non fiable, cohérent avec la page liste.
-export async function getDivergence({
+// Mise en cache (5 min, cf. lib/queryCache.ts) : appelée à chaque
+// navigation vers /dashboard et /divergence, sur des agrégats qui ne
+// bougent qu'au rythme des jobs de sync (heures).
+async function getDivergenceUncached({
   tcg,
   itemId,
   windowDays = 30,
@@ -221,6 +226,11 @@ export async function getDivergence({
     divergenceScore: r.divergenceScore,
   }));
 }
+
+export const getDivergence = unstable_cache(getDivergenceUncached, ["divergence"], {
+  revalidate: SYNC_DATA_REVALIDATE_SECONDS,
+  tags: [SYNC_DATA_TAG],
+});
 
 // Total de lignes matchant les mêmes filtres, pour totalPages côté
 // app/divergence/page.tsx (Promise.all avec getDivergence, même pattern que

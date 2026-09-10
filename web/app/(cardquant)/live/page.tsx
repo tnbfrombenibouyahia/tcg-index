@@ -12,13 +12,19 @@ import { buildSyncLabel } from "@/lib/cardquant/syncLabel";
 // orphelins plutôt que supprimés).
 // ─────────────────────────────────────────────────────────────────────────────
 
+// force-dynamic : cf. commentaire équivalent dans app/(cardquant)/pnl/page.tsx
+// (timeout de build du 2026-09-09, requêtes exécutées pour de vrai contre
+// Cloud SQL depuis une machine de build US vers europe-west3) -- doublement
+// justifié ici, cette page doit de toute façon rester temps réel (cf.
+// getSyncStatus() dans lib/queries/syncStatus.ts).
+export const dynamic = "force-dynamic";
+
 export default async function CardQuantLivePage() {
-  // Chronométrage temporaire (2026-09-07) -- diagnostic de lenteur perçue en
-  // nav réelle, cf. lib/db.ts::createClient(). À retirer une fois la vraie
-  // source identifiée.
-  const __tPage = Date.now();
+  // getSyncStatus() reste volontairement NON caché (cf. son commentaire dans
+  // lib/queries/syncStatus.ts) : la page /live doit refléter un run en cours
+  // en temps réel, contrairement au reste du site. getDataCoverage(), lui,
+  // est un recap agrégé -- mis en cache 5 min comme les autres.
   const [initialData, coverage, syncLabel] = await Promise.all([getSyncStatus(), getDataCoverage(), buildSyncLabel()]);
-  console.log(`[cardquant-db-timing] live Promise.all (3 requêtes): ${Date.now() - __tPage}ms`);
 
   return <LiveScreen syncLabel={syncLabel} initialData={initialData} coverage={coverage} />;
 }

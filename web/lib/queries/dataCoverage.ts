@@ -1,6 +1,8 @@
+import { unstable_cache } from "next/cache";
 import sql from "@/lib/db";
 import type { DataCoverageRow } from "@/lib/types";
 import type { Tcg } from "@/lib/constants";
+import { SYNC_DATA_REVALIDATE_SECONDS, SYNC_DATA_TAG } from "@/lib/queryCache";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Recap de couverture -- demande utilisateur 2026-08-09, page /live : "quel %
@@ -113,7 +115,11 @@ interface PriceCoverageRow {
   trackedWithRecentPrice: number;
 }
 
-export async function getDataCoverage(): Promise<DataCoverageRow[]> {
+// Mise en cache (5 min, cf. lib/queryCache.ts) : recap agrégé de couverture,
+// pas un état "en cours" -- contrairement à getRunningSyncs/getRecentErrors
+// (lib/queries/syncStatus.ts), rien ici ne doit rester temps réel pour la
+// page /live.
+async function getDataCoverageUncached(): Promise<DataCoverageRow[]> {
   const [baseRows, priceRows] = await Promise.all([
     sql<BaseCoverageRow[]>`
       SELECT
@@ -168,3 +174,8 @@ export async function getDataCoverage(): Promise<DataCoverageRow[]> {
     // < "single" alphabétiquement, donc rien de plus à faire pour cet ordre).
     .sort((a, b) => a.tcg.localeCompare(b.tcg) || a.category.localeCompare(b.category) || a.language.localeCompare(b.language));
 }
+
+export const getDataCoverage = unstable_cache(getDataCoverageUncached, ["data-coverage"], {
+  revalidate: SYNC_DATA_REVALIDATE_SECONDS,
+  tags: [SYNC_DATA_TAG],
+});

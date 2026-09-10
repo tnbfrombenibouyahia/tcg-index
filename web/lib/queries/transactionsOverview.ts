@@ -1,5 +1,7 @@
+import { unstable_cache } from "next/cache";
 import sql from "@/lib/db";
 import type { Tcg } from "@/lib/constants";
+import { SYNC_DATA_REVALIDATE_SECONDS, SYNC_DATA_TAG } from "@/lib/queryCache";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Agrégats dédiés à l'écran Transactions CardQuant (cf. mémoire projet
@@ -35,7 +37,11 @@ export interface SalesKpis {
   count7d: number;
 }
 
-export async function getSalesKpis(): Promise<SalesKpis> {
+// Les 5 requêtes de ce fichier sont mises en cache (5 min, cf.
+// lib/queryCache.ts) : appelées à chaque chargement de /transactions
+// (6 requêtes en parallèle sur cette page, même pattern que le dashboard,
+// cf. son commentaire dans app/(cardquant)/dashboard/page.tsx).
+async function getSalesKpisUncached(): Promise<SalesKpis> {
   const [row] = await sql<SalesKpis[]>`
     SELECT
       COUNT(*) FILTER (WHERE sale_date >= CURRENT_DATE - 1)::int4                                AS "count24h",
@@ -49,6 +55,11 @@ export async function getSalesKpis(): Promise<SalesKpis> {
   return row ?? { count24h: 0, value24h: 0, avgPrice24h: 0, maxPrice24h: 0, count7d: 0 };
 }
 
+export const getSalesKpis = unstable_cache(getSalesKpisUncached, ["transactions-sales-kpis"], {
+  revalidate: SYNC_DATA_REVALIDATE_SECONDS,
+  tags: [SYNC_DATA_TAG],
+});
+
 export interface BreakdownSlice {
   key: string;
   count: number;
@@ -58,7 +69,7 @@ export interface BreakdownSlice {
 // Répartition par tcg et par langue sur une fenêtre glissante -- alimente
 // les deux donuts "Analyse en Volume/Valeur" (le composant choisit `count`
 // ou `value` selon l'onglet actif, calculées ici en une seule requête).
-export async function getSalesBreakdown(windowDays = 30): Promise<{ byTcg: BreakdownSlice[]; byLanguage: BreakdownSlice[] }> {
+async function getSalesBreakdownUncached(windowDays = 30): Promise<{ byTcg: BreakdownSlice[]; byLanguage: BreakdownSlice[] }> {
   const [tcgRows, langRows] = await Promise.all([
     sql<BreakdownSlice[]>`
       SELECT i.tcg AS key, COUNT(*)::int4 AS count, COALESCE(SUM(s.price), 0)::float8 AS value
@@ -76,6 +87,11 @@ export async function getSalesBreakdown(windowDays = 30): Promise<{ byTcg: Break
   return { byTcg: tcgRows, byLanguage: langRows };
 }
 
+export const getSalesBreakdown = unstable_cache(getSalesBreakdownUncached, ["transactions-sales-breakdown"], {
+  revalidate: SYNC_DATA_REVALIDATE_SECONDS,
+  tags: [SYNC_DATA_TAG],
+});
+
 export interface TopSetRow {
   tcg: Tcg;
   setCode: string;
@@ -85,7 +101,7 @@ export interface TopSetRow {
   changePct: number | null; // évolution du volume vs la fenêtre précédente de même longueur
 }
 
-export async function getTopSetsBySales({ windowDays = 30, limit = 10 }: { windowDays?: number; limit?: number } = {}): Promise<TopSetRow[]> {
+async function getTopSetsBySalesUncached({ windowDays = 30, limit = 10 }: { windowDays?: number; limit?: number } = {}): Promise<TopSetRow[]> {
   const rows = await sql<
     { tcg: string; setCode: string; releaseYear: number | null; count: number; value: number; prevCount: number }[]
   >`
@@ -120,6 +136,11 @@ export async function getTopSetsBySales({ windowDays = 30, limit = 10 }: { windo
   }));
 }
 
+export const getTopSetsBySales = unstable_cache(getTopSetsBySalesUncached, ["transactions-top-sets"], {
+  revalidate: SYNC_DATA_REVALIDATE_SECONDS,
+  tags: [SYNC_DATA_TAG],
+});
+
 export interface YearlyVolume {
   year: number;
   tcg: Tcg;
@@ -129,7 +150,7 @@ export interface YearlyVolume {
 
 // Toute la profondeur d'historique disponible (pas de fenêtre de jours) --
 // une carte par année de sortie de set, pas une tendance récente.
-export async function getSalesByReleaseYear(): Promise<YearlyVolume[]> {
+async function getSalesByReleaseYearUncached(): Promise<YearlyVolume[]> {
   const rows = await sql<{ year: number; tcg: string; count: number; value: number }[]>`
     SELECT EXTRACT(YEAR FROM i.release_date)::int4 AS year, i.tcg, COUNT(*)::int4 AS count, COALESCE(SUM(s.price), 0)::float8 AS value
     FROM sales s JOIN items i ON i.id = s.item_id
@@ -140,13 +161,18 @@ export async function getSalesByReleaseYear(): Promise<YearlyVolume[]> {
   return rows.map((r) => ({ year: r.year, tcg: r.tcg as Tcg, count: r.count, value: r.value }));
 }
 
+export const getSalesByReleaseYear = unstable_cache(getSalesByReleaseYearUncached, ["transactions-sales-by-release-year"], {
+  revalidate: SYNC_DATA_REVALIDATE_SECONDS,
+  tags: [SYNC_DATA_TAG],
+});
+
 export interface HourlyVolume {
   hour: string; // "YYYY-MM-DDTHH"
   count: number;
   value: number;
 }
 
-export async function getHourlyVolume(hours = 24): Promise<HourlyVolume[]> {
+async function getHourlyVolumeUncached(hours = 24): Promise<HourlyVolume[]> {
   const rows = await sql<{ hour: string; count: number; value: number }[]>`
     SELECT to_char(date_trunc('hour', created_at), 'YYYY-MM-DD"T"HH24') AS hour,
       COUNT(*)::int4 AS count, COALESCE(SUM(price), 0)::float8 AS value
@@ -157,3 +183,8 @@ export async function getHourlyVolume(hours = 24): Promise<HourlyVolume[]> {
   `;
   return rows;
 }
+
+export const getHourlyVolume = unstable_cache(getHourlyVolumeUncached, ["transactions-hourly-volume"], {
+  revalidate: SYNC_DATA_REVALIDATE_SECONDS,
+  tags: [SYNC_DATA_TAG],
+});

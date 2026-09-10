@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import sql from "@/lib/db";
 import {
   computeGradingRoi,
@@ -8,6 +9,7 @@ import {
   type GradingRoiRow,
 } from "@/lib/gradingRoi";
 import type { GradedTier, Tcg } from "@/lib/constants";
+import { SYNC_DATA_REVALIDATE_SECONDS, SYNC_DATA_TAG } from "@/lib/queryCache";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Ingrédients bruts du calculateur ROI de gradation (demande utilisateur) :
@@ -255,7 +257,11 @@ export interface GradingRoiRankingResult {
 // entier tient largement en mémoire (~11k candidats max) et est de toute
 // façon déjà entièrement chargé pour le tri, donc le compter ne coûte rien
 // de plus.
-export async function getGradingRoiRanking({
+// Mise en cache (5 min, cf. lib/queryCache.ts) : appelée à chaque
+// navigation vers /dashboard et /grading-roi -- fetchCandidates() est la
+// partie coûteuse (~11k candidats scannés), sort/pagination ne coûtent rien
+// une fois le résultat en cache.
+async function getGradingRoiRankingUncached({
   tcg,
   minUngradedPrice = 2,
   sort = "roi_desc",
@@ -271,3 +277,8 @@ export async function getGradingRoiRanking({
   const offset = (Math.max(1, page) - 1) * limit;
   return { rows: sorted.slice(offset, offset + limit), totalCount: sorted.length };
 }
+
+export const getGradingRoiRanking = unstable_cache(getGradingRoiRankingUncached, ["grading-roi-ranking"], {
+  revalidate: SYNC_DATA_REVALIDATE_SECONDS,
+  tags: [SYNC_DATA_TAG],
+});

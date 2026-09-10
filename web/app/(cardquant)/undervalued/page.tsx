@@ -16,6 +16,11 @@ import { buildSyncLabel } from "@/lib/cardquant/syncLabel";
 
 const MIN_MARKET_PRICE = 5; // même plancher que partout ailleurs, cf. lib/queries/undervalued.ts
 
+// force-dynamic : cf. commentaire équivalent dans app/(cardquant)/pnl/page.tsx
+// (timeout de build du 2026-09-09, requêtes exécutées pour de vrai contre
+// Cloud SQL depuis une machine de build US vers europe-west3).
+export const dynamic = "force-dynamic";
+
 export default async function CardQuantUndervaluedPage() {
   const [pokemonUnder, onePieceUnder, arbitrageRows, divergenceRows, gradingRoi, syncLabel] = await Promise.all([
     getUndervalued({ tcg: "pokemon", minMarketPrice: MIN_MARKET_PRICE, sort: "score_desc", limit: 15 }),

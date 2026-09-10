@@ -1,6 +1,8 @@
+import { unstable_cache } from "next/cache";
 import sql from "@/lib/db";
 import { INDEX_CODES, INDEX_DEFINITIONS } from "@/lib/constants";
 import type { IndexPoint, IndexSummary, IndicesResponse, VolumePoint } from "@/lib/types";
+import { SYNC_DATA_REVALIDATE_SECONDS, SYNC_DATA_TAG } from "@/lib/queryCache";
 
 // Toutes les dates sont castées ::text en SQL plutôt que laissées en DATE --
 // postgres.js convertirait sinon en objet JS Date, ambigu sur le fuseau pour
@@ -29,7 +31,12 @@ function toVolumePoint(row: VolumeRow): VolumePoint {
   return { capturedAt: row.capturedAt, salesCount: row.salesCount, salesValue: row.salesValue };
 }
 
-export async function getAllIndices(days = 180): Promise<IndicesResponse> {
+// Mise en cache (5 min, cf. lib/queryCache.ts) : /dashboard l'appelle à
+// chaque navigation, avec `days` fixe -- 8 requêtes en parallèle sur cette
+// même page se sont déjà mesurées à ~1,5s de temps DB pur (pool à 3
+// connexions), sur des agrégats qui ne bougent qu'au rythme des jobs de
+// sync.
+async function getAllIndicesUncached(days = 180): Promise<IndicesResponse> {
   const [rankedRows, historyRows, volumeRows] = await Promise.all([
     sql<(IndexValueRow & { rn: number })[]>`
       WITH ranked AS (
@@ -96,3 +103,8 @@ export async function getAllIndices(days = 180): Promise<IndicesResponse> {
 
   return { asOf, indices };
 }
+
+export const getAllIndices = unstable_cache(getAllIndicesUncached, ["indices-all"], {
+  revalidate: SYNC_DATA_REVALIDATE_SECONDS,
+  tags: [SYNC_DATA_TAG],
+});
