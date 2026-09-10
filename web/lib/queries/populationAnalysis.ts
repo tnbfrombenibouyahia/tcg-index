@@ -1,6 +1,8 @@
+import { unstable_cache } from "next/cache";
 import sql from "@/lib/db";
 import type { PopulationRow, PopulationPriceOnlyRow } from "@/lib/types";
 import type { Tcg } from "@/lib/constants";
+import { SYNC_DATA_REVALIDATE_SECONDS, SYNC_DATA_TAG } from "@/lib/queryCache";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Classement /population-analysis : population PSA+CGC réelle par carte (pas
@@ -631,7 +633,18 @@ export interface PopulationRankingResult {
   priceOnlyFallback?: PopulationPriceOnlyRow[];
 }
 
-export async function getPopulationRanking({
+// Mise en cache (5 min, cf. lib/queryCache.ts) : /population-analysis charge
+// jusqu'à hardCap=20000 candidats (JOIN + tri/percentiles en JS) à CHAQUE
+// requête -- la requête la plus lourde de tout le site, jamais mise en
+// cache jusqu'ici contrairement à dashboard/transactions/undervalued/catalog
+// (cf. commit "Cache 5min sur les requêtes lourdes" et suivants). Repérée le
+// 2026-09-10 : une poignée de clics sur les pills Tous/Pokémon/One Piece ou
+// EN/JP (chacun un aller-retour complet, pas de filtrage client) suffit à
+// saturer le pool à 3 connexions et ralentir tout le reste du site en même
+// temps -- même mécanique que l'incident de prefetch du 2026-09-06, cause
+// différente (pas de rafale de requêtes simultanées, une seule requête déjà
+// trop lourde et trop fréquente).
+async function getPopulationRankingUncached({
   tcg,
   sort = "psa10_asc",
   priceGrade = "ungraded",
@@ -666,6 +679,11 @@ export async function getPopulationRanking({
   return result;
 }
 
+export const getPopulationRanking = unstable_cache(getPopulationRankingUncached, ["population-ranking"], {
+  revalidate: SYNC_DATA_REVALIDATE_SECONDS,
+  tags: [SYNC_DATA_TAG],
+});
+
 export interface PopulationGrowth {
   current: number;
   previous: number;
@@ -683,7 +701,7 @@ export interface PopulationGrowth {
 // quelle durée porte la comparaison plutôt que de sous-entendre "6 mois" à
 // tort. Retourne des totaux nuls (changePct null) si moins de 14j d'écart
 // (pas assez pour qu'une variation soit lisible).
-export async function getPopulationGrowth(tcg?: Tcg): Promise<PopulationGrowth> {
+async function getPopulationGrowthUncached(tcg?: Tcg): Promise<PopulationGrowth> {
   const [row] = await sql<{ current: number; previous: number; daysSpan: number | null }[]>`
     WITH bounds AS (
       SELECT MIN(captured_at) AS first_date, MAX(captured_at) AS last_date FROM population_snapshots
@@ -719,3 +737,8 @@ export async function getPopulationGrowth(tcg?: Tcg): Promise<PopulationGrowth> 
     changePct: daysSpan >= 14 && previous > 0 ? ((current - previous) / previous) * 100 : null,
   };
 }
+
+export const getPopulationGrowth = unstable_cache(getPopulationGrowthUncached, ["population-growth"], {
+  revalidate: SYNC_DATA_REVALIDATE_SECONDS,
+  tags: [SYNC_DATA_TAG],
+});
