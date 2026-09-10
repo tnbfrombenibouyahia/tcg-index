@@ -35,18 +35,18 @@ export function CatalogueFilters({
   totalCount,
   resultsLabel = "résultats",
 }: {
-  // Rareté/état brut-gradé n'ont de sens qu'au niveau 3 (cartes d'un set) --
-  // ce sont des filtres de CARTE, pas de génération/set. Masqués plutôt
-  // qu'affichés inertes aux niveaux 1 et 2 de la navigation "poupée russe"
-  // (cf. CatalogueScreen.tsx).
-  stage: "generations" | "sets" | "cards";
+  // Rareté/état brut-gradé n'ont de sens qu'au niveau 2 (cartes d'un set) --
+  // ce sont des filtres de CARTE, pas de set. Masqués plutôt qu'affichés
+  // inertes au niveau 1 (SetBrowser, tous les sets) de la navigation
+  // "poupée russe" (cf. CatalogueScreen.tsx).
+  stage: "sets" | "cards";
   tcg?: Tcg;
   language: string;
   rarity?: string;
   priceState: PriceState;
-  // Filtre posé depuis le niveau 2 (cf. SetBrowser.tsx) -- affiché en chip
+  // Filtre posé depuis le niveau 1 (cf. SetBrowser.tsx) -- affiché en chip
   // retirable plutôt que dans un des Select ci-dessous (pas une liste
-  // fermée, 400+ valeurs possibles). Le retirer revient au niveau 2, même
+  // fermée, 400+ valeurs possibles). Le retirer revient au niveau 1, même
   // effet que le fil d'Ariane (CatalogueBreadcrumb.tsx).
   setCode?: string;
   languages: string[];

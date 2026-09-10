@@ -17,22 +17,19 @@ import type { Tcg } from "@/lib/constants";
 // multiple exact (41k+ items, pagination réelle nécessaire -- le mockup
 // n'en montrait pas, cf. CataloguePager.tsx).
 //
-// Navigation "poupée russe" (demande utilisateur 2026-09-10 : "vraiment
-// comme PokéCardex", remplace la bascule Grille de cartes/Par set du
-// premier jet, cf. CatalogueScreen.tsx pour le détail des 3 niveaux) :
-//   - `era` (choisi au niveau 1) + `set` (choisi au niveau 2) pilotent le
-//     niveau affiché, calculé ICI (seul endroit qui charge les données et
-//     sait donc si `era` correspond à un groupe réellement existant --
-//     sinon repli silencieux au niveau 1, ex. lien obsolète ou `era` mal
-//     orthographié dans l'URL).
+// Navigation "poupée russe" (demande utilisateur 2026-09-10, 3e itération :
+// "les sets de toutes les générations directement, juste des dividers
+// entre chaque génération, comme PokéCardex" -- remplace le niveau
+// "Générations" cliquable à part des deux commits précédents sur cette
+// page, cf. CatalogueScreen.tsx pour le détail des 2 niveaux restants) :
+//   - `set` (choisi dans SetBrowser.tsx) seul pilote le niveau affiché --
+//     tant qu'il est absent, TOUS les sets sont listés (regroupés par
+//     génération avec un simple divider visuel, pas un filtre serveur).
 //   - Une seule requête de données par chargement, jamais
-//     getSetsByGeneration ET browseCatalogue en même temps (niveaux 1/2 vs
-//     niveau 3) -- même raisonnement déjà documenté ici avant ce commit.
+//     getSetsByGeneration ET browseCatalogue en même temps.
 //   - Langue : plus de "Toutes les langues" (demande utilisateur -- comme
 //     PokéCardex, EN ou JP jamais mélangés). Résolue ICI avec repli sur EN
-//     (ou la première langue dispo si EN n'existe pas en base) avant
-//     d'interroger generations/sets/cartes, qui ne savent plus gérer
-//     "langue absente".
+//     (ou la première langue dispo si EN n'existe pas en base).
 // ─────────────────────────────────────────────────────────────────────────────
 
 const PAGE_SIZE = 30;
@@ -56,33 +53,26 @@ export default async function CardQuantCatalogPage({
   const rarity = get("rarity") || undefined;
   const stateRaw = get("state");
   const priceState: PriceState = VALID_STATES.has(stateRaw as PriceState) ? (stateRaw as PriceState) : "any";
-  const era = get("era") || undefined;
   const setCode = get("set") || undefined;
   const pageRaw = Number(get("page"));
   const page = Number.isInteger(pageRaw) && pageRaw >= 1 ? pageRaw : 1;
 
   // Options de filtres d'abord (indépendantes de la langue résolue) --
   // nécessaires pour valider/résoudre `language` avant de lancer la requête
-  // de niveau 1/2/3 ci-dessous.
+  // de niveau 1/2 ci-dessous.
   const [filterOptions, syncLabel] = await Promise.all([getCatalogueFilterOptions(), buildSyncLabel()]);
   const { rarities, languages } = filterOptions;
   const language = languageRaw && languages.includes(languageRaw) ? languageRaw : languages.includes(DEFAULT_LANGUAGE) ? DEFAULT_LANGUAGE : (languages[0] ?? DEFAULT_LANGUAGE);
 
-  // Niveau 3 seulement si `set` est posé -- niveaux 1/2 partagent la même
-  // requête (getSetsByGeneration), `era` ne fait que choisir QUEL groupe du
-  // résultat est affiché (SetBrowser) plutôt que la liste des groupes
-  // (GenerationBrowser).
-  const wantsCards = Boolean(setCode);
+  const stage: "sets" | "cards" = setCode ? "cards" : "sets";
   const [browseResult, setGroups] = await Promise.all([
-    wantsCards ? browseCatalogue({ tcg, language, rarity, priceState, setCode, page, pageSize: PAGE_SIZE }) : Promise.resolve({ rows: [], totalCount: 0 }),
-    wantsCards ? Promise.resolve([]) : getSetsByGeneration({ tcg, language }),
+    stage === "cards" ? browseCatalogue({ tcg, language, rarity, priceState, setCode, page, pageSize: PAGE_SIZE }) : Promise.resolve({ rows: [], totalCount: 0 }),
+    stage === "cards" ? Promise.resolve([]) : getSetsByGeneration({ tcg, language }),
   ]);
   const { rows, totalCount } = browseResult;
 
-  const activeGroup = era ? (setGroups.find((g) => g.label === era) ?? null) : null;
-  const stage: "generations" | "sets" | "cards" = wantsCards ? "cards" : activeGroup ? "sets" : "generations";
-
-  const stageCount = stage === "cards" ? totalCount : stage === "sets" ? (activeGroup?.sets.length ?? 0) : setGroups.length;
+  const setCount = setGroups.reduce((sum, g) => sum + g.sets.length, 0);
+  const stageCount = stage === "cards" ? totalCount : setCount;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const searchParamsForLinks = new URLSearchParams(
     Object.entries(raw).flatMap(([k, v]) => (v === undefined ? [] : [[k, Array.isArray(v) ? v[0] : v]])),
@@ -97,12 +87,10 @@ export default async function CardQuantCatalogPage({
       page={page}
       totalPages={totalPages}
       setGroups={setGroups}
-      activeGroup={activeGroup}
       tcg={tcg}
       language={language}
       rarity={rarity}
       priceState={priceState}
-      era={stage === "generations" ? undefined : era}
       setCode={setCode}
       languages={languages}
       rarities={rarities}
