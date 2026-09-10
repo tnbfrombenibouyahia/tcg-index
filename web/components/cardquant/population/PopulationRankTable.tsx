@@ -14,10 +14,19 @@ function buildHref(base: URLSearchParams, overrides: Record<string, string | und
   return `/population-analysis${qs ? `?${qs}` : ""}`;
 }
 
+// prefetch={false} : même bug que les <Link> carte-par-carte plus bas
+// (incident du 2026-09-06), repere ici le 2026-09-10 -- les 5 TabLink
+// (Tous/Pokemon/One Piece, Toutes langues/EN/JP) sont TOUS dans le
+// viewport des le premier rendu, donc un seul clic sur l'un d'eux en
+// prefetch instantanement les 4 autres (nouvel etat actif = nouveaux
+// <Link> montes = nouvelle rafale de prefetch), chacun une requete
+// Cloud SQL distincte -- jusqu'a 6 requetes simultanees pour 1 clic,
+// confirme via les logs runtime de prod pendant un test utilisateur.
 function TabLink({ active, href, children }: { active: boolean; href: string; children: React.ReactNode }) {
   return (
     <Link
       href={href}
+      prefetch={false}
       style={{ appearance: "none", border: 0, font: "inherit", padding: "4px 11px", borderRadius: 999, background: active ? "var(--ink-000)" : "transparent", color: active ? "var(--white)" : "var(--text-body)", fontSize: 11, whiteSpace: "nowrap" }}
     >
       {children}
@@ -76,8 +85,8 @@ export function PopulationRankTable({
         <div style={{ position: "sticky", top: 0, zIndex: 1, background: "var(--white)", display: "grid", gridTemplateColumns: "minmax(96px, 1.35fr) 22px minmax(56px, 0.7fr) 52px 46px 46px 52px", gap: 5, alignItems: "center", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-muted)", borderBottom: "1px solid var(--border-hairline)", paddingBottom: 5, marginBottom: 2 }}>
           <span>Carte</span>
           <span>Lg</span>
-          <Link href={buildHref(searchParams, { sort: popSort })} style={{ color: sort?.startsWith("total") ? "var(--text-strong)" : "inherit" }}>Pop</Link>
-          <Link href={buildHref(searchParams, { sort: psa10Sort })} style={{ textAlign: "right", color: sort?.startsWith("psa10_") ? "var(--text-strong)" : "inherit" }}>PSA 10</Link>
+          <Link href={buildHref(searchParams, { sort: popSort })} prefetch={false} style={{ color: sort?.startsWith("total") ? "var(--text-strong)" : "inherit" }}>Pop</Link>
+          <Link href={buildHref(searchParams, { sort: psa10Sort })} prefetch={false} style={{ textAlign: "right", color: sort?.startsWith("psa10_") ? "var(--text-strong)" : "inherit" }}>PSA 10</Link>
           <span style={{ textAlign: "right" }}>PSA 9</span>
           <span style={{ textAlign: "right" }}>PSA 8</span>
           <span style={{ textAlign: "right" }}>Brut</span>
