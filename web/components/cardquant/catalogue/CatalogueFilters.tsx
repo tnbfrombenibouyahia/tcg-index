@@ -16,10 +16,15 @@ import type { Tcg } from "@/lib/constants";
 // "Filtres avancés" du mockup omis : aucun filtre supplémentaire n'est
 // implémenté derrière (pas de plage de prix, etc.) -- un bouton qui ne fait
 // rien serait pire qu'un bouton absent.
+//
+// Langue : plus d'option "Toutes les langues" (demande utilisateur
+// 2026-09-10 -- "soit le japonais soit l'anglais mais pas les deux en même
+// temps", comme PokéCardex) -- `language` est désormais TOUJOURS résolu par
+// page.tsx (repli sur EN) avant d'arriver ici, jamais `undefined`.
 const TCG_LABELS: Record<Tcg, string> = { pokemon: "Pokémon", "one-piece": "One Piece" };
 
 export function CatalogueFilters({
-  view,
+  stage,
   tcg,
   language,
   rarity,
@@ -30,22 +35,25 @@ export function CatalogueFilters({
   totalCount,
   resultsLabel = "résultats",
 }: {
-  // Rareté/état brut-gradé n'ont pas de sens sur la vue "Par set" (ce sont
-  // des filtres de CARTE, pas de set) -- masqués plutôt qu'affichés inertes.
-  view: "grid" | "sets";
+  // Rareté/état brut-gradé n'ont de sens qu'au niveau 3 (cartes d'un set) --
+  // ce sont des filtres de CARTE, pas de génération/set. Masqués plutôt
+  // qu'affichés inertes aux niveaux 1 et 2 de la navigation "poupée russe"
+  // (cf. CatalogueScreen.tsx).
+  stage: "generations" | "sets" | "cards";
   tcg?: Tcg;
-  language?: string;
+  language: string;
   rarity?: string;
   priceState: PriceState;
-  // Filtre posé depuis la vue "Par set" (cf. SetBrowser.tsx) -- affiché en
-  // chip retirable plutôt que dans un des Select ci-dessous (pas une liste
-  // fermée, 400+ valeurs possibles).
+  // Filtre posé depuis le niveau 2 (cf. SetBrowser.tsx) -- affiché en chip
+  // retirable plutôt que dans un des Select ci-dessous (pas une liste
+  // fermée, 400+ valeurs possibles). Le retirer revient au niveau 2, même
+  // effet que le fil d'Ariane (CatalogueBreadcrumb.tsx).
   setCode?: string;
   languages: string[];
   rarities: string[];
   totalCount: number;
-  // "résultats" (cartes) en vue grille, "sets" en vue "Par set" -- même
-  // compteur, unité différente selon ce qui est effectivement listé.
+  // "cartes"/"sets"/"générations" selon le niveau affiché -- même compteur,
+  // unité différente selon ce qui est effectivement listé.
   resultsLabel?: string;
 }) {
   const router = useRouter();
@@ -66,8 +74,7 @@ export function CatalogueFilters({
   const gameOptions = ["Tous les jeux", "Pokémon", "One Piece"];
   const gameByLabel: Record<string, Tcg | undefined> = { "Tous les jeux": undefined, Pokémon: "pokemon", "One Piece": "one-piece" };
 
-  const langValue = language ?? "Toutes les langues";
-  const langOptions = ["Toutes les langues", ...languages];
+  const langOptions = languages;
 
   const rarityValue = rarity ?? "Toutes raretés";
   const rarityOptions = ["Toutes raretés", ...rarities];
@@ -79,8 +86,8 @@ export function CatalogueFilters({
   return (
     <section style={{ background: "var(--white)", border: "1px solid var(--border-hairline)", borderRadius: 12, boxShadow: "var(--shadow-card)", padding: "12px 14px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
       <Select value={gameValue} options={gameOptions} size="sm" style={{ width: 150 }} onChange={(v) => pushWith({ tcg: gameByLabel[v] })} />
-      <Select value={langValue} options={langOptions} size="sm" style={{ width: 170 }} onChange={(v) => pushWith({ language: v === "Toutes les langues" ? undefined : v })} />
-      {view === "grid" ? (
+      <Select value={language} options={langOptions} size="sm" style={{ width: 170 }} onChange={(v) => pushWith({ language: v })} />
+      {stage === "cards" ? (
         <>
           <Select value={rarityValue} options={rarityOptions} size="sm" style={{ width: 190 }} onChange={(v) => pushWith({ rarity: v === "Toutes raretés" ? undefined : v })} />
           <Select value={stateValue} options={Object.values(STATE_LABELS)} size="sm" style={{ width: 150 }} onChange={(v) => pushWith({ state: stateByLabel[v] === "any" ? undefined : stateByLabel[v] })} />

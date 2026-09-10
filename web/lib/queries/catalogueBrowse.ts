@@ -51,6 +51,13 @@ export interface CatalogueBrowseRow {
   // null si ce set n'est pas (encore) mappé côté PokéCardex, l'UI se rabat
   // alors sur `setCode` en texte (pas de couverture garantie à 100%).
   setLogoUrl: string | null;
+  // Nom du set (même JOIN que setLogoUrl, colonne en plus -- utilisé par le
+  // fil d'Ariane de la navigation "poupée russe", cf.
+  // components/cardquant/catalogue/CatalogueBreadcrumb.tsx) : évite une
+  // requête getSetsByGeneration séparée rien que pour l'intitulé du set
+  // sélectionné (view "cards" et view "sets" ne se chargent jamais
+  // ensemble, cf. page.tsx).
+  setName: string | null;
 }
 
 interface BrowseRow {
@@ -68,6 +75,7 @@ interface BrowseRow {
   currency: string | null;
   prevPrice: number | null;
   setLogoUrl: string | null;
+  setName: string | null;
 }
 
 function priceStateFragment(priceState?: PriceState) {
@@ -134,7 +142,8 @@ async function browseCatalogueUncached(params: CatalogueBrowseParams): Promise<{
         lp.price,
         lp.currency,
         pv.price         AS "prevPrice",
-        s.logo_url       AS "setLogoUrl"
+        s.logo_url       AS "setLogoUrl",
+        s.name           AS "setName"
       FROM page p
       LEFT JOIN latest_price lp ON lp.item_id = p.id
       LEFT JOIN prev_price pv ON pv.item_id = p.id
@@ -163,6 +172,7 @@ async function browseCatalogueUncached(params: CatalogueBrowseParams): Promise<{
       currency: r.currency,
       priceChangePct: r.price != null && r.prevPrice != null && r.prevPrice !== 0 ? ((r.price - r.prevPrice) / r.prevPrice) * 100 : null,
       setLogoUrl: r.setLogoUrl,
+      setName: r.setName,
     })),
   };
 }
