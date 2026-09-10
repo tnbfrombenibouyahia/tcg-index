@@ -1,5 +1,6 @@
 import { CatalogueScreen } from "@/components/cardquant/catalogue/CatalogueScreen";
 import { browseCatalogue, getCatalogueFilterOptions, type PriceState } from "@/lib/queries/catalogueBrowse";
+import { getSetsByGeneration } from "@/lib/queries/setsBrowse";
 import { buildSyncLabel } from "@/lib/cardquant/syncLabel";
 import type { Tcg } from "@/lib/constants";
 
@@ -15,6 +16,11 @@ import type { Tcg } from "@/lib/constants";
 // PAGE_SIZE 30 : proche de la grille "6 colonnes" du mockup sans être un
 // multiple exact (41k+ items, pagination réelle nécessaire -- le mockup
 // n'en montrait pas, cf. CataloguePager.tsx).
+//
+// Vue "Par set" (`?view=sets`, demande utilisateur 2026-09-10) : ne charge
+// QUE getSetsByGeneration, jamais browseCatalogue en plus -- les deux vues
+// ne sont jamais affichées en même temps (cf. CatalogueScreen.tsx), pas de
+// raison de payer les deux requêtes à chaque chargement.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const PAGE_SIZE = 30;
@@ -37,15 +43,21 @@ export default async function CardQuantCatalogPage({
   const rarity = get("rarity") || undefined;
   const stateRaw = get("state");
   const priceState: PriceState = VALID_STATES.has(stateRaw as PriceState) ? (stateRaw as PriceState) : "any";
+  const setCode = get("set") || undefined;
   const pageRaw = Number(get("page"));
   const page = Number.isInteger(pageRaw) && pageRaw >= 1 ? pageRaw : 1;
+  const view: "grid" | "sets" = get("view") === "sets" ? "sets" : "grid";
 
-  const [{ rows, totalCount }, { rarities, languages }, syncLabel] = await Promise.all([
-    browseCatalogue({ tcg, language, rarity, priceState, page, pageSize: PAGE_SIZE }),
+  const [browseResult, filterOptions, syncLabel, setGroups] = await Promise.all([
+    view === "grid" ? browseCatalogue({ tcg, language, rarity, priceState, setCode, page, pageSize: PAGE_SIZE }) : Promise.resolve({ rows: [], totalCount: 0 }),
     getCatalogueFilterOptions(),
     buildSyncLabel(),
+    view === "sets" ? getSetsByGeneration({ tcg, language }) : Promise.resolve([]),
   ]);
+  const { rows, totalCount } = browseResult;
+  const { rarities, languages } = filterOptions;
 
+  const setCount = setGroups.reduce((sum, g) => sum + g.sets.length, 0);
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const searchParamsForLinks = new URLSearchParams(
     Object.entries(raw).flatMap(([k, v]) => (v === undefined ? [] : [[k, Array.isArray(v) ? v[0] : v]])),
@@ -54,14 +66,17 @@ export default async function CardQuantCatalogPage({
   return (
     <CatalogueScreen
       syncLabel={syncLabel}
+      view={view}
       rows={rows}
-      totalCount={totalCount}
+      totalCount={view === "sets" ? setCount : totalCount}
       page={page}
       totalPages={totalPages}
+      setGroups={setGroups}
       tcg={tcg}
       language={language}
       rarity={rarity}
       priceState={priceState}
+      setCode={setCode}
       languages={languages}
       rarities={rarities}
       searchParams={searchParamsForLinks}
