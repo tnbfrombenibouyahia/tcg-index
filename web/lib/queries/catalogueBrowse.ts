@@ -24,6 +24,11 @@ export interface CatalogueBrowseParams {
   language?: string;
   rarity?: string;
   priceState?: PriceState;
+  // Filtre posé en cliquant une tuile de la vue "Par set" (cf.
+  // components/cardquant/catalogue/SetBrowser.tsx) -- set_code exact, pas de
+  // recherche floue ici (celle-ci existe deja cote lib/queries/setAnalysis.ts
+  // ::searchSets pour l'ecran "Analyse set").
+  setCode?: string;
   page?: number;
   pageSize?: number;
 }
@@ -75,11 +80,12 @@ function priceStateFragment(priceState?: PriceState) {
   return sql``;
 }
 
-function filterFragment({ tcg, language, rarity, priceState }: CatalogueBrowseParams) {
+function filterFragment({ tcg, language, rarity, priceState, setCode }: CatalogueBrowseParams) {
   return sql`
     ${tcg ? sql`AND i.tcg = ${tcg}` : sql``}
     ${language ? sql`AND i.language = ${language}` : sql``}
     ${rarity ? sql`AND i.rarity = ${rarity}` : sql``}
+    ${setCode ? sql`AND i.set_code = ${setCode}` : sql``}
     ${priceStateFragment(priceState)}
   `;
 }
