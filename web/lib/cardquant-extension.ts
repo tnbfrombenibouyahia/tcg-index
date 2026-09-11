@@ -1,18 +1,20 @@
 import type { User } from "firebase/auth";
 
-// ID Chrome Web Store définitif (créé 2026-09-04) -- valeur à restaurer
-// UNE FOIS L'EXTENSION RÉELLEMENT PUBLIÉE (elle ne l'est pas encore, cf.
-// extension/STORE_LISTING.md) : "jkkonkcdkcadadfffonjlhlonmgcbmbm".
-// D'ici là, aucune extension installée nulle part n'a cet ID -- le pointer
-// vers l'ID de dev local (chrome://extensions -> CardQuant, dérivé du
-// chemin du dossier depuis le retrait de `key` du manifeste, cf.
-// extension/README.md) permet au relais ci-dessous d'atteindre la seule
-// extension qui existe réellement pour l'instant (celle de test local).
+// ID Chrome Web Store définitif -- fiche publiée publiquement depuis le
+// 2026-09-06 (constaté dans la Developer Dashboard : "CardQuant, État :
+// Publié - public, ID : jkkonkcdkcadadfffonjlhlonmgcbmbm"), donc l'ID
+// Store est bien réel et permanent désormais (figé par Chrome à la création
+// de l'item, indépendamment des mises à jour de paquet ultérieures).
+// Pointait encore vers l'ID de dev local jusqu'ici (commit du 2026-09-05,
+// qui supposait à tort la fiche non publiée) -- c'était la cause du relais
+// silencieusement cassé pour toute personne ayant installé l'extension
+// depuis le Store (ID réel) pendant que le site visait l'ID de dev local
+// (différent), symptôme : coincé sur "Connexion requise" dans le panneau
+// malgré un compte créé sur le site.
 // Var d'env plutôt qu'une valeur figée : NEXT_PUBLIC_CARDQUANT_EXTENSION_ID
-// prend le dessus si définie (Vercel/​.env.local), pour ne plus jamais avoir
-// à rééditer ce fichier à chaque changement d'ID local -- seul le défaut
-// ci-dessous doit repasser à l'ID Store au moment de la publication.
-const CARDQUANT_EXTENSION_ID = process.env.NEXT_PUBLIC_CARDQUANT_EXTENSION_ID || "pmdembnghhboeceipedchpgiffmclaja";
+// prend le dessus si définie (Vercel/​.env.local) -- utile UNIQUEMENT pour
+// pointer vers un ID de dev local en développement, cf. extension/README.md.
+const CARDQUANT_EXTENSION_ID = process.env.NEXT_PUBLIC_CARDQUANT_EXTENSION_ID || "jkkonkcdkcadadfffonjlhlonmgcbmbm";
 
 type ChromeRuntime = {
   sendMessage: (extensionId: string, message: unknown, callback?: (response: unknown) => void) => void;
