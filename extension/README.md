@@ -126,21 +126,36 @@ Fait :
     n'est pas qu'un mur d'UX. `background.js` rafraîchit le jeton
     automatiquement via `securetoken.googleapis.com` s'il est proche de
     l'expiration (1h de durée de vie, cf. `lib/auth.js::getValidIdToken`).
-  - ⚠️ **Couplage à surveiller à la publication Store** : le relais
-    (`externally_connectable` du manifest + `CARDQUANT_EXTENSION_ID` codé
-    en dur dans `web/lib/cardquant-extension.ts`) référence l'ID d'extension.
-    Le champ `key` avait été figé dans `manifest.json` pour garder cet ID
-    stable en dev (`diipacpliojnijgdhcgjkjhlipednoch`) — mais le Developer
-    Dashboard **refuse tout upload dont le manifeste contient `key`**
-    ("Le champ key n'est pas autorisé dans le fichier manifeste", constaté
-    2026-09-04), il a donc été retiré. L'ID local (dev, extension non
-    empaquetée) redevient dérivé du chemin du dossier, différent de l'ID
-    définitif que Chrome assigne à la création de l'item sur le Store (visible
-    dans le dashboard dès le brouillon, pas besoin d'attendre l'approbation).
-    Une fois cet ID connu : mettre à jour `CARDQUANT_EXTENSION_ID` côté site
-    **et redéployer** (pas juste un réglage Console), sans quoi le relais
-    silencieusement ne fait plus rien (jamais d'erreur bloquante par design,
-    cf. docstring de `relaySessionToExtension`).
+  - ✅ **Incident 2026-09-11 et correctif de fond** : la fiche Store est
+    publique depuis le 2026-09-06 (ID définitif `jkkonkcdkcadadfffonjlhlonmgcbmbm`,
+    vérifié dans la Developer Dashboard), mais `CARDQUANT_EXTENSION_ID` côté
+    site ciblait encore l'ID de dev local jusqu'au 2026-09-11 — un ami ayant
+    installé l'extension avait un ID différent, `chrome.runtime.sendMessage`
+    ne trouvait personne au bout, le panneau restait coincé sur "Connexion
+    requise" malgré un compte créé sur le site (jamais d'erreur bloquante
+    par design, cf. docstring de `relaySessionToExtension`). Un premier
+    correctif (juste remplacer la valeur de l'ID visé) aurait laissé le même
+    défaut structurel en place : **un seul ID codé en dur ne peut jamais
+    représenter les deux canaux d'installation qui existent réellement**
+    (Store publié, permanent — vs. non empaquetée, dérivée du chemin du
+    dossier sans `key`). Corrigé à la racine :
+    - `manifest.json` : `key` **restauré** (même clé publique qu'avant son
+      retrait le 2026-09-04, cf. historique Git — ce n'est PAS un secret,
+      c'est une clé publique, sans risque à committer). Fige l'ID de toute
+      extension non empaquetée chargée depuis ce dossier/ce zip à
+      `diipacpliojnijgdhcgjkjhlipednoch`, peu importe le chemin sur le
+      disque de qui l'installe (dev local, testeur direct via zip partagé).
+      Le Developer Dashboard refuse toujours `key` à l'upload d'un paquet
+      Store ("Le champ key n'est pas autorisé dans le fichier manifeste") —
+      donc **retirer `key` juste avant de packager un nouvel upload Store**,
+      le remettre aussitôt après (le zip de dev/testeurs direct, lui, le
+      garde en permanence).
+    - `web/lib/cardquant-extension.ts` : `CARDQUANT_EXTENSION_ID` (un seul
+      ID) devient `CARDQUANT_EXTENSION_IDS` (liste) — le relais et la
+      détection d'installation essaient désormais l'ID Store **et** l'ID
+      dev/testeur à chaque fois, best-effort sur chacun. Fonctionne quel que
+      soit le canal d'installation de la personne en face, plus besoin de
+      redéployer le site à chaque changement d'ID local.
 
 - **Panneau v2 (score, moy. ventes, liquidité, comparaison langue, display
   scellé, grade éditable)** : contrat étendu (`pricing_api/schemas.py`),
