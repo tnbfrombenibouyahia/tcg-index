@@ -348,7 +348,7 @@ def post_verdict(req: VerdictRequest, _user: dict = Depends(require_user)) -> Ve
         signals = compute_extended_signals(
             outcome.card, req.grade,
             displayed_price=req.displayed_price,
-            reference_price=outcome.verdict.reference_price if outcome.verdict else None,
+            reference_price=outcome.reference_price,
             reference_url=reference_url,
             confidence=confidence,
         )
@@ -358,7 +358,7 @@ def post_verdict(req: VerdictRequest, _user: dict = Depends(require_user)) -> Ve
         status=outcome.status,
         card=_card_out(outcome.card, confidence) if outcome.card else None,
         verdict=outcome.verdict.label if outcome.verdict else None,
-        reference_price=outcome.verdict.reference_price if outcome.verdict else None,
+        reference_price=outcome.reference_price,
         displayed_price=req.displayed_price, grade=req.grade,
         sources_compared=[
             SourcePriceOut(source=q.source, grade=q.grade, price=q.price, currency=q.currency, url=q.url)
