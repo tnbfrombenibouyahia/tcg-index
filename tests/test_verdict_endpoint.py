@@ -48,6 +48,7 @@ class TestPostVerdict:
         outcome = VerdictOutcome(
             status="ok", card=card,
             verdict=Verdict(label="green", ratio=0.8, reference_price=10.0, displayed_price=8.0, grade="ungraded"),
+            reference_price=10.0,
             sources_compared=[],
         )
         monkeypatch.setattr("pricing_api.main.compute_verdict_for_card", lambda *a, **k: outcome)
@@ -101,10 +102,32 @@ class TestPostVerdict:
                             headers=AUTH_HEADERS)
         assert resp.status_code == 422
 
-    def test_missing_displayed_price_is_rejected(self, monkeypatch):
+    def test_missing_displayed_price_identifies_without_verdict(self, monkeypatch):
+        # Fiche de référence (ex. PokéCardex) plutôt qu'une annonce à vendre :
+        # displayed_price absent n'est plus rejeté (contrairement au 422
+        # d'avant ce comportement) -- la carte est identifiée, son prix de
+        # référence exposé, mais aucun verdict vert/jaune/rouge (rien à
+        # classer sans montant affiché), cf. shared/verdict.py::
+        # compute_verdict_for_card.
         monkeypatch.setattr("pricing_api.main.verify_id_token", lambda token: {"uid": "u1", "email": "u@example.com"})
-        resp = client.post("/verdict", json={"text": "Izo"}, headers=AUTH_HEADERS)
-        assert resp.status_code == 422
+        card = _card()
+        monkeypatch.setattr(
+            "pricing_api.main.identify_card",
+            lambda text=None, image_url=None: MatchResult(status="matched", card=card, confidence=1.0, strategy="code"),
+        )
+        outcome = VerdictOutcome(status="ok", card=card, reference_price=10.0, sources_compared=[])
+        monkeypatch.setattr("pricing_api.main.compute_verdict_for_card", lambda *a, **k: outcome)
+        monkeypatch.setattr("pricing_api.main.compute_extended_signals", lambda *a, **k: ExtendedSignals())
+
+        resp = client.post("/verdict", json={"text": "IZO ST22-002 SR"}, headers=AUTH_HEADERS)
+
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["status"] == "ok"
+        assert body["verdict"] is None
+        assert body["displayed_price"] is None
+        assert body["reference_price"] == 10.0
+        assert body["card"]["card_id"] == 1
 
 
 class TestHealth:
