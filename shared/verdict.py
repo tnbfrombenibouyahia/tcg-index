@@ -59,6 +59,14 @@ class VerdictOutcome:
     card: Card | None = None
     verdict: Verdict | None = None
     sources_compared: list[PriceQuote] = field(default_factory=list)
+    # Prix de référence marché -- dupliqué de verdict.reference_price mais
+    # décorrélé de lui : renseigné même quand `verdict` est None (carte
+    # identifiée + prix de référence connu, mais AUCUN prix affiché fourni --
+    # cf. compute_verdict_for_card, cas d'une fiche de référence type
+    # PokéCardex plutôt qu'une annonce à vendre). L'appelant (pricing_api)
+    # n'a ainsi jamais besoin de piocher dans `verdict` juste pour afficher
+    # "cette carte vaut environ X" sans verdict vert/jaune/rouge.
+    reference_price: float | None = None
 
 
 def median_reference_price(prices: list[float]) -> float | None:
@@ -89,7 +97,7 @@ def classify(displayed_price: float, reference_price: float, grade: str, *,
                     displayed_price=displayed_price, grade=grade)
 
 
-def compute_verdict_for_card(displayed_price: float, card_id: int, grade: str = "ungraded", *,
+def compute_verdict_for_card(displayed_price: float | None, card_id: int, grade: str = "ungraded", *,
                               sources: list[PriceSource] | None = None,
                               ttl_hours: float | None = None) -> VerdictOutcome:
     """Fonction demandée par la spec (section 3) : (prix_affiché, card_id,
@@ -98,6 +106,14 @@ def compute_verdict_for_card(displayed_price: float, card_id: int, grade: str = 
     autre grade). `sources` par défaut = [PriceChartingSource()] (seule
     source branchée en MVP, cf. pricing/sources/) -- injectable pour les
     tests ou pour étendre plus tard sans changer la signature.
+
+    `displayed_price=None` -- carte identifiée sans annonce à comparer (ex.
+    fiche de référence PokéCardex plutôt qu'une annonce à vendre, cf.
+    pricing_api/schemas.py::VerdictRequest.displayed_price) : la carte et son
+    prix de référence sont quand même résolus et exposés
+    (VerdictOutcome.reference_price), seul `classify()` est sauté faute de
+    montant à classer -- `verdict` reste None plutôt qu'un vert/jaune/rouge
+    deviné sans annonce réelle.
 
     LIMITE CONNUE (non traitée dans cette itération) : aucune conversion de
     devise -- si les sources renvoient des devises différentes entre elles,
@@ -121,8 +137,11 @@ def compute_verdict_for_card(displayed_price: float, card_id: int, grade: str = 
     if reference is None:
         return VerdictOutcome(status="no_reference_price", card=card, sources_compared=quotes)
 
+    if displayed_price is None:
+        return VerdictOutcome(status="ok", card=card, reference_price=reference, sources_compared=quotes)
+
     verdict = classify(displayed_price, reference, grade)
-    return VerdictOutcome(status="ok", card=card, verdict=verdict, sources_compared=quotes)
+    return VerdictOutcome(status="ok", card=card, verdict=verdict, reference_price=reference, sources_compared=quotes)
 
 
 @dataclass

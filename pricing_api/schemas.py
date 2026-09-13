@@ -12,7 +12,12 @@ from pricing.models import KNOWN_GRADES
 class VerdictRequest(BaseModel):
     text: str | None = None
     image_url: str | None = None
-    displayed_price: float
+    # None = pas d'annonce à comparer, juste une carte à identifier (ex.
+    # fiche de référence PokéCardex plutôt qu'une annonce à vendre) --
+    # identify_card() + prix de référence/signaux étendus tournent quand
+    # même, seul le verdict vert/jaune/rouge est sauté faute de montant à
+    # classer (cf. shared/verdict.py::compute_verdict_for_card).
+    displayed_price: float | None = None
     grade: str = "ungraded"
     # Sélection manuelle par l'utilisateur dans le picker du panneau
     # (candidat cliqué sur un statut 'ambiguous' précédent) -- quand
@@ -218,7 +223,7 @@ class VerdictResponse(BaseModel):
     candidates: list[CardCandidateOut] = []
     verdict: str | None = None  # 'green' | 'yellow' | 'red'
     reference_price: float | None = None
-    displayed_price: float
+    displayed_price: float | None = None  # cf. VerdictRequest.displayed_price
     grade: str
     sources_compared: list[SourcePriceOut] = []
     message: str | None = None

@@ -1,9 +1,10 @@
 /**
- * CardQuant -- panneau latéral coulissant sur les annonces eBay (page item
- * individuelle, cf. manifest.json content_scripts.matches). Strictement
- * additif : n'ajoute qu'un seul noeud (#cardquant-root) au DOM de la page
- * hôte, ne modifie ni ne masque rien d'existant (cf. tcg-index-handoff.md
- * §09 -- règle anti "ad injection"/"deceptive install" du Chrome Web Store).
+ * CardQuant -- panneau latéral coulissant sur les annonces eBay, Mercari JP,
+ * GradedCardCenter (GCC) et Vinted (page item individuelle, cf.
+ * manifest.json content_scripts.matches). Strictement additif : n'ajoute
+ * qu'un seul noeud (#cardquant-root) au DOM de la page hôte, ne modifie ni
+ * ne masque rien d'existant (cf. tcg-index-handoff.md §09 -- règle anti
+ * "ad injection"/"deceptive install" du Chrome Web Store).
  *
  * Habillage visuel aligné sur "CardQuant Panel" (design system Slabline, cf.
  * mémoire projet "cardquant-rebrand") -- même vocabulaire/mêmes couleurs que
@@ -17,6 +18,17 @@
  * Sélecteurs DOM eBay best-effort, même philosophie que le reste du
  * scraping de ce repo (cf. ingestion/sources/*) : eBay change son markup
  * sans préavis, à ajuster ici si le panneau reste vide sur une annonce.
+ * Mercari JP n'utilise PAS ce chemin -- son schema.org JSON-LD (balise
+ * <script type="application/ld+json">, cf. readMercariProductJsonLd) porte
+ * déjà titre/prix/devise/image en un seul bloc structuré, bien plus stable
+ * qu'un scraping CSS (vérifié en conditions réelles le 2026-09-11 sur
+ * plusieurs annonces jp.mercari.com). SITE_ADAPTERS ci-dessous choisit la
+ * bonne extraction selon location.hostname -- un seul point d'entrée
+ * (requestVerdict) pour toutes les marketplaces, le reste du panneau
+ * (rendu du verdict, picker de désambiguïsation, favoris...) ne connaît
+ * aucune marketplace : pricing_api ne reçoit jamais que texte/image + prix
+ * + devise (cf. background.js::CARDQUANT_GET_VERDICT), jamais un nom de
+ * site.
  *
  * "Compte requis avant toute utilisation" (§01/§09) : le panneau exige une
  * session avant d'appeler pricing_api (vérifiée aussi côté serveur, cf.
@@ -48,7 +60,14 @@
   const IMAGE_SELECTORS = [".ux-image-carousel-item.active img", ".ux-image-carousel-item img"];
 
   const VERDICT_LABELS = { green: "Bonne affaire", yellow: "Prix normal", red: "Survendu" };
-  const CURRENCY_SYMBOLS = { USD: "$", EUR: "€", GBP: "£" };
+  const CURRENCY_SYMBOLS = {
+    USD: "$", EUR: "€", GBP: "£", JPY: "¥",
+    // Marchés Vinted hors zone euro/GBP/USD (cf. extractVintedListing) --
+    // uniquement pour l'affichage du montant d'origine (originalNote), la
+    // conversion elle-même (lib/fx.js) marche déjà avec n'importe quel code
+    // ISO couvert par Frankfurter.
+    SEK: "kr", DKK: "kr", PLN: "zł", CZK: "Kč", HUF: "Ft", RON: "lei",
+  };
   const LANGUAGE_NAMES = { EN: "Anglaise", JP: "Japonaise", FR: "Française" };
   // Mini-drapeaux dessinés en SVG (grille 21x14 "pixel art", cf. classes
   // .cardquant-flag/.cq-* de panel.css pour les couleurs) -- repère de
@@ -192,6 +211,240 @@
     if (/€|EUR/i.test(raw)) return "EUR";
     if (/£|GBP/i.test(raw)) return "GBP";
     return null;
+  }
+
+  // -- Adaptateur Mercari JP ------------------------------------------------
+  // Contrairement à eBay (sélecteurs CSS best-effort ci-dessus), jp.mercari.
+  // com publie un bloc schema.org structuré (<script type="application/
+  // ld+json">, @type "Product") sur chaque fiche -- titre, prix (nombre
+  // déjà propre, pas de virgule/espace à parser), devise ISO ("JPY") et
+  // photos (déjà en résolution "orig", pas de gabarit à deviner comme pour
+  // le CDN eBay). Vérifié en conditions réelles le 2026-09-11 sur plusieurs
+  // annonces distinctes : structure identique à chaque fois -- ce chemin
+  // n'a donc PAS besoin des heuristiques de parsePrice/detectCurrency
+  // (formats texte multi-locale), qui restent spécifiques à eBay.
+  function readMercariProductJsonLd() {
+    const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+    for (const script of scripts) {
+      let data;
+      try {
+        data = JSON.parse(script.textContent);
+      } catch {
+        continue; // bloc JSON-LD malformé/partiel -- on essaie le suivant plutôt que d'échouer tout de suite
+      }
+      const nodes = data && Array.isArray(data["@graph"]) ? data["@graph"] : [data];
+      const product = nodes.find((n) => n && n["@type"] === "Product");
+      if (product) return product;
+    }
+    return null;
+  }
+
+  function extractMercariListing() {
+    const product = readMercariProductJsonLd();
+    if (!product) return { title: null, price: null, currency: null, imageUrl: null };
+    const rawPrice = product.offers && product.offers.price;
+    const price = typeof rawPrice === "number" ? rawPrice : parseFloat(rawPrice);
+    const images = Array.isArray(product.image) ? product.image : product.image ? [product.image] : [];
+    return {
+      title: product.name || null,
+      price: Number.isFinite(price) ? price : null,
+      currency: (product.offers && product.offers.priceCurrency) || null,
+      imageUrl: images[0] || null,
+    };
+  }
+
+  function extractEbayListing() {
+    const rawPrice = queryFirstText(PRICE_SELECTORS);
+    return {
+      title: queryFirstText(TITLE_SELECTORS),
+      price: parsePrice(rawPrice),
+      currency: detectCurrency(rawPrice),
+      imageUrl: findListingImageUrl(),
+    };
+  }
+
+  // -- Adaptateur GradedCardCenter (GCC) ------------------------------------
+  // Couvre à la fois "Achat à prix fixe" ET les enchères en direct de GCC :
+  // vérifié en conditions réelles le 2026-09-12 que les deux partagent
+  // exactement la même page (gradedcardcenter.com/item/<uuid>), le même
+  // schema.org JSON-LD et le même sélecteur de prix -- une fiche d'enchère
+  // affiche juste l'enchère en cours à la place du prix fixe, rien d'autre
+  // ne change côté DOM. Comme pour une enchère eBay déjà supportée
+  // aujourd'hui, le prix lu est celui affiché À CET INSTANT (verdict
+  // ponctuel, cf. en-tête de fichier) -- il peut monter avant la fin de
+  // l'enchère, ce panneau ne prédit rien de plus qu'avec eBay.
+  //
+  // Contrairement à Mercari JP, le JSON-LD d'une fiche "prix fixe" GCC ne
+  // porte PAS de prix structuré (pas de champ `offers`) -- seulement nom/
+  // catégorie/attributs de gradation/images, déjà bien plus fiable que de
+  // reconstruire ces infos depuis le titre affiché. Une fiche d'enchère,
+  // elle, EXPOSE un `offers.price`/`offers.priceCurrency` (l'enchère en
+  // cours) -- mais ce bloc JSON-LD est rendu côté serveur et n'est pas
+  // forcément mis à jour en direct comme l'est l'affichage React pendant
+  // l'enchère ; le prix reste donc un scraping DOM (fiable sur les deux
+  // formats, vérifié sur plusieurs fiches distinctes -- carte gradée à prix
+  // fixe, produit scellé, et deux lots d'enchère de sets/langues/sociétés
+  // de gradation différentes), plus à jour que ce JSON-LD, avec un repli
+  // par motif si la classe CSS change à un futur déploiement du site.
+  const GCC_PRICE_SELECTORS = [".text-3xl.font-semibold.text-white.md\\:text-5xl"];
+
+  function readGccProductJsonLd() {
+    const script = document.querySelector('script[type="application/ld+json"]');
+    if (!script) return null;
+    try {
+      const data = JSON.parse(script.textContent);
+      return data && data["@type"] === "Product" ? data : null;
+    } catch {
+      return null;
+    }
+  }
+
+  // Repli si GCC_PRICE_SELECTORS ne matche plus rien : premier texte
+  // "<montant><devise>" de la page (élément feuille, sans enfant) -- la
+  // fiche affiche son prix avant tout autre montant (historique des ventes,
+  // axes du graphique...), donc le premier trouvé est fiable en pratique.
+  function findFirstPriceLeaf() {
+    const el = Array.from(document.querySelectorAll("body *")).find(
+      (node) => node.children.length === 0 && /^\d[\d\s.,]*\s*[€$£]$/.test(node.textContent.trim())
+    );
+    return el ? el.textContent.trim() : null;
+  }
+
+  // Titre reconstruit depuis les attributs structurés (additionalProperty)
+  // plutôt que depuis un texte déjà écrit par GCC -- même esprit que
+  // Mercari : GCC ne fournit pas un "titre d'annonce" unique en une seule
+  // chaîne (product.name seul, ex. "PSA 10 Carapuce", n'a ni set ni
+  // édition ni numéro -- pas assez pour identify_card côté pricing_api).
+  // parsePrice/detectCurrency (définis pour eBay ci-dessus) sont réutilisés
+  // tels quels : le format "280€"/"1 234,56€" est le même format FR.
+  function extractGccListing() {
+    const product = readGccProductJsonLd();
+    if (!product) return { title: null, price: null, currency: null, imageUrl: null };
+    const props = {};
+    for (const p of product.additionalProperty || []) props[p.name] = p.value;
+    const title = [product.name, props.Category, props.Set, props.Edition, props.Reference, props.Language, props.Rarity, props.Variety]
+      .filter(Boolean)
+      .join(" ");
+    const images = Array.isArray(product.image) ? product.image : [];
+    const rawPrice = queryFirstText(GCC_PRICE_SELECTORS) || findFirstPriceLeaf();
+    return {
+      title: title || null,
+      price: parsePrice(rawPrice),
+      currency: detectCurrency(rawPrice),
+      imageUrl: images[0] || null,
+    };
+  }
+
+  // -- Adaptateur Vinted -----------------------------------------------------
+  // vinted.<tld>/items/<id>-<slug> -- app React avec des `data-testid` sur
+  // (quasi) tout, contrairement aux classes utilitaires Tailwind de GCC :
+  // sélecteurs stables et identiques sur les 6 marchés vérifiés en
+  // conditions réelles le 2026-09-12 (fr, de, co.uk, se, pl, com -- devises
+  // EUR/GBP/SEK/PLN/USD, même structure malgré des langues/formats de prix
+  // différents), donc étendus par extrapolation à tous les marchés Vinted
+  // listés dans manifest.json (même appli, seul le TLD change) sans avoir
+  // vérifié chacun un par un -- liste des marchés confirmée via requêtes
+  // HTTP directes (pas de domaine deviné).
+  //
+  // Une fiche Vinted affiche DEUX montants : `item-price` (prix demandé par
+  // le vendeur) et `total-combined-price` (ce montant + Protection
+  // Acheteurs, obligatoire -- ce que l'acheteur paie réellement pour
+  // l'objet, hors livraison). Choix utilisateur (2026-09-12) : comparer le
+  // second au prix de référence, plus honnête même si ça biaise légèrement
+  // la comparaison vs les autres sites qui n'incluent pas ce type de frais
+  // -- cf. mémoire projet "cardquant-multi-marketplace". `item-price` reste
+  // un repli si jamais `total-combined-price` est absent d'un type de fiche
+  // (don, échange...).
+  const VINTED_PRICE_SELECTORS = ['[data-testid="total-combined-price"]', '[data-testid="item-price"]'];
+
+  // Devise déduite du marché (sous-domaine) plutôt que du texte affiché :
+  // plusieurs marchés Vinted partagent le même symbole "kr" (Suède ET
+  // Danemark) -- un texte seul ("480,00 kr", vérifié en conditions réelles
+  // sur vinted.se) ne dit pas lequel. La devise d'un marché Vinted n'est de
+  // toute façon jamais un choix de l'acheteur, contrairement à eBay où la
+  // devise dépend du TLD ET parfois de la conversion locale de la page --
+  // ici host -> devise est une donnée fixe. `detectCurrency(rawPrice)` reste
+  // un repli si jamais un futur marché Vinted n'est pas encore dans cette
+  // liste (nouveau domaine ajouté par Vinted avant que ce fichier le soit).
+  const VINTED_CURRENCY_BY_HOST = {
+    "www.vinted.com": "USD",
+    "www.vinted.co.uk": "GBP",
+    "www.vinted.se": "SEK",
+    "www.vinted.dk": "DKK",
+    "www.vinted.pl": "PLN",
+    "www.vinted.cz": "CZK",
+    "www.vinted.hu": "HUF",
+    "www.vinted.ro": "RON",
+    // Reste des marchés Vinted listés dans manifest.json : zone euro.
+    "www.vinted.fr": "EUR", "www.vinted.de": "EUR", "www.vinted.at": "EUR",
+    "www.vinted.es": "EUR", "www.vinted.it": "EUR", "www.vinted.nl": "EUR",
+    "www.vinted.be": "EUR", "www.vinted.pt": "EUR", "www.vinted.lu": "EUR",
+    "www.vinted.ie": "EUR", "www.vinted.si": "EUR", "www.vinted.lt": "EUR",
+    "www.vinted.lv": "EUR", "www.vinted.ee": "EUR", "www.vinted.fi": "EUR",
+    "www.vinted.gr": "EUR", "www.vinted.sk": "EUR",
+  };
+
+  function extractVintedListing() {
+    const rawPrice = queryFirstText(VINTED_PRICE_SELECTORS);
+    const imageEl = document.querySelector('[data-testid="item-photo-1--img"]');
+    return {
+      title: queryFirstText(["h1"]),
+      price: parsePrice(rawPrice),
+      currency: VINTED_CURRENCY_BY_HOST[location.hostname] || detectCurrency(rawPrice),
+      imageUrl: imageEl?.src || null,
+    };
+  }
+
+  // -- Adaptateur PokéCardex -------------------------------------------------
+  // pokecardex.com/[<locale>/]carte/<id> -- fiche de RÉFÉRENCE (pas une
+  // annonce en vente, cf. `priceOptional` dans SITE_ADAPTERS) : le panneau y
+  // identifie la carte et affiche ses signaux de marché (prix de référence,
+  // population, liquidité...) sans jamais de verdict vert/jaune/rouge --
+  // rien à classer sans montant affiché, cf. shared/verdict.py::
+  // compute_verdict_for_card et pricing_api/schemas.py::VerdictRequest.
+  // displayed_price (Optional depuis le 2026-09-12 exactement pour ce cas).
+  //
+  // Aucun ancrage DOM exploitable ici -- ni <h1>, ni data-testid, ni
+  // schema.org JSON-LD (vérifié en conditions réelles le 2026-09-12, pire
+  // que GCC). En revanche `document.title` suit un gabarit fixe et fiable
+  // sur toutes les fiches testées (FR/EN, carte normale/promo) : "{Nom}
+  // ({Set} {num}[/{total}]) | PokéCardex" -- ex. "Chenipan (Étincelles
+  // 1/106) | PokéCardex", "Caterpie (Flashfire 1/106) | PokéCardex" sur la
+  // même carte en anglais. On retire juste le suffixe constant plutôt que
+  // de reparser nom/set/numéro séparément : le texte restant est déjà une
+  // entrée valide pour identify_card, aussi tolérant aux parenthèses/
+  // chiffres qu'un titre eBay bruyant (cf. pricing/matching.py).
+  function extractPokecardexListing() {
+    const title = document.title.replace(/\s*\|\s*Pok[ée]Cardex\s*$/i, "").trim() || null;
+    // Scan pleine résolution -- même bascule "?class=..." -> "?class=original"
+    // que ingestion/sources/pokecardex_scrape.py côté serveur (une image plus
+    // grande améliore l'OCR, cf. findListingImageUrl plus haut pour la même
+    // idée côté eBay).
+    const imgEl = document.querySelector('img[src*="pokecardex-scans.b-cdn.net"]');
+    const imageUrl = imgEl ? imgEl.src.replace(/\?class=\w+$/, "?class=original") : null;
+    return { title, price: null, currency: null, imageUrl };
+  }
+
+  // -- Sélection d'adaptateur par marketplace -------------------------------
+  // Un seul point d'entrée (requestVerdict, plus bas) pour toutes les
+  // marketplaces : chacune expose juste `extract()` -> { title, price,
+  // currency, imageUrl }, la même forme quelle que soit la source. Pour
+  // ajouter un site, une seule entrée ici (+ ses matches/host_permissions
+  // dans manifest.json) -- rien d'autre dans ce fichier ne connaît le nom
+  // d'une marketplace (cf. en-tête de fichier).
+  const SITE_ADAPTERS = [
+    { test: (host) => /(^|\.)ebay\.[a-z.]+$/i.test(host), extract: extractEbayListing },
+    { test: (host) => host === "jp.mercari.com", extract: extractMercariListing },
+    { test: (host) => /(^|\.)vinted\.[a-z.]+$/i.test(host), extract: extractVintedListing },
+    { test: (host) => /(^|\.)gradedcardcenter\.com$/i.test(host), extract: extractGccListing },
+    // priceOptional : fiche de référence (pas d'annonce à vendre), cf.
+    // extractPokecardexListing et requestVerdict plus bas.
+    { test: (host) => host === "www.pokecardex.com", extract: extractPokecardexListing, priceOptional: true },
+  ];
+
+  function currentSiteAdapter() {
+    const host = location.hostname;
+    return SITE_ADAPTERS.find((a) => a.test(host)) || SITE_ADAPTERS[0];
   }
 
   function escapeHtml(text) {
@@ -815,13 +1068,19 @@
     const originalNote = original
       ? ` <span class="cardquant-muted-inline">(${original.amount.toFixed(2)} ${CURRENCY_SYMBOLS[original.currency] || original.currency})</span>`
       : "";
-    return `
-      <div class="cardquant-section cardquant-price-analysis">
-        <p class="cardquant-section-title">Analyse de prix</p>
+    // Pas de ligne "Prix d'annonce" quand il n'y en a pas (fiche de
+    // référence type PokéCardex plutôt qu'une annonce à vendre, cf.
+    // SITE_ADAPTERS priceOptional) -- un "—" à la place d'un vrai montant
+    // laisserait croire qu'un prix a été manqué plutôt que jamais fourni.
+    const leadRow = data.displayed_price != null ? `
         <div class="cardquant-price-row cardquant-price-row--lead">
           <span>Prix d'annonce</span>
           <span class="cardquant-price-value">${formatMoney(data.displayed_price, "USD")}${originalNote}</span>
-        </div>
+        </div>` : "";
+    return `
+      <div class="cardquant-section cardquant-price-analysis">
+        <p class="cardquant-section-title">Analyse de prix</p>
+        ${leadRow}
         ${rows.map((r) => `
           <div class="cardquant-price-row">
             <span>${escapeHtml(r.label)}${r.sub ? ` <span class="cardquant-muted-inline">(${escapeHtml(r.sub)})</span>` : ""}</span>
@@ -1237,11 +1496,18 @@
   // pas ?), toujours confirmé par un aller-retour réseau à part (cf.
   // refreshFavoriteStatus plus bas), même discipline que le reste du
   // panneau ("ne jamais deviner", §01 handoff).
-  function renderActionsRow(itemId) {
+  // "Noter l'achat" journalise le prix affiché de l'annonce (cf. son
+  // handler de clic plus bas) -- masqué quand il n'y en a pas (fiche de
+  // référence type PokéCardex, cf. SITE_ADAPTERS priceOptional) : rien à
+  // journaliser sans achat réel, plutôt que d'afficher un bouton qui
+  // échouerait systématiquement (buy_price est requis côté pricing_api).
+  // "Favoris" reste affiché : mettre une carte de côté a du sens même sans
+  // prix affiché.
+  function renderActionsRow(itemId, hasPrice) {
     return `
       <div class="cardquant-actions-row">
         <button type="button" class="cardquant-action-btn cardquant-favorite-btn" data-item-id="${itemId}" data-favorited="unknown" disabled>${icon("eye")}<span>…</span></button>
-        <button type="button" class="cardquant-action-btn cardquant-portfolio-btn">${icon("wallet")}<span>Noter l'achat</span></button>
+        ${hasPrice ? `<button type="button" class="cardquant-action-btn cardquant-portfolio-btn">${icon("wallet")}<span>Noter l'achat</span></button>` : ""}
       </div>
       <p class="cardquant-favorite-note" hidden></p>
       <p class="cardquant-portfolio-note" hidden></p>
@@ -1258,7 +1524,7 @@
       ${renderGauge(data.opportunity_score)}
       ${renderPriceAnalysis(data, original)}
       ${renderAnalysisCard(data)}
-      ${renderActionsRow(data.card.card_id)}
+      ${renderActionsRow(data.card.card_id, data.displayed_price != null)}
       ${renderSealedDisplay(data.sealed_display_price)}
       ${renderVerificationLinks(data)}
       ${renderFooter()}
@@ -1326,7 +1592,7 @@
       // déjà essayé l'image pour cette tentative (cf. requestVerdict --
       // pas de 3e passage, cohérent avec "ne jamais deviner" §01 : si OCR
       // échoue aussi, on s'arrête là).
-      const tryImage = !lastAttemptUsedImage && findListingImageUrl()
+      const tryImage = !lastAttemptUsedImage && currentSiteAdapter().extract().imageUrl
         ? '<button type="button" class="cardquant-try-image">Essayer avec la photo de l\'annonce</button>'
         : "";
       return `<p>${escapeHtml(data.message || "Carte non identifiée.")}</p>${tryImage}<button type="button" class="cardquant-signout">Se déconnecter</button>`;
@@ -1413,44 +1679,54 @@
     if (selectedCardId != null) confirmedCardId = selectedCardId;
     panel.setLoading();
     lastAttemptUsedImage = useImage;
-    const title = queryFirstText(TITLE_SELECTORS);
-    const rawPrice = queryFirstText(PRICE_SELECTORS);
-    const displayedPrice = parsePrice(rawPrice);
+    // Extraction dépendante de la marketplace courante (cf. SITE_ADAPTERS) --
+    // tout ce qui suit (grade, devise, appel réseau, rendu) est générique,
+    // aucune des lignes ci-dessous ne connaît le site sur lequel on est.
+    const adapter = currentSiteAdapter();
+    const listing = adapter.extract();
+    const { title, imageUrl } = listing;
+    const displayedPrice = listing.price;
 
-    let imageUrl = null;
     if (useImage) {
-      imageUrl = findListingImageUrl();
       if (!imageUrl) {
         panel.setError("Aucune photo trouvable sur cette annonce.");
         return;
       }
     } else if (!title) {
-      panel.setError("Titre ou prix introuvable sur cette page (sélecteurs à ajuster ?).");
+      panel.setError("Titre introuvable sur cette page (sélecteur à ajuster ?).");
       return;
     }
-    if (displayedPrice == null) {
-      panel.setError("Titre ou prix introuvable sur cette page (sélecteurs à ajuster ?).");
-      return;
+
+    let currency = null;
+    // priceOptional (cf. SITE_ADAPTERS -- pokecardex.com) : fiche de
+    // référence plutôt qu'une annonce à vendre, aucun prix affiché à
+    // trouver ni à convertir. Site normal (eBay/Mercari/GCC/Vinted) : un
+    // prix/une devise manquants restent une vraie erreur (sélecteurs à
+    // ajuster), jamais une comparaison silencieusement sautée.
+    if (!adapter.priceOptional) {
+      if (displayedPrice == null) {
+        panel.setError("Prix introuvable sur cette page (sélecteur à ajuster ?).");
+        return;
+      }
+      // pricing_api ne raisonne qu'en USD (prix de référence PriceCharting,
+      // cf. shared/verdict.py) : une devise non détectée ne peut pas être
+      // convertie de façon fiable -- on refuse plutôt que de deviner (même
+      // philosophie que le reste du matching, §01 du handoff). Une devise
+      // détectée (EUR/GBP/JPY...) est convertie côté background (lib/fx.js)
+      // avant l'appel à l'API.
+      currency = listing.currency;
+      if (!currency) {
+        panel.setError("Devise non reconnue sur cette page -- comparaison impossible.");
+        return;
+      }
     }
 
     if (!gradeManuallySet && title) {
       currentGrade = detectGrade(title);
     }
 
-    // pricing_api ne raisonne qu'en USD (prix de référence PriceCharting,
-    // cf. shared/verdict.py) : une devise non détectée ne peut pas être
-    // convertie de façon fiable -- on refuse plutôt que de deviner (même
-    // philosophie que le reste du matching, §01 du handoff). Une devise
-    // détectée (EUR/GBP/...) est convertie côté background (lib/fx.js)
-    // avant l'appel à l'API.
-    const currency = detectCurrency(rawPrice);
-    if (!currency) {
-      panel.setError("Devise non reconnue sur cette page -- comparaison impossible.");
-      return;
-    }
-
     const response = await sendMessage({
-      type: "CARDQUANT_GET_VERDICT", text: useImage ? null : title, imageUrl,
+      type: "CARDQUANT_GET_VERDICT", text: useImage ? null : title, imageUrl: useImage ? imageUrl : null,
       displayedPrice, currency, grade: currentGrade, selectedCardId,
     });
     if (!response || !response.ok) {
