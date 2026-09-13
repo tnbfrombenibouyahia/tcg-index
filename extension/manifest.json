@@ -28,6 +28,7 @@
         "https://www.ebay.be/itm/*",
         "https://www.ebay.pl/itm/*",
         "https://jp.mercari.com/item/*",
+        "https://jp.mercari.com/en/item/*",
         "https://gradedcardcenter.com/item/*",
         "https://www.gradedcardcenter.com/item/*",
         "https://www.vinted.com/items/*",
