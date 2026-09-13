@@ -405,12 +405,17 @@ Fait :
     panneau (tout est déjà connu) ; la position reste éditable/supprimable
     ensuite sur `/pnl`.
 
-Pas fait (hors scope de ce scaffold) :
-- Vinted, Cardmarket — seul eBay (14 domaines pays, cf. `manifest.json`)
-  est scopé pour l'instant.
-- Publication Chrome Web Store (§09) : compte développeur 5$, politique de
-  confidentialité publiée, test privé avant review — checklist inchangée,
-  rien fait ici.
+Multi-marketplace (2026-09-12/13, cf. mémoire projet "cardquant-multi-marketplace") :
+eBay (14 domaines pays), Mercari JP, GradedCardCenter (prix fixe + enchères),
+Vinted (~25 marchés pays), PokéCardex (fiche de référence, sans prix --
+premier site à avoir nécessité de rendre `displayed_price` optionnel côté
+`pricing_api`) sont désormais tous couverts via `SITE_ADAPTERS` dans
+`content.js`. Cardmarket reste hors périmètre.
+
+Publication Chrome Web Store (§09) : publiée depuis le 2026-09-06 (ID
+`jkkonkcdkcadadfffonjlhlonmgcbmbm`) -- checklist compte développeur/politique
+de confidentialité/test privé déjà faite à l'époque, pas à refaire pour
+chaque mise à jour (juste une nouvelle version + review Google).
 
 ## Développement local
 

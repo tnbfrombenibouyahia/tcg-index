@@ -1,6 +1,6 @@
 # Fiche Chrome Web Store — CardQuant
 
-Texte prêt à coller dans le Developer Dashboard (chromewebstore.google.com/developer/dashboard). Rien d'inventé : périmètre exact du scaffold actuel (cf. `README.md`) — eBay uniquement (14 domaines pays), Pokémon + One Piece EN/JP, compte requis. Pas de chiffres d'installation/notation : l'extension n'est pas encore publiée.
+Texte prêt à coller dans le Developer Dashboard (chromewebstore.google.com/developer/dashboard). Rien d'inventé : périmètre exact du code actuel (cf. `README.md`) — eBay (14 domaines pays), Mercari JP, Vinted (~25 marchés pays), GradedCardCenter (prix fixe + enchères), PokéCardex (fiche de référence), Pokémon + One Piece EN/JP, compte requis. Publiée sur le Store depuis le 2026-09-06 (ID `jkkonkcdkcadadfffonjlhlonmgcbmbm`) -- ce texte accompagne la mise à jour multi-marketplace du 2026-09-13.
 
 ## Nom (max 45 caractères)
 
@@ -11,9 +11,9 @@ CardQuant
 ## Description courte / résumé (max 132 caractères)
 
 ```
-Le vrai prix des cartes Pokémon et One Piece sur eBay — verdict instantané, ROI gradation, arbitrage EN/JP.
+Le vrai prix des cartes Pokémon et One Piece sur eBay, Mercari, Vinted, GradedCardCenter — verdict instantané, ROI gradation.
 ```
-(109 caractères)
+(125 caractères)
 
 ## Catégorie
 
@@ -22,10 +22,10 @@ Le vrai prix des cartes Pokémon et One Piece sur eBay — verdict instantané, 
 ## Description détaillée
 
 ```
-CardQuant affiche un verdict de prix en direct sur les annonces eBay de cartes à collectionner Pokémon et One Piece (EN/JP, brutes et gradées) — sans changer d'onglet.
+CardQuant affiche un verdict de prix en direct sur les annonces eBay, Mercari, Vinted et GradedCardCenter de cartes à collectionner Pokémon et One Piece (EN/JP, brutes et gradées) — sans changer d'onglet. Sur PokéCardex, le panneau identifie aussi la carte consultée et affiche ses stats de marché même sans annonce à comparer.
 
 COMMENT ÇA MARCHE
-Ouvre une annonce eBay, clique sur l'icône CardQuant : le panneau identifie la carte (titre, ou photo si le titre ne suffit pas) et compare le prix affiché aux ventes réelles récentes et au prix catalogue de référence.
+Ouvre une annonce, clique sur l'icône CardQuant : le panneau identifie la carte (titre, ou photo si le titre ne suffit pas) et compare le prix affiché aux ventes réelles récentes et au prix catalogue de référence.
 
 CE QUE LE PANNEAU MONTRE
 — Verdict ponctuel : ce prix précis vs. le marché (bonne affaire / prix normal / survendu)
@@ -41,12 +41,12 @@ COMPTE REQUIS
 La connexion se fait sur cardquant.io (Google Sign-In), pas dans l'extension — une fois connecté sur le site, la session est automatiquement reconnue par l'extension. Alertes, historique et watchlist suivent le même compte, y compris sur le terminal complet du site.
 
 COUVERTURE ACTUELLE
-— Marketplace : eBay (.com, .fr, .de, .co.uk, .it, .es, .ca, .com.au, .at, .ch, .ie, .nl, .be, .pl)
+— Marketplaces : eBay (.com, .fr, .de, .co.uk, .it, .es, .ca, .com.au, .at, .ch, .ie, .nl, .be, .pl), Mercari (marché japonais), Vinted (~25 marchés pays), GradedCardCenter (prix fixe et enchères), PokéCardex (fiche de référence)
 — Jeux : Pokémon et One Piece, anglais et japonais, brut et gradé PSA/CGC
 — Prix indicatifs, agrégés depuis des sources tierces (PriceCharting, ventes eBay closes) — pas un conseil en investissement.
 
 CONFIDENTIALITÉ
-Lecture de la page active uniquement, sur les pages d'annonce eBay listées ci-dessus — jamais un autre site. Pas de suivi publicitaire, pas de revente de données. Politique de confidentialité complète : cardquant.io/privacy
+Lecture de la page active uniquement, sur les pages d'annonce des sites listés ci-dessus — jamais un autre site. Pas de suivi publicitaire, pas de revente de données. Politique de confidentialité complète : cardquant.io/privacy
 ```
 
 ## Description détaillée (English)
@@ -59,10 +59,10 @@ projet "cardquant-i18n-roadmap"). "EN/JP" ci-dessous désigne la langue des
 **cartes** (Pokémon/One Piece), pas celle du panneau.
 
 ```
-CardQuant shows a live price verdict on eBay listings for Pokémon and One Piece trading cards (EN/JP, raw and graded) — without switching tabs.
+CardQuant shows a live price verdict on eBay, Mercari, Vinted and GradedCardCenter listings for Pokémon and One Piece trading cards (EN/JP, raw and graded) — without switching tabs. On PokéCardex, the panel also identifies the card you're viewing and shows its market stats even without a listing to compare against.
 
 HOW IT WORKS
-Open an eBay listing, click the CardQuant icon: the panel identifies the card (from the title, or from the photo if the title isn't enough) and compares the listed price to recent actual sales and the reference catalog price.
+Open a listing, click the CardQuant icon: the panel identifies the card (from the title, or from the photo if the title isn't enough) and compares the listed price to recent actual sales and the reference catalog price.
 
 WHAT THE PANEL SHOWS
 — One-off verdict: this exact price vs. the market (good deal / fair price / overpriced)
@@ -78,14 +78,14 @@ ACCOUNT REQUIRED
 Sign-in happens on cardquant.io (Google Sign-In), not inside the extension — once signed in on the site, the session is automatically recognized by the extension. Alerts, history and watchlist follow the same account, including on the full site terminal.
 
 CURRENT COVERAGE
-— Marketplace: eBay (.com, .fr, .de, .co.uk, .it, .es, .ca, .com.au, .at, .ch, .ie, .nl, .be, .pl)
+— Marketplaces: eBay (.com, .fr, .de, .co.uk, .it, .es, .ca, .com.au, .at, .ch, .ie, .nl, .be, .pl), Mercari (Japanese marketplace), Vinted (~25 country markets), GradedCardCenter (fixed price and live auctions), PokéCardex (reference lookup)
 — Games: Pokémon and One Piece, English and Japanese, raw and PSA/CGC graded
 — Indicative prices, aggregated from third-party sources (PriceCharting, closed eBay sales) — not investment advice.
 
 The panel interface is currently in French only; English and Spanish are planned.
 
 PRIVACY
-Reads the active page only, on the eBay listing pages listed above — never any other site. No ad tracking, no data resale. Full privacy policy: cardquant.io/privacy
+Reads the active page only, on the listing pages of the sites listed above — never any other site. No ad tracking, no data resale. Full privacy policy: cardquant.io/privacy
 ```
 
 ## Icône fiche Store (128px) et captures d'écran
@@ -98,12 +98,12 @@ Captures d'écran : faites le 2026-09-04, `store-screenshots/01-panneau-verdict.
 
 Réponses à cocher/coller, dérivées de `PRIVACY_POLICY.md` (aussi publiée sur `/privacy`) :
 - **Cette extension collecte-t-elle des données utilisateur ?** Oui.
-- **Types de données** : identité (email de compte via Google Sign-In), activité sur le web (titre/prix/photo de l'annonce eBay consultée, uniquement sur les domaines eBay listés).
+- **Types de données** : identité (email de compte via Google Sign-In), activité sur le web (titre/prix/photo de l'annonce consultée, uniquement sur les domaines eBay/Mercari/Vinted/GradedCardCenter/PokéCardex listés — pas de prix lu sur PokéCardex, qui n'est pas une marketplace).
 - **Ces données sont-elles vendues à des tiers ?** Non.
 - **Ces données sont-elles utilisées à des fins non liées à la fonctionnalité principale de l'extension ?** Non.
 - **Ces données sont-elles utilisées pour déterminer la solvabilité (creditworthiness) ou à des fins de prêt ?** Non.
 - **URL de la politique de confidentialité** : https://cardquant.io/privacy (à ajuster si le domaine change, cf. `.env`/déploiement).
 - **Justification des permissions demandées** :
   - `storage` : mémorise la session (jeton Firebase) localement pour éviter une reconnexion à chaque page.
-  - `host_permissions` (domaines eBay) : lire titre/prix/photo de l'annonce active pour identifier la carte.
+  - `host_permissions` (domaines eBay/Mercari/Vinted/GradedCardCenter/PokéCardex) : lire titre/prix/photo de l'annonce (ou de la fiche carte, pour PokéCardex) active pour identifier la carte.
   - `host_permissions` (pricing_api, Firebase, frankfurter.dev) : appels réseau vers notre propre backend et les services d'authentification/taux de change — jamais vers un tiers publicitaire.
