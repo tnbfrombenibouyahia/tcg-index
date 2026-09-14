@@ -1,22 +1,18 @@
 # Politique de confidentialité — CardQuant
 
-**Dernière mise à jour : 22 août 2026**
+**Dernière mise à jour : 13 septembre 2026**
 
 Ce document couvre l'extension navigateur CardQuant et le site associé
 (tcgindex.vercel.app), ci-après « CardQuant » ou « le service ». CardQuant
-est un outil d'analyse de prix pour cartes à collectionner (One Piece TCG à
-ce jour), consulté en direct sur des annonces eBay.
-
-> ⚠️ **À compléter avant publication** : remplacer `[EMAIL DE CONTACT]`
-> ci-dessous par une adresse réelle avant de soumettre au Chrome Web Store
-> — Google exige un contact valide et le texte ne peut pas rester avec un
-> champ vide.
+est un outil d'analyse de prix pour cartes à collectionner Pokémon et One
+Piece, consulté en direct sur des annonces eBay, Mercari, Vinted et
+GradedCardCenter, ou sur une fiche de référence PokéCardex.
 
 ## 1. Résumé
 
-- CardQuant lit le contenu **des pages d'annonce eBay que vous consultez**
-  (titre, prix, photo du produit) pour vous donner un verdict de prix — il
-  ne lit jamais le contenu d'un autre site.
+- CardQuant lit le contenu **des pages d'annonce que vous consultez** sur
+  les sites listés en §2.2 (titre, prix, photo du produit) pour vous donner
+  un verdict de prix — il ne lit jamais le contenu d'un autre site.
 - Un compte (connexion Google) est requis pour utiliser l'extension.
 - Aucune vente ni partage de vos données à des fins publicitaires ou
   commerciales. Aucune injection de publicité ou de lien affilié dans les
@@ -41,14 +37,24 @@ recevons et stockons :
 CardQuant ne voit et ne stocke jamais votre mot de passe Google —
 l'authentification est entièrement déléguée à Firebase/Google.
 
-### 2.2 Contenu des pages d'annonce eBay
+### 2.2 Contenu des pages d'annonce
 
 L'extension s'exécute uniquement sur les pages d'annonce individuelle des
-domaines eBay suivants : ebay.com, .fr, .de, .co.uk, .it, .es, .ca,
-.com.au, .at, .ch, .ie, .nl, .be, .pl (URLs de la forme
-`https://www.ebay.<domaine>/itm/*`). Sur ces pages, et uniquement
-celles-ci, l'extension lit :
-- le titre de l'annonce, le prix affiché et sa devise ;
+sites suivants :
+- **eBay** : ebay.com, .fr, .de, .co.uk, .it, .es, .ca, .com.au, .at, .ch,
+  .ie, .nl, .be, .pl (`https://www.ebay.<domaine>/itm/*`) ;
+- **Mercari** (marché japonais, jp.mercari.com/item/\*) ;
+- **Vinted** (~25 marchés pays, ex. vinted.fr, vinted.de, vinted.co.uk —
+  `https://www.vinted.<domaine>/items/*`) ;
+- **GradedCardCenter** (gradedcardcenter.com/item/\*, annonces à prix fixe
+  et enchères) ;
+- **PokéCardex** (pokecardex.com/carte/\*) : fiche de référence, pas une
+  annonce à vendre — aucun prix n'y est lu, seuls le titre et la photo de
+  la carte le sont.
+
+Sur ces pages, et uniquement celles-ci, l'extension lit :
+- le titre de l'annonce, le prix affiché et sa devise (sauf PokéCardex, qui
+  n'a pas de prix d'annonce) ;
 - si vous cliquez « Essayer avec la photo de l'annonce » (utilisé quand le
   titre seul ne suffit pas à identifier la carte) : l'URL de la photo
   principale du produit telle qu'affichée sur l'annonce — jamais une photo
@@ -59,9 +65,10 @@ carte et calculer un verdict de prix. La photo, quand elle est utilisée,
 est transmise à l'API Google Cloud Vision (reconnaissance de texte
 uniquement) pour en extraire le texte imprimé.
 
-L'extension ne lit jamais le contenu d'un site autre qu'eBay, et jamais
-plus que le titre/prix/photo décrits ci-dessus sur une page eBay (pas vos
-messages, votre historique d'achat, vos informations de paiement, etc.).
+L'extension ne lit jamais le contenu d'un site autre que ceux listés
+ci-dessus, et jamais plus que le titre/prix/photo décrits ci-dessus sur une
+de ces pages (pas vos messages, votre historique d'achat, vos informations
+de paiement, etc.).
 
 ### 2.3 Historique de recherche
 
@@ -81,7 +88,7 @@ quand vous vous déconnectez.
 ### 2.5 Ce que nous ne collectons pas
 
 Pas de mot de passe, pas d'information de paiement ou bancaire, pas
-d'historique de navigation en dehors des pages d'annonce eBay où
+d'historique de navigation en dehors des pages d'annonce listées en §2.2 où
 l'extension est active, pas de données issues d'autres onglets ou sites,
 pas de cookies tiers de tracking, pas de vente de données à des tiers.
 
@@ -108,7 +115,7 @@ d'autres fins :
 | Service | Rôle | Donnée transmise |
 |---|---|---|
 | Firebase Authentication (Google) | Connexion Google Sign-In | Identifiant de compte Google |
-| Google Cloud Vision | Reconnaissance de texte sur la photo de l'annonce (seulement si vous déclenchez ce mode) | URL de la photo produit eBay |
+| Google Cloud Vision | Reconnaissance de texte sur la photo de l'annonce (seulement si vous déclenchez ce mode) | URL de la photo produit (site listé en §2.2) |
 | Google Cloud (Cloud Run, Cloud SQL) | Hébergement du backend et de la base de données | Données décrites en §2 |
 | api.frankfurter.dev | Taux de change (conversion EUR/GBP → USD) | Aucune donnée personnelle — montant et devises uniquement |
 
@@ -127,7 +134,7 @@ Vous pouvez à tout moment :
 - vous déconnecter depuis le panneau de l'extension (efface immédiatement
   la session locale) ;
 - demander l'accès, la correction ou la suppression de vos données de
-  compte en nous contactant à **[EMAIL DE CONTACT]**. Nous n'avons pas
+  compte en nous contactant à **contact@cardquant.app**. Nous n'avons pas
   encore de suppression de compte en libre-service dans l'interface — une
   demande par email est traitée manuellement.
 
@@ -142,9 +149,9 @@ déléguée à Firebase/Google).
 
 L'extension ne demande que les permissions strictement nécessaires à son
 fonctionnement : `storage` (session locale, §2.4) et l'accès réseau limité
-aux domaines eBay listés en §2.2, à notre API de verdict, aux services
-Firebase d'authentification et au service de taux de change — jamais un
-accès générique à tous les sites que vous visitez.
+aux domaines listés en §2.2, à notre API de verdict, aux services Firebase
+d'authentification et au service de taux de change — jamais un accès
+générique à tous les sites que vous visitez.
 
 ## 9. Modifications de cette politique
 
@@ -154,4 +161,4 @@ l'extension ou sur le site.
 
 ## 10. Contact
 
-Pour toute question sur cette politique ou vos données : **[EMAIL DE CONTACT]**.
+Pour toute question sur cette politique ou vos données : **contact@cardquant.app**.

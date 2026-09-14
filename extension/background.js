@@ -15,9 +15,14 @@
 importScripts("lib/config.js", "lib/auth.js", "lib/fx.js");
 
 chrome.action.onClicked.addListener((tab) => {
-  if (tab.id !== undefined) {
-    chrome.tabs.sendMessage(tab.id, { type: "CARDQUANT_TOGGLE_PANEL" });
-  }
+  if (tab.id === undefined) return;
+  // .catch silencieux -- échoue normalement si l'onglet actif n'a pas (ou
+  // pas encore) le content script (page hors des sites supportés, ou
+  // toujours en cours de chargement) : "Could not establish connection.
+  // Receiving end does not exist." Pas une vraie erreur applicative, jamais
+  // affichée à l'utilisateur -- juste rien à faire, le panneau ne dépend
+  // pas de ce clic pour apparaître (cf. content.js, injecté au chargement).
+  chrome.tabs.sendMessage(tab.id, { type: "CARDQUANT_TOGGLE_PANEL" }).catch(() => {});
 });
 
 // cf. web/lib/cardquant-extension.ts::relaySessionToExtension -- seules les

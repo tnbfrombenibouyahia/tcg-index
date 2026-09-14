@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   description: "Quelles données CardQuant collecte, pourquoi, et comment les gérer.",
 };
 
-const LAST_UPDATED = "22 août 2026";
+const LAST_UPDATED = "13 septembre 2026";
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
@@ -43,16 +43,17 @@ export default function PrivacyPolicyPage() {
       <p className="mt-6 text-[15px] leading-relaxed text-foreground/90">
         Ce document couvre l&apos;extension navigateur CardQuant et le site associé
         (tcgindex.vercel.app), ci-après « CardQuant » ou « le service ». CardQuant est un
-        outil d&apos;analyse de prix pour cartes à collectionner (One Piece TCG à ce jour),
-        consulté en direct sur des annonces eBay.
+        outil d&apos;analyse de prix pour cartes à collectionner Pokémon et One Piece, consulté
+        en direct sur des annonces eBay, Mercari, Vinted et GradedCardCenter, ou sur une
+        fiche de référence PokéCardex.
       </p>
 
       <Section id="resume" title="1. Résumé">
         <ul className="list-disc space-y-2 pl-5">
           <li>
-            CardQuant lit le contenu <strong>des pages d&apos;annonce eBay que vous consultez</strong>{" "}
-            (titre, prix, photo du produit) pour vous donner un verdict de prix — il ne lit
-            jamais le contenu d&apos;un autre site.
+            CardQuant lit le contenu <strong>des pages d&apos;annonce que vous consultez</strong>{" "}
+            sur les sites listés en §2.2 (titre, prix, photo du produit) pour vous donner un
+            verdict de prix — il ne lit jamais le contenu d&apos;un autre site.
           </li>
           <li>Un compte (connexion Google) est requis pour utiliser l&apos;extension.</li>
           <li>
@@ -80,23 +81,28 @@ export default function PrivacyPolicyPage() {
         </p>
 
         <h3 className="mt-4 font-sans text-sm font-bold text-foreground">
-          2.2 Contenu des pages d&apos;annonce eBay
+          2.2 Contenu des pages d&apos;annonce
         </h3>
         <p>
-          L&apos;extension s&apos;exécute uniquement sur les pages d&apos;annonce individuelle des
-          domaines eBay suivants : ebay.com, .fr, .de, .co.uk, .it, .es, .ca, .com.au, .at,
-          .ch, .ie, .nl, .be, .pl. Sur ces pages, et uniquement celles-ci, l&apos;extension lit
-          le titre, le prix affiché et sa devise, et — seulement si vous cliquez « Essayer
-          avec la photo de l&apos;annonce » — l&apos;URL de la photo principale du produit telle
-          qu&apos;affichée sur l&apos;annonce (jamais une photo personnelle, votre webcam ou un
-          fichier de votre appareil).
+          L&apos;extension s&apos;exécute uniquement sur les pages d&apos;annonce individuelle des sites
+          suivants : eBay (ebay.com, .fr, .de, .co.uk, .it, .es, .ca, .com.au, .at, .ch, .ie,
+          .nl, .be, .pl) ; Mercari (marché japonais, jp.mercari.com) ; Vinted (~25 marchés
+          pays, ex. vinted.fr, vinted.de, vinted.co.uk) ; GradedCardCenter
+          (gradedcardcenter.com, annonces à prix fixe et enchères) ; PokéCardex
+          (pokecardex.com) — une fiche de référence, pas une annonce à vendre, sur laquelle
+          aucun prix n&apos;est lu. Sur ces pages, et uniquement celles-ci, l&apos;extension lit le
+          titre, le prix affiché et sa devise (sauf PokéCardex), et — seulement si vous
+          cliquez « Essayer avec la photo de l&apos;annonce » — l&apos;URL de la photo principale du
+          produit telle qu&apos;affichée sur l&apos;annonce (jamais une photo personnelle, votre
+          webcam ou un fichier de votre appareil).
         </p>
         <p>
           Ce contenu est envoyé à notre service de verdict pour identifier la carte et
           calculer un prix de référence. La photo, quand elle est utilisée, est transmise à
           l&apos;API Google Cloud Vision (reconnaissance de texte uniquement) pour en extraire
-          le texte imprimé. L&apos;extension ne lit jamais le contenu d&apos;un site autre qu&apos;eBay,
-          ni plus que le titre/prix/photo décrits ci-dessus sur une page eBay.
+          le texte imprimé. L&apos;extension ne lit jamais le contenu d&apos;un site autre que ceux
+          listés ci-dessus, ni plus que le titre/prix/photo décrits ci-dessus sur une de ces
+          pages.
         </p>
 
         <h3 className="mt-4 font-sans text-sm font-bold text-foreground">2.3 Historique de recherche</h3>
@@ -117,9 +123,9 @@ export default function PrivacyPolicyPage() {
         <h3 className="mt-4 font-sans text-sm font-bold text-foreground">2.5 Ce que nous ne collectons pas</h3>
         <p>
           Pas de mot de passe, pas d&apos;information de paiement ou bancaire, pas d&apos;historique
-          de navigation en dehors des pages d&apos;annonce eBay où l&apos;extension est active, pas
-          de données issues d&apos;autres onglets ou sites, pas de cookies tiers de tracking, pas
-          de vente de données à des tiers.
+          de navigation en dehors des pages d&apos;annonce listées en §2.2 où l&apos;extension est
+          active, pas de données issues d&apos;autres onglets ou sites, pas de cookies tiers de
+          tracking, pas de vente de données à des tiers.
         </p>
       </Section>
 
@@ -163,7 +169,7 @@ export default function PrivacyPolicyPage() {
             <tbody>
               {[
                 ["Firebase Authentication (Google)", "Connexion Google Sign-In", "Identifiant de compte Google"],
-                ["Google Cloud Vision", "Reconnaissance de texte sur la photo de l'annonce (si déclenché)", "URL de la photo produit eBay"],
+                ["Google Cloud Vision", "Reconnaissance de texte sur la photo de l'annonce (si déclenché)", "URL de la photo produit (site listé en §2.2)"],
                 ["Google Cloud (Cloud Run, Cloud SQL)", "Hébergement du backend et de la base de données", "Données décrites en §2"],
                 ["api.frankfurter.dev", "Taux de change (conversion EUR/GBP → USD)", "Aucune donnée personnelle — montant et devises uniquement"],
               ].map(([service, role, donnee]) => (
@@ -218,7 +224,7 @@ export default function PrivacyPolicyPage() {
         <p>
           L&apos;extension ne demande que les permissions strictement nécessaires à son
           fonctionnement : le stockage local (session, §2.4) et l&apos;accès réseau limité aux
-          domaines eBay listés en §2.2, à notre API de verdict, aux services Firebase
+          domaines listés en §2.2, à notre API de verdict, aux services Firebase
           d&apos;authentification et au service de taux de change — jamais un accès générique à
           tous les sites que vous visitez.
         </p>

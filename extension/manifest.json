@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "CardQuant",
   "short_name": "CardQuant",
-  "version": "0.2.1",
-  "description": "Verdict en direct sur les annonces de cartes One Piece TCG : bonne affaire, prix normal ou survendu, en un coup d'œil.",
+  "version": "0.3.0",
+  "description": "Verdict en direct sur les annonces de cartes Pokémon et One Piece (eBay, Mercari, Vinted, GradedCardCenter) : bonne affaire, prix normal ou survendu, en un coup d'œil.",
   "action": {
     "default_title": "CardQuant — afficher/masquer le panneau"
   },
@@ -28,6 +28,7 @@
         "https://www.ebay.be/itm/*",
         "https://www.ebay.pl/itm/*",
         "https://jp.mercari.com/item/*",
+        "https://jp.mercari.com/en/item/*",
         "https://gradedcardcenter.com/item/*",
         "https://www.gradedcardcenter.com/item/*",
         "https://www.vinted.com/items/*",
