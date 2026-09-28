@@ -510,3 +510,27 @@ CREATE TABLE IF NOT EXISTS portfolio_positions (
   CHECK ((sell_price IS NULL) = (sell_date IS NULL))
 );
 CREATE INDEX IF NOT EXISTS idx_portfolio_positions_user ON portfolio_positions (firebase_uid, created_at DESC);
+
+-- Anti-doublon des alertes d'arbitrage Discord (module arbitrage/). Une ligne
+-- par annonce déjà signalée : `price` = prix à la DERNIÈRE alerte, pour ne
+-- reposter la même annonce que si son prix a baissé d'au moins 5 %
+-- (arbitrage/store.py::should_alert). Pas append-only : le UPSERT met à jour
+-- la ligne plutôt que d'accumuler un historique dont rien n'a besoin.
+-- `marketplace` : 'ebay_fr', 'ebay_us', puis 'gcc', 'vinted' (mêmes valeurs que
+-- active_listings.marketplace). `listing_id` : identifiant natif de la place de
+-- marché (eBay : "v1|123456789|0"), donc pas de FK.
+CREATE TABLE IF NOT EXISTS arbitrage_alerts (
+  id             BIGSERIAL PRIMARY KEY,
+  marketplace    TEXT NOT NULL,
+  listing_id     TEXT NOT NULL,
+  item_id        BIGINT NOT NULL REFERENCES items(id),
+  grader         TEXT NOT NULL,          -- 'bgs' | 'cgc'
+  grade          NUMERIC(3,1) NOT NULL,
+  price          NUMERIC(12,2) NOT NULL, -- devise de l'annonce (colonne suivante)
+  currency       TEXT NOT NULL,
+  breakeven_p10  NUMERIC(6,4),
+  multiple       NUMERIC(8,2),
+  alerted_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (marketplace, listing_id)
+);
+CREATE INDEX IF NOT EXISTS idx_arbitrage_alerts_alerted ON arbitrage_alerts (alerted_at DESC);

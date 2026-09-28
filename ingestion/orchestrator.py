@@ -195,7 +195,7 @@ def run_price_sync(tier: str | None, run_type: str) -> list[dict]:
     for tcg, run_id in run_ids.items():
         tcg_results = [r for r in results if pricecharting._tcg_from_set_code(r["set_code"]) == tcg]
         tcg_errors = [r for r in tcg_results if r.get("error")]
-        rows_written = sum(r.get("rows_matched", 0) for r in tcg_results if not r.get("error"))
+        rows_written = sum(r.get("rows_stored", r.get("rows_matched", 0)) for r in tcg_results if not r.get("error"))
         detail = f"{len(tcg_results)} set(s), {rows_written} prix" if tcg_results or tier != "jp_singles" else ""
         if tier is not None and tier != "jp_singles":
             sales_written = sum(r.get("sale_rows_written", 0) for r in tcg_results if not r.get("error"))
@@ -337,8 +337,19 @@ def run_rarity_backfill_sync(run_type: str) -> None:
                     "pokemon", "JP", limitlesstcg.JP_PROMO_SET_CODES
                 )
                 inherit_result = rarity_inherit.sync_rarity_inheritance()
-                bulba_result = bulbapedia.sync_all_jp_rarities()
-                tcgdex_result = tcgdex.sync_all_remaining_jp_rarities()
+                try:
+                    bulba_result = bulbapedia.sync_all_jp_rarities()
+                    tcgdex_result = tcgdex.sync_all_remaining_jp_rarities()
+                finally:
+                    # Tiers d'intérêt (SIR/IR/FA/Secret/chase, cf.
+                    # index/interest_tier.py) dérivés de rarity+name déjà en
+                    # base : recalculés MÊME si une source JP plante. Avant,
+                    # cet appel venait après et n'était jamais atteint quand
+                    # tcgdex levait (git absent de l'image) : `interest_tier`
+                    # restait NULL partout, et le filtre de
+                    # pricecharting._ITEMS_FOR_SET_SQL excluait alors TOUS les
+                    # singles Pokémon EN de la gradation PSA (0 prix PSA en base).
+                    sync_interest_tier.sync_interest_tiers()
                 jp_result = {
                     **jp_result,
                     "total": (
@@ -349,11 +360,6 @@ def run_rarity_backfill_sync(run_type: str) -> None:
                     "skipped": jp_result["skipped"] + bulba_result["skipped"] + tcgdex_result["skipped"],
                     "errors": jp_result["errors"] + bulba_result["errors"] + tcgdex_result["errors"],
                 }
-                # Tiers d'intérêt (SIR/IR/FA/Secret/chase, cf.
-                # index/interest_tier.py) dérivés de rarity+name -- recalculés
-                # ici, juste après que ce run vient de backfiller de nouvelles
-                # rarités, pour que le tier reste à jour au même rythme.
-                sync_interest_tier.sync_interest_tiers()
             else:
                 en_result = limitlesstcg.sync_all_one_piece_rarities()
                 jp_result = limitlesstcg.sync_all_one_piece_promos()
@@ -632,6 +638,19 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--arbitrage-alerts", action="store_true",
+        help=(
+            "Lance UNIQUEMENT le job d'alertes d'arbitrage BGS/CGC vs PSA (cf. arbitrage/job.py) et sort -- "
+            "poste dans le salon Discord (DISCORD_ARBITRAGE_WEBHOOK_URL). N'écrit que dans "
+            "arbitrage_alerts, donc pas de verrou ingestion_writer_lock. Cadence horaire prévue "
+            "(Cloud Scheduler), budget eBay plafonné par exécution."
+        ),
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true",
+        help="Avec --arbitrage-alerts : affiche les alertes sans rien envoyer à Discord ni écrire en base.",
+    )
+    parser.add_argument(
         "--items-only", action="store_true",
         help=(
             "Lance UNIQUEMENT la sync référentiel API TCG (cf. run_items_sync) et sort -- retiré du run "
@@ -679,6 +698,23 @@ def main() -> int:
         except Exception as exc:
             had_errors = True
             print(f"\n!! Erreur pendant la sync population : {exc}")
+        elapsed = time.monotonic() - started
+        print(f"\n=== Terminé en {elapsed / 60:.1f} min ({'avec erreurs' if had_errors else 'OK'}) ===")
+        return 1 if had_errors else 0
+
+    if args.arbitrage_alerts:
+        started = time.monotonic()
+        had_errors = False
+        try:
+            # Import local : ce module n'est pas nécessaire aux autres modes,
+            # et évite de payer son import (requests/discord) partout ailleurs.
+            from arbitrage.job import run_arbitrage_alerts
+
+            stats = run_arbitrage_alerts(dry_run=args.dry_run)
+            had_errors = bool(stats["errors"]) and stats["searches"] == 0
+        except Exception as exc:
+            had_errors = True
+            print(f"\n!! Erreur pendant les alertes d'arbitrage : {exc}")
         elapsed = time.monotonic() - started
         print(f"\n=== Terminé en {elapsed / 60:.1f} min ({'avec erreurs' if had_errors else 'OK'}) ===")
         return 1 if had_errors else 0

@@ -40,6 +40,7 @@ import requests
 from bs4 import BeautifulSoup
 from psycopg2.extras import execute_values
 
+from ingestion import card_selection
 from shared.db import get_connection
 
 BASE_URL = "https://www.pricecharting.com"
@@ -1380,21 +1381,19 @@ _UPSERT_SALES_SQL = """
     ON CONFLICT (marketplace, external_sale_id) DO NOTHING
 """
 
-# Items admissibles à la capture de prix pour un set donné -- filtre
-# "cartes d'intérêt" (cf. mémoire projet, index/interest_tier.py) : une
-# fois `interest_tier` calculé et confirmé NULL (donc `rarity` déjà connue
-# -- sinon la carte n'a simplement pas encore été classée), on arrête de
-# recapturer son prix, cohérent avec la purge d'historique du 2026-08-08
-# (price_snapshots/sales/undervalued_scores/grading_roi_inputs déjà purgés
-# pour ces ~51k cartes). Scellé et One Piece jamais concernés (`category
-# = 'single'`/`tcg = 'pokemon'` explicites dans l'exclusion, pas juste
-# `interest_tier IS NULL` seul -- One Piece n'a jamais de interest_tier
-# calculé du tout, un filtre plus large l'aurait coupé par erreur en
-# entier). `rarity IS NULL` reste ADMIS volontairement -- une carte tout
-# juste sortie n'a pas encore de rareté connue (backfill hebdo, cf.
-# [[project_limitlesstcg_rarity_backfill]]) donc pas encore de tier :
-# la couper immédiatement l'empêcherait à jamais d'être capturée avant
-# même d'avoir eu la chance d'être classée comme "carte d'intérêt".
+# Tous les items EN du set, sans filtre : le TRI se fait après l'appariement,
+# via `card_selection` (stockage du prix brut : `should_store_price` ; requête
+# PSA par carte : `is_selected`). Avant le 2026-09-28, un filtre SQL
+# "cartes d'intérêt" (`interest_tier`, cf. index/interest_tier.py) écartait ici
+# les singles Pokémon de rareté connue et de tier NULL -- et comme
+# `interest_tier` était NULL PARTOUT (backfill de rareté en échec, git absent
+# de l'image), les 27 882 singles Pokémon EN n'avaient ni prix brut ni prix
+# PSA. Filtrer en SQL avait un 2e défaut : les cartes écartées ne
+# participaient plus à l'appariement, et une ligne PriceCharting d'une
+# variante non-hit pouvait alors être rattachée à tort à un hit du même numéro.
+# Le prix brut du set coûte 1 requête pour toutes les cartes : le lire pour
+# tout le monde est gratuit, seul le stockage et la requête PSA (1/carte) sont
+# sélectifs, cf. `ingestion/card_selection.py` pour la règle et ses chiffres.
 #
 # `language = 'EN'` (ajouté 2026-08-10, bug constaté via /population-analysis) :
 # cette requête est TOUJOURS appelée avec un set_code de PRICECHARTING_SET_SLUGS
@@ -1415,10 +1414,8 @@ _UPSERT_SALES_SQL = """
 # romance-dawn` (l'EN). Sans risque côté Pokémon (vérifié : aucun set_code EN
 # n'y mélange les langues) -- le JP y a son propre set_code, jamais partagé.
 _ITEMS_FOR_SET_SQL = """
-    SELECT id, category, code, name FROM items
+    SELECT id, category, code, name, tcg, set_code, rarity, interest_tier, release_date FROM items
     WHERE tcg = %s AND set_code = %s AND language = 'EN'
-      AND NOT (tcg = 'pokemon' AND category = 'single'
-               AND rarity IS NOT NULL AND interest_tier IS NULL)
 """
 
 # Variante SANS le filtre "carte d'intérêt" ci-dessus -- utilisée par la
@@ -1474,9 +1471,14 @@ def sync_price_snapshots_for_set(
         with conn.cursor() as cur:
             cur.execute(_ITEMS_FOR_SET_SQL, (tcg, set_code))
             items = [
-                {"id": r[0], "category": r[1], "code": r[2], "name": r[3]}
+                {
+                    "id": r[0], "category": r[1], "code": r[2], "name": r[3],
+                    "tcg": r[4], "set_code": r[5], "rarity": r[6],
+                    "interest_tier": r[7], "release_date": r[8],
+                }
                 for r in cur.fetchall()
             ]
+        item_by_id = {it["id"]: it for it in items}
 
         singles_by_number: dict[int, list[dict]] = {}
         for it in items:
@@ -1508,9 +1510,12 @@ def sync_price_snapshots_for_set(
 
         today = date.today()
         canonical_rows = _select_canonical_rows(matches)
+        # Tous les items du set sont appariés (cf. `_ITEMS_FOR_SET_SQL`), mais
+        # seul le sous-ensemble utile est archivé : `card_selection` décide.
         matched_rows = [
             (item_id, today, row["used_price"], "USD", None, "pricecharting")
             for item_id, row in canonical_rows.items()
+            if card_selection.should_store_price(item_by_id[item_id], row["used_price"])
         ]
 
         if matched_rows:
@@ -1528,9 +1533,12 @@ def sync_price_snapshots_for_set(
             # de faire confiance à l'agrégat PriceCharting seul (cf. sealed_ev.py) --
             # un scellé n'a jamais de gradation PSA, donc seul le tab "used"
             # (grade='ungraded') a un sens pour lui, filtré plus bas.
+            # Une requête par carte = le vrai coût : seules les cartes retenues
+            # par `card_selection` (prix brut >= 10 $, hit, vintage) la méritent.
             detail_rows = [
                 (item_id, row) for item_id, row in canonical_rows.items()
                 if category_by_item_id.get(item_id) in ("single", "sealed") and row.get("url")
+                and card_selection.is_selected(item_by_id[item_id], row["used_price"])
             ]
             if max_cards is not None:
                 detail_rows = detail_rows[:max_cards]
@@ -1575,7 +1583,10 @@ def sync_price_snapshots_for_set(
         "set_code": set_code,
         "pricecharting_slug": slug,
         "rows_scraped": len(rows),
-        "rows_matched": len(matched_rows),
+        # Qualité d'appariement (toutes les cartes du set) ; `rows_stored` =
+        # prix réellement archivés après `card_selection`.
+        "rows_matched": len(canonical_rows),
+        "rows_stored": len(matched_rows),
         "rows_unmatched": len(unmatched),
         "unmatched_titles": unmatched,
         "cards_graded": cards_graded,
@@ -2335,20 +2346,32 @@ def sync_jp_singles_items_for_set(set_code: str, tcg: str, fetch_grades: bool = 
                 execute_values(cur, _UPSERT_JP_SINGLE_ITEMS_SQL, item_rows)
                 conn.commit()
 
+        # Pas de filtre SQL : tout le set est lu, le tri (stockage du prix brut /
+        # requête PSA par carte) se fait ensuite via `card_selection`. Pas de
+        # `release_date` côté JP (aucune source ne la fournit) : le « avant 2012 »
+        # passe par `card_selection.PRE_2012_JP_SET_CODES`.
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id, external_id FROM items "
+                "SELECT id, external_id, rarity, interest_tier FROM items "
                 "WHERE source = 'pricecharting' AND tcg = %s AND set_code = %s "
-                "AND language = 'JP' AND category = 'single' "
-                "AND NOT (tcg = 'pokemon' AND rarity IS NOT NULL AND interest_tier IS NULL)",
+                "AND language = 'JP' AND category = 'single'",
                 (tcg, set_code),
             )
-            id_by_external = {ext: item_id for item_id, ext in cur.fetchall()}
+            id_by_external = {}
+            facts_by_external = {}
+            for item_id, ext, rarity, interest_tier in cur.fetchall():
+                id_by_external[ext] = item_id
+                facts_by_external[ext] = {
+                    "category": "single", "tcg": tcg, "set_code": set_code,
+                    "rarity": rarity, "interest_tier": interest_tier, "release_date": None,
+                }
 
         today = date.today()
         price_rows = [
             (id_by_external[r["pricecharting_id"]], today, r["used_price"], "USD", None, "pricecharting")
-            for r in single_rows if r["pricecharting_id"] in id_by_external
+            for r in single_rows
+            if r["pricecharting_id"] in id_by_external
+            and card_selection.should_store_price(facts_by_external[r["pricecharting_id"]], r["used_price"])
         ]
         if price_rows:
             with conn.cursor() as cur:
@@ -2363,6 +2386,7 @@ def sync_jp_singles_items_for_set(set_code: str, tcg: str, fetch_grades: bool = 
                 (id_by_external[r["pricecharting_id"]], r)
                 for r in single_rows
                 if r["pricecharting_id"] in id_by_external and r.get("url")
+                and card_selection.is_selected(facts_by_external[r["pricecharting_id"]], r["used_price"])
             ]
             with conn.cursor() as cur:
                 for i, (item_id, row) in enumerate(detail_rows):

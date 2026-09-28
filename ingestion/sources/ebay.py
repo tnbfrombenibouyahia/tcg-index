@@ -99,11 +99,16 @@ def _get_token() -> str:
     return _token_cache["value"]
 
 
-def _headers() -> dict:
-    return {
+def _headers(marketplace_id: str = MARKETPLACE_ID, end_user_country: str | None = None) -> dict:
+    headers = {
         "Authorization": f"Bearer {_get_token()}",
-        "X-EBAY-C-MARKETPLACE-ID": MARKETPLACE_ID,
+        "X-EBAY-C-MARKETPLACE-ID": marketplace_id,
     }
+    if end_user_country:
+        # Sans ce contexte, eBay ne peut pas calculer les frais de port vers
+        # le pays de l'acheteur (shippingOptions absent des résultats).
+        headers["X-EBAY-C-ENDUSERCTX"] = f"contextualLocation=country={end_user_country}"
+    return headers
 
 
 def search(q: str, category_id: str, condition_ids: list[str] | None = None, limit: int = 1) -> dict:
@@ -119,6 +124,44 @@ def search(q: str, category_id: str, condition_ids: list[str] | None = None, lim
         SEARCH_URL,
         headers=_headers(),
         params={"q": q, "category_ids": category_id, "filter": filt, "limit": limit},
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+def search_listings(
+    q: str,
+    *,
+    marketplace_id: str,
+    category_id: str | None = None,
+    buying_options: tuple[str, ...] = ("FIXED_PRICE",),
+    delivery_country: str | None = None,
+    sort: str | None = "price",
+    limit: int = 50,
+) -> dict:
+    """item_summary/search qui RETOURNE les annonces (pas juste `total`), sur
+    n'importe quelle place de marché eBay (EBAY_FR, EBAY_US...). Ajouté pour
+    arbitrage/ (alertes Discord) : `search` ci-dessus reste figé sur
+    MARKETPLACE_ID et n'exploite que le comptage.
+
+    `sort="price"` = prix croissant (les moins chères d'abord, ce qu'on
+    cherche). `category_id` optionnel : les identifiants de catégorie (et les
+    conditionIds, cf. CONDITION_GRADED) sont propres à l'arbre de catégories
+    d'une place de marché -- ceux d'EBAY_US ne sont pas garantis ailleurs, on
+    laisse donc le titre faire foi (cf. arbitrage/ebay_slabs.py)."""
+    filt = f"buyingOptions:{{{'|'.join(buying_options)}}}"
+    if delivery_country:
+        filt += f",deliveryCountry:{delivery_country}"
+    params: dict = {"q": q, "filter": filt, "limit": limit}
+    if category_id:
+        params["category_ids"] = category_id
+    if sort:
+        params["sort"] = sort
+    resp = requests.get(
+        SEARCH_URL,
+        headers=_headers(marketplace_id, delivery_country),
+        params=params,
+        timeout=20,
     )
     resp.raise_for_status()
     return resp.json()

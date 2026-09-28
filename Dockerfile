@@ -19,6 +19,14 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
+# git : `ingestion/sources/tcgdex.py` fait un `git clone --sparse` de TCGdex
+# pour la rareté des cartes JP (backfill hebdo `--rarity-backfill`).
+# python:3.12-slim n'en embarque pas -> "[Errno 2] No such file or directory:
+# 'git'" à chaque run (constaté sur 6 runs consécutifs, dernier 2026-09-25).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*
+
 # Couche dépendances séparée de la couche code : rebuild rapide quand seul le
 # code change (cache Docker), requirements.txt bouge rarement.
 COPY requirements.txt .
@@ -27,6 +35,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY shared/ shared/
 COPY ingestion/ ingestion/
 COPY index/ index/
+COPY arbitrage/ arbitrage/
 
 # Pas de CMD par défaut : Cloud Run Jobs fournit les arguments (--skip-items,
 # --tier hot, --ebay-listings, --items-only, --population, --rarity-backfill)
