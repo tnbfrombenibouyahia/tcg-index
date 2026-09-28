@@ -35,6 +35,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY shared/ shared/
 COPY ingestion/ ingestion/
 COPY index/ index/
+COPY arbitrage/ arbitrage/
 
 # Pas de CMD par défaut : Cloud Run Jobs fournit les arguments (--skip-items,
 # --tier hot, --ebay-listings, --items-only, --population, --rarity-backfill)

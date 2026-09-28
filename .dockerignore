@@ -12,5 +12,6 @@ db/__pycache__
 ingestion/__pycache__
 ingestion/_probe_output
 index/__pycache__
+arbitrage/__pycache__
 shared/__pycache__
 *.md

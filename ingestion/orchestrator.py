@@ -638,6 +638,19 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--arbitrage-alerts", action="store_true",
+        help=(
+            "Lance UNIQUEMENT le job d'alertes d'arbitrage BGS/CGC vs PSA (cf. arbitrage/job.py) et sort -- "
+            "poste dans le salon Discord (DISCORD_ARBITRAGE_WEBHOOK_URL). N'écrit que dans "
+            "arbitrage_alerts, donc pas de verrou ingestion_writer_lock. Cadence horaire prévue "
+            "(Cloud Scheduler), budget eBay plafonné par exécution."
+        ),
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true",
+        help="Avec --arbitrage-alerts : affiche les alertes sans rien envoyer à Discord ni écrire en base.",
+    )
+    parser.add_argument(
         "--items-only", action="store_true",
         help=(
             "Lance UNIQUEMENT la sync référentiel API TCG (cf. run_items_sync) et sort -- retiré du run "
@@ -685,6 +698,23 @@ def main() -> int:
         except Exception as exc:
             had_errors = True
             print(f"\n!! Erreur pendant la sync population : {exc}")
+        elapsed = time.monotonic() - started
+        print(f"\n=== Terminé en {elapsed / 60:.1f} min ({'avec erreurs' if had_errors else 'OK'}) ===")
+        return 1 if had_errors else 0
+
+    if args.arbitrage_alerts:
+        started = time.monotonic()
+        had_errors = False
+        try:
+            # Import local : ce module n'est pas nécessaire aux autres modes,
+            # et évite de payer son import (requests/discord) partout ailleurs.
+            from arbitrage.job import run_arbitrage_alerts
+
+            stats = run_arbitrage_alerts(dry_run=args.dry_run)
+            had_errors = bool(stats["errors"]) and stats["searches"] == 0
+        except Exception as exc:
+            had_errors = True
+            print(f"\n!! Erreur pendant les alertes d'arbitrage : {exc}")
         elapsed = time.monotonic() - started
         print(f"\n=== Terminé en {elapsed / 60:.1f} min ({'avec erreurs' if had_errors else 'OK'}) ===")
         return 1 if had_errors else 0
