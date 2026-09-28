@@ -337,8 +337,19 @@ def run_rarity_backfill_sync(run_type: str) -> None:
                     "pokemon", "JP", limitlesstcg.JP_PROMO_SET_CODES
                 )
                 inherit_result = rarity_inherit.sync_rarity_inheritance()
-                bulba_result = bulbapedia.sync_all_jp_rarities()
-                tcgdex_result = tcgdex.sync_all_remaining_jp_rarities()
+                try:
+                    bulba_result = bulbapedia.sync_all_jp_rarities()
+                    tcgdex_result = tcgdex.sync_all_remaining_jp_rarities()
+                finally:
+                    # Tiers d'intérêt (SIR/IR/FA/Secret/chase, cf.
+                    # index/interest_tier.py) dérivés de rarity+name déjà en
+                    # base : recalculés MÊME si une source JP plante. Avant,
+                    # cet appel venait après et n'était jamais atteint quand
+                    # tcgdex levait (git absent de l'image) : `interest_tier`
+                    # restait NULL partout, et le filtre de
+                    # pricecharting._ITEMS_FOR_SET_SQL excluait alors TOUS les
+                    # singles Pokémon EN de la gradation PSA (0 prix PSA en base).
+                    sync_interest_tier.sync_interest_tiers()
                 jp_result = {
                     **jp_result,
                     "total": (
@@ -349,11 +360,6 @@ def run_rarity_backfill_sync(run_type: str) -> None:
                     "skipped": jp_result["skipped"] + bulba_result["skipped"] + tcgdex_result["skipped"],
                     "errors": jp_result["errors"] + bulba_result["errors"] + tcgdex_result["errors"],
                 }
-                # Tiers d'intérêt (SIR/IR/FA/Secret/chase, cf.
-                # index/interest_tier.py) dérivés de rarity+name -- recalculés
-                # ici, juste après que ce run vient de backfiller de nouvelles
-                # rarités, pour que le tier reste à jour au même rythme.
-                sync_interest_tier.sync_interest_tiers()
             else:
                 en_result = limitlesstcg.sync_all_one_piece_rarities()
                 jp_result = limitlesstcg.sync_all_one_piece_promos()
