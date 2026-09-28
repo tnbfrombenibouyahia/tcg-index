@@ -195,7 +195,7 @@ def run_price_sync(tier: str | None, run_type: str) -> list[dict]:
     for tcg, run_id in run_ids.items():
         tcg_results = [r for r in results if pricecharting._tcg_from_set_code(r["set_code"]) == tcg]
         tcg_errors = [r for r in tcg_results if r.get("error")]
-        rows_written = sum(r.get("rows_matched", 0) for r in tcg_results if not r.get("error"))
+        rows_written = sum(r.get("rows_stored", r.get("rows_matched", 0)) for r in tcg_results if not r.get("error"))
         detail = f"{len(tcg_results)} set(s), {rows_written} prix" if tcg_results or tier != "jp_singles" else ""
         if tier is not None and tier != "jp_singles":
             sales_written = sum(r.get("sale_rows_written", 0) for r in tcg_results if not r.get("error"))
